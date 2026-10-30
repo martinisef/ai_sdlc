@@ -27,7 +27,7 @@
     "node": ">=22.18"
   },
   "bin": {
-    "sdlc": "./dist/sdlc.mjs"
+    "sdlc": "dist/sdlc.mjs"
   },
   "files": [
     "dist"
