@@ -67,6 +67,8 @@ export const ConfigSchema = z.looseObject({
       agent: z.enum(CI_AGENTS).optional(),
       model: z.string().optional(),
       min_pass_rate: z.number().min(0).max(1).optional(),
+      /** `sdlc ci mention`: answer only (read) or also commit requested changes to the PR branch (edit). */
+      mention_mode: z.enum(['read', 'edit']).optional(),
     })
     .optional(),
 });

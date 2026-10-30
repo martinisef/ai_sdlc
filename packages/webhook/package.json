@@ -1,0 +1,17 @@
+{
+  "name": "@ai-native-sdlc/webhook",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "hono": "^4.9.0",
+    "@hono/node-server": "^1.19.0"
+  }
+}

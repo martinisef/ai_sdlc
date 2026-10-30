@@ -61,6 +61,8 @@ Integrations
   tracker <args…>                    Jira helper
   ci <cmd>                           CI entry point: bootstrap, review, intent-to-spec, triage, jira-merged, evals
   bands check [--json] [--dry-run]   Stage 6: evaluate ops/bands.yaml; log / diagnose / open an incident intent
+  webhook [--port N]                 @claude in GitLab/Bitbucket comments → triggers \`sdlc ci mention\` in CI
+  hosted [--port N]                  read-only org board over a GitHub App installation (docs/rfc/hosted.md)
 `;
 
 function parseArgs(argv: string[]) {
@@ -275,6 +277,18 @@ async function main() {
     case 'ui': {
       const { startServer } = await import('@ai-native-sdlc/server');
       await startServer({ root, port: flags.port ? Number(flags.port) : undefined, open: !flags['no-open'] });
+      return;
+    }
+
+    case 'webhook': {
+      const { startWebhook } = await import('@ai-native-sdlc/webhook');
+      await startWebhook({ port: flags.port ? Number(flags.port) : undefined }).catch((e: Error) => fail(e.message));
+      return;
+    }
+
+    case 'hosted': {
+      const { startHosted } = await import('@ai-native-sdlc/hosted');
+      await startHosted({ port: flags.port ? Number(flags.port) : undefined }).catch((e: Error) => fail(e.message));
       return;
     }
 

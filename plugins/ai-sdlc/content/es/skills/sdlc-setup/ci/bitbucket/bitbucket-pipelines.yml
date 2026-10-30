@@ -84,3 +84,19 @@ pipelines:
             - git config user.name "ai-sdlc-bot" && git config user.email "ai-sdlc-bot@noreply"
             - npx -y @ai-native-sdlc/cli@0 ci bootstrap
             - npx -y @ai-native-sdlc/cli@0 bands check
+    sdlc-mention:
+      # @claude en comentarios del PR: lo corre `sdlc webhook` vía API. Sacalo si el workspace no corre el servicio.
+      - variables:
+          - name: PR_NUMBER
+          - name: BASE_REF
+          - name: HEAD_REF
+          - name: SDLC_MENTION_AUTHOR
+          - name: SDLC_MENTION_BODY
+      - step:
+          name: Agent reply (@claude)
+          image: node:22
+          script:
+            - export SDLC_PLUGIN_TOKEN_USER=x-token-auth
+            - git config user.name "ai-sdlc-bot" && git config user.email "ai-sdlc-bot@noreply"
+            - npx -y @ai-native-sdlc/cli@0 ci bootstrap
+            - npx -y @ai-native-sdlc/cli@0 ci mention

@@ -125,3 +125,35 @@ test('ci evals: worktree per case, checks, pass rate', async () => {
   assert.equal((await sdlc(root, ['ci', 'evals', 'writes-*'], { STUB_LOG: log })).code, 0, 'pattern filter');
   assert.equal((await sdlc(root, ['ci', 'evals'], { STUB_LOG: log, EVAL_MIN_PASS_RATE: '0.5' })).code, 0);
 });
+
+test('ci mention: read-only by default, replies without re-mentioning; edit mode commits and pushes', async () => {
+  const root = project({ vcs: { provider: 'github' } }, 'change/x');
+  const remote = join(mkdtempSync(join(tmpdir(), 'sdlc-remote-')), 'r.git');
+  execFileSync('git', ['init', '-q', '--bare', remote]);
+  execFileSync('git', ['remote', 'add', 'origin', remote], { cwd: root });
+  execFileSync('git', ['push', '-q', 'origin', 'main', 'change/x'], { cwd: root });
+  const env = { PR_NUMBER: '7', BASE_REF: 'main', HEAD_REF: 'change/x', SDLC_MENTION_AUTHOR: 'ana', SDLC_MENTION_BODY: '@claude is this guard right? WRITE src.txt' };
+
+  const log = stubLog();
+  const r = await sdlc(root, ['ci', 'mention'], { ...env, STUB_LOG: log });
+  assert.equal(r.code, 0, r.err);
+  const calls = read(log);
+  assert.match(calls, /claude -p ana mentioned you in a comment on PR\/MR #7/);
+  assert.doesNotMatch(calls, /acceptEdits/);
+  assert.match(calls, /gh pr comment 7 --body ## Agent reply \(ai-sdlc\)/);
+  assert.match(calls, /> @\u200bclaude is this guard right/, 'the quote cannot trigger the webhook again');
+  assert.ok(!existsSync(join(root, 'src.txt')), 'read mode does not edit');
+
+  writeFileSync(join(root, '.sdlc/config.json'), JSON.stringify({ version: 1, vcs: { provider: 'github' }, ci: { mention_mode: 'edit' } }));
+  commitAll(root, 'edit mode');
+  const log2 = stubLog();
+  const e = await sdlc(root, ['ci', 'mention'], { ...env, STUB_LOG: log2 });
+  assert.equal(e.code, 0, e.err);
+  assert.match(read(log2), /--permission-mode acceptEdits/);
+  assert.equal(execFileSync('git', ['log', '-1', '--format=%s', 'change/x'], { cwd: remote, encoding: 'utf8' }).trim(), 'fix: src.txt');
+  assert.match(read(log2), /Pushed [0-9a-f]+ to change\/x/);
+
+  const missing = await sdlc(root, ['ci', 'mention'], { STUB_LOG: log2 });
+  assert.equal(missing.code, 1);
+  assert.match(missing.err, /needs PR_NUMBER and SDLC_MENTION_BODY/);
+});

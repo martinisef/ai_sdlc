@@ -7,6 +7,15 @@ case "$prompt" in
     printf '## Automated review (ai-sdlc)\n\n| Pass | Severity | File:line | Finding |\n|---|---|---|---|\n| Correctness | Important | src/a.py:3 | off by one |\n\nImportant: 1 · Nit: 0\n' ;;
   *"build log"*)
     printf '## Automated triage (ai-sdlc)\nLooks flaky: network timeout in setup.\n' ;;
+  *"mentioned you"*)
+    # "WRITE <path>" in the comment: edit and commit it (only reachable with ci.mention_mode edit)
+    f="$(printf '%s' "$prompt" | sed -n 's/.*WRITE \([^ ]*\).*/\1/p' | head -1)"
+    if [ -n "$f" ] && [ "$4" != "Read,Grep,Glob,Bash(git diff:*),Bash(git log:*),Bash(git show:*)" ]; then
+      echo changed > "$f" && git add "$f" && git -c user.email=bot@ci -c user.name=bot commit -qm "fix: $f"
+      echo "Changed $f as asked."
+    else
+      echo "The guard on line 3 is inverted; flip the comparison."
+    fi ;;
   *sdlc-spec*)
     d="$(printf '%s' "$prompt" | grep -Eo 'changes/[a-z0-9-]+' | head -1)"
     printf -- '---\nstatus: draft\n---\n# Spec\n' > "$d/spec.md"

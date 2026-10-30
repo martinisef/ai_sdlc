@@ -69,3 +69,4 @@ Lo leen los guardrails (`sdlc hook`, para cualquier agente), las skills del loop
 | `ci.agent` | `sdlc ci`, `sdlc bands check` | Agente headless en CI: `claude` (default), `codex` (`codex exec`) o `cursor` (`cursor-agent`). Lo pisan `--agent` o `SDLC_CI_AGENT`. |
 | `ci.model` | `sdlc ci` | Modelo que se le pasa a la CLI del agente. |
 | `ci.min_pass_rate` | `sdlc ci evals` | Tasa mínima de evals aprobados (default 0.8; `EVAL_MIN_PASS_RATE` la pisa). |
+| `ci.mention_mode` | `sdlc ci mention` | `read` (default): el agente solo responde los comentarios con `@claude`. `edit`: además puede commitear cambios dentro del plan aprobado en la rama del PR/MR. |

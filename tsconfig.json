@@ -12,5 +12,5 @@
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["packages/core/src", "packages/adapters/src", "packages/cli/src", "packages/server/src", "packages/*/test", "scripts/*.ts"]
+  "include": ["packages/core/src", "packages/adapters/src", "packages/cli/src", "packages/server/src", "packages/webhook/src", "packages/hosted/src", "packages/*/test", "scripts/*.ts"]
 }

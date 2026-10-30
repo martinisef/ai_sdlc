@@ -58,6 +58,7 @@ export default defineConfig({
               { text: 'CI · Bitbucket', link: '/reference/ci-bitbucket' },
               { text: 'Control bands', link: '/reference/bands' },
               { text: 'Evals', link: '/reference/evals' },
+              { text: 'RFC: hosted', link: '/rfc/hosted' },
             ],
           },
         ],

@@ -12,5 +12,5 @@
   "bin": { "sdlc": "./dist/sdlc.mjs" },
   "files": ["dist"],
   "publishConfig": { "access": "public", "provenance": true },
-  "devDependencies": { "@ai-native-sdlc/core": "*", "@ai-native-sdlc/adapters": "*", "@ai-native-sdlc/server": "*" }
+  "devDependencies": { "@ai-native-sdlc/core": "*", "@ai-native-sdlc/adapters": "*", "@ai-native-sdlc/server": "*", "@ai-native-sdlc/webhook": "*", "@ai-native-sdlc/hosted": "*" }
 }

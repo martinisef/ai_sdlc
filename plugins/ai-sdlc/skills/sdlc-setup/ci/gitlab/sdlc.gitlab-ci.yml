@@ -73,3 +73,16 @@ sdlc:bands:
     - git config user.name "ai-sdlc-bot" && git config user.email "ai-sdlc-bot@noreply"
     - git remote set-url origin "https://oauth2:${GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
     - npx -y @ai-native-sdlc/cli@0 bands check
+
+# @claude in MR comments: triggered by `sdlc webhook` (pipeline trigger with SDLC_JOB=mention).
+# Remove this job if the organization does not run the service.
+sdlc:mention:
+  extends: .sdlc-agent
+  stage: review
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "trigger" && $SDLC_JOB == "mention"
+  script:
+    - git config user.name "ai-sdlc-bot" && git config user.email "ai-sdlc-bot@noreply"
+    - git remote set-url origin "https://oauth2:${GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
+    - git checkout -B "$CI_COMMIT_REF_NAME"
+    - npx -y @ai-native-sdlc/cli@0 ci mention

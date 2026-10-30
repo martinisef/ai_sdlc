@@ -15,7 +15,7 @@ En `.sdlc/config.json` completá `vcs.workspace` y `vcs.repo` (el remote puede n
 ## Diferencias con GitHub/GitLab
 - **Sin CLI oficial**: `sdlc vcs` usa la API REST 2.0 (crear PR, comentar, leer comentarios y statuses).
 - **Review**: step con el agente headless (`claude -p`, o `ci.agent`) + comentario por API. No hay comentarios inline en el MVP: un comentario resumen con `archivo:línea`.
-- **`@claude` en comentarios**: Pipelines no se dispara por comentarios. Requiere webhook "Pull request comment created" → servicio (Agent SDK). Fuera del MVP.
+- **`@claude` en comentarios**: Pipelines no se dispara por comentarios, así que lo hace un servicio chico: `sdlc webhook` (uno por workspace; ver "@claude en comentarios" más abajo) recibe el webhook "Pull request: Comment created" y corre el custom pipeline `sdlc-mention`, que corre `sdlc ci mention`. Sin el servicio, sacá `sdlc-mention`.
 - **Draft PRs**: soportados por la API (`draft: true`); si el workspace no los tiene, el PR del intent se abre normal con "[intent]" en el título.
 
 ## Autenticación
@@ -29,3 +29,11 @@ En `.sdlc/config.json` completá `vcs.workspace` y `vcs.repo` (el remote puede n
 4. **Default reviewers** / code owners para `CLAUDE.md`, `REVIEW.md`, `.claude/`, `evals/` (disponibilidad según plan).
 5. **Schedule** nocturno del pipeline custom `agent-evals` (y uno diario para `control-bands` con Stage 6).
 6. Integración **Jira ↔ Bitbucket** activada en el sitio de Atlassian (linkea ramas y PRs con la key automáticamente).
+
+## @claude en comentarios
+1. Corré el servicio donde Bitbucket lo alcance (HTTPS): `docker run -p 8787:8787 -e SDLC_WEBHOOK_SECRET=… -e BITBUCKET_ACCESS_TOKEN=… ghcr.io/martinisef/sdlc-webhook`, o `npx -y @ai-native-sdlc/cli@0 webhook` en cualquier host con Node ≥ 22.
+2. Repository (o workspace) settings → Webhooks: URL `https://<host>/bitbucket`, Secret = `SDLC_WEBHOOK_SECRET`, trigger **Pull request: Comment created**.
+3. Dale al servicio un token que pueda correr pipelines (`BITBUCKET_ACCESS_TOKEN`, access token de repositorio o workspace con Pipelines write).
+4. Opcional: `SDLC_ALLOWED_AUTHORS=ana,juan` limita quién puede disparar al agente; `SDLC_MENTION=@agent` cambia la mención.
+
+El comentario es input no confiable. Por defecto el agente solo responde (`ci.mention_mode: read`); con `edit` puede commitear cambios dentro del plan aprobado en la rama del PR, y los guardrails siguen aplicando. Las respuestas van marcadas para que nunca vuelvan a disparar al agente.
