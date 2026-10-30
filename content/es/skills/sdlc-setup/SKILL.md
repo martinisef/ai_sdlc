@@ -38,7 +38,7 @@ Agrupá en 2-3 rondas, no más de 4 preguntas por ronda:
 ## 3. Copiar lo fijo
 Copiá `scaffold/` al proyecto **sin pisar archivos existentes**. Si un archivo ya existe (`CLAUDE.md`, `REVIEW.md`), mostrá qué secciones faltan y proponé agregarlas (merge), no reemplazar.
 Agregá a `.gitignore`: `.claude/settings.local.json` (`.sdlc/.gitignore` ya excluye el estado local: `events.jsonl`, `fix-lock`).
-Nada que hacer ejecutable: los evals y el CI corren con `sdlc ci` (`npx -y @ai-native-sdlc/cli@0 ci …` en los pipelines).
+Nada que hacer ejecutable: los evals y el CI corren con `sdlc ci` (`npx -y @morsadev/sdlc@0 ci …` en los pipelines).
 
 ## 4. Generar lo específico
 Seguí `stacks/<lang>.md` (si no existe, `stacks/_unknown.md`) y `ci/<provider>.md`:

@@ -26,5 +26,5 @@ jobs:
           SDLC_PLUGIN_TOKEN: ${{ secrets.SDLC_PLUGIN_TOKEN }}
           EVAL_MIN_PASS_RATE: '0.8'
         run: |
-          npx -y @ai-native-sdlc/cli@0 ci bootstrap
-          npx -y @ai-native-sdlc/cli@0 ci evals
+          npx -y @morsadev/sdlc@0 ci bootstrap
+          npx -y @morsadev/sdlc@0 ci evals

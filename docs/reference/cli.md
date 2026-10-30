@@ -1,8 +1,8 @@
 # CLI
 
 ```bash
-npm i -D @ai-native-sdlc/cli     # project (recommended: the git hooks find it in node_modules)
-npm i -g @ai-native-sdlc/cli     # or global
+npm i -D @morsadev/sdlc     # project (recommended: the git hooks find it in node_modules)
+npm i -g @morsadev/sdlc     # or global
 npx sdlc --help
 ```
 

@@ -16,7 +16,7 @@ idea / ticket / incident
 
 ```bash
 cd your-repo
-npm i -D @ai-native-sdlc/cli
+npm i -D @morsadev/sdlc
 npx sdlc init        # detect stack, VCS and agents; write .sdlc/config.json; scaffold; generate agent files + git hooks
 npx sdlc doctor      # health checks + what each guardrail enforces, per agent
 ```
@@ -59,7 +59,7 @@ Both are initialized with `sdlc` for all three agents, and the product evals in 
 | `packages/core` | config, changes and gates, policies (guardrails), git, VCS, Jira, bands, metrics |
 | `packages/adapters` | `sdlc sync` renderers (Claude Code, Cursor, AGENTS.md), hook adapters, git hooks, doctor |
 | `packages/server`, `packages/ui` | the local dashboard (Hono + React) |
-| `packages/cli` | the `sdlc` CLI, bundled into one file and published as `@ai-native-sdlc/cli` |
+| `packages/cli` | the `sdlc` CLI, bundled into one file and published as `@morsadev/sdlc` |
 | `content/{en,es}` | skills, subagents, scaffold and CI templates (the source; `en` first) |
 | `plugins/ai-sdlc` | the Claude Code plugin, **generated** by `npm run build` |
 | `evals/`, `examples/` | product evals and the projects they run on |

@@ -14,7 +14,7 @@
 .sdlc-agent:
   extends: .sdlc-base
   before_script:
-    - npx -y @ai-native-sdlc/cli@0 ci bootstrap
+    - npx -y @morsadev/sdlc@0 ci bootstrap
 
 sdlc:review:
   extends: .sdlc-agent
@@ -22,7 +22,7 @@ sdlc:review:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_DRAFT != "true"
   script:
-    - npx -y @ai-native-sdlc/cli@0 ci review
+    - npx -y @morsadev/sdlc@0 ci review
   artifacts:
     paths: [review-tally.txt]
     when: always
@@ -37,7 +37,7 @@ sdlc:intent-to-spec:
     - git config user.name "ai-sdlc-bot" && git config user.email "ai-sdlc-bot@noreply"
     - git remote set-url origin "https://oauth2:${GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
     - git checkout -B "$CI_COMMIT_BRANCH"
-    - npx -y @ai-native-sdlc/cli@0 ci intent-to-spec
+    - npx -y @morsadev/sdlc@0 ci intent-to-spec
 
 sdlc:jira-merged:
   extends: .sdlc-base
@@ -45,7 +45,7 @@ sdlc:jira-merged:
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "push"
   script:
-    - npx -y @ai-native-sdlc/cli@0 ci jira-merged
+    - npx -y @morsadev/sdlc@0 ci jira-merged
 
 sdlc:evals:
   extends: .sdlc-agent
@@ -57,7 +57,7 @@ sdlc:evals:
   variables:
     EVAL_MIN_PASS_RATE: "0.8"
   script:
-    - npx -y @ai-native-sdlc/cli@0 ci evals
+    - npx -y @morsadev/sdlc@0 ci evals
 
 # Stage 6 · control bands (ops/bands.yaml). Schedule it with the variable SDLC_JOB=bands (e.g. daily).
 # Broken bands: 1σ log · 2σ read-only diagnosis · 3σ incident intent on change/incident-* (+ draft MR when routed).
@@ -72,7 +72,7 @@ sdlc:bands:
   script:
     - git config user.name "ai-sdlc-bot" && git config user.email "ai-sdlc-bot@noreply"
     - git remote set-url origin "https://oauth2:${GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
-    - npx -y @ai-native-sdlc/cli@0 bands check
+    - npx -y @morsadev/sdlc@0 bands check
 
 # @claude in MR comments: triggered by `sdlc webhook` (pipeline trigger with SDLC_JOB=mention).
 # Remove this job if the organization does not run the service.
@@ -85,4 +85,4 @@ sdlc:mention:
     - git config user.name "ai-sdlc-bot" && git config user.email "ai-sdlc-bot@noreply"
     - git remote set-url origin "https://oauth2:${GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
     - git checkout -B "$CI_COMMIT_REF_NAME"
-    - npx -y @ai-native-sdlc/cli@0 ci mention
+    - npx -y @morsadev/sdlc@0 ci mention

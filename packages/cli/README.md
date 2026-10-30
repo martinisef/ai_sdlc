@@ -1,9 +1,9 @@
-# @ai-native-sdlc/cli
+# @morsadev/sdlc
 
 `sdlc`: the AI-native SDLC loop (intent → spec → plan → build → ship → incident) for Claude Code, Cursor and AGENTS.md agents. It provides human gates recorded in git, guardrails enforced by agent hooks and git hooks, a local dashboard, CI for GitHub, GitLab and Bitbucket, and Stage 6 control bands.
 
 ```bash
-npm i -D @ai-native-sdlc/cli
+npm i -D @morsadev/sdlc
 npx sdlc init          # config, scaffold, agent files, git hooks
 npx sdlc doctor        # health + enforcement matrix per agent
 npx sdlc ui            # local dashboard

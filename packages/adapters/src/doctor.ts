@@ -66,7 +66,7 @@ export function doctor(root: string): { checks: Check[]; agents: AgentId[]; matr
   const localCli = existsSync(join(root, 'node_modules/.bin/sdlc'));
   const envCli = process.env.SDLC_BIN;
   const found = Boolean(envCli) || localCli || has('sdlc');
-  add('cli', found, envCli ? `sdlc CLI from SDLC_BIN (${envCli})` : localCli ? 'sdlc CLI in node_modules' : has('sdlc') ? 'sdlc CLI on PATH' : 'sdlc CLI not installed: hooks fail open. `npm i -D @ai-native-sdlc/cli` (or global)', found ? 'info' : 'warn');
+  add('cli', found, envCli ? `sdlc CLI from SDLC_BIN (${envCli})` : localCli ? 'sdlc CLI in node_modules' : has('sdlc') ? 'sdlc CLI on PATH' : 'sdlc CLI not installed: hooks fail open. `npm i -D @morsadev/sdlc` (or global)', found ? 'info' : 'warn');
   if (agents.includes('cursor')) add('cursor', existsSync(join(root, '.cursor/hooks.json')), existsSync(join(root, '.cursor/hooks.json')) ? 'Cursor hooks configured' : 'Cursor enabled but .cursor/hooks.json missing — run `sdlc sync`');
   if (agents.includes('agents-md')) add('agents-md', existsSync(join(root, 'AGENTS.md')), existsSync(join(root, 'AGENTS.md')) ? 'AGENTS.md present' : 'AGENTS.md missing — run `sdlc sync`');
   const provider = detectProvider(root, loaded);

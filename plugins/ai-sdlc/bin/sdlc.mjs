@@ -29404,7 +29404,7 @@ here="$(cd "$(dirname "$0")/../.." && pwd)"
 if [ -n "$SDLC_BIN" ]; then exec $SDLC_BIN "$@"; fi
 if [ -x "$here/node_modules/.bin/sdlc" ]; then exec "$here/node_modules/.bin/sdlc" "$@"; fi
 if command -v sdlc >/dev/null 2>&1; then exec sdlc "$@"; fi
-echo "ai-sdlc: sdlc CLI not found (npm i -D @ai-native-sdlc/cli); guardrail skipped" >&2
+echo "ai-sdlc: sdlc CLI not found (npm i -D @morsadev/sdlc); guardrail skipped" >&2
 exit 0
 `;
     BIN = ".sdlc/bin/sdlc";
@@ -29483,7 +29483,7 @@ function doctor(root) {
   const localCli = existsSync8(join10(root, "node_modules/.bin/sdlc"));
   const envCli = process.env.SDLC_BIN;
   const found = Boolean(envCli) || localCli || has("sdlc");
-  add("cli", found, envCli ? `sdlc CLI from SDLC_BIN (${envCli})` : localCli ? "sdlc CLI in node_modules" : has("sdlc") ? "sdlc CLI on PATH" : "sdlc CLI not installed: hooks fail open. `npm i -D @ai-native-sdlc/cli` (or global)", found ? "info" : "warn");
+  add("cli", found, envCli ? `sdlc CLI from SDLC_BIN (${envCli})` : localCli ? "sdlc CLI in node_modules" : has("sdlc") ? "sdlc CLI on PATH" : "sdlc CLI not installed: hooks fail open. `npm i -D @morsadev/sdlc` (or global)", found ? "info" : "warn");
   if (agents.includes("cursor")) add("cursor", existsSync8(join10(root, ".cursor/hooks.json")), existsSync8(join10(root, ".cursor/hooks.json")) ? "Cursor hooks configured" : "Cursor enabled but .cursor/hooks.json missing \u2014 run `sdlc sync`");
   if (agents.includes("agents-md")) add("agents-md", existsSync8(join10(root, "AGENTS.md")), existsSync8(join10(root, "AGENTS.md")) ? "AGENTS.md present" : "AGENTS.md missing \u2014 run `sdlc sync`");
   const provider = detectProvider(root, loaded);

@@ -6,7 +6,7 @@ How a platform team publishes, distributes and maintains the loop for an organiz
 
 | Channel | For | How |
 |---|---|---|
-| npm: `@ai-native-sdlc/cli` | every agent, CI | `npm i -D @ai-native-sdlc/cli`. CI templates run `npx -y @ai-native-sdlc/cli@0 ci <cmd>`. |
+| npm: `@morsadev/sdlc` | every agent, CI | `npm i -D @morsadev/sdlc`. CI templates run `npx -y @morsadev/sdlc@0 ci <cmd>`. |
 | Claude Code marketplace: the `ai-sdlc` plugin | Claude Code users | the skills, subagents and hooks, plus a bundled CLI in the plugin's `bin/` |
 | Project files (`sdlc sync`) | every agent | skills and hooks committed into each repo; no plugin needed |
 
@@ -28,7 +28,7 @@ To ship a customized catalog (your own policies, stacks and templates), fork thi
 Releases use [changesets](https://github.com/changesets/changesets):
 
 1. Run `npx changeset` in each PR that changes behavior.
-2. On `main`, the release workflow opens a "Version packages" PR. That PR bumps `@ai-native-sdlc/cli` and regenerates the plugin and `marketplace.json` with the same version.
+2. On `main`, the release workflow opens a "Version packages" PR. That PR bumps `@morsadev/sdlc` and regenerates the plugin and `marketplace.json` with the same version.
 3. Merging it publishes to npm with provenance.
 
 The CLI is the only published package. The other workspaces are bundled into it.

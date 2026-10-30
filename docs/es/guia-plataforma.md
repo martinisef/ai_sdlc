@@ -6,7 +6,7 @@ Cómo un equipo de plataforma publica, distribuye y mantiene el loop para la org
 
 | Canal | Para | Cómo |
 |---|---|---|
-| npm: `@ai-native-sdlc/cli` | todos los agentes, CI | `npm i -D @ai-native-sdlc/cli`. Los templates de CI usan `npx -y @ai-native-sdlc/cli@0 ci <cmd>`. |
+| npm: `@morsadev/sdlc` | todos los agentes, CI | `npm i -D @morsadev/sdlc`. Los templates de CI usan `npx -y @morsadev/sdlc@0 ci <cmd>`. |
 | Marketplace de Claude Code: plugin `ai-sdlc` | quienes usan Claude Code | skills, subagents y hooks, con el CLI empaquetado en el `bin/` del plugin |
 | Archivos del proyecto (`sdlc sync`) | todos los agentes | skills y hooks commiteados en cada repo; no hace falta el plugin |
 
@@ -28,7 +28,7 @@ Para un catálogo propio (tus políticas, stacks y templates), hacé un fork de 
 Los releases usan [changesets](https://github.com/changesets/changesets):
 
 1. Corré `npx changeset` en cada PR que cambie comportamiento.
-2. En `main`, el workflow de release abre un PR "Version packages". Ese PR sube la versión de `@ai-native-sdlc/cli` y regenera el plugin y `marketplace.json` con la misma versión.
+2. En `main`, el workflow de release abre un PR "Version packages". Ese PR sube la versión de `@morsadev/sdlc` y regenera el plugin y `marketplace.json` con la misma versión.
 3. Al mergearlo, se publica en npm con provenance.
 
 ## 3. Instalarlo

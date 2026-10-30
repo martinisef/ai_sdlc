@@ -32,6 +32,6 @@ build:triage:
   needs: [build]
   before_script:
     - export SDLC_PLUGIN_TOKEN_USER=oauth2
-    - npx -y @ai-native-sdlc/cli@0 ci bootstrap
+    - npx -y @morsadev/sdlc@0 ci bootstrap
   script:
-    - npx -y @ai-native-sdlc/cli@0 ci triage build.log
+    - npx -y @morsadev/sdlc@0 ci triage build.log

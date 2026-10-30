@@ -6,7 +6,7 @@ This covers Codex, GitHub Copilot, Windsurf, Gemini CLI, and any other agent tha
 
 ```bash
 cd your-repo
-npm i -D @ai-native-sdlc/cli
+npm i -D @morsadev/sdlc
 npx sdlc init                 # pick "agents-md" among the agents
 ```
 

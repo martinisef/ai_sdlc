@@ -1,5 +1,5 @@
 {
-  "name": "@ai-native-sdlc/cli",
+  "name": "@morsadev/sdlc",
   "version": "0.3.0",
   "description": "AI-native SDLC loop (intent → spec → plan → build → ship → incident) for Claude Code, Cursor and AGENTS.md agents, with a local dashboard.",
   "type": "module",
