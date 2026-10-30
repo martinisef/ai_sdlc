@@ -11,7 +11,7 @@
       "name": "ai-sdlc",
       "source": "./plugins/ai-sdlc",
       "description": "AI-native loop: intent → spec → plan → build → ship → maintain, with guardrails, guided setup and GitHub/GitLab/Bitbucket and Jira integration.",
-      "version": "0.2.0"
+      "version": "0.3.0"
     }
   ]
 }

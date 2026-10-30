@@ -33936,7 +33936,7 @@ _Pushed ${git(c.root, ["rev-parse", "--short", "HEAD"])} to ${headRef(c)}._`;
 }
 
 // packages/cli/src/main.ts
-var VERSION = true ? "0.2.0" : JSON.parse(readFileSync16(new URL("../package.json", import.meta.url), "utf8")).version;
+var VERSION = true ? "0.3.0" : JSON.parse(readFileSync16(new URL("../package.json", import.meta.url), "utf8")).version;
 var HELP = `sdlc ${VERSION} \u2014 AI-native SDLC loop (intent \u2192 spec \u2192 plan \u2192 build \u2192 ship \u2192 incident)
 
 Setup
