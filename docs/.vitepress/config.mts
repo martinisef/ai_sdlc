@@ -43,6 +43,7 @@ export default defineConfig({
             text: 'Guides',
             items: [
               { text: 'For teams', link: '/guide/team' },
+              { text: 'Running a pilot', link: '/guide/pilot' },
               { text: 'For platform teams', link: '/guide/platform' },
               { text: 'Managed settings', link: '/guide/managed-settings' },
             ],
