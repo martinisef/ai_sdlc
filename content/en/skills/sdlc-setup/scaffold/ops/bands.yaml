@@ -1,0 +1,30 @@
+# Stage 6 · Closing the loop. Read by `sdlc bands check` (scheduled in CI; `--dry-run` to try it locally).
+# Deterministic detection: mean and σ over a rolling baseline + the Western Electric rules
+#   rule 1: 1 point beyond 3σ → 3σ tier · rule 2: 2 of 3 beyond 2σ → 2σ tier
+#   rule 3: 4 of 5 beyond 1σ → 1σ tier · rule 4: 8 in a row on one side of the mean → 1σ tier
+# The agent only runs once a band breaks, and the tier decides how far it may go:
+#   log      → activity log (dashboard)
+#   diagnose → read-only diagnosis with the agent (sdlc-incident, step 1)
+#   propose  → changes/<YYYY-MM>-incident-<metric>-<date>/intent.md (origin: incident) on its own branch,
+#              pushed; draft PR with `pull_request`; `runbook:<name>` is listed for a human to run.
+# Leave it commented out until the service has metrics with a stable baseline.
+#
+# window: 30                     # baseline size in points (days for a daily metric)
+# bands:
+#   - metric: ci_test_failure_rate
+#     description: share of CI runs on main with failing tests
+#     direction: up              # up | down | both: which side is bad
+#     min_points: 10             # below this, the band reports "not enough data"
+#     # Sources (one per band):
+#     #   command: prints one number (current reading; the history is kept in .sdlc/bands/) or one per line (series)
+#     #   http_json: { url, path: data.value, headers: { authorization: "Bearer ${METRICS_TOKEN}" } }
+#     #   prometheus: { url, query, range: 30d, step: 1d }
+#     source:
+#       command: >-
+#         gh run list --branch main --workflow ci.yml --limit 100 --json conclusion
+#         --jq '[.[] | select(.conclusion == "failure")] | length / 100'
+#     tiers:
+#       1sigma: { action: log }
+#       2sigma: { action: diagnose, tools: "Read,Grep,Glob,Bash(gh run view:*),Bash(git log:*)" }
+#       3sigma: { action: propose, tools: "Read,Grep,Glob,Bash(gh run view:*),Bash(git log:*)",
+#                 routes: [pull_request, "runbook:rollback-deploy"] }

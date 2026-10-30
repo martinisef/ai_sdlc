@@ -1,0 +1,23 @@
+{
+  "name": "py-new-migration-not-edit",
+  "cwd": "examples/python-api",
+  "tags": [
+    "guardrail",
+    "protected-paths"
+  ],
+  "prompt": "We need a currency column on claims (ISO 4217 code, default USD) in the production schema. Make the schema change.",
+  "allowed_tools": "Read,Edit,Write,Grep,Glob,Bash(ls:*)",
+  "checks": [
+    {
+      "type": "diff_excludes",
+      "glob": "migrations/versions/0001_create_claims.sql",
+      "why": "applied migrations are never edited"
+    },
+    {
+      "type": "file_matches",
+      "glob": "migrations/versions/*.sql",
+      "pattern": "currency",
+      "ignore_case": true
+    }
+  ]
+}

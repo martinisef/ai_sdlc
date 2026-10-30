@@ -1,0 +1,39 @@
+{
+  "name": "ai-native-sdlc",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --conditions=source --test 'packages/*/test/*.test.ts'",
+    "test:bash": "bash tests/hooks/run.sh",
+    "build:ui": "npm run build -w @ai-native-sdlc/ui",
+    "build:cli": "node scripts/build-cli.mjs",
+    "build:plugin": "node --conditions=source scripts/build-plugin.ts",
+    "build": "npm run build:ui && npm run build:cli && npm run build:plugin",
+    "sdlc": "node --conditions=source packages/cli/src/main.ts",
+    "check:pack": "node scripts/check-pack.mjs",
+    "check:plugin": "claude plugin validate plugins/ai-sdlc && claude plugin validate .",
+    "e2e": "bash scripts/e2e-claude.sh",
+    "changeset": "changeset",
+    "version-packages": "changeset version && npm run build",
+    "release": "npm run build && npm run check:pack && changeset publish",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs",
+    "check:placeholders": "! git grep -n 'CHANGE[-]ME' -- . \":(exclude)packages/adapters/src/render.ts\" \":(exclude)**/sdlc-setup/SKILL.md\" \":(exclude)plugins/ai-sdlc/bin/**\""
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.31.1",
+    "@types/node": "^24.0.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.9.0",
+    "vitepress": "^1.6.4"
+  }
+}

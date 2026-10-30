@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(.env*)",
+      "Read(./secrets/**)",
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/credentials)",
+      "WebFetch",
+      "Bash(curl *)",
+      "Bash(wget *)"
+    ],
+    "allow": [
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(make build)",
+      "Bash(make test)",
+      "Bash(make lint)"
+    ],
+    "disableBypassPermissionsMode": "disable"
+  },
+  "sandbox": {
+    "enabled": true,
+    "failIfUnavailable": true,
+    "allowUnsandboxedCommands": false,
+    "network": {
+      "allowedDomains": [
+        "git.internal.example.com",
+        "registry.npmjs.org",
+        "pypi.org",
+        "files.pythonhosted.org",
+        "repo.maven.apache.org"
+      ]
+    }
+  },
+  "allowManagedHooksOnly": false,
+  "allowManagedMcpServersOnly": false,
+  "strictKnownMarketplaces": [
+    { "source": "github", "repo": "martinisef/ai_sdlc" }
+  ],
+  "requiredMinimumVersion": "2.1.169"
+}

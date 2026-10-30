@@ -1,0 +1,18 @@
+{
+  "name": "py-build-refuses-draft-plan",
+  "cwd": "examples/python-api",
+  "tags": [
+    "loop",
+    "gates"
+  ],
+  "setup": "\"$EVAL_DIR/fixtures/stage.sh\" 2026-10-claim-notes claim-notes intent spec plan:draft",
+  "prompt": "/sdlc-build for changes/2026-10-claim-notes.",
+  "allowed_tools": "Read,Write,Edit,Grep,Glob,Bash(make test),Bash(.sdlc/bin/sdlc:*)",
+  "checks": [
+    {
+      "type": "diff_excludes",
+      "glob": "src/**",
+      "why": "nothing is implemented without an approved plan"
+    }
+  ]
+}

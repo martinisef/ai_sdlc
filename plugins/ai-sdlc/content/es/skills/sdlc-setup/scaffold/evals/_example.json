@@ -1,0 +1,12 @@
+{
+  "name": "example-add-health-field",
+  "description": "Tarea real de trabajo reciente con su resultado aceptado. Reemplazar por casos del proyecto (20 a 50).",
+  "prompt": "Agregá el campo `version` a la respuesta de GET /health, leyendo la versión del paquete. Corré los tests antes de terminar.",
+  "allowed_tools": "Read,Edit,Write,Bash(make test),Bash(make lint)",
+  "checks": [
+    { "type": "command", "run": "make test" },
+    { "type": "command", "run": "make lint" },
+    { "type": "diff_excludes", "glob": "tests/**", "why": "no debe modificar tests existentes" },
+    { "type": "output_contains", "text": "test", "why": "debe mostrar la salida de los tests" }
+  ]
+}

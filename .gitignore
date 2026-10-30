@@ -1,0 +1,12 @@
+node_modules/
+dist/
+*.tgz
+.DS_Store
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+docs/.vitepress/cache/
+docs/.vitepress/dist/
+evals-report.json
+packages/cli/LICENSE

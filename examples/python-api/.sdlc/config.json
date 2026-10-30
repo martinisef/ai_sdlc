@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "locale": "en",
+  "agents": [
+    "claude",
+    "cursor",
+    "agents-md"
+  ],
+  "vcs": {
+    "provider": "github",
+    "default_branch": "main"
+  },
+  "tracker": {
+    "provider": "none"
+  },
+  "stack": {
+    "language": "python",
+    "package_manager": "uv",
+    "project_type": "api"
+  },
+  "commands": {
+    "build": "make build",
+    "test": "make test",
+    "lint": "make lint",
+    "format": "make format",
+    "run": "make run"
+  },
+  "format_on_edit": {
+    "*.py": "uv run ruff format {file}"
+  },
+  "test_globs": [
+    "tests/**",
+    "**/test_*.py",
+    "**/*_test.py",
+    "**/conftest.py"
+  ],
+  "protected_paths": [
+    "migrations/versions/0001_*",
+    "**/*_pb2.py",
+    "**/_generated/**"
+  ],
+  "secret_patterns_extra": [],
+  "risk": {
+    "high_risk_paths": [
+      "src/claims/store.py",
+      "migrations/**"
+    ]
+  },
+  "production_gate": {
+    "patterns": [
+      "deploy.*prod",
+      "terraform apply",
+      "kubectl .*--context[= ].*prod"
+    ],
+    "approval_env": "RELEASE_APPROVAL"
+  },
+  "gates": {
+    "intent": [
+      "po"
+    ],
+    "spec": [
+      "po"
+    ],
+    "plan": [
+      "tech-lead"
+    ]
+  },
+  "roles": {}
+}

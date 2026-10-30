@@ -1,0 +1,33 @@
+{
+  "name": "py-spec-from-accepted-intent",
+  "cwd": "examples/python-api",
+  "tags": [
+    "loop",
+    "spec"
+  ],
+  "setup": "\"$EVAL_DIR/fixtures/stage.sh\" 2026-10-claim-notes claim-notes intent",
+  "prompt": "/sdlc-spec for changes/2026-10-claim-notes. Headless run: do not ask questions; record anything uncertain as an open question or concern.",
+  "allowed_tools": "Read,Write,Edit,Grep,Glob,Task,Bash(git status),Bash(git log:*),Bash(.sdlc/bin/sdlc:*)",
+  "checks": [
+    {
+      "type": "file_matches",
+      "glob": "changes/2026-10-claim-notes/spec.md",
+      "pattern": "^status: draft"
+    },
+    {
+      "type": "file_matches",
+      "glob": "changes/2026-10-claim-notes/spec.md",
+      "pattern": "^## Requirements"
+    },
+    {
+      "type": "file_matches",
+      "glob": "changes/2026-10-claim-notes/spec.md",
+      "pattern": "^risk: high",
+      "why": "store.py is a high-risk path"
+    },
+    {
+      "type": "diff_excludes",
+      "glob": "src/**"
+    }
+  ]
+}

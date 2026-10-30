@@ -1,0 +1,75 @@
+# Jobs for the AI-native loop. Included from .gitlab-ci.yml:
+#   include:
+#     - local: ci/sdlc.gitlab-ci.yml
+# Variables (Settings → CI/CD → Variables, masked + protected as appropriate):
+#   ANTHROPIC_API_KEY (or OPENAI_API_KEY / CURSOR_API_KEY when ci.agent is codex / cursor)
+#   GITLAB_TOKEN (project access token, scope api) · SDLC_PLUGIN_TOKEN (if the marketplace is private)
+#   JIRA_EMAIL + JIRA_API_TOKEN (if there is Jira)
+
+.sdlc-base:
+  image: node:22
+  variables:
+    SDLC_PLUGIN_TOKEN_USER: oauth2
+
+.sdlc-agent:
+  extends: .sdlc-base
+  before_script:
+    - npx -y @ai-native-sdlc/cli@0 ci bootstrap
+
+sdlc:review:
+  extends: .sdlc-agent
+  stage: review
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_DRAFT != "true"
+  script:
+    - npx -y @ai-native-sdlc/cli@0 ci review
+  artifacts:
+    paths: [review-tally.txt]
+    when: always
+
+sdlc:intent-to-spec:
+  extends: .sdlc-agent
+  stage: loop
+  rules:
+    - if: $CI_COMMIT_BRANCH =~ /^change\// && $CI_PIPELINE_SOURCE == "push"
+      changes: ['changes/**/intent.md']
+  script:
+    - git config user.name "ai-sdlc-bot" && git config user.email "ai-sdlc-bot@noreply"
+    - git remote set-url origin "https://oauth2:${GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
+    - git checkout -B "$CI_COMMIT_BRANCH"
+    - npx -y @ai-native-sdlc/cli@0 ci intent-to-spec
+
+sdlc:jira-merged:
+  extends: .sdlc-base
+  stage: loop
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "push"
+  script:
+    - npx -y @ai-native-sdlc/cli@0 ci jira-merged
+
+sdlc:evals:
+  extends: .sdlc-agent
+  stage: evals
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $SDLC_JOB != "bands"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes: ['CLAUDE.md', 'AGENTS.md', '.claude/**/*', '.cursor/**/*', '.agents/**/*', '.sdlc/config.json', 'evals/**/*']
+  variables:
+    EVAL_MIN_PASS_RATE: "0.8"
+  script:
+    - npx -y @ai-native-sdlc/cli@0 ci evals
+
+# Stage 6 · control bands (ops/bands.yaml). Schedule it with the variable SDLC_JOB=bands (e.g. daily).
+# Broken bands: 1σ log · 2σ read-only diagnosis · 3σ incident intent on change/incident-* (+ draft MR when routed).
+sdlc:bands:
+  extends: .sdlc-agent
+  stage: loop
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule" && $SDLC_JOB == "bands"
+  cache:
+    key: sdlc-bands
+    paths: [.sdlc/bands/]
+  script:
+    - git config user.name "ai-sdlc-bot" && git config user.email "ai-sdlc-bot@noreply"
+    - git remote set-url origin "https://oauth2:${GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
+    - npx -y @ai-native-sdlc/cli@0 bands check

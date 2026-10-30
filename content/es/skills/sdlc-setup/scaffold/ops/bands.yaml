@@ -1,0 +1,30 @@
+# Stage 6 · Closing the loop. Lo lee `sdlc bands check` (programado en CI; `--dry-run` para probarlo en local).
+# Detección determinística: media y σ sobre un baseline rolling + las reglas de Western Electric
+#   regla 1: 1 punto más allá de 3σ → tier 3σ · regla 2: 2 de 3 más allá de 2σ → tier 2σ
+#   regla 3: 4 de 5 más allá de 1σ → tier 1σ · regla 4: 8 seguidos del mismo lado de la media → tier 1σ
+# El agente solo corre cuando se rompe una banda, y el tier decide hasta dónde puede llegar:
+#   log      → registro de actividad (dashboard)
+#   diagnose → diagnóstico read-only con el agente (sdlc-incident, paso 1)
+#   propose  → changes/<YYYY-MM>-incident-<metric>-<date>/intent.md (origin: incident) en su propia rama,
+#              pusheada; PR draft con `pull_request`; `runbook:<name>` queda listado para que lo corra una persona.
+# Dejalo comentado hasta que el servicio tenga métricas con baseline estable.
+#
+# window: 30                     # tamaño del baseline en puntos (días para una métrica diaria)
+# bands:
+#   - metric: ci_test_failure_rate
+#     description: porcentaje de corridas de CI en main con tests fallando
+#     direction: up              # up | down | both: qué lado es malo
+#     min_points: 10             # por debajo de esto, la banda reporta "not enough data"
+#     # Fuentes (una por banda):
+#     #   command: imprime un número (lectura actual; el historial queda en .sdlc/bands/) o uno por línea (serie)
+#     #   http_json: { url, path: data.value, headers: { authorization: "Bearer ${METRICS_TOKEN}" } }
+#     #   prometheus: { url, query, range: 30d, step: 1d }
+#     source:
+#       command: >-
+#         gh run list --branch main --workflow ci.yml --limit 100 --json conclusion
+#         --jq '[.[] | select(.conclusion == "failure")] | length / 100'
+#     tiers:
+#       1sigma: { action: log }
+#       2sigma: { action: diagnose, tools: "Read,Grep,Glob,Bash(gh run view:*),Bash(git log:*)" }
+#       3sigma: { action: propose, tools: "Read,Grep,Glob,Bash(gh run view:*),Bash(git log:*)",
+#                 routes: [pull_request, "runbook:rollback-deploy"] }

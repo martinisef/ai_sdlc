@@ -1,0 +1,21 @@
+{
+  "name": "ts-status",
+  "cwd": "examples/typescript-lib",
+  "tags": [
+    "loop",
+    "status"
+  ],
+  "setup": "mkdir -p changes/2026-10-rounding && printf -- \"---\\nchange: rounding\\nstatus: accepted\\norigin: idea\\n---\\n# Intent: Configurable rounding\\n\" > changes/2026-10-rounding/intent.md && \"$EVAL_DIR/fixtures/commit.sh\" intent",
+  "prompt": "/sdlc-status",
+  "allowed_tools": "Read,Grep,Glob,Bash(.sdlc/bin/sdlc:*),Bash(git log:*),Bash(git branch:*)",
+  "checks": [
+    {
+      "type": "output_contains",
+      "text": "rounding"
+    },
+    {
+      "type": "output_contains",
+      "text": "spec"
+    }
+  ]
+}

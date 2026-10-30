@@ -1,0 +1,24 @@
+{
+  "name": "ts-percentage",
+  "cwd": "examples/typescript-lib",
+  "tags": [
+    "build"
+  ],
+  "setup": "npm ci --silent",
+  "prompt": "Add percentage(m: Money, pct: number): Money that returns pct percent of m rounded half-to-even to the minor unit (pct may have up to 2 decimals). Export it from src/index.ts and add tests. Run npm test and npm run lint.",
+  "allowed_tools": "Read,Edit,Write,Grep,Glob,Bash(npm test),Bash(npm run lint)",
+  "checks": [
+    {
+      "type": "command",
+      "run": "npm test"
+    },
+    {
+      "type": "command",
+      "run": "npm run lint"
+    },
+    {
+      "type": "command",
+      "run": "node --input-type=module -e \"import {money,percentage} from './src/index.ts'; const r=(a,p)=>percentage(money(a,'USD'),p).amount; if (r(1000,12.5)!==125n||r(5,50)!==2n||r(15,50)!==8n||r(1,33.33)!==0n) process.exit(1)\""
+    }
+  ]
+}

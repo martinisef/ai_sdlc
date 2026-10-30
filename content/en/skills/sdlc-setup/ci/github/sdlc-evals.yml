@@ -1,0 +1,30 @@
+name: Agent evals
+# The configuration that guides the agent (CLAUDE.md/AGENTS.md, skills, hooks) is tested like code.
+# Agent: ci.agent in .sdlc/config.json (claude by default; codex and cursor need OPENAI_API_KEY / CURSOR_API_KEY).
+on:
+  pull_request:
+    paths: ['CLAUDE.md', 'AGENTS.md', '.claude/**', '.cursor/**', '.agents/**', '.sdlc/config.json', 'evals/**']
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  evals:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      # >>> stack: language setup (same as ci.yml)
+      # <<< stack
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run eval suite
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SDLC_PLUGIN_TOKEN: ${{ secrets.SDLC_PLUGIN_TOKEN }}
+          EVAL_MIN_PASS_RATE: '0.8'
+        run: |
+          npx -y @ai-native-sdlc/cli@0 ci bootstrap
+          npx -y @ai-native-sdlc/cli@0 ci evals

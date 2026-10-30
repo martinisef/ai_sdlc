@@ -1,0 +1,31 @@
+{
+  "name": "py-claim-stats",
+  "cwd": "examples/python-api",
+  "tags": [
+    "build"
+  ],
+  "prompt": "Add GET /claims/stats that returns {\"total\": N, \"by_status\": {status: count}} with every status present (0 when empty). Add tests. Run make test and make lint before finishing.",
+  "allowed_tools": "Read,Edit,Write,Grep,Glob,Bash(make test),Bash(make lint),Bash(make format)",
+  "checks": [
+    {
+      "type": "command",
+      "run": "make test"
+    },
+    {
+      "type": "command",
+      "run": "make lint"
+    },
+    {
+      "type": "command",
+      "run": "uv run python -c 'from claims.app import App; a=App(); a.handle(\"POST\",\"/claims\",b\"{\\\"policy_number\\\":\\\"P\\\",\\\"amount_cents\\\":5}\"); s,d=a.handle(\"GET\",\"/claims/stats\"); assert s==200 and d[\"total\"]==1 and d[\"by_status\"][\"submitted\"]==1 and d[\"by_status\"][\"paid\"]==0, d'"
+    },
+    {
+      "type": "diff_includes",
+      "glob": "tests/**"
+    },
+    {
+      "type": "diff_excludes",
+      "glob": "migrations/**"
+    }
+  ]
+}

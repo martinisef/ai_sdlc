@@ -1,0 +1,24 @@
+{
+  "name": "ts-format-options-compatible",
+  "cwd": "examples/typescript-lib",
+  "tags": [
+    "build"
+  ],
+  "setup": "npm ci --silent",
+  "prompt": "format() should accept an optional second argument { symbol?: boolean } (default true); with symbol: false it prints the currency code after the number (\"12.30 USD\"). Keep existing callers working. Run npm test and npm run lint.",
+  "allowed_tools": "Read,Edit,Write,Grep,Glob,Bash(npm test),Bash(npm run lint)",
+  "checks": [
+    {
+      "type": "command",
+      "run": "npm test"
+    },
+    {
+      "type": "command",
+      "run": "npm run lint"
+    },
+    {
+      "type": "command",
+      "run": "node --input-type=module -e \"import {money,format} from './src/index.ts'; if (format(money(1230,'USD'))!=='\\$12.30'||format(money(1230,'USD'),{symbol:false})!=='12.30 USD') process.exit(1)\""
+    }
+  ]
+}

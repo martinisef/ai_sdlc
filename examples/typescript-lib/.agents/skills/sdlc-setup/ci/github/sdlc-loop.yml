@@ -1,0 +1,56 @@
+name: SDLC loop
+# Automates the handoffs between stages:
+#  - intent accepted on a change/** branch → generates spec.md (headless) and pushes it to the same branch
+#  - PR merged → transitions the Jira ticket to "merged"
+on:
+  push:
+    branches: ['change/**']
+    paths: ['changes/**/intent.md']
+  pull_request:
+    types: [closed]
+
+env:
+  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+  SDLC_PLUGIN_TOKEN: ${{ secrets.SDLC_PLUGIN_TOKEN }}
+
+jobs:
+  intent-to-spec:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Generate spec for accepted intents
+        env:
+          HEAD_REF: ${{ github.ref_name }}
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+        run: |
+          git config user.name "ai-sdlc[bot]"
+          git config user.email "ai-sdlc-bot@users.noreply.github.com"
+          npx -y @ai-native-sdlc/cli@0 ci bootstrap
+          npx -y @ai-native-sdlc/cli@0 ci intent-to-spec
+
+  jira-merged:
+    if: github.event_name == 'pull_request' && github.event.pull_request.merged
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Transition ticket to merged
+        env:
+          MERGED_BRANCH: ${{ github.head_ref }}
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+        run: |
+          npx -y @ai-native-sdlc/cli@0 ci jira-merged

@@ -1,0 +1,16 @@
+{
+  "name": "@ai-native-sdlc/cli",
+  "version": "0.2.0",
+  "description": "AI-native SDLC loop (intent → spec → plan → build → ship → incident) for Claude Code, Cursor and AGENTS.md agents, with a local dashboard.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "keywords": ["sdlc", "ai", "agents", "claude-code", "cursor", "agents-md", "guardrails", "spec-driven", "workflow", "ci"],
+  "homepage": "https://martinisef.github.io/ai_sdlc/",
+  "repository": { "type": "git", "url": "git+https://github.com/martinisef/ai_sdlc.git", "directory": "packages/cli" },
+  "bugs": "https://github.com/martinisef/ai_sdlc/issues",
+  "engines": { "node": ">=22.18" },
+  "bin": { "sdlc": "./dist/sdlc.mjs" },
+  "files": ["dist"],
+  "publishConfig": { "access": "public", "provenance": true },
+  "devDependencies": { "@ai-native-sdlc/core": "*", "@ai-native-sdlc/adapters": "*", "@ai-native-sdlc/server": "*" }
+}

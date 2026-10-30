@@ -1,0 +1,45 @@
+name: ai-native-sdlc
+description: Run a step of the AI-native SDLC loop (review, intent-to-spec, triage, jira-merged, evals, bands) with Claude Code, Codex or Cursor.
+author: ai-native-sdlc
+branding:
+  icon: refresh-cw
+  color: purple
+
+inputs:
+  command:
+    description: "sdlc subcommand: `ci review`, `ci intent-to-spec`, `ci triage build.log`, `ci jira-merged`, `ci evals`, `bands check` …"
+    required: true
+  agent:
+    description: claude | codex | cursor (default ci.agent in .sdlc/config.json, else claude)
+    required: false
+    default: ''
+  version:
+    description: '@ai-native-sdlc/cli version to run'
+    required: false
+    default: '0'
+  bootstrap:
+    description: Install the agent CLI first (not needed for `ci jira-merged`)
+    required: false
+    default: 'true'
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 22
+    - name: Bootstrap agent
+      if: inputs.bootstrap == 'true'
+      shell: bash
+      env:
+        SDLC_CI_AGENT: ${{ inputs.agent }}
+        SDLC_CLI: '@ai-native-sdlc/cli@${{ inputs.version }}'
+      run: npx -y "$SDLC_CLI" ci bootstrap
+    - name: sdlc ${{ inputs.command }}
+      shell: bash
+      env:
+        SDLC_CI_AGENT: ${{ inputs.agent }}
+        SDLC_CLI: '@ai-native-sdlc/cli@${{ inputs.version }}'
+        SDLC_COMMAND: ${{ inputs.command }}
+      # word splitting of the command is intended (`ci triage build.log`)
+      run: npx -y "$SDLC_CLI" $SDLC_COMMAND

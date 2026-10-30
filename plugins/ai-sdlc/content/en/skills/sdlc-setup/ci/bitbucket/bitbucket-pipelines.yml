@@ -1,0 +1,86 @@
+# Bitbucket Pipelines for the AI-native loop.
+# Repository variables (secured): ANTHROPIC_API_KEY (or OPENAI_API_KEY / CURSOR_API_KEY for ci.agent codex / cursor) · BITBUCKET_ACCESS_TOKEN (repository access token: pull requests write, repository write)
+#   SDLC_PLUGIN_TOKEN (if the marketplace is private) · JIRA_EMAIL + JIRA_API_TOKEN (if there is Jira)
+
+# >>> stack: language image (filled in by /sdlc-setup from stacks/<lang>.md)
+image: atlassian/default-image:4
+# <<< stack
+
+definitions:
+  caches:
+    sdlc-bands: .sdlc/bands
+  steps:
+    - step: &build
+        name: Build, lint, test
+        script:
+          # >>> stack: language setup
+          # <<< stack
+          - set -o pipefail
+          - (make build && make lint && make test) 2>&1 | tee build.log
+        after-script:
+          # Triage only if it failed and we are on a PR.
+          - if [ "$BITBUCKET_EXIT_CODE" != "0" ] && [ -n "$BITBUCKET_PR_ID" ]; then
+              export SDLC_PLUGIN_TOKEN_USER=x-token-auth;
+              npx -y @ai-native-sdlc/cli@0 ci bootstrap && npx -y @ai-native-sdlc/cli@0 ci triage build.log || true;
+            fi
+    - step: &review
+        name: Agent review (REVIEW.md)
+        image: node:22
+        script:
+          - export SDLC_PLUGIN_TOKEN_USER=x-token-auth
+          - npx -y @ai-native-sdlc/cli@0 ci bootstrap
+          - npx -y @ai-native-sdlc/cli@0 ci review
+        artifacts:
+          - review-tally.txt
+
+pipelines:
+  pull-requests:
+    '**':
+      - parallel:
+          - step: *build
+          - step: *review
+
+  branches:
+    'change/**':
+      - step:
+          name: Intent → spec
+          image: node:22
+          condition:
+            changesets:
+              includePaths:
+                - "changes/**/intent.md"
+          script:
+            - export SDLC_PLUGIN_TOKEN_USER=x-token-auth
+            - git config user.name "ai-sdlc-bot" && git config user.email "ai-sdlc-bot@noreply"
+            - npx -y @ai-native-sdlc/cli@0 ci bootstrap
+            - npx -y @ai-native-sdlc/cli@0 ci intent-to-spec
+    main:
+      - step: *build
+      - step:
+          name: Jira → merged
+          image: node:22
+          script:
+            - npx -y @ai-native-sdlc/cli@0 ci jira-merged
+
+  custom:
+    agent-evals:
+      # Schedule it (Repository settings → Pipelines → Schedules)
+      - step:
+          name: Agent evals
+          image: node:22
+          script:
+            - export SDLC_PLUGIN_TOKEN_USER=x-token-auth
+            - npx -y @ai-native-sdlc/cli@0 ci bootstrap
+            - npx -y @ai-native-sdlc/cli@0 ci evals
+    control-bands:
+      # Stage 6 · ops/bands.yaml. Schedule it daily. 1σ log · 2σ read-only diagnosis · 3σ incident intent (+ draft PR when routed).
+      - step:
+          name: Control bands
+          image: node:22
+          caches:
+            - sdlc-bands
+          script:
+            - export SDLC_PLUGIN_TOKEN_USER=x-token-auth
+            - git config user.name "ai-sdlc-bot" && git config user.email "ai-sdlc-bot@noreply"
+            - npx -y @ai-native-sdlc/cli@0 ci bootstrap
+            - npx -y @ai-native-sdlc/cli@0 bands check

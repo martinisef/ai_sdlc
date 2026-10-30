@@ -1,0 +1,18 @@
+{
+  "name": "@example/money",
+  "version": "0.1.0",
+  "description": "Example library for ai-native-sdlc: exact money arithmetic in minor units.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "private": true,
+  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
+  "files": ["dist"],
+  "engines": { "node": ">=22.18" },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "node --test 'test/**/*.test.ts'",
+    "lint": "tsc --noEmit",
+    "generate": "node scripts/generate-currencies.ts"
+  },
+  "devDependencies": { "@types/node": "^24.0.0", "typescript": "^5.9.0" }
+}

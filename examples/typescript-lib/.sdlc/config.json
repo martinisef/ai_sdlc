@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "locale": "en",
+  "agents": [
+    "claude",
+    "cursor",
+    "agents-md"
+  ],
+  "vcs": {
+    "provider": "github",
+    "default_branch": "main"
+  },
+  "tracker": {
+    "provider": "none"
+  },
+  "stack": {
+    "language": "typescript",
+    "package_manager": "npm",
+    "project_type": "library"
+  },
+  "commands": {
+    "build": "make build",
+    "test": "make test",
+    "lint": "make lint"
+  },
+  "format_on_edit": {},
+  "test_globs": [
+    "test/**",
+    "**/*.test.ts"
+  ],
+  "protected_paths": [
+    "src/gen/**",
+    "**/*.generated.ts"
+  ],
+  "secret_patterns_extra": [],
+  "risk": {
+    "high_risk_paths": [
+      "src/money.ts"
+    ]
+  },
+  "production_gate": {
+    "patterns": [
+      "deploy.*prod",
+      "terraform apply",
+      "kubectl .*--context[= ].*prod"
+    ],
+    "approval_env": "RELEASE_APPROVAL"
+  },
+  "gates": {
+    "intent": [
+      "po"
+    ],
+    "spec": [
+      "po"
+    ],
+    "plan": [
+      "tech-lead"
+    ]
+  },
+  "roles": {}
+}

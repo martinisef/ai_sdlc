@@ -1,0 +1,23 @@
+{
+  "name": "py-fix-amount-limit",
+  "cwd": "examples/python-api",
+  "tags": [
+    "fix"
+  ],
+  "prompt": "Bug: claims above 1,000,000.00 (100000000 cents) are accepted but our insurer caps a single claim there; they must be rejected with 400. Fix it the /sdlc-fix way: first a test that reproduces the bug, then the fix. Run make test.",
+  "allowed_tools": "Read,Edit,Write,Grep,Glob,Bash(make test),Bash(make lint)",
+  "checks": [
+    {
+      "type": "command",
+      "run": "make test"
+    },
+    {
+      "type": "command",
+      "run": "uv run python -c 'from claims.store import ClaimStore, ClaimError\nimport sys\ns=ClaimStore(); s.create(\"P\",100000000)\ntry:\n  s.create(\"P\",100000001); sys.exit(1)\nexcept ClaimError as e:\n  assert e.status==400'"
+    },
+    {
+      "type": "diff_includes",
+      "glob": "tests/**"
+    }
+  ]
+}

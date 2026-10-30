@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# glab stub: logs args to $STUB_LOG and returns canned output.
+printf 'glab %s\n' "$*" >> "$STUB_LOG"
+case "$1 $2" in
+  "mr create") echo "https://gitlab.com/acme/app/-/merge_requests/3" ;;
+  "mr view")   echo '{"iid":3,"web_url":"https://gitlab.com/acme/app/-/merge_requests/3","state":"opened"}' ;;
+esac
+exit 0

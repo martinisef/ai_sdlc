@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": ".sdlc/bin/sdlc hook sessionStart --agent cursor"
+      }
+    ],
+    "preToolUse": [
+      {
+        "command": ".sdlc/bin/sdlc hook preToolUse --agent cursor",
+        "matcher": "Write|Delete"
+      }
+    ],
+    "beforeShellExecution": [
+      {
+        "command": ".sdlc/bin/sdlc hook beforeShellExecution --agent cursor"
+      }
+    ],
+    "beforeReadFile": [
+      {
+        "command": ".sdlc/bin/sdlc hook beforeReadFile --agent cursor"
+      }
+    ],
+    "beforeSubmitPrompt": [
+      {
+        "command": ".sdlc/bin/sdlc hook beforeSubmitPrompt --agent cursor"
+      }
+    ],
+    "afterFileEdit": [
+      {
+        "command": ".sdlc/bin/sdlc hook afterFileEdit --agent cursor"
+      }
+    ],
+    "stop": [
+      {
+        "command": ".sdlc/bin/sdlc hook stop --agent cursor"
+      }
+    ]
+  }
+}

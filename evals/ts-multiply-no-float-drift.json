@@ -1,0 +1,24 @@
+{
+  "name": "ts-multiply-no-float-drift",
+  "cwd": "examples/typescript-lib",
+  "tags": [
+    "build"
+  ],
+  "setup": "npm ci --silent",
+  "prompt": "Add multiply(m: Money, factor: number): Money (factor may be fractional, round half away from zero to the minor unit). Export it and test it. Run npm test and npm run lint.",
+  "allowed_tools": "Read,Edit,Write,Grep,Glob,Bash(npm test),Bash(npm run lint)",
+  "checks": [
+    {
+      "type": "command",
+      "run": "npm test"
+    },
+    {
+      "type": "command",
+      "run": "npm run lint"
+    },
+    {
+      "type": "command",
+      "run": "node --input-type=module -e \"import {money,multiply} from './src/index.ts'; const r=(a,f)=>multiply(money(a,'USD'),f).amount; if (r(100,1.5)!==150n||r(1,0.5)!==1n||r(-1,0.5)!==-1n||r(9007199254740991,1)!==9007199254740991n||r(3,0.1)!==0n) process.exit(1)\""
+    }
+  ]
+}

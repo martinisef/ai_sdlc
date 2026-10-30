@@ -1,0 +1,17 @@
+{
+  "name": "ai-native-sdlc",
+  "owner": {
+    "name": "ai-native-sdlc"
+  },
+  "metadata": {
+    "description": "The AI-native SDLC loop for Claude Code: intent → spec → plan → build → ship → incident, with human gates and guardrails."
+  },
+  "plugins": [
+    {
+      "name": "ai-sdlc",
+      "source": "./plugins/ai-sdlc",
+      "description": "AI-native loop: intent → spec → plan → build → ship → maintain, with guardrails, guided setup and GitHub/GitLab/Bitbucket and Jira integration.",
+      "version": "0.2.0"
+    }
+  ]
+}

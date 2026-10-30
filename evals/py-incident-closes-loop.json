@@ -1,0 +1,28 @@
+{
+  "name": "py-incident-closes-loop",
+  "cwd": "examples/python-api",
+  "tags": [
+    "loop",
+    "incident"
+  ],
+  "prompt": "/sdlc-incident Since this morning 30% of POST /claims/{id}/status calls return 409 for adjusters moving approved claims to rejected (chargebacks). Headless mode: diagnose read-only, then close the loop (intent with origin incident, lesson, eval proposal). Do not fix the code.",
+  "allowed_tools": "Read,Write,Edit,Grep,Glob,Bash(git log:*),Bash(git show:*),Bash(ls:*)",
+  "checks": [
+    {
+      "type": "file_matches",
+      "glob": "changes/*/intent.md",
+      "pattern": "^origin: incident"
+    },
+    {
+      "type": "file_matches",
+      "glob": "lessons/*.md",
+      "pattern": "chargeback|rejected|409",
+      "ignore_case": true
+    },
+    {
+      "type": "diff_excludes",
+      "glob": "src/**",
+      "why": "incident diagnosis is read-only"
+    }
+  ]
+}

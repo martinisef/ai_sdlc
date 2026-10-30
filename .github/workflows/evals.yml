@@ -1,0 +1,64 @@
+name: evals
+
+# Product evals (evals/*.json over examples/): does the agent, with this configuration, do the right thing?
+# Weekly and on demand; they spend model tokens, so they do not run on every PR.
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+    inputs:
+      pattern:
+        description: Eval name glob (e.g. 'py-*')
+        default: '*'
+      agent:
+        description: claude | codex | cursor
+        default: claude
+      model:
+        description: Model override (empty = agent default)
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  evals:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: astral-sh/setup-uv@v6
+      - run: npm ci && npm run build
+      - run: git config --global user.name evals && git config --global user.email evals@example.com
+      - name: install the agent CLI
+        run: node packages/cli/dist/sdlc.mjs ci bootstrap
+        env:
+          SDLC_CI_AGENT: ${{ inputs.agent || 'claude' }}
+      - name: run evals
+        run: node packages/cli/dist/sdlc.mjs ci evals "${{ inputs.pattern || '*' }}" --out evals-report.json
+        env:
+          SDLC_CI_AGENT: ${{ inputs.agent || 'claude' }}
+          SDLC_CI_MODEL: ${{ inputs.model }}
+          SDLC_BIN: node ${{ github.workspace }}/packages/cli/dist/sdlc.mjs
+          EVAL_MIN_PASS_RATE: '0.8'
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+      - name: summary
+        if: always()
+        run: |
+          [ -f evals-report.json ] || exit 0
+          node -e '
+            const r = require("./evals-report.json");
+            const rows = r.results.map(x => `| ${x.passed ? "✅" : "❌"} | ${x.name} | ${x.seconds ?? ""}s | ${x.failures.join("<br>")} |`);
+            console.log(`### Evals: ${(r.rate * 100).toFixed(0)}% (minimum ${r.min * 100}%) · ${r.agent}${r.model ? " · " + r.model : ""}\n\n| | eval | time | failures |\n|---|---|---|---|\n${rows.join("\n")}`);
+          ' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: evals-report
+          path: evals-report.json
+          if-no-files-found: ignore

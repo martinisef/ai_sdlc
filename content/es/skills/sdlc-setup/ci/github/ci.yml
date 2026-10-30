@@ -1,0 +1,34 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      # >>> stack: setup del lenguaje (lo completa /sdlc-setup desde stacks/<lang>.md)
+      # <<< stack
+      - name: Build, lint, test
+        run: |
+          set -o pipefail
+          { make build && make lint && make test; } 2>&1 | tee build.log
+      - uses: actions/setup-node@v4
+        if: failure() && github.event_name == 'pull_request'
+        with:
+          node-version: 22
+      - name: Triage del build roto
+        if: failure() && github.event_name == 'pull_request'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          SDLC_PLUGIN_TOKEN: ${{ secrets.SDLC_PLUGIN_TOKEN }}
+        run: |
+          npx -y @ai-native-sdlc/cli@0 ci bootstrap
+          npx -y @ai-native-sdlc/cli@0 ci triage build.log

@@ -1,0 +1,19 @@
+{
+  "_comment": "Valores de la organización. Plataforma los completa una vez al publicar el marketplace; /sdlc-setup los usa como defaults.",
+  "marketplace": {
+    "name": "ai-native-sdlc",
+    "repo": "martinisef/ai_sdlc",
+    "git_url": "https://github.com/martinisef/ai_sdlc.git"
+  },
+  "settings_json": {
+    "extraKnownMarketplaces": {
+      "ai-native-sdlc": {
+        "source": { "source": "github", "repo": "martinisef/ai_sdlc" }
+      }
+    },
+    "enabledPlugins": {
+      "ai-sdlc@ai-native-sdlc": true
+    }
+  },
+  "default_branch": "main"
+}

@@ -1,0 +1,8 @@
+# Changes to what agents read and to the guardrails are reviewed like code.
+*                               @martinisef
+/content/                       @martinisef
+/packages/core/src/policies.ts  @martinisef
+/packages/core/src/gates.ts     @martinisef
+/evals/                         @martinisef
+/plugins/                       @martinisef
+/.github/                       @martinisef

@@ -1,0 +1,23 @@
+---
+description: AI-native SDLC loop (ai-sdlc)
+alwaysApply: true
+---
+## How we work (AI-native loop)
+- Each change lives in `changes/<slug>/` (intent.md → spec.md → plan.md) on branch `change/<slug>`. Each stage ends by committing its artifact; the next one reads it.
+- Gates are human: the Product Owner accepts the intent, PO + policy owners approve the spec, the engineer/tech lead approves the plan. The agent never approves (`sdlc approve` or the `sdlc ui` dashboard).
+- Nothing is implemented without an approved `plan.md`. If the implementation deviates, update `plan.md` in the same commit.
+- During a fix (`sdlc lock on`) tests are not edited: failing test first, then the code.
+- Always verify with `.sdlc/config.json → commands` before calling something done.
+- Loop status: `sdlc status`. Guardrails: if a hook or git hook blocks, do not work around it; read the message.
+
+### Stages
+- `/sdlc-intent` — Stage 1 (Plan) of the AI-native loop.
+- `/sdlc-spec` — Stage 2 (Design) of the AI-native loop.
+- `/sdlc-plan` — Stage 3 (Build) of the AI-native loop, first half.
+- `/sdlc-build` — Stage 3 (Build) of the AI-native loop, second half.
+- `/sdlc-fix` — Stage 4 (Test) of the AI-native loop for bugs.
+- `/sdlc-ship` — Stage 5 (Deploy) of the AI-native loop.
+- `/sdlc-status` — Shows which stage of the AI-native loop each change (changes/*) is at, the state of its PR/MR and its Jira ticket, flags inconsistencies and suggests the next command.
+- `/sdlc-incident` — Stage 6 (Maintain) of the AI-native loop.
+- `/sdlc-setup` — Walkthrough that gets a project ready to work in the AI-native loop.
+- `/policy-secure-api` — Applies the organization's API security standard.

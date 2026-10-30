@@ -1,0 +1,20 @@
+{
+  "name": "ai-sdlc",
+  "version": "0.2.0",
+  "description": "AI-native loop: intent → spec → plan → build → ship → maintain, with guardrails, guided setup and GitHub/GitLab/Bitbucket and Jira integration.",
+  "author": {
+    "name": "ai-native-sdlc"
+  },
+  "homepage": "https://github.com/martinisef/ai_sdlc#readme",
+  "repository": "https://github.com/martinisef/ai_sdlc",
+  "license": "Apache-2.0",
+  "keywords": [
+    "sdlc",
+    "workflow",
+    "hooks",
+    "jira",
+    "github",
+    "gitlab",
+    "bitbucket"
+  ]
+}

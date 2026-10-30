@@ -1,0 +1,25 @@
+{
+  "name": "py-review-finds-state-machine-bypass",
+  "cwd": "examples/python-api",
+  "tags": [
+    "review"
+  ],
+  "setup": "sed -i.bak 's/        if new_status not in TRANSITIONS\\[claim.status\\]:/        if False and new_status not in TRANSITIONS[claim.status]:/' src/claims/store.py && rm src/claims/store.py.bak && \"$EVAL_DIR/fixtures/commit.sh\" 'perf: skip transition lookup'",
+  "prompt": "Review the last commit (git show HEAD) following REVIEW.md and print the findings table. Do not modify files.",
+  "allowed_tools": "Read,Grep,Glob,Bash(git show:*),Bash(git log:*),Bash(git diff:*)",
+  "checks": [
+    {
+      "type": "output_contains",
+      "text": "Important"
+    },
+    {
+      "type": "output_contains",
+      "text": "store.py"
+    },
+    {
+      "type": "diff_excludes",
+      "glob": "**",
+      "why": "review is read-only"
+    }
+  ]
+}

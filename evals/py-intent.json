@@ -1,0 +1,32 @@
+{
+  "name": "py-intent",
+  "cwd": "examples/python-api",
+  "tags": [
+    "loop",
+    "intent"
+  ],
+  "prompt": "/sdlc-intent Customers should get an email when their claim changes status. Headless run: do not ask questions; record anything uncertain as an open question or concern. Do not create a branch.",
+  "allowed_tools": "Read,Write,Edit,Grep,Glob,Bash(git status),Bash(ls:*),Bash(.sdlc/bin/sdlc:*)",
+  "checks": [
+    {
+      "type": "file_matches",
+      "glob": "changes/*/intent.md",
+      "pattern": "^status: draft"
+    },
+    {
+      "type": "file_matches",
+      "glob": "changes/*/intent.md",
+      "pattern": "^## Problem"
+    },
+    {
+      "type": "file_matches",
+      "glob": "changes/*/intent.md",
+      "pattern": "^## How we know it worked"
+    },
+    {
+      "type": "diff_excludes",
+      "glob": "src/**",
+      "why": "an intent does not touch code"
+    }
+  ]
+}

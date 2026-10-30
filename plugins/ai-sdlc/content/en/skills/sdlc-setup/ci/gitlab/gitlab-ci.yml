@@ -1,0 +1,37 @@
+# Base .gitlab-ci.yml (only if the project does not have one; if it does, add the include and the stages).
+stages: [build, review, loop, evals]
+
+include:
+  - local: ci/sdlc.gitlab-ci.yml
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS && $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH !~ /^change\//
+      when: never
+    - if: $CI_COMMIT_BRANCH
+
+build:
+  stage: build
+  # >>> stack: language image and setup (filled in by /sdlc-setup from stacks/<lang>.md)
+  image: alpine:3.20
+  # <<< stack
+  script:
+    - set -o pipefail
+    - (make build && make lint && make test) 2>&1 | tee build.log
+  artifacts:
+    paths: [build.log]
+    when: always
+
+build:triage:
+  stage: review
+  image: node:22
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: on_failure
+  needs: [build]
+  before_script:
+    - export SDLC_PLUGIN_TOKEN_USER=oauth2
+    - npx -y @ai-native-sdlc/cli@0 ci bootstrap
+  script:
+    - npx -y @ai-native-sdlc/cli@0 ci triage build.log

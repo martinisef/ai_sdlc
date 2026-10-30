@@ -1,0 +1,40 @@
+name: release
+
+# Changesets: merging PRs with .changeset/*.md opens a "Version packages" PR (bumps @ai-native-sdlc/cli,
+# regenerates the plugin and marketplace.json); merging that PR publishes to npm with provenance.
+# Auth: npm trusted publishing (OIDC, this workflow as the trusted publisher). npm only lets you configure it once
+# the package exists, so the very first publish needs the NPM_TOKEN secret; remove the secret afterwards.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+concurrency: release
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      - run: npm install -g npm@^11.5.1
+      - run: npm ci
+      - run: git config --global user.name ci && git config --global user.email ci@example.com
+      - run: npm test
+      - uses: changesets/action@v1
+        with:
+          version: npm run version-packages
+          publish: npm run release
+          commit: 'chore: version packages'
+          title: 'chore: version packages'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

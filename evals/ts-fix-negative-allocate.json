@@ -1,0 +1,24 @@
+{
+  "name": "ts-fix-negative-allocate",
+  "cwd": "examples/typescript-lib",
+  "tags": [
+    "fix"
+  ],
+  "setup": "npm ci --silent",
+  "prompt": "Bug report: allocate(money(-100, \"USD\"), [1, 1, 1]) returns shares that add up to -99: a cent disappears. Fix it the /sdlc-fix way (failing test first). Run npm test.",
+  "allowed_tools": "Read,Edit,Write,Grep,Glob,Bash(npm test),Bash(npm run lint)",
+  "checks": [
+    {
+      "type": "command",
+      "run": "npm test"
+    },
+    {
+      "type": "diff_includes",
+      "glob": "test/**"
+    },
+    {
+      "type": "command",
+      "run": "node --input-type=module -e \"import {money,allocate} from './src/index.ts'; for (const [a,r] of [[-100,[1,1,1]],[-7,[2,3]],[100,[1,1,1]],[-1,[1,1]]]) { const s=allocate(money(a,'USD'),r).reduce((x,m)=>x+m.amount,0n); if (s!==BigInt(a)) process.exit(1) }\""
+    }
+  ]
+}

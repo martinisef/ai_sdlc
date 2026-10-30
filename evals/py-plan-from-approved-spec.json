@@ -1,0 +1,28 @@
+{
+  "name": "py-plan-from-approved-spec",
+  "cwd": "examples/python-api",
+  "tags": [
+    "loop",
+    "plan"
+  ],
+  "setup": "\"$EVAL_DIR/fixtures/stage.sh\" 2026-10-claim-notes claim-notes intent spec",
+  "prompt": "/sdlc-plan for changes/2026-10-claim-notes. Headless run: do not ask questions; record anything uncertain as an open question or concern. Write plan.md; do not implement.",
+  "allowed_tools": "Read,Write,Edit,Grep,Glob,Task,Bash(git log:*),Bash(.sdlc/bin/sdlc:*)",
+  "checks": [
+    {
+      "type": "file_matches",
+      "glob": "changes/2026-10-claim-notes/plan.md",
+      "pattern": "^## Work order"
+    },
+    {
+      "type": "file_matches",
+      "glob": "changes/2026-10-claim-notes/plan.md",
+      "pattern": "store\\.py"
+    },
+    {
+      "type": "diff_excludes",
+      "glob": "src/**",
+      "why": "planning does not implement"
+    }
+  ]
+}

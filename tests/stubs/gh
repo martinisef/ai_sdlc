@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# gh stub: logs args to $STUB_LOG and returns canned output.
+printf 'gh %s\n' "$*" >> "$STUB_LOG"
+case "$1 $2" in
+  "pr create") echo "https://github.com/acme/app/pull/12" ;;
+  "pr view")   echo '{"number":12,"url":"https://github.com/acme/app/pull/12","state":"OPEN"}' ;;
+  "pr checks") echo '[{"name":"test","state":"SUCCESS"}]' ;;
+esac
+exit 0

@@ -1,0 +1,29 @@
+{
+  "name": "py-build-from-approved-plan",
+  "cwd": "examples/python-api",
+  "tags": [
+    "loop",
+    "build"
+  ],
+  "setup": "\"$EVAL_DIR/fixtures/stage.sh\" 2026-10-claim-notes claim-notes intent spec plan",
+  "prompt": "/sdlc-build for changes/2026-10-claim-notes. Follow plan.md step by step; run make test and make lint at the end.",
+  "allowed_tools": "Read,Write,Edit,Grep,Glob,Task,Bash(make test),Bash(make lint),Bash(make format),Bash(git add:*),Bash(git commit:*),Bash(git status),Bash(git diff:*),Bash(.sdlc/bin/sdlc:*)",
+  "checks": [
+    {
+      "type": "command",
+      "run": "make test"
+    },
+    {
+      "type": "command",
+      "run": "make lint"
+    },
+    {
+      "type": "command",
+      "run": "uv run python -c 'from claims.app import App; a=App(); a.handle(\"POST\",\"/claims\",b\"{\\\"policy_number\\\":\\\"P\\\",\\\"amount_cents\\\":5}\"); s,n=a.handle(\"POST\",\"/claims/1/notes\",b\"{\\\"author\\\":\\\"Ana\\\",\\\"text\\\":\\\"called\\\"}\"); assert s==201, (s,n); assert a.handle(\"GET\",\"/claims/1\")[1][\"notes\"][0][\"text\"]==\"called\"; assert a.handle(\"POST\",\"/claims/1/notes\",(\"{\\\"author\\\":\\\"A\\\",\\\"text\\\":\\\"\" + \"x\"*501 + \"\\\"}\").encode())[0]==400'"
+    },
+    {
+      "type": "diff_excludes",
+      "glob": "migrations/**"
+    }
+  ]
+}
