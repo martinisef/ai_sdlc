@@ -1,4 +1,4 @@
-// Packs @ai-native-sdlc/cli like `npm publish` would, checks the tarball and smoke-tests it in a fresh project:
+// Packs @morsadev/sdlc like `npm publish` would, checks the tarball and smoke-tests it in a fresh project:
 // install from the tarball (no registry: the bundle has no runtime dependencies), `sdlc init`, `sdlc doctor`.
 // Run after `npm run build`.
 import { execFileSync } from 'node:child_process';
@@ -14,7 +14,7 @@ const fail = (msg) => {
 };
 
 try {
-  const [info] = JSON.parse(run('npm', ['pack', '-w', '@ai-native-sdlc/cli', '--json', '--pack-destination', tmp]));
+  const [info] = JSON.parse(run('npm', ['pack', '-w', '@morsadev/sdlc', '--json', '--pack-destination', tmp]));
   const files = info.files.map((f) => f.path);
   for (const f of ['dist/sdlc.mjs', 'dist/ui/index.html', 'dist/content/en/skills/sdlc-spec/SKILL.md', 'dist/content/es/skills/sdlc-spec/SKILL.md', 'LICENSE', 'package.json']) {
     if (!files.includes(f)) fail(`missing ${f}`);

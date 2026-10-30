@@ -82,7 +82,7 @@ function NotConfigured() {
     <div className="empty">
       <h2>{t('Not configured')}</h2>
       <p>
-        {t('Run sdlc init in this repo')}: <code>npx @ai-native-sdlc/cli init</code>
+        {t('Run sdlc init in this repo')}: <code>npx @morsadev/sdlc init</code>
       </p>
     </div>
   );

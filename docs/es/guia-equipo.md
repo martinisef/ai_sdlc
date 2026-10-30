@@ -40,5 +40,5 @@ Si el plan tiene pasos independientes, abrí una sesión por paso, cada una en s
 ## Proyecto nuevo
 
 ```bash
-npx @ai-native-sdlc/cli init --locale es     # después abrí tu agente, corré /sdlc-setup y seguí SETUP.md
+npx @morsadev/sdlc init --locale es     # después abrí tu agente, corré /sdlc-setup y seguí SETUP.md
 ```

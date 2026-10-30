@@ -6,7 +6,7 @@ Requirements: Node ≥ 22.18, git and Cursor. For PRs and MRs you also need `gh`
 
 ```bash
 cd your-repo
-npm i -D @ai-native-sdlc/cli
+npm i -D @morsadev/sdlc
 npx sdlc init                 # pick "cursor" among the agents (it is detected when .cursor/ exists)
 ```
 

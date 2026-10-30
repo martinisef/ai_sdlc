@@ -1,4 +1,4 @@
-# @ai-native-sdlc/cli
+# @morsadev/sdlc
 
 ## 0.3.0
 

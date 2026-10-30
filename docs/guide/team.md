@@ -38,5 +38,5 @@ When the plan has independent steps, run one session per step in its own worktre
 ## New project
 
 ```bash
-npx @ai-native-sdlc/cli init     # then open your agent and run /sdlc-setup; follow SETUP.md
+npx @morsadev/sdlc init     # then open your agent and run /sdlc-setup; follow SETUP.md
 ```

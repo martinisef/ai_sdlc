@@ -34,8 +34,8 @@ jobs:
         run: |
           git config user.name "ai-sdlc[bot]"
           git config user.email "ai-sdlc-bot@users.noreply.github.com"
-          npx -y @ai-native-sdlc/cli@0 ci bootstrap
-          npx -y @ai-native-sdlc/cli@0 ci intent-to-spec
+          npx -y @morsadev/sdlc@0 ci bootstrap
+          npx -y @morsadev/sdlc@0 ci intent-to-spec
 
   jira-merged:
     if: github.event_name == 'pull_request' && github.event.pull_request.merged
@@ -53,4 +53,4 @@ jobs:
           JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
           JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
         run: |
-          npx -y @ai-native-sdlc/cli@0 ci jira-merged
+          npx -y @morsadev/sdlc@0 ci jira-merged

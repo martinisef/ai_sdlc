@@ -6,7 +6,7 @@ Requirements: Node ≥ 22.18, git, and Claude Code. For PRs and MRs you also nee
 
 ```bash
 cd your-repo
-npm i -D @ai-native-sdlc/cli     # or: npm i -g @ai-native-sdlc/cli
+npm i -D @morsadev/sdlc     # or: npm i -g @morsadev/sdlc
 npx sdlc init
 ```
 

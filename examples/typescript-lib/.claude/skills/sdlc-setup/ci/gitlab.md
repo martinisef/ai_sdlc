@@ -6,7 +6,7 @@
 | `gitlab/gitlab-ci.yml` | `.gitlab-ci.yml` (only if it does not exist) | build + lint + test, triage if it fails on an MR |
 | `gitlab/sdlc.gitlab-ci.yml` | `ci/sdlc.gitlab-ci.yml` | review with REVIEW.md, intent → spec, Jira on merge, evals, control bands (Stage 6) |
 
-Every job runs `npx -y @ai-native-sdlc/cli@0 ci <cmd>` on `node:22`: there is no CI script to copy and no `jq` to install.
+Every job runs `npx -y @morsadev/sdlc@0 ci <cmd>` on `node:22`: there is no CI script to copy and no `jq` to install.
 
 If `.gitlab-ci.yml` already exists: add `include: - local: ci/sdlc.gitlab-ci.yml` and the `review`, `loop`, `evals` stages. Do not replace it.
 Fill in the `# >>> stack` block (image + setup) from `stacks/<lang>.md` → "CI · GitLab".
@@ -25,7 +25,7 @@ Without Jira: remove `sdlc:jira-merged`. Without Stage 6: remove `sdlc:bands`.
 5. Merge request settings: "Pipelines must succeed".
 
 ## @claude in comments
-1. Run the service where GitLab can reach it (HTTPS): `docker run -p 8787:8787 -e SDLC_WEBHOOK_SECRET=… -e GITLAB_TRIGGER_TOKEN=… ghcr.io/martinisef/sdlc-webhook`, or `npx -y @ai-native-sdlc/cli@0 webhook` on any Node ≥ 22 host.
+1. Run the service where GitLab can reach it (HTTPS): `docker run -p 8787:8787 -e SDLC_WEBHOOK_SECRET=… -e GITLAB_TRIGGER_TOKEN=… ghcr.io/martinisef/sdlc-webhook`, or `npx -y @morsadev/sdlc@0 webhook` on any Node ≥ 22 host.
 2. Project (or group) → Settings → Webhooks: URL `https://<host>/gitlab`, Secret token = `SDLC_WEBHOOK_SECRET`, trigger **Comments**.
 3. Settings → CI/CD → Pipeline trigger tokens: create one and give it to the service as `GITLAB_TRIGGER_TOKEN` (one service per project, or one per group with a shared token).
 4. Optional: `SDLC_ALLOWED_AUTHORS=ana,juan` limits who can trigger the agent; `SDLC_MENTION=@agent` changes the mention.

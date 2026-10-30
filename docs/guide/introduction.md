@@ -37,7 +37,7 @@ idea / ticket / incident
 | Layer | What | Where |
 |---|---|---|
 | 1 · Managed settings | What is non-negotiable: secrets, sandbox, approved marketplace | admin console / MDM ([Managed settings](./managed-settings)) |
-| 2 · `sdlc` + content | Loop skills, subagents, guardrails, CI logic | this repo, published as `@ai-native-sdlc/cli` and the `ai-sdlc` Claude Code plugin |
+| 2 · `sdlc` + content | Loop skills, subagents, guardrails, CI logic | this repo, published as `@morsadev/sdlc` and the `ai-sdlc` Claude Code plugin |
 | 3 · Project | What is specific: `.sdlc/config.json`, `CLAUDE.md`, `REVIEW.md`, CI | each repository |
 
 ## Next

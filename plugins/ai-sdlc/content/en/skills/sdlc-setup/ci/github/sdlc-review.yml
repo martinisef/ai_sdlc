@@ -1,7 +1,7 @@
 name: Claude review
 # Automated review of every PR with REVIEW.md + replies to @claude mentions in comments.
 # Findings are informational; approval still belongs to a code owner (branch protection).
-# Not on Claude? Replace the review job's action with: npx -y @ai-native-sdlc/cli@0 ci review --agent codex|cursor
+# Not on Claude? Replace the review job's action with: npx -y @morsadev/sdlc@0 ci review --agent codex|cursor
 on:
   pull_request:
     types: [opened, synchronize, ready_for_review]

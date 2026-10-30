@@ -1,6 +1,6 @@
 # CI
 
-All CI logic is in one command, `sdlc ci <cmd>`. The per-provider templates are thin YAML that call `npx -y @ai-native-sdlc/cli@0 ci <cmd>` on Node 22. `/sdlc-setup` installs them for your provider; the files live in `content/en/skills/sdlc-setup/ci/`.
+All CI logic is in one command, `sdlc ci <cmd>`. The per-provider templates are thin YAML that call `npx -y @morsadev/sdlc@0 ci <cmd>` on Node 22. `/sdlc-setup` installs them for your provider; the files live in `content/en/skills/sdlc-setup/ci/`.
 
 ```text
 sdlc ci bootstrap              install the agent CLI (and the Claude plugin when plugin.marketplace_repo is set)
@@ -54,7 +54,7 @@ The service validates the GitLab secret token or the Bitbucket HMAC signature, i
 
 ```bash
 docker run -p 8787:8787 -e SDLC_WEBHOOK_SECRET=… -e GITLAB_TRIGGER_TOKEN=… ghcr.io/martinisef/sdlc-webhook
-# or: npx -y @ai-native-sdlc/cli@0 webhook --port 8787      (POST /gitlab, POST /bitbucket, GET /health)
+# or: npx -y @morsadev/sdlc@0 webhook --port 8787      (POST /gitlab, POST /bitbucket, GET /health)
 ```
 
 | Variable | |

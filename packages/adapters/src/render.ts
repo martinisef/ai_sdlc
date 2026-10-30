@@ -20,7 +20,7 @@ here="$(cd "$(dirname "$0")/../.." && pwd)"
 if [ -n "$SDLC_BIN" ]; then exec $SDLC_BIN "$@"; fi
 if [ -x "$here/node_modules/.bin/sdlc" ]; then exec "$here/node_modules/.bin/sdlc" "$@"; fi
 if command -v sdlc >/dev/null 2>&1; then exec sdlc "$@"; fi
-echo "ai-sdlc: sdlc CLI not found (npm i -D @ai-native-sdlc/cli); guardrail skipped" >&2
+echo "ai-sdlc: sdlc CLI not found (npm i -D @morsadev/sdlc); guardrail skipped" >&2
 exit 0
 `;
 

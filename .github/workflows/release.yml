@@ -1,6 +1,6 @@
 name: release
 
-# Changesets: merging PRs with .changeset/*.md opens a "Version packages" PR (bumps @ai-native-sdlc/cli,
+# Changesets: merging PRs with .changeset/*.md opens a "Version packages" PR (bumps @morsadev/sdlc,
 # regenerates the plugin and marketplace.json); merging that PR publishes to npm with provenance.
 # Auth: npm trusted publishing (OIDC, this workflow as the trusted publisher). npm only lets you configure it once
 # the package exists, so the very first publish needs the NPM_TOKEN secret; remove the secret afterwards.

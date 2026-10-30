@@ -3,7 +3,7 @@
 #   docker run -p 8787:8787 -e SDLC_WEBHOOK_SECRET=… -e GITLAB_TRIGGER_TOKEN=… sdlc-webhook
 FROM node:22-alpine
 ARG SDLC_VERSION=0
-RUN npm install -g "@ai-native-sdlc/cli@${SDLC_VERSION}" && npm cache clean --force
+RUN npm install -g "@morsadev/sdlc@${SDLC_VERSION}" && npm cache clean --force
 USER node
 WORKDIR /home/node
 ENV PORT=8787

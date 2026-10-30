@@ -38,7 +38,7 @@ Group into 2-3 rounds, no more than 4 questions per round:
 ## 3. Copy what is fixed
 Copy `scaffold/` into the project **without overwriting existing files**. If a file already exists (`CLAUDE.md`, `REVIEW.md`), show which sections are missing and propose adding them (merge), not replacing.
 Add to `.gitignore`: `.claude/settings.local.json` (`.sdlc/.gitignore` already excludes local state: `events.jsonl`, `fix-lock`).
-Nothing to make executable: evals and CI run through `sdlc ci` (`npx -y @ai-native-sdlc/cli@0 ci …` in the pipelines).
+Nothing to make executable: evals and CI run through `sdlc ci` (`npx -y @morsadev/sdlc@0 ci …` in the pipelines).
 
 ## 4. Generate what is specific
 Follow `stacks/<lang>.md` (if it does not exist, `stacks/_unknown.md`) and `ci/<provider>.md`:

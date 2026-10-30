@@ -14,7 +14,7 @@ inputs:
     required: false
     default: ''
   version:
-    description: '@ai-native-sdlc/cli version to run'
+    description: '@morsadev/sdlc version to run'
     required: false
     default: '0'
   bootstrap:
@@ -33,13 +33,13 @@ runs:
       shell: bash
       env:
         SDLC_CI_AGENT: ${{ inputs.agent }}
-        SDLC_CLI: '@ai-native-sdlc/cli@${{ inputs.version }}'
+        SDLC_CLI: '@morsadev/sdlc@${{ inputs.version }}'
       run: npx -y "$SDLC_CLI" ci bootstrap
     - name: sdlc ${{ inputs.command }}
       shell: bash
       env:
         SDLC_CI_AGENT: ${{ inputs.agent }}
-        SDLC_CLI: '@ai-native-sdlc/cli@${{ inputs.version }}'
+        SDLC_CLI: '@morsadev/sdlc@${{ inputs.version }}'
         SDLC_COMMAND: ${{ inputs.command }}
       # word splitting of the command is intended (`ci triage build.log`)
       run: npx -y "$SDLC_CLI" $SDLC_COMMAND

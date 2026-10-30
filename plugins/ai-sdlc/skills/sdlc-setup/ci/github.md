@@ -9,13 +9,13 @@
 | `github/sdlc-evals.yml` | `.github/workflows/sdlc-evals.yml` | configuration evals on PRs that touch the agent configuration + nightly |
 | `github/sdlc-bands.yml` | `.github/workflows/sdlc-bands.yml` | Stage 6 only: daily `sdlc bands check` over `ops/bands.yaml` |
 
-Every workflow calls `npx -y @ai-native-sdlc/cli@0 ci <cmd>` (Node 22 via `actions/setup-node`): there is no CI script to copy. Pin a version (`@0.2.0`) if the team prefers reproducible pipelines over updates.
+Every workflow calls `npx -y @morsadev/sdlc@0 ci <cmd>` (Node 22 via `actions/setup-node`): there is no CI script to copy. Pin a version (`@0.2.0`) if the team prefers reproducible pipelines over updates.
 
 If a `ci.yml` already exists, do not replace it: add the triage step to the existing job.
 Fill in the `# >>> stack` blocks with the language setup (`stacks/<lang>.md` → "CI · GitHub").
 If the project does not use Jira, remove the `jira-merged` job.
 Without Stage 6 (no metrics with a stable baseline yet), do not install `sdlc-bands.yml`.
-Other agents: the review uses `claude-code-action` (inline comments); with `ci.agent: codex|cursor`, replace that job with `npx -y @ai-native-sdlc/cli@0 ci review`, which posts a single summary comment.
+Other agents: the review uses `claude-code-action` (inline comments); with `ci.agent: codex|cursor`, replace that job with `npx -y @morsadev/sdlc@0 ci review`, which posts a single summary comment.
 
 ## Manual configuration (add to SETUP.md)
 1. **Secrets** (Settings → Secrets and variables → Actions): `ANTHROPIC_API_KEY` (or configure Bedrock/Vertex/Foundry; `OPENAI_API_KEY` / `CURSOR_API_KEY` with `ci.agent` codex / cursor), `SDLC_PLUGIN_TOKEN` if the marketplace repo is private (token with read access to the repo), `JIRA_EMAIL` + `JIRA_API_TOKEN` if there is Jira.

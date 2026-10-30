@@ -5,7 +5,7 @@
 |---|---|---|
 | `bitbucket/bitbucket-pipelines.yml` | `bitbucket-pipelines.yml` | PRs: build + review in parallel, triage if it fails · `change/**`: intent → spec · `main`: Jira to *merged* · custom: evals, control bands |
 
-Every step runs `npx -y @ai-native-sdlc/cli@0 ci <cmd>` on `node:22`: there is no CI script to copy.
+Every step runs `npx -y @morsadev/sdlc@0 ci <cmd>` on `node:22`: there is no CI script to copy.
 
 If `bitbucket-pipelines.yml` already exists, merge the steps (`pull-requests`, `branches.change/**`, `custom.agent-evals`, `custom.control-bands`) without deleting what is already there.
 Fill in the `# >>> stack` blocks (image and setup) from `stacks/<lang>.md` → "CI · Bitbucket".
@@ -31,7 +31,7 @@ In `.sdlc/config.json` fill in `vcs.workspace` and `vcs.repo` (the remote may no
 6. **Jira ↔ Bitbucket** integration enabled on the Atlassian site (automatically links branches and PRs with the key).
 
 ## @claude in comments
-1. Run the service where Bitbucket can reach it (HTTPS): `docker run -p 8787:8787 -e SDLC_WEBHOOK_SECRET=… -e BITBUCKET_ACCESS_TOKEN=… ghcr.io/martinisef/sdlc-webhook`, or `npx -y @ai-native-sdlc/cli@0 webhook` on any Node ≥ 22 host.
+1. Run the service where Bitbucket can reach it (HTTPS): `docker run -p 8787:8787 -e SDLC_WEBHOOK_SECRET=… -e BITBUCKET_ACCESS_TOKEN=… ghcr.io/martinisef/sdlc-webhook`, or `npx -y @morsadev/sdlc@0 webhook` on any Node ≥ 22 host.
 2. Repository (or workspace) settings → Webhooks: URL `https://<host>/bitbucket`, Secret = `SDLC_WEBHOOK_SECRET`, trigger **Pull request: Comment created**.
 3. Give the service a token that can run pipelines (`BITBUCKET_ACCESS_TOKEN`, repository or workspace access token with Pipelines write).
 4. Optional: `SDLC_ALLOWED_AUTHORS=ana,juan` limits who can trigger the agent; `SDLC_MENTION=@agent` changes the mention.

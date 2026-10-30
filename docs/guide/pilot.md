@@ -5,7 +5,7 @@ A 2–4 week pilot with one team, on one real repository, tells you whether the 
 ## Before day 1
 
 - [ ] Pick a team of 3–8 people, with a PO who will own the intent and spec gates, and a repository with CI.
-- [ ] `npx -y @ai-native-sdlc/cli@0 init` in the repository, then review `.sdlc/config.json`. Fill in `roles` with real usernames, set `gates`, and keep the default `bands`.
+- [ ] `npx -y @morsadev/sdlc@0 init` in the repository, then review `.sdlc/config.json`. Fill in `roles` with real usernames, set `gates`, and keep the default `bands`.
 - [ ] `sdlc sync`, then commit the generated files in a PR the team reviews.
 - [ ] Set up CI with the per-provider guide ([GitHub](../reference/ci-github), [GitLab](../reference/ci-gitlab), [Bitbucket](../reference/ci-bitbucket)).
 - [ ] Record a baseline from the last 4–8 weeks of history: lead time from ticket to merge, the share of PRs reopened or reverted, and review rounds per PR.

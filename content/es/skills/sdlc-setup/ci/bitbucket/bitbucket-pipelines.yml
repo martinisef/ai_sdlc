@@ -21,15 +21,15 @@ definitions:
           # Triage solo si falló y estamos en un PR.
           - if [ "$BITBUCKET_EXIT_CODE" != "0" ] && [ -n "$BITBUCKET_PR_ID" ]; then
               export SDLC_PLUGIN_TOKEN_USER=x-token-auth;
-              npx -y @ai-native-sdlc/cli@0 ci bootstrap && npx -y @ai-native-sdlc/cli@0 ci triage build.log || true;
+              npx -y @morsadev/sdlc@0 ci bootstrap && npx -y @morsadev/sdlc@0 ci triage build.log || true;
             fi
     - step: &review
         name: Review del agente (REVIEW.md)
         image: node:22
         script:
           - export SDLC_PLUGIN_TOKEN_USER=x-token-auth
-          - npx -y @ai-native-sdlc/cli@0 ci bootstrap
-          - npx -y @ai-native-sdlc/cli@0 ci review
+          - npx -y @morsadev/sdlc@0 ci bootstrap
+          - npx -y @morsadev/sdlc@0 ci review
         artifacts:
           - review-tally.txt
 
@@ -52,15 +52,15 @@ pipelines:
           script:
             - export SDLC_PLUGIN_TOKEN_USER=x-token-auth
             - git config user.name "ai-sdlc-bot" && git config user.email "ai-sdlc-bot@noreply"
-            - npx -y @ai-native-sdlc/cli@0 ci bootstrap
-            - npx -y @ai-native-sdlc/cli@0 ci intent-to-spec
+            - npx -y @morsadev/sdlc@0 ci bootstrap
+            - npx -y @morsadev/sdlc@0 ci intent-to-spec
     main:
       - step: *build
       - step:
           name: Jira → merged
           image: node:22
           script:
-            - npx -y @ai-native-sdlc/cli@0 ci jira-merged
+            - npx -y @morsadev/sdlc@0 ci jira-merged
 
   custom:
     agent-evals:
@@ -70,8 +70,8 @@ pipelines:
           image: node:22
           script:
             - export SDLC_PLUGIN_TOKEN_USER=x-token-auth
-            - npx -y @ai-native-sdlc/cli@0 ci bootstrap
-            - npx -y @ai-native-sdlc/cli@0 ci evals
+            - npx -y @morsadev/sdlc@0 ci bootstrap
+            - npx -y @morsadev/sdlc@0 ci evals
     control-bands:
       # Stage 6 · ops/bands.yaml. Programalo diario. 1σ log · 2σ diagnóstico read-only · 3σ intent de incidente (+ PR draft si se rutea).
       - step:
@@ -82,8 +82,8 @@ pipelines:
           script:
             - export SDLC_PLUGIN_TOKEN_USER=x-token-auth
             - git config user.name "ai-sdlc-bot" && git config user.email "ai-sdlc-bot@noreply"
-            - npx -y @ai-native-sdlc/cli@0 ci bootstrap
-            - npx -y @ai-native-sdlc/cli@0 bands check
+            - npx -y @morsadev/sdlc@0 ci bootstrap
+            - npx -y @morsadev/sdlc@0 bands check
     sdlc-mention:
       # @claude en comentarios del PR: lo corre `sdlc webhook` vía API. Sacalo si el workspace no corre el servicio.
       - variables:
@@ -98,5 +98,5 @@ pipelines:
           script:
             - export SDLC_PLUGIN_TOKEN_USER=x-token-auth
             - git config user.name "ai-sdlc-bot" && git config user.email "ai-sdlc-bot@noreply"
-            - npx -y @ai-native-sdlc/cli@0 ci bootstrap
-            - npx -y @ai-native-sdlc/cli@0 ci mention
+            - npx -y @morsadev/sdlc@0 ci bootstrap
+            - npx -y @morsadev/sdlc@0 ci mention
