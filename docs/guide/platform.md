@@ -35,7 +35,7 @@ The CLI is the only published package. The other workspaces are bundled into it.
 
 ## 3. Installation
 
-- **Per person**: `/plugin marketplace add <org>/ai-native-sdlc`, then `/plugin install ai-sdlc@ai-native-sdlc`.
+- **Per person**: `/plugin marketplace add martinisef/ai_sdlc`, then `/plugin install ai-sdlc@ai-native-sdlc`.
 - **Per project**: `.claude/settings.json` with `extraKnownMarketplaces` and `enabledPlugins`, written by `sdlc sync` when `plugin.marketplace_repo` is set. Claude Code offers to install the plugin when the repo is opened.
 - **Try changes without installing**: `claude --plugin-dir ./plugins/ai-sdlc`. If you use `-p`, pass the prompt on stdin, because `--plugin-dir` takes several values.
 

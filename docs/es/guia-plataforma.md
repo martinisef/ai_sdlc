@@ -33,7 +33,7 @@ Los releases usan [changesets](https://github.com/changesets/changesets):
 
 ## 3. Instalarlo
 
-- **Por persona**: `/plugin marketplace add <org>/ai-native-sdlc`, y después `/plugin install ai-sdlc@ai-native-sdlc`.
+- **Por persona**: `/plugin marketplace add martinisef/ai_sdlc`, y después `/plugin install ai-sdlc@ai-native-sdlc`.
 - **Por proyecto**: `.claude/settings.json` con `extraKnownMarketplaces` y `enabledPlugins`, que escribe `sdlc sync` cuando hay `plugin.marketplace_repo`. Al abrir el repo, Claude Code ofrece instalarlo.
 - **Probar cambios sin instalar**: `claude --plugin-dir ./plugins/ai-sdlc`. Si usás `-p`, pasá el prompt por stdin, porque `--plugin-dir` acepta varios valores.
 
