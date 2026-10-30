@@ -28,7 +28,7 @@ Commit all of it; it is shared by the team. The `.sdlc/bin/sdlc` shim looks for 
 If your organization publishes the marketplace ([platform guide](./platform)), set `plugin.marketplace_repo` in `.sdlc/config.json`. `sdlc sync` then writes `extraKnownMarketplaces` and `enabledPlugins` to `.claude/settings.json` instead of copying the skills into the repo. The `ai-sdlc` plugin brings its own hooks and a bundled CLI.
 
 ```text
-/plugin marketplace add <org>/ai-native-sdlc
+/plugin marketplace add martinisef/ai_sdlc
 /plugin install ai-sdlc@ai-native-sdlc
 ```
 :::

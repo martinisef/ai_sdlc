@@ -45,7 +45,7 @@ Lo leen los guardrails (`sdlc hook`, para cualquier agente), las skills del loop
   "production_gate": { "patterns": ["deploy.*prod", "terraform apply"], "approval_env": "RELEASE_APPROVAL" },
   "gates": { "intent": ["po"], "spec": ["po", "policy-owners"], "plan": ["tech-lead"] },
   "roles": { "po": ["ana@miempresa.com"], "tech-lead": ["juan@miempresa.com"] },
-  "plugin": { "marketplace_repo": "https://github.com/<org>/ai-native-sdlc.git" },
+  "plugin": { "marketplace_repo": "https://github.com/martinisef/ai_sdlc.git" },
   "ci": { "agent": "claude", "min_pass_rate": 0.8 }
 }
 ```

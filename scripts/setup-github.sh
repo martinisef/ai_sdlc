@@ -44,7 +44,7 @@ echo "secrets"
 cat <<EOF
 
 Done. Still manual:
-  1. npm: create the @ai-native-sdlc org (npmjs.com → Add organization). After the first publish, add a
+  1. npm: the @morsadev org must exist with you as owner. After the first publish, add a
      trusted publisher for @morsadev/sdlc (GitHub Actions, $REPO, workflow release.yml) and delete NPM_TOKEN.
   2. With more maintainers: raise required_approving_review_count to 1 and enable require_code_owner_reviews.
 EOF

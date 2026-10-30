@@ -2,11 +2,12 @@ name: release
 
 # Changesets: merging PRs with .changeset/*.md opens a "Version packages" PR (bumps @morsadev/sdlc,
 # regenerates the plugin and marketplace.json); merging that PR publishes to npm with provenance.
-# Auth: npm trusted publishing (OIDC, this workflow as the trusted publisher). npm only lets you configure it once
-# the package exists, so the very first publish needs the NPM_TOKEN secret; remove the secret afterwards.
+# Auth: npm trusted publishing (OIDC, this workflow as the trusted publisher); no npm token.
+# Run it by hand (workflow_dispatch) to rebuild the webhook image for the current version.
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -39,18 +40,17 @@ jobs:
           title: 'chore: version packages'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       # Webhook image (sdlc webhook) for GitLab/Bitbucket @claude, built from the version just published.
-      - if: steps.changesets.outputs.published == 'true'
+      - if: steps.changesets.outputs.published == 'true' || github.event_name == 'workflow_dispatch'
         id: version
         run: echo "v=$(node -p 'require("./packages/cli/package.json").version')" >> "$GITHUB_OUTPUT"
-      - if: steps.changesets.outputs.published == 'true'
+      - if: steps.changesets.outputs.published == 'true' || github.event_name == 'workflow_dispatch'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - if: steps.changesets.outputs.published == 'true'
+      - if: steps.changesets.outputs.published == 'true' || github.event_name == 'workflow_dispatch'
         uses: docker/build-push-action@v6
         with:
           context: packages/webhook
