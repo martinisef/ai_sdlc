@@ -219,6 +219,7 @@ export function Settings() {
             <h3>Guardrails</h3>
             <div className="row2">
               <List cfg={cfg} path="protected_paths" label="Protected paths" onChange={change} />
+              <List cfg={cfg} path="append_only_paths" label="Append-only paths (new files only)" onChange={change} />
               <List cfg={cfg} path="test_globs" label="Test globs (test-lock)" onChange={change} />
               <List cfg={cfg} path="risk.high_risk_paths" label="High-risk paths" onChange={change} />
               <List cfg={cfg} path="secret_patterns_extra" label="Extra secret patterns (ERE)" onChange={change} />

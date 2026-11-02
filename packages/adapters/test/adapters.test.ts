@@ -88,6 +88,25 @@ test('git pre-commit blocks staged protected paths and secrets; override is reco
   assert.match(preCommit(root, {}).stderr!, /credential/);
 });
 
+test('append_only_paths: new files pass, existing ones are blocked in the agent hook and at commit', () => {
+  const root = repo({ ...CONFIG, append_only_paths: ['db/migrate/**'] });
+  const pre = (tool_name: string, tool_input: object) =>
+    JSON.parse(runHook('cursor', 'preToolUse', JSON.stringify({ hook_event_name: 'preToolUse', tool_name, tool_input, workspace_roots: [root] }), {}).stdout!);
+  const first = join(root, 'db/migrate/001_create_users.rb');
+  assert.equal(pre('Write', { file_path: first, content: 'x' }).permission, 'allow');
+  mkdirSync(join(root, 'db/migrate'), { recursive: true });
+  writeFileSync(first, 'class CreateUsers; end\n');
+  gitIn(root, 'add', '-A');
+  assert.equal(preCommit(root, {}).exitCode, 0, 'a new migration can be committed');
+  gitIn(root, 'commit', '-qm', 'migration');
+  const denied = pre('Write', { file_path: first, content: 'y' });
+  assert.equal(denied.permission, 'deny');
+  assert.match(denied.agent_message, /append-only/);
+  writeFileSync(first, 'class CreateUsers; def change; end; end\n');
+  gitIn(root, 'add', '-A');
+  assert.match(preCommit(root, {}).stderr!, /append-only/);
+});
+
 test('git pre-push: code on a change branch needs an approved plan', () => {
   const root = repo(CONFIG);
   gitIn(root, 'checkout', '-qb', 'change/x');

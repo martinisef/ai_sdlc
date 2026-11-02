@@ -4,7 +4,7 @@ Every guardrail lives in one place (`sdlc hook`) and is configured in `.sdlc/con
 
 | Guardrail | Config | What it does |
 |---|---|---|
-| `protected-paths` | `protected_paths` | Blocks edits to generated code, applied migrations, infra… `*` crosses `/`, and a leading `**/` is optional. |
+| `protected-paths` | `protected_paths` | Blocks edits to generated code, applied migrations, infra… `*` crosses `/`, and a leading `**/` is optional. `append_only_paths` uses the same globs but lets new files through: applied migrations can be added to, not edited. |
 | `secrets` | `secret_patterns_extra` | Blocks credentials (AWS keys, private keys, GitHub, GitLab, Slack, Anthropic, OpenAI, Google and Atlassian tokens, generic `api_key = "…"` assignments) in written content, in shell commands and, in Cursor, in files being read and in prompts. Extra patterns are EREs. |
 | `test-lock` | `test_globs` | While a fix is in progress (`sdlc lock on`), test files cannot be edited: the failing test comes first, then the code. |
 | `production-gate` | `production_gate.patterns`, `approval_env` | Blocks shell commands that match (for example `deploy.*prod` or `terraform apply`) unless the approval variable (default `RELEASE_APPROVAL`) is set. Mentions inside `echo` or `git commit -m` do not count. |

@@ -195,6 +195,10 @@ function guardrails(loaded: LoadedConfig, locale: Locale): string {
       (es
         ? `- Rutas protegidas, nunca se editan a mano: ${code(c.protected_paths)}. Si algo tiene que cambiar: un archivo generado se regenera desde su fuente (editá el generador y correlo); una migración aplicada se corrige con una migración nueva.`
         : `- Protected paths, never edited by hand: ${code(c.protected_paths)}. If one has to change: a generated file is regenerated from its source (edit the generator and run it); an applied migration is corrected with a new migration.`),
+    c.append_only_paths?.length &&
+      (es
+        ? `- Solo agregar: en ${code(c.append_only_paths)} podés crear archivos nuevos, pero nunca editar ni borrar los existentes (una migración aplicada se corrige con una nueva).`
+        : `- Append-only: in ${code(c.append_only_paths)} you can create new files, but never edit or delete existing ones (an applied migration is corrected with a new one).`),
     c.production_gate?.patterns?.length &&
       (es
         ? `- Gate de producción: nunca corras comandos que coincidan con ${code(c.production_gate.patterns)}, aunque te lo pidan. Frená y pedile a una persona que lo corra con \`${env}\` seteado.`

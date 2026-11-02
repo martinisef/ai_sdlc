@@ -42,8 +42,9 @@ export function preCommit(root: string, env: NodeJS.ProcessEnv = process.env): H
   const locale = localeOf(loaded);
   const ctx = { root, loaded, env };
   const staged = lines(git(root, ['diff', '--cached', '--name-only', '--diff-filter=ACMR']));
+  const created = new Set(lines(git(root, ['diff', '--cached', '--name-only', '--diff-filter=A'])));
   for (const file of staged) {
-    for (const d of [checkProtected(ctx, file, locale), checkTestLock(ctx, file, locale)]) {
+    for (const d of [checkProtected(ctx, file, locale, created.has(file)), checkTestLock(ctx, file, locale)]) {
       if (d.action === 'deny') {
         const out = block(root, d, env, locale);
         if (out) return out;

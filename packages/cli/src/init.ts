@@ -14,6 +14,7 @@ interface StackDefaults {
   format_on_edit: Record<string, string>;
   test_globs: string[];
   protected_paths: string[];
+  append_only_paths?: string[];
 }
 
 const STACKS: Record<string, StackDefaults> = {
@@ -49,10 +50,31 @@ const STACKS: Record<string, StackDefaults> = {
     test_globs: ['**/*_test.go', 'testdata/**'],
     protected_paths: ['**/*.pb.go', '**/zz_generated*.go'],
   },
+  dotnet: {
+    language: 'dotnet',
+    package_manager: 'dotnet',
+    commands: { build: 'dotnet build', test: 'dotnet test', lint: 'dotnet format --verify-no-changes', format: 'dotnet format' },
+    format_on_edit: {},
+    test_globs: ['tests/**', 'test/**', '**/*.Tests/**', '**/*.Test/**', '**/*Tests.cs'],
+    protected_paths: ['**/*.g.cs'],
+    append_only_paths: ['**/Migrations/*.Designer.cs', '**/Migrations/2*.cs'],
+  },
+  ruby: {
+    language: 'ruby',
+    package_manager: 'bundler',
+    commands: { build: 'bin/rails zeitwerk:check', test: 'bin/rails test', lint: 'bundle exec rubocop', format: 'bundle exec rubocop -a' },
+    format_on_edit: { '*.rb': 'bundle exec rubocop -a {file}' },
+    test_globs: ['test/**', 'spec/**'],
+    protected_paths: ['db/schema.rb', 'db/structure.sql'],
+    append_only_paths: ['db/migrate/**'],
+  },
 };
 
 export function detectStack(root: string): string | undefined {
   const has = (f: string) => existsSync(join(root, f));
+  // before package.json: Rails and ASP.NET apps often carry a JS frontend too
+  if (has('Gemfile') && has('config/application.rb')) return 'ruby';
+  if (readdirSync(root).some((f) => f.endsWith('.sln') || f.endsWith('.csproj'))) return 'dotnet';
   if (has('pyproject.toml') || has('requirements.txt')) return 'python';
   if (has('package.json') || has('tsconfig.json')) return 'typescript';
   if (has('pom.xml') || has('build.gradle') || has('build.gradle.kts')) return 'java';
@@ -97,6 +119,8 @@ export function detectConfig(root: string, locale: Locale): Config {
     config.format_on_edit = stack.format_on_edit;
     config.test_globs = stack.test_globs;
     config.protected_paths = stack.protected_paths;
+    if (stack.append_only_paths) config.append_only_paths = stack.append_only_paths;
+    if (stackId === 'ruby' && (existsSync(join(root, '.rspec')) || existsSync(join(root, 'spec')))) config.commands.test = 'bundle exec rspec';
   } else {
     config.commands = { build: 'make build', test: 'make test', lint: 'make lint', format: 'make format' };
     config.test_globs = ['tests/**', 'test/**'];
