@@ -58,7 +58,9 @@ export const ConfigSchema = z.looseObject({
     .optional(),
   /** Who may approve each artifact: role names, resolved through `roles`. Empty → anyone but an agent. */
   gates: z.partialRecord(z.enum(ARTIFACTS), z.array(z.string())).optional(),
-  /** Role → git emails (or names) of the people holding it. */
+  /** Solo projects: the author may approve their own spec and plan (agents still cannot). */
+  gates_self_approval: z.boolean().optional(),
+  /** Role → git emails (or names, or `@login` on the forge) of the people holding it. */
   roles: z.record(z.string(), z.array(z.string())).optional(),
   plugin: z.looseObject({ marketplace_repo: z.string().optional() }).optional(),
   /** Headless runs in CI (`sdlc ci …`): which agent CLI to drive. */

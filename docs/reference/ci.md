@@ -1,8 +1,10 @@
 # CI
 
-All CI logic is in one command, `sdlc ci <cmd>`. The per-provider templates are thin YAML that call `npx -y @morsadev/sdlc@0 ci <cmd>` on Node 22. `/sdlc-setup` installs them for your provider; the files live in `content/en/skills/sdlc-setup/ci/`.
+All CI logic is in one command, `sdlc ci <cmd>`. The per-provider templates are thin YAML that call `npx -y @morsadev/sdlc@0 ci <cmd>` on Node 22. `sdlc init` installs them for the detected provider (or run `sdlc ci install` later); the files live in `content/en/skills/sdlc-setup/ci/`. The installer fills in the stack setup from `stacks/<lang>.md`, uses your `commands` when there is no Makefile, and never overwrites an existing file.
 
 ```text
+sdlc ci install [--provider github|gitlab|bitbucket] [--preset solo|team-github|regulated]
+                               copy the pipeline templates (stack setup filled in; never overwrites)
 sdlc ci bootstrap              install the agent CLI (and the Claude plugin when plugin.marketplace_repo is set)
 sdlc ci review                 review the PR/MR with REVIEW.md and post the result as a comment
 sdlc ci intent-to-spec         for accepted intents without spec.md: write the spec headless, commit, push

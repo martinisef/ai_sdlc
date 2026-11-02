@@ -25,7 +25,9 @@ import {
   writeConfig,
   type Artifact,
 } from '@ai-native-sdlc/core';
-import { askConfig, detectConfig, scaffold, templateFor } from './init.ts';
+import { askConfig, detectConfig, presetConfig, scaffold, templateFor } from './init.ts';
+import { defaultPreset, isPreset, PRESET_SPECS, PRESETS, type Preset } from './presets.ts';
+import { ciSecrets, installCi } from './ci/install.ts';
 import { trackerCommand, vcsCommand } from './integrations.ts';
 import { bandsCommand } from './bands.ts';
 import { ciCommand } from './ci/index.ts';
@@ -40,7 +42,8 @@ const VERSION =
 const HELP = `sdlc ${VERSION} — AI-native SDLC loop (intent → spec → plan → build → ship → incident)
 
 Setup
-  init [--yes] [--locale en|es]      detect stack/VCS/agents, write .sdlc/config.json, scaffold, sync
+  init [--preset solo|team-github|regulated] [--yes] [--no-ci] [--first-change "title"] [--locale en|es] [--verbose]
+                                     detect stack/VCS/agents, apply the preset, scaffold, sync, install CI
   sync [--force] [--dry-run]         regenerate agent files (Claude, Cursor, AGENTS.md) and git hooks
   doctor [--json]                    health checks + enforcement matrix per agent
   migrate                            .claude/sdlc.json → .sdlc/config.json
@@ -75,7 +78,7 @@ function parseArgs(argv: string[]) {
     else if (a.startsWith('--')) {
       const [k, v] = a.slice(2).split('=', 2);
       if (v !== undefined) flags[k] = v;
-      else if (['agent', 'port', 'ticket', 'title', 'locale'].includes(k)) flags[k] = argv[++i] ?? '';
+      else if (['agent', 'port', 'ticket', 'title', 'locale', 'preset', 'first-change'].includes(k)) flags[k] = argv[++i] ?? '';
       else flags[k] = true;
     } else pos.push(a);
   }
@@ -108,6 +111,22 @@ function printSync(r: SyncReport) {
   for (const p of r.conflicts) console.log(`  conflict  ${p} (existed before sdlc; kept — --force to replace)`);
   console.log(`  ${r.unchanged.length} unchanged`);
   if (r.hooksPath) console.log(r.hooksPath.set ? '  git hooks: core.hooksPath=.sdlc/git-hooks' : `  git hooks: not installed (${r.hooksPath.note})`);
+}
+
+function newChange(root: string, slug: string, opts: { ticket?: string; title?: string; branch: boolean }) {
+  const loaded = loadConfig(root);
+  const dir = `changes/${new Date().toISOString().slice(0, 7)}-${slug}`;
+  if (existsSync(join(root, dir))) fail(`${dir} already exists`);
+  if (opts.branch) gitOrThrow(root, ['checkout', '-b', `change/${slug}`]);
+  const who = gitUser(root);
+  const fields: Record<string, string> = { change: slug, created: new Date().toISOString().slice(0, 10), author: who.name ?? who.email ?? '' };
+  if (opts.ticket) fields.ticket = opts.ticket;
+  let body = setFrontmatter(templateFor(root, 'intent', localeOf(loaded)), fields);
+  if (opts.title) body = body.replace(/^# (Intent: )?.*$/m, (_m, p: string | undefined) => `# ${p ?? ''}${opts.title}`);
+  mkdirSync(join(root, dir), { recursive: true });
+  writeFileSync(join(root, dir, 'intent.md'), body);
+  console.log(`created ${dir}/intent.md${opts.branch ? ` on branch change/${slug}` : ''}`);
+  console.log(loaded ? 'Next: fill it with your agent (/sdlc-intent) and ask the PO to accept it (sdlc approve).' : 'Note: project not configured (sdlc init).');
 }
 
 async function main() {
@@ -151,14 +170,32 @@ async function main() {
     case 'init': {
       if (loadConfig(root) && !flags.force) fail(`already configured (${loadConfig(root)!.path}); edit it or use \`sdlc ui\`, then \`sdlc sync\``);
       const locale = flags.locale === 'es' ? 'es' : 'en';
-      let config = detectConfig(root, locale);
-      if (!flags.yes && process.stdin.isTTY) config = await askConfig(config);
+      if (flags.preset !== undefined && !isPreset(flags.preset)) fail(`unknown preset ${flags.preset} (${PRESETS.join('|')})`);
+      const detected = detectConfig(root, locale);
+      let preset: Preset = isPreset(flags.preset) ? flags.preset : defaultPreset(detected);
+      let config = presetConfig(detected, preset);
+      if (!flags.yes && process.stdin.isTTY) ({ preset, config } = await askConfig(detected, isPreset(flags.preset) ? flags.preset : undefined));
       writeConfig(root, config);
-      console.log(`wrote ${CONFIG_PATH}`);
       const created = scaffold(root, { claudeMd: (config.agents ?? []).includes('claude'), locale });
-      for (const p of created) console.log(`  scaffold  ${p}`);
-      printSync(sync(root, requireConfig(root)));
-      console.log('\nNext: review .sdlc/config.json (or `sdlc ui` → Settings), then open your agent and run /sdlc-setup to finish CLAUDE.md/REVIEW.md/CI, or /sdlc-intent to start a change.');
+      const report = sync(root, requireConfig(root));
+      const provider = config.vcs?.provider;
+      const ci = flags['no-ci'] || !provider ? undefined : installCi(root, config, { provider, locale, files: PRESET_SPECS[preset].github });
+      if (flags.verbose) {
+        for (const p of created) console.log(`  scaffold  ${p}`);
+        printSync(report);
+      }
+      const roles = Object.entries(config.roles ?? {}).map(([r, who]) => `${r}: ${who.join(', ')}`);
+      console.log(`✓ ai-sdlc ready · preset ${preset} · ${config.stack?.language ?? 'unknown stack'} · agents: ${(config.agents ?? []).join(', ')}`);
+      console.log(`  config   ${CONFIG_PATH} (${created.length} scaffold files, ${report.written.length} agent files; --verbose lists them)`);
+      console.log(`  gates    ${Object.keys(config.gates ?? {}).length ? (roles.length ? roles.join(' · ') : 'by role, nobody assigned yet: any person') : 'any person (never an agent)'}`);
+      console.log(
+        `  CI       ${ci ? `${ci.written.length} file(s) for ${provider}${ci.conflicts.length ? `, ${ci.conflicts.length} kept` : ''}; secret ${ciSecrets(config).join(', ')}` : provider ? 'skipped (--no-ci)' : 'no remote detected: `sdlc ci install --provider github|gitlab|bitbucket` later'}`,
+      );
+      if (typeof flags['first-change'] === 'string') {
+        const title = flags['first-change'];
+        const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'first-change';
+        newChange(root, slug, { title, branch: true });
+      } else console.log('Next: sdlc new <slug> to start a change, then /sdlc-intent in your agent.');
       return;
     }
 
@@ -228,19 +265,11 @@ async function main() {
     case 'new': {
       const slug = pos[0];
       if (!slug || !/^[a-z0-9][a-z0-9-]*$/i.test(slug)) fail('usage: sdlc new <slug> (letters, digits, dashes)');
-      const loaded = loadConfig(root);
-      const dir = `changes/${new Date().toISOString().slice(0, 7)}-${slug}`;
-      if (existsSync(join(root, dir))) fail(`${dir} already exists`);
-      if (!flags['no-branch']) gitOrThrow(root, ['checkout', '-b', `change/${slug}`]);
-      const who = gitUser(root);
-      const fields: Record<string, string> = { change: slug, created: new Date().toISOString().slice(0, 10), author: who.name ?? who.email ?? '' };
-      if (typeof flags.ticket === 'string') fields.ticket = flags.ticket;
-      let body = setFrontmatter(templateFor(root, 'intent', localeOf(loaded)), fields);
-      if (typeof flags.title === 'string') body = body.replace(/^# (Intent: )?.*$/m, (_m, p: string | undefined) => `# ${p ?? ''}${flags.title}`);
-      mkdirSync(join(root, dir), { recursive: true });
-      writeFileSync(join(root, dir, 'intent.md'), body);
-      console.log(`created ${dir}/intent.md${flags['no-branch'] ? '' : ` on branch change/${slug}`}`);
-      console.log(loaded ? 'Next: fill it with your agent (/sdlc-intent) and ask the PO to accept it (sdlc approve).' : 'Note: project not configured (sdlc init).');
+      newChange(root, slug, {
+        ticket: typeof flags.ticket === 'string' ? flags.ticket : undefined,
+        title: typeof flags.title === 'string' ? flags.title : undefined,
+        branch: !flags['no-branch'],
+      });
       return;
     }
 

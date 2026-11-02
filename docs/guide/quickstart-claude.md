@@ -7,14 +7,23 @@ Requirements: Node ≥ 22.18, git, and Claude Code. For PRs and MRs you also nee
 ```bash
 cd your-repo
 npm i -D @morsadev/sdlc     # or: npm i -g @morsadev/sdlc
-npx sdlc init
+npx sdlc init --preset team-github     # or solo, or regulated
 ```
 
-`sdlc init` detects the stack, the VCS provider and the agents in use, asks you to confirm, and then does three things:
+`sdlc init` detects the stack, the VCS provider and the agents in use, asks three questions (preset, Product Owner, tech lead), and then:
 
 1. Writes `.sdlc/config.json`, the [configuration](../reference/config).
 2. Scaffolds `changes/`, `lessons/`, `evals/`, `ops/bands.yaml`, `CLAUDE.md`, `REVIEW.md` and `SETUP.md`.
 3. Runs `sdlc sync`, which generates the agent files and installs the git hooks (`core.hooksPath=.sdlc/git-hooks`).
+4. Installs the CI templates for your provider (`--no-ci` skips it).
+
+| Preset | Gates | CI (GitHub) |
+|---|---|---|
+| `solo` | any person, including the author (never an agent) | `ci.yml` |
+| `team-github` | intent and spec by the PO, plan by the tech lead | `ci.yml`, `sdlc-review.yml`, `sdlc-loop.yml`, `sdlc-gates.yml` |
+| `regulated` | as team, plus the tech lead on the spec and default high-risk paths | team plus `sdlc-evals.yml` and `sdlc-bands.yml` |
+
+People are GitHub users (`@ana`) or git emails. `--first-change "Add a health endpoint"` also creates the first intent on its branch.
 
 For Claude Code, the sync step writes:
 

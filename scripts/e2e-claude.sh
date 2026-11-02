@@ -39,6 +39,12 @@ git init -q -b main && git config user.name "Ana Dev" && git config user.email a
 git add -A && git commit -qm "initial"
 sdlc() { "$P/.sdlc/bin/sdlc" "$@"; }
 
+echo "init"
+I="$TMP/fresh"
+mkdir -p "$I" && (cd "$I" && git init -q -b main && git remote add origin git@github.com:acme/fresh.git && printf '[project]\nname = "fresh"\n' > pyproject.toml && git add -A && git commit -qm initial)
+if out="$(cd "$I" && SDLC_PROJECT_DIR="$I" node "$BUNDLE" init --preset team-github --yes 2>&1)" && printf '%s' "$out" | grep -q "ai-sdlc ready"; then ok "init --preset team-github"; else ko "init --preset team-github" "$out"; fi
+[ -f "$I/.github/workflows/sdlc-review.yml" ] && [ -f "$I/AGENTS.md" -o -f "$I/CLAUDE.md" ] && ok "init installs CI and agent files" || ko "init installs CI and agent files" "$(ls -a "$I" "$I/.github/workflows" 2>&1)"
+
 echo "lifecycle"
 if out="$(sdlc sync 2>&1)"; then ok "sync on a fresh clone"; else ko "sync on a fresh clone" "$out"; fi
 if out="$(sdlc doctor 2>&1)"; then ok "doctor"; else ko "doctor" "$out"; fi

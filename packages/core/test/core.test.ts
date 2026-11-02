@@ -117,6 +117,10 @@ test('gates: approval is a commit with approver; agents and authors cannot appro
   assert.throws(() => decideGate(root, loaded, 'claims', 'plan', 'approved'), /tech-lead/);
   decideGate(root, loaded, 'claims', 'plan', 'approved', { approver: { name: 'Lead', email: 'lead@example.com' } });
   assert.equal(listChanges(root).find((c) => c.slug === 'claims')?.artifacts.plan?.status, 'approved');
+
+  const solo = { ...loaded!, config: { ...loaded!.config, gates_self_approval: true } };
+  decideGate(root, solo, 'claims', 'spec', 'approved', { approver: { name: 'Bob', email: 'bob@example.com' } });
+  assert.throws(() => decideGate(root, solo, 'claims', 'spec', 'approved', { approver: { name: 'Claude', email: 'noreply@anthropic.com' } }), /agent or bot/);
 });
 
 test('gates: deciding on a change/* branch that is not checked out commits there without touching the worktree', () => {

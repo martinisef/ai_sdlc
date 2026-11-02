@@ -5,6 +5,7 @@ import { join, relative } from 'node:path';
 import { createInterface } from 'node:readline/promises';
 import { localeDir } from '@ai-native-sdlc/adapters';
 import { AGENTS, git, type AgentId, type Config, type Locale } from '@ai-native-sdlc/core';
+import { defaultPreset, isPreset, parsePeople, PRESET_SPECS, PRESETS, type Preset } from './presets.ts';
 
 interface StackDefaults {
   language: string;
@@ -109,22 +110,40 @@ export function detectConfig(root: string, locale: Locale): Config {
   return config;
 }
 
-export async function askConfig(config: Config): Promise<Config> {
+export interface InitAnswers {
+  preset: Preset;
+  config: Config;
+}
+
+/** Applies a preset and the people to the detected config. Roles stay empty (= any person) when none are given. */
+export function presetConfig(config: Config, preset: Preset, people: { po?: string; techLead?: string } = {}): Config {
+  const out = PRESET_SPECS[preset].apply(structuredClone(config));
+  if (PRESET_SPECS[preset].roles) {
+    const po = parsePeople(people.po ?? '');
+    const tl = parsePeople(people.techLead ?? '');
+    out.roles = { ...(po.length ? { po } : {}), ...(tl.length ? { 'tech-lead': tl } : {}) };
+  }
+  return out;
+}
+
+/** Three questions: preset, PO, tech lead. Everything else is detected and editable later (`sdlc ui` → Settings). */
+export async function askConfig(config: Config, preset?: Preset): Promise<InitAnswers> {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   try {
     const ask = async (q: string, def: string) => (await rl.question(`${q} [${def}]: `)).trim() || def;
+    let chosen = preset;
+    while (!chosen) {
+      for (const p of PRESETS) console.log(`  ${p.padEnd(12)} ${PRESET_SPECS[p].description}`);
+      const a = await ask('Preset', defaultPreset(config));
+      if (isPreset(a)) chosen = a;
+    }
     const agents = await ask(`Agents (${AGENTS.join(', ')})`, (config.agents ?? []).join(','));
     config.agents = agents.split(',').map((s) => s.trim()).filter((a): a is AgentId => (AGENTS as readonly string[]).includes(a));
-    config.vcs = { ...config.vcs, default_branch: await ask('Default branch', config.vcs?.default_branch ?? 'main') };
-    for (const k of ['build', 'test', 'lint'] as const) {
-      config.commands = { ...config.commands, [k]: await ask(`${k} command`, config.commands?.[k] ?? '') };
-    }
-    const prot = await ask('Protected paths (comma separated)', (config.protected_paths ?? []).join(','));
-    config.protected_paths = prot.split(',').map((s) => s.trim()).filter(Boolean);
-    const po = await ask('Product Owner git email(s) for intent/spec gates (comma separated, empty = any person)', '');
-    const tl = await ask('Tech lead git email(s) for plan gates (comma separated, empty = any person)', '');
-    config.roles = { ...(po ? { po: po.split(',').map((s) => s.trim()) } : {}), ...(tl ? { 'tech-lead': tl.split(',').map((s) => s.trim()) } : {}) };
-    return config;
+    if (!PRESET_SPECS[chosen].roles) return { preset: chosen, config: presetConfig(config, chosen) };
+    const hint = 'GitHub users and/or git emails, comma separated; empty = any person';
+    const po = await ask(`Product Owner for intent/spec gates (${hint})`, '');
+    const techLead = await ask(`Tech lead for plan gates (${hint})`, '');
+    return { preset: chosen, config: presetConfig(config, chosen, { po, techLead }) };
   } finally {
     rl.close();
   }

@@ -40,5 +40,7 @@ Si el plan tiene pasos independientes, abrí una sesión por paso, cada una en s
 ## Proyecto nuevo
 
 ```bash
-npx @morsadev/sdlc init --locale es     # después abrí tu agente, corré /sdlc-setup y seguí SETUP.md
+npx @morsadev/sdlc init --locale es --preset team-github   # o solo, o regulated
 ```
+
+`init` pregunta tres cosas (preset, PO y tech lead, como `@usuario` de GitHub o email), instala el CI del proveedor detectado (`--no-ci` lo omite) y con `--first-change "título"` crea el primer intent. Después abrí tu agente, corré `/sdlc-setup` para CLAUDE.md y REVIEW.md, y seguí SETUP.md.

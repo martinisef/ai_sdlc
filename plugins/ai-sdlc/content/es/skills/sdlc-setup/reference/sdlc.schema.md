@@ -64,7 +64,8 @@ Lo leen los guardrails (`sdlc hook`, para cualquier agente), las skills del loop
 | `risk.high_risk_paths` | `/sdlc-spec`, `/sdlc-plan`, REVIEW.md | Marca `risk: high` → requiere tech lead. |
 | `production_gate` | hook `production-gate` | Regex ERE sobre comandos Bash; sin la variable de aprobación → bloqueo. |
 | `gates` | `sdlc approve`, dashboard | Roles que pueden aprobar cada artefacto. Sin roles: cualquier persona (nunca un agente o bot). `risk: high` suma `tech-lead` al plan. |
-| `roles` | `sdlc approve`, dashboard | Rol → emails/nombres git. |
+| `gates_self_approval` | `sdlc approve` | `true` (preset `solo`): el autor puede aprobar su propia spec y plan. Los agentes y bots siguen sin poder. |
+| `roles` | `sdlc approve`, dashboard | Rol → emails/nombres git, o `@login` en la forja (comentarios en el PR). |
 | `plugin.marketplace_repo` | `sdlc ci bootstrap` | De dónde clonar el plugin de Claude en CI. Sin esto, el CI usa las skills commiteadas por `sdlc sync`. |
 | `ci.agent` | `sdlc ci`, `sdlc bands check` | Agente headless en CI: `claude` (default), `codex` (`codex exec`) o `cursor` (`cursor-agent`). Lo pisan `--agent` o `SDLC_CI_AGENT`. |
 | `ci.model` | `sdlc ci` | Modelo que se le pasa a la CLI del agente. |
