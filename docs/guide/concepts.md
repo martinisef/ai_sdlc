@@ -44,9 +44,10 @@ Who may approve is set by `gates` (role names per artifact) and `roles` (role �
 | 3 | `/sdlc-plan` | engineer + agent | engineer (tech lead if `risk: high`) |
 | 4 | `/sdlc-build` | the agent implements; the engineer steers | none (tests green + `verifier`) |
 | 4b | `/sdlc-fix` | for bugs: the failing test first, with the test-lock on | none |
+| 4c | `sdlc quick "<what>"`, then `/sdlc-quick` | small, low-risk changes: no spec or plan | none; on every push the change must stay within `quick_lane` (10 code files, no high-risk paths) or be promoted with `sdlc promote` |
 | 5 | `/sdlc-ship [--babysit]` | the agent opens the PR/MR and looks after it | code owner approves |
 | 6 | `/sdlc-incident` | on-call + agent | on-call triages: fix now, schedule or dismiss |
-| — | `/sdlc-status [--metrics]` | anyone | — |
+| — | `/sdlc-status [--metrics]`, `sdlc next` | anyone | — |
 
 ## Closing the loop
 

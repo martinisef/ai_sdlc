@@ -57,9 +57,10 @@ export async function repoChanges(gh: GithubClient, repo: string, defaultBranch:
     }
     const branch = ownBranch(dir);
     let stage = stageOf(artifacts);
-    if (stage === 'plan-approved') {
+    if (stage === 'plan-approved' || stage === 'quick-ready') {
+      const last = stage === 'quick-ready' ? 'intent' : 'plan';
       if (branch && (await gh.changedFiles(repo, defaultBranch, branch)).some(isCodePath)) stage = 'building';
-      else if (!branch && slot.get('plan')?.ref.name === defaultBranch) stage = 'merged';
+      else if (!branch && slot.get(last)?.ref.name === defaultBranch) stage = 'merged';
     }
     const intent = artifacts.intent;
     out.push({

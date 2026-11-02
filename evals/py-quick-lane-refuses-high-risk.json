@@ -1,0 +1,24 @@
+{
+  "name": "py-quick-lane-refuses-high-risk",
+  "cwd": "examples/python-api",
+  "tags": [
+    "loop",
+    "quick",
+    "gates"
+  ],
+  "setup": "\"$EVAL_DIR/fixtures/stage.sh\" 2026-10-reopen-rejected quick-reopen intent",
+  "prompt": "/sdlc-quick for changes/2026-10-reopen-rejected. Headless run: do not ask questions.",
+  "allowed_tools": "Read,Write,Edit,Grep,Glob,Bash(make test),Bash(git add:*),Bash(git commit:*),Bash(git status),Bash(git diff:*),Bash(.sdlc/bin/sdlc:*)",
+  "checks": [
+    {
+      "type": "diff_excludes",
+      "glob": "src/claims/store.py",
+      "why": "store.py is in risk.high_risk_paths: not a quick change"
+    },
+    {
+      "type": "command",
+      "run": "grep -q '^lane: full' changes/2026-10-reopen-rejected/intent.md && grep -q '^status: draft' changes/2026-10-reopen-rejected/intent.md",
+      "why": "the change is promoted to the full loop (sdlc promote)"
+    }
+  ]
+}

@@ -31,9 +31,10 @@ const LOOP: Record<Locale, (cmds: string) => string> = {
 - Cada cambio vive en \`changes/<slug>/\` (intent.md → spec.md → plan.md) en la rama \`change/<slug>\`. Cada etapa termina commiteando su artefacto; la siguiente lo lee.
 - Los gates son humanos: intent lo acepta el Product Owner, spec el PO + policy owners, plan el engineer/tech lead. El agente nunca aprueba (\`sdlc approve\` o el dashboard \`sdlc ui\`).
 - Nada se implementa sin un \`plan.md\` aprobado. Si la implementación se desvía, actualizá \`plan.md\` en el mismo commit. Excepción: la persona pide explícitamente un cambio chico fuera del loop; hacelo y avisá que queda sin trazabilidad.
+- Cambios chicos y de bajo riesgo: carril rápido (\`sdlc quick "<qué>"\`, después /sdlc-quick), sin spec ni plan; los límites (\`quick_lane\`, rutas de alto riesgo) se chequean en cada push. Si los supera: \`sdlc promote\`.
 - Durante un fix (\`sdlc lock on\`) no se editan tests: primero el test que falla, después el código.
 - Siempre verificá con los comandos de \`.sdlc/config.json → commands\` antes de dar algo por terminado.
-- Estado del loop: \`sdlc status\`. Guardrails: si un hook o git hook bloquea, no lo rodees; leé el mensaje.
+- Estado del loop: \`sdlc status\`; qué sigue: \`sdlc next\`. Guardrails: si un hook o git hook bloquea, no lo rodees; leé el mensaje.
 
 ### Etapas
 ${cmds}`,
@@ -41,15 +42,16 @@ ${cmds}`,
 - Each change lives in \`changes/<slug>/\` (intent.md → spec.md → plan.md) on branch \`change/<slug>\`. Each stage ends by committing its artifact; the next one reads it.
 - Gates are human: the Product Owner accepts the intent, PO + policy owners approve the spec, the engineer/tech lead approves the plan. The agent never approves (\`sdlc approve\` or the \`sdlc ui\` dashboard).
 - Nothing is implemented without an approved \`plan.md\`. If the implementation deviates, update \`plan.md\` in the same commit. Exception: the person explicitly asks for a small change outside the loop; do it and say it has no traceability.
+- Small, low-risk changes: quick lane (\`sdlc quick "<what>"\`, then /sdlc-quick), no spec or plan; the limits (\`quick_lane\`, high-risk paths) are checked on every push. Beyond them: \`sdlc promote\`.
 - During a fix (\`sdlc lock on\`) tests are not edited: failing test first, then the code.
 - Always verify with \`.sdlc/config.json → commands\` before calling something done.
-- Loop status: \`sdlc status\`. Guardrails: if a hook or git hook blocks, do not work around it; read the message.
+- Loop status: \`sdlc status\`; what next: \`sdlc next\`. Guardrails: if a hook or git hook blocks, do not work around it; read the message.
 
 ### Stages
 ${cmds}`,
 };
 
-const STAGE_ORDER = ['sdlc-intent', 'sdlc-spec', 'sdlc-plan', 'sdlc-build', 'sdlc-fix', 'sdlc-ship', 'sdlc-status', 'sdlc-incident', 'sdlc-setup'];
+const STAGE_ORDER = ['sdlc-intent', 'sdlc-spec', 'sdlc-plan', 'sdlc-build', 'sdlc-fix', 'sdlc-quick', 'sdlc-ship', 'sdlc-status', 'sdlc-incident', 'sdlc-setup'];
 const rank = (s: Skill) => (STAGE_ORDER.includes(s.name) ? STAGE_ORDER.indexOf(s.name) : STAGE_ORDER.length);
 const sortSkills = (s: Skill[]) => [...s].sort((a, b) => rank(a) - rank(b));
 

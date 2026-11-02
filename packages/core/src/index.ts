@@ -13,4 +13,5 @@ export * from './metrics.ts';
 export * from './next.ts';
 export * from './policies.ts';
 export * from './project.ts';
+export * from './quick.ts';
 export * from './vcs.ts';

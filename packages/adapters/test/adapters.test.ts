@@ -101,6 +101,29 @@ test('git pre-push: code on a change branch needs an approved plan', () => {
   assert.equal(prePush(root, {}).exitCode, 0);
 });
 
+test('git pre-push: a quick change passes within quick_lane limits and is stopped beyond them', () => {
+  const root = repo({ ...CONFIG, quick_lane: { max_files: 2 }, risk: { high_risk_paths: ['src/auth/**'] } });
+  gitIn(root, 'checkout', '-qb', 'change/q');
+  mkdirSync(join(root, 'changes/q'), { recursive: true });
+  writeFileSync(join(root, 'changes/q/intent.md'), '---\nstatus: accepted\nlane: quick\n---\n# Quick: q\n');
+  writeFileSync(join(root, 'app.py'), 'x');
+  gitIn(root, 'add', '-A');
+  gitIn(root, 'commit', '-qm', 'quick');
+  assert.equal(prePush(root, {}).exitCode, 0);
+
+  mkdirSync(join(root, 'src/auth'), { recursive: true });
+  writeFileSync(join(root, 'src/auth/login.py'), 'x');
+  gitIn(root, 'add', '-A');
+  gitIn(root, 'commit', '-qm', 'auth');
+  assert.match(prePush(root, {}).stderr!, /quick lane but src\/auth\/login\.py is a high-risk path[\s\S]*sdlc promote q/);
+
+  gitIn(root, 'reset', '-q', '--hard', 'HEAD~1');
+  for (const f of ['a.py', 'b.py']) writeFileSync(join(root, f), 'x');
+  gitIn(root, 'add', '-A');
+  gitIn(root, 'commit', '-qm', 'more');
+  assert.match(prePush(root, {}).stderr!, /3 code files changed, more than quick_lane\.max_files \(2\)/);
+});
+
 test('sync renders every agent, merges foreign hooks, and detects drift', () => {
   const root = repo(CONFIG);
   mkdirSync(join(root, '.cursor'));

@@ -5,9 +5,10 @@
 - Each change lives in `changes/<slug>/` (intent.md → spec.md → plan.md) on branch `change/<slug>`. Each stage ends by committing its artifact; the next one reads it.
 - Gates are human: the Product Owner accepts the intent, PO + policy owners approve the spec, the engineer/tech lead approves the plan. The agent never approves (`sdlc approve` or the `sdlc ui` dashboard).
 - Nothing is implemented without an approved `plan.md`. If the implementation deviates, update `plan.md` in the same commit. Exception: the person explicitly asks for a small change outside the loop; do it and say it has no traceability.
+- Small, low-risk changes: quick lane (`sdlc quick "<what>"`, then /sdlc-quick), no spec or plan; the limits (`quick_lane`, high-risk paths) are checked on every push. Beyond them: `sdlc promote`.
 - During a fix (`sdlc lock on`) tests are not edited: failing test first, then the code.
 - Always verify with `.sdlc/config.json → commands` before calling something done.
-- Loop status: `sdlc status`. Guardrails: if a hook or git hook blocks, do not work around it; read the message.
+- Loop status: `sdlc status`; what next: `sdlc next`. Guardrails: if a hook or git hook blocks, do not work around it; read the message.
 
 ### Stages
 - **sdlc-intent** — Stage 1 (Plan) of the AI-native loop. → `.agents/skills/sdlc-intent/SKILL.md`
@@ -15,6 +16,7 @@
 - **sdlc-plan** — Stage 3 (Build) of the AI-native loop, first half. → `.agents/skills/sdlc-plan/SKILL.md`
 - **sdlc-build** — Stage 3 (Build) of the AI-native loop, second half. → `.agents/skills/sdlc-build/SKILL.md`
 - **sdlc-fix** — Stage 4 (Test) of the AI-native loop for bugs. → `.agents/skills/sdlc-fix/SKILL.md`
+- **sdlc-quick** — Quick lane of the AI-native loop. → `.agents/skills/sdlc-quick/SKILL.md`
 - **sdlc-ship** — Stage 5 (Deploy) of the AI-native loop. → `.agents/skills/sdlc-ship/SKILL.md`
 - **sdlc-status** — Shows which stage of the AI-native loop each change (changes/*) is at, the state of its PR/MR and its Jira ticket, flags inconsistencies and suggests the next command. → `.agents/skills/sdlc-status/SKILL.md`
 - **sdlc-incident** — Stage 6 (Maintain) of the AI-native loop. → `.agents/skills/sdlc-incident/SKILL.md`
