@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { loadEvals } from '../src/ci/evals.ts';
+import { loadEvals, promptFor } from '../src/ci/evals.ts';
 import { REPO } from './helpers.ts';
 
 const CHECKS = new Set(['command', 'diff_excludes', 'diff_includes', 'output_contains', 'file_matches']);
@@ -38,4 +38,14 @@ test('product evals: 20+ well-formed cases over examples/', () => {
   for (const f of readdirSync(join(REPO, 'evals/fixtures')).filter((f) => f.endsWith('.sh'))) {
     assert.ok(statSync(join(REPO, 'evals/fixtures', f)).mode & 0o100, `${f} is executable`);
   }
+});
+
+test('product evals: slash-command prompts point other agents at the rendered skill', () => {
+  for (const e of loadEvals(REPO).filter((e) => e.prompt.startsWith('/sdlc-'))) {
+    const skill = /^\/(sdlc-[a-z-]+)/.exec(e.prompt)![1];
+    assert.equal(promptFor('claude', e.prompt), e.prompt);
+    assert.match(promptFor('codex', e.prompt), new RegExp(`^Use the skill in \\.agents/skills/${skill}/SKILL\\.md`));
+    assert.ok(existsSync(join(REPO, e.cwd!, '.agents/skills', skill, 'SKILL.md')), `${e.name}: ${skill} is rendered for AGENTS.md agents`);
+  }
+  assert.equal(promptFor('cursor', 'Fix the bug'), 'Fix the bug');
 });

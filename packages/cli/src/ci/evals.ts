@@ -5,8 +5,8 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { git, globMatch, lines, SdlcError } from '@ai-native-sdlc/core';
-import { runAgent } from './agent.ts';
+import { git, globMatch, lines, SdlcError, type CiAgent } from '@ai-native-sdlc/core';
+import { runAgent, skillRef } from './agent.ts';
 import type { CiEnv } from './index.ts';
 
 export type EvalCheck =
@@ -96,6 +96,13 @@ export function loadEvals(root: string, pattern = '*'): EvalCase[] {
     });
 }
 
+/** Eval prompts are written as Claude slash commands (`/sdlc-spec …`); other agents get the rendered skill instead. */
+export function promptFor(agent: CiAgent, prompt: string): string {
+  const m = /^\/(sdlc-[a-z-]+)\b\s*([\s\S]*)$/.exec(prompt.trim());
+  if (!m || agent === 'claude') return prompt;
+  return `Use ${skillRef(agent, m[1])}${m[2] ? ` with these arguments: ${m[2]}` : ''}`;
+}
+
 export function runEvals(c: CiEnv, pattern?: string, out?: string): number {
   const evals = loadEvals(c.root, pattern);
   if (!evals.length) {
@@ -118,7 +125,7 @@ export function runEvals(c: CiEnv, pattern?: string, out?: string): number {
         if (r.status !== 0) throw new SdlcError(`setup failed: ${(r.stderr || r.stdout).trim().slice(0, 500)}`);
       }
       const base = git(wt, ['rev-parse', 'HEAD']) ?? 'HEAD';
-      const output = runAgent(c.agent, { mode: 'edit', cwd: dir, prompt: e.prompt, allowedTools: e.allowed_tools ?? 'Read,Edit,Write,Grep,Glob' }, c.model, env);
+      const output = runAgent(c.agent, { mode: 'edit', cwd: dir, prompt: promptFor(c.agent, e.prompt), allowedTools: e.allowed_tools ?? 'Read,Edit,Write,Grep,Glob' }, c.model, env);
       failures = applyChecks(e, dir, output, env, base);
     } catch (err) {
       failures = [(err as Error).message];
