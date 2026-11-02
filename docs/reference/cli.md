@@ -26,6 +26,9 @@ Every command works from any directory inside the repository. The project root i
 | `sdlc status [--json \| --metrics]` | Changes and their stage. `*` marks the active change (current branch). |
 | `sdlc metrics [--json]` | Leading indicators from git and the activity log. |
 | `sdlc new <slug> [--ticket KEY] [--title T] [--no-branch]` | Creates `changes/<YYYY-MM>-<slug>/intent.md` (status `draft`) on a new branch `change/<slug>`. |
+| `sdlc quick "<what>" [--ticket KEY] [--no-branch]` | Quick lane: `intent.md` with `lane: quick` on branch `change/<slug>`, no spec or plan. The pre-push hook checks `quick_lane` limits (default 10 code files; nothing under `risk.high_risk_paths` or `quick_lane.forbid_paths`). |
+| `sdlc quick --check [--json]` | Whether the active quick change is still within the limits (exit 1 if not). |
+| `sdlc promote [<change>]` | Quick lane → full loop: `lane: full`, intent back to `draft` for the PO. |
 | `sdlc approve <change> <intent\|spec\|plan> [-m comment]` | Gate decision as a commit. See [Gates](../guide/concepts#gates). |
 | `sdlc reject <change> <intent\|spec\|plan> [-m comment]` | The same, setting `status: rejected`. |
 | `sdlc lock on\|off\|status` | Test-lock during a fix: test files (`test_globs`) cannot be edited while it is on. |

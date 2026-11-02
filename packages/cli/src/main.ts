@@ -9,6 +9,8 @@ import {
   CONFIG_PATH,
   LEGACY_CONFIG_PATH,
   configJsonSchema,
+  branchFiles,
+  checkQuick,
   decideGate,
   ensureSdlcDir,
   formatNext,
@@ -16,11 +18,15 @@ import {
   FIX_LOCKS,
   gitOrThrow,
   gitUser,
+  isQuick,
   listChanges,
   loadConfig,
   localeOf,
   metrics,
   projectDir,
+  promote,
+  quickLimits,
+  recordEvent,
   SdlcError,
   setFrontmatter,
   t,
@@ -56,6 +62,9 @@ Loop
   status [--json | --metrics]        changes and their stage
   metrics [--json]                   leading indicators from git + activity log
   new <slug> [--ticket KEY] [--title T] [--no-branch]
+  quick "<what>" [--ticket KEY] [--no-branch]   small change without spec/plan (limits checked on push)
+  quick --check [--json]             is the active quick change still within quick_lane limits?
+  promote [<change>]                 quick lane → full loop (intent back to draft for the PO)
   approve <change> <intent|spec|plan> [-m comment]
   reject  <change> <intent|spec|plan> [-m comment]
   lock on|off|status                 test-lock during a fix
@@ -116,7 +125,11 @@ function printSync(r: SyncReport) {
   if (r.hooksPath) console.log(r.hooksPath.set ? '  git hooks: core.hooksPath=.sdlc/git-hooks' : `  git hooks: not installed (${r.hooksPath.note})`);
 }
 
-function newChange(root: string, slug: string, opts: { ticket?: string; title?: string; branch: boolean }) {
+function slugify(title: string): string {
+  return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40).replace(/-$/, '') || 'change';
+}
+
+function newChange(root: string, slug: string, opts: { ticket?: string; title?: string; branch: boolean; quick?: boolean }) {
   const loaded = loadConfig(root);
   const dir = `changes/${new Date().toISOString().slice(0, 7)}-${slug}`;
   if (existsSync(join(root, dir))) fail(`${dir} already exists`);
@@ -124,12 +137,20 @@ function newChange(root: string, slug: string, opts: { ticket?: string; title?: 
   const who = gitUser(root);
   const fields: Record<string, string> = { change: slug, created: new Date().toISOString().slice(0, 10), author: who.name ?? who.email ?? '' };
   if (opts.ticket) fields.ticket = opts.ticket;
-  let body = setFrontmatter(templateFor(root, 'intent', localeOf(loaded)), fields);
-  if (opts.title) body = body.replace(/^# (Intent: )?.*$/m, (_m, p: string | undefined) => `# ${p ?? ''}${opts.title}`);
+  let body: string;
+  if (opts.quick) {
+    body = setFrontmatter(`---\n---\n# Quick: ${opts.title}\n\n${opts.title}\n`, { ...fields, lane: 'quick', status: 'accepted' });
+  } else {
+    body = setFrontmatter(templateFor(root, 'intent', localeOf(loaded)), fields);
+    if (opts.title) body = body.replace(/^# (Intent: )?.*$/m, (_m, p: string | undefined) => `# ${p ?? ''}${opts.title}`);
+  }
   mkdirSync(join(root, dir), { recursive: true });
   writeFileSync(join(root, dir, 'intent.md'), body);
-  console.log(`created ${dir}/intent.md${opts.branch ? ` on branch change/${slug}` : ''}`);
-  console.log(loaded ? 'Next: fill it with your agent (/sdlc-intent) and ask the PO to accept it (sdlc approve).' : 'Note: project not configured (sdlc init).');
+  recordEvent(root, { type: opts.quick ? 'change.quick' : 'change.new', change: slug, by: who.name });
+  console.log(`created ${dir}/intent.md${opts.branch ? ` on branch change/${slug}` : ''}${opts.quick ? ' (quick lane: no spec, no plan)' : ''}`);
+  if (!loaded) console.log('Note: project not configured (sdlc init).');
+  else if (opts.quick) console.log(`Next: /sdlc-quick in your agent. Limits on push: ${quickLimits(loaded).maxFiles} code files, no high-risk paths (sdlc quick --check).`);
+  else console.log('Next: fill it with your agent (/sdlc-intent) and ask the PO to accept it (sdlc approve).');
 }
 
 async function main() {
@@ -196,7 +217,7 @@ async function main() {
       );
       if (typeof flags['first-change'] === 'string') {
         const title = flags['first-change'];
-        const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'first-change';
+        const slug = slugify(title);
         newChange(root, slug, { title, branch: true });
       } else console.log('Next: sdlc next (it always tells you what to do), or sdlc new <slug> to start a change.');
       return;
@@ -281,6 +302,39 @@ async function main() {
         title: typeof flags.title === 'string' ? flags.title : undefined,
         branch: !flags['no-branch'],
       });
+      return;
+    }
+
+    case 'quick': {
+      const loaded = requireConfig(root);
+      if (flags.check) {
+        const change = listChanges(root, { locale: localeOf(loaded), defaultBranch: loaded.config.vcs?.default_branch }).find((c) => c.active);
+        if (!change || !isQuick(change)) fail('the active change is not in the quick lane (sdlc quick "<title>" starts one)');
+        const q = checkQuick(loaded, branchFiles(root, loaded.config.vcs?.default_branch ?? 'main'));
+        if (flags.json) console.log(JSON.stringify({ change: change.slug, ...q }));
+        else console.log(q.ok ? `ok: ${q.files.length}/${quickLimits(loaded).maxFiles} code files, no high-risk paths` : `promote it (sdlc promote ${change.slug}): ${q.reason}`);
+        process.exitCode = q.ok ? 0 : 1;
+        return;
+      }
+      if (!quickLimits(loaded).enabled) fail(t(localeOf(loaded), 'quick.disabled'));
+      const title = pos.join(' ').trim();
+      if (!title) fail('usage: sdlc quick "<what to change>" [--ticket KEY] [--no-branch] · sdlc quick --check');
+      const slug = slugify(title);
+      newChange(root, slug, { title, ticket: typeof flags.ticket === 'string' ? flags.ticket : undefined, branch: !flags['no-branch'], quick: true });
+      return;
+    }
+
+    case 'promote': {
+      const loaded = requireConfig(root);
+      const id = pos[0] ?? listChanges(root, { locale: localeOf(loaded) }).find((c) => c.active)?.slug;
+      if (!id) fail('usage: sdlc promote [<change>] (defaults to the active change)');
+      try {
+        const c = promote(root, loaded, id, gitUser(root).name);
+        console.log(`${c.id} is now in the full loop: intent.md is a draft. Next: /sdlc-intent to complete it, then the PO accepts it (sdlc approve ${c.slug} intent).`);
+      } catch (e) {
+        if (e instanceof SdlcError) fail(e.message);
+        throw e;
+      }
       return;
     }
 

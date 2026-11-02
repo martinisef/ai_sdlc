@@ -5,7 +5,18 @@ import { join } from 'node:path';
 
 export interface SdlcEvent {
   ts: string;
-  type: 'guardrail.block' | 'guardrail.warn' | 'guardrail.override' | 'session.start' | 'gate.approve' | 'gate.reject' | 'sync' | 'band.break';
+  type:
+    | 'guardrail.block'
+    | 'guardrail.warn'
+    | 'guardrail.override'
+    | 'session.start'
+    | 'gate.approve'
+    | 'gate.reject'
+    | 'sync'
+    | 'band.break'
+    | 'change.new'
+    | 'change.quick'
+    | 'change.promote';
   metric?: string;
   agent?: string;
   policy?: string;

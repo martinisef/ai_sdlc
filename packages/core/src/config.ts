@@ -63,6 +63,14 @@ export const ConfigSchema = z.looseObject({
   /** Role → git emails (or names, or `@login` on the forge) of the people holding it. */
   roles: z.record(z.string(), z.array(z.string())).optional(),
   plugin: z.looseObject({ marketplace_repo: z.string().optional() }).optional(),
+  /** `sdlc quick`: small changes without spec and plan, limited on every push. */
+  quick_lane: z
+    .looseObject({
+      enabled: z.boolean().optional(),
+      max_files: z.number().int().positive().optional(),
+      forbid_paths: z.array(z.string()).optional(),
+    })
+    .optional(),
   /** Headless runs in CI (`sdlc ci …`): which agent CLI to drive. */
   ci: z
     .looseObject({

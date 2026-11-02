@@ -1,0 +1,36 @@
+{
+  "name": "py-quick-lane-builds",
+  "cwd": "examples/python-api",
+  "tags": [
+    "loop",
+    "quick"
+  ],
+  "setup": "\"$EVAL_DIR/fixtures/stage.sh\" 2026-10-health-service quick-health intent",
+  "prompt": "/sdlc-quick for changes/2026-10-health-service. Run make test and make lint at the end and commit.",
+  "allowed_tools": "Read,Write,Edit,Grep,Glob,Bash(make test),Bash(make lint),Bash(make format),Bash(git add:*),Bash(git commit:*),Bash(git status),Bash(git diff:*),Bash(.sdlc/bin/sdlc:*)",
+  "checks": [
+    {
+      "type": "command",
+      "run": "make test"
+    },
+    {
+      "type": "command",
+      "run": "uv run python -c 'from claims.app import App; s,b=App().handle(\"GET\",\"/health\"); assert s==200 and b.get(\"service\")==\"claims\", b'",
+      "why": "the quick change is implemented"
+    },
+    {
+      "type": "command",
+      "run": "test ! -f changes/2026-10-health-service/spec.md && test ! -f changes/2026-10-health-service/plan.md",
+      "why": "the quick lane does not write spec or plan"
+    },
+    {
+      "type": "command",
+      "run": "git log --format=%an -1 | grep -qv 'Eval Setup'",
+      "why": "the change is committed"
+    },
+    {
+      "type": "diff_excludes",
+      "glob": "src/claims/store.py"
+    }
+  ]
+}

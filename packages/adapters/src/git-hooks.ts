@@ -2,12 +2,14 @@
 // pre-action hooks (Cursor edits, AGENTS.md agents) cannot be stopped from doing at edit time.
 import {
   checkProtected,
+  checkQuick,
   checkSecrets,
   checkTestLock,
   currentBranch,
   git,
   isApproved,
   isCodePath,
+  isQuick,
   lines,
   listChanges,
   loadConfig,
@@ -74,6 +76,12 @@ export function prePush(root: string, env: NodeJS.ProcessEnv = process.env): Hoo
   const change = listChanges(root, { locale, defaultBranch: base }).find((c) => c.active);
   if (!change || isApproved(change.artifacts.plan?.status)) return { exitCode: 0 };
   const policy: PolicyId = 'plan-first';
+  if (isQuick(change)) {
+    const q = checkQuick(loaded, code);
+    if (q.ok) return { exitCode: 0 };
+    const d: Decision = { action: 'deny', policy, message: t(locale, 'prepush.quick', { change: change.slug, reason: q.reason ?? '' }) };
+    return block(root, d, env, locale) ?? { exitCode: 0 };
+  }
   const d: Decision = { action: 'deny', policy, message: t(locale, 'prepush.noplan', { branch, change: change.id, stage: change.stage }) };
   return block(root, d, env, locale) ?? { exitCode: 0 };
 }

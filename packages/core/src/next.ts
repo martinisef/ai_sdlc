@@ -30,6 +30,7 @@ const SKILL: Partial<Record<Stage, string>> = {
   'intent-accepted': '/sdlc-spec',
   'spec-approved': '/sdlc-plan',
   'plan-approved': '/sdlc-build',
+  'quick-ready': '/sdlc-quick',
   building: '/sdlc-ship',
 };
 

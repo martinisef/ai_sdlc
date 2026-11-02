@@ -14,6 +14,7 @@ export const STAGES = [
   'spec-approved',
   'plan-draft',
   'plan-approved',
+  'quick-ready',
   'building',
   'merged',
   'rejected',
@@ -57,8 +58,9 @@ export interface Change {
 const APPROVED = new Set(['approved', 'accepted']);
 export const isApproved = (s?: string) => !!s && APPROVED.has(s);
 
-export function stageOf(artifacts: Partial<Record<Artifact, { status?: string }>>): Stage {
+export function stageOf(artifacts: Partial<Record<Artifact, { status?: string; data?: Record<string, string> }>>): Stage {
   for (const a of ARTIFACTS) if (artifacts[a]?.status === 'rejected') return 'rejected';
+  if (artifacts.intent?.data?.lane === 'quick' && !artifacts.spec && !artifacts.plan) return 'quick-ready';
   if (artifacts.plan) return isApproved(artifacts.plan.status) ? 'plan-approved' : 'plan-draft';
   if (artifacts.spec) return isApproved(artifacts.spec.status) ? 'spec-approved' : 'spec-draft';
   if (artifacts.intent) return isApproved(artifacts.intent.status) ? 'intent-accepted' : 'intent-draft';
@@ -66,13 +68,13 @@ export function stageOf(artifacts: Partial<Record<Artifact, { status?: string }>
 }
 
 export function nextStep(stage: Stage, locale: Locale): string {
-  if (stage === 'building') return t(locale, 'next.plan-approved');
+  if (stage === 'building') return t(locale, 'next.building');
   if (stage === 'merged') return '-';
   return t(locale, `next.${stage}`);
 }
 
 export function columnOf(stage: Stage, inReview = false): Column {
-  if (inReview && (stage === 'plan-approved' || stage === 'building')) return 'review';
+  if (inReview && (stage === 'plan-approved' || stage === 'quick-ready' || stage === 'building')) return 'review';
   switch (stage) {
     case 'no-intent':
     case 'intent-draft':
@@ -84,6 +86,7 @@ export function columnOf(stage: Stage, inReview = false): Column {
     case 'plan-draft':
     case 'plan-approved':
       return 'plan';
+    case 'quick-ready':
     case 'building':
       return 'build';
     default:
@@ -173,10 +176,11 @@ export function listChanges(root: string, opts: ListOptions = {}): Change[] {
     }
     let stage = stageOf(artifacts);
     const branch = own[0];
-    if (stage === 'plan-approved') {
+    if (stage === 'plan-approved' || stage === 'quick-ready') {
+      const last = stage === 'quick-ready' ? 'intent' : 'plan';
       if (branch && baseExists && hasCodeCommits(root, branch, base)) stage = 'building';
-      // no change branch left and the approved plan is on the default branch → it was merged
-      else if (!branch && baseExists && git(root, ['cat-file', '-e', `${base}:changes/${dir}/plan.md`]) !== undefined) stage = 'merged';
+      // no change branch left and the last artifact is on the default branch → it was merged
+      else if (!branch && baseExists && git(root, ['cat-file', '-e', `${base}:changes/${dir}/${last}.md`]) !== undefined) stage = 'merged';
     }
     const waitingFor = ARTIFACTS.slice()
       .reverse()
