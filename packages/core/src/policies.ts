@@ -73,11 +73,14 @@ export function ereToRegExp(ere: string): RegExp | undefined {
 export const FIX_LOCKS = ['.sdlc/fix-lock', '.claude/.sdlc-fix-lock'];
 export const fixLockActive = (root: string) => FIX_LOCKS.some((p) => existsSync(join(root, p)));
 
-export function checkProtected(ctx: PolicyContext, path: string, locale: Locale): Decision {
+/** protected_paths are never edited; append_only_paths can be created but not changed once they exist. */
+export function checkProtected(ctx: PolicyContext, path: string, locale: Locale, isNew?: boolean): Decision {
   const rel = relPath(ctx.root, path);
   const glob = matchAny(rel, ctx.loaded?.config.protected_paths);
-  if (!glob) return ALLOW;
-  return { action: 'deny', policy: 'protected-paths', message: t(locale, 'protected.deny', { path: rel, glob, config: ctx.loaded!.path }) };
+  if (glob) return { action: 'deny', policy: 'protected-paths', message: t(locale, 'protected.deny', { path: rel, glob, config: ctx.loaded!.path }) };
+  const append = matchAny(rel, ctx.loaded?.config.append_only_paths);
+  if (!append || (isNew ?? !existsSync(join(ctx.root, rel)))) return ALLOW;
+  return { action: 'deny', policy: 'protected-paths', message: t(locale, 'appendonly.deny', { path: rel, glob: append, config: ctx.loaded!.path }) };
 }
 
 export function checkSecrets(ctx: PolicyContext, content: string | undefined, locale: Locale): Decision {

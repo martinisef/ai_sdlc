@@ -59,6 +59,7 @@ It is read by the guardrails (`sdlc hook`, for any agent), the loop skills, the 
 | `commands.*` | skills, `verifier`, evals | Each one is a single command that exits ≠ 0 on failure. |
 | `format_on_edit` | PostToolUse hook | Glob → command; `{file}` is replaced with the path. Keep it fast (one file). |
 | `protected_paths` | `protect-paths` hook | `*` crosses `/`; leading `**/` is optional. |
+| `append_only_paths` | `protect-paths` hook, pre-commit | Same globs; new files are allowed, existing ones cannot change (e.g. applied migrations: `db/migrate/**`). |
 | `test_globs` | `test-lock` hook | Files that cannot be edited during `/sdlc-fix`. |
 | `secret_patterns_extra` | `secrets-guard` hook | Additional ERE regexes (e.g. format of sensitive internal IDs). |
 | `risk.high_risk_paths` | `/sdlc-spec`, `/sdlc-plan`, REVIEW.md | Marks `risk: high` → requires tech lead. |

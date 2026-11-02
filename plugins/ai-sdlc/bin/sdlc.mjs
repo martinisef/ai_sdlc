@@ -28124,6 +28124,7 @@ var init_config = __esm({
       }).optional(),
       format_on_edit: commandMap.optional(),
       protected_paths: external_exports.array(external_exports.string()).optional(),
+      append_only_paths: external_exports.array(external_exports.string()).optional(),
       test_globs: external_exports.array(external_exports.string()).optional(),
       secret_patterns_extra: external_exports.array(external_exports.string()).optional(),
       risk: external_exports.looseObject({ high_risk_paths: external_exports.array(external_exports.string()).optional() }).optional(),
@@ -28296,6 +28297,8 @@ var init_i18n = __esm({
       "protected.deny": (p) => `Bloqueado por ai-sdlc: '${p.path}' es una ruta protegida ('${p.glob}' en ${p.config} \u2192 protected_paths).
 Estos archivos no se editan desde una sesi\xF3n del agente (c\xF3digo generado, paquetes congelados, migraciones o infra).
 Si el cambio es necesario: dejalo anotado en plan.md como riesgo y pedile a un code owner que lo haga o que apruebe sacar la ruta de protected_paths.`,
+      "appendonly.deny": (p) => `Bloqueado por ai-sdlc: '${p.path}' ya existe y es de solo agregar ('${p.glob}' en ${p.config} \u2192 append_only_paths).
+Una migraci\xF3n aplicada no se edita: el cambio va en un archivo nuevo (por ejemplo, una migraci\xF3n nueva que corrija la anterior).`,
       "secret.deny": (p) => `Bloqueado por ai-sdlc: el contenido parece incluir una credencial (match: '${p.preview}\u2026', patr\xF3n: ${p.pattern}).
 Las credenciales no van al c\xF3digo ni al diff. Leela de una variable de entorno o del secret manager del proyecto.
 Si es un falso positivo (dato de test, ejemplo de documentaci\xF3n), us\xE1 un valor que no tenga forma de credencial real.`,
@@ -28354,6 +28357,8 @@ Si sigue exactamente el plan, no hace falta hacer nada: respond\xE9 brevemente y
       "protected.deny": (p) => `Blocked by ai-sdlc: '${p.path}' is a protected path ('${p.glob}' in ${p.config} \u2192 protected_paths).
 These files are not edited from an agent session (generated code, frozen packages, migrations or infra).
 If the change is needed: record it in plan.md as a risk and ask a code owner to make it or to approve removing the path from protected_paths.`,
+      "appendonly.deny": (p) => `Blocked by ai-sdlc: '${p.path}' already exists and is append-only ('${p.glob}' in ${p.config} \u2192 append_only_paths).
+An applied migration is not edited: the change goes in a new file (for example, a new migration that corrects the previous one).`,
       "secret.deny": (p) => `Blocked by ai-sdlc: the content looks like it contains a credential (match: '${p.preview}\u2026', pattern: ${p.pattern}).
 Credentials do not go into code or diffs. Read it from an environment variable or the project's secret manager.
 If this is a false positive (test data, documentation example), use a value that does not look like a real credential.`,
@@ -29220,11 +29225,13 @@ function ereToRegExp(ere) {
     return void 0;
   }
 }
-function checkProtected(ctx, path, locale) {
+function checkProtected(ctx, path, locale, isNew) {
   const rel = relPath(ctx.root, path);
   const glob = matchAny(rel, ctx.loaded?.config.protected_paths);
-  if (!glob) return ALLOW;
-  return { action: "deny", policy: "protected-paths", message: t(locale, "protected.deny", { path: rel, glob, config: ctx.loaded.path }) };
+  if (glob) return { action: "deny", policy: "protected-paths", message: t(locale, "protected.deny", { path: rel, glob, config: ctx.loaded.path }) };
+  const append = matchAny(rel, ctx.loaded?.config.append_only_paths);
+  if (!append || (isNew ?? !existsSync5(join7(ctx.root, rel)))) return ALLOW;
+  return { action: "deny", policy: "protected-paths", message: t(locale, "appendonly.deny", { path: rel, glob: append, config: ctx.loaded.path }) };
 }
 function checkSecrets(ctx, content, locale) {
   if (!content) return ALLOW;
@@ -29866,6 +29873,7 @@ function guardrails(loaded, locale) {
   const lines3 = [
     es2 ? "### Guardrails (ac\xE1 no hay hooks que frenen: los respet\xE1s vos)" : "### Guardrails (no hooks stop you here: you enforce them)",
     c.protected_paths?.length && (es2 ? `- Rutas protegidas, nunca se editan a mano: ${code(c.protected_paths)}. Si algo tiene que cambiar: un archivo generado se regenera desde su fuente (edit\xE1 el generador y correlo); una migraci\xF3n aplicada se corrige con una migraci\xF3n nueva.` : `- Protected paths, never edited by hand: ${code(c.protected_paths)}. If one has to change: a generated file is regenerated from its source (edit the generator and run it); an applied migration is corrected with a new migration.`),
+    c.append_only_paths?.length && (es2 ? `- Solo agregar: en ${code(c.append_only_paths)} pod\xE9s crear archivos nuevos, pero nunca editar ni borrar los existentes (una migraci\xF3n aplicada se corrige con una nueva).` : `- Append-only: in ${code(c.append_only_paths)} you can create new files, but never edit or delete existing ones (an applied migration is corrected with a new one).`),
     c.production_gate?.patterns?.length && (es2 ? `- Gate de producci\xF3n: nunca corras comandos que coincidan con ${code(c.production_gate.patterns)}, aunque te lo pidan. Fren\xE1 y pedile a una persona que lo corra con \`${env}\` seteado.` : `- Production gate: never run commands matching ${code(c.production_gate.patterns)}, even when asked. Stop and ask a person to run it with \`${env}\` set.`),
     es2 ? "- Secretos: nunca escribas credenciales, tokens ni claves en el c\xF3digo ni en archivos commiteados; leelos del entorno." : "- Secrets: never write credentials, tokens or keys in code or committed files; read them from the environment.",
     c.test_globs?.length && (es2 ? `- Test-lock: con \`sdlc lock status\` en ON, no edites ${code(c.test_globs)}.` : `- Test-lock: while \`sdlc lock status\` is ON, do not edit ${code(c.test_globs)}.`),
@@ -30182,8 +30190,9 @@ function preCommit(root, env = process.env) {
   const locale = localeOf(loaded);
   const ctx = { root, loaded, env };
   const staged = lines(git(root, ["diff", "--cached", "--name-only", "--diff-filter=ACMR"]));
+  const created = new Set(lines(git(root, ["diff", "--cached", "--name-only", "--diff-filter=A"])));
   for (const file2 of staged) {
-    for (const d2 of [checkProtected(ctx, file2, locale), checkTestLock(ctx, file2, locale)]) {
+    for (const d2 of [checkProtected(ctx, file2, locale, created.has(file2)), checkTestLock(ctx, file2, locale)]) {
       if (d2.action === "deny") {
         const out = block(root, d2, env, locale);
         if (out) return out;
@@ -33877,10 +33886,30 @@ var STACKS = {
     format_on_edit: { "*.go": "gofmt -w {file}" },
     test_globs: ["**/*_test.go", "testdata/**"],
     protected_paths: ["**/*.pb.go", "**/zz_generated*.go"]
+  },
+  dotnet: {
+    language: "dotnet",
+    package_manager: "dotnet",
+    commands: { build: "dotnet build", test: "dotnet test", lint: "dotnet format --verify-no-changes", format: "dotnet format" },
+    format_on_edit: {},
+    test_globs: ["tests/**", "test/**", "**/*.Tests/**", "**/*.Test/**", "**/*Tests.cs"],
+    protected_paths: ["**/*.g.cs"],
+    append_only_paths: ["**/Migrations/*.Designer.cs", "**/Migrations/2*.cs"]
+  },
+  ruby: {
+    language: "ruby",
+    package_manager: "bundler",
+    commands: { build: "bin/rails zeitwerk:check", test: "bin/rails test", lint: "bundle exec rubocop", format: "bundle exec rubocop -a" },
+    format_on_edit: { "*.rb": "bundle exec rubocop -a {file}" },
+    test_globs: ["test/**", "spec/**"],
+    protected_paths: ["db/schema.rb", "db/structure.sql"],
+    append_only_paths: ["db/migrate/**"]
   }
 };
 function detectStack(root) {
   const has2 = (f) => existsSync10(join13(root, f));
+  if (has2("Gemfile") && has2("config/application.rb")) return "ruby";
+  if (readdirSync5(root).some((f) => f.endsWith(".sln") || f.endsWith(".csproj"))) return "dotnet";
   if (has2("pyproject.toml") || has2("requirements.txt")) return "python";
   if (has2("package.json") || has2("tsconfig.json")) return "typescript";
   if (has2("pom.xml") || has2("build.gradle") || has2("build.gradle.kts")) return "java";
@@ -33922,6 +33951,8 @@ function detectConfig(root, locale) {
     config2.format_on_edit = stack.format_on_edit;
     config2.test_globs = stack.test_globs;
     config2.protected_paths = stack.protected_paths;
+    if (stack.append_only_paths) config2.append_only_paths = stack.append_only_paths;
+    if (stackId === "ruby" && (existsSync10(join13(root, ".rspec")) || existsSync10(join13(root, "spec")))) config2.commands.test = "bundle exec rspec";
   } else {
     config2.commands = { build: "make build", test: "make test", lint: "make lint", format: "make format" };
     config2.test_globs = ["tests/**", "test/**"];

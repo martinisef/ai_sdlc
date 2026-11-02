@@ -57,7 +57,7 @@ See [Managed settings](./managed-settings). Deploy them with the admin console o
 
 **A new policy.** Copy `policy-secure-api/` and write it from the owner's source of truth. Its description must say **when** to apply it, because that is what makes it activate. If the policy must always hold, add a deterministic control as well: a hook, a test, or a pass in `REVIEW.md`.
 
-**A new stack.** When a team uses `_unknown.md`, their `SETUP.md` includes a draft of `stacks/<lang>.md`. Review it and add it.
+**A new stack.** The catalog ships Python, TypeScript, Java, Go, .NET and Ruby on Rails; `sdlc init` detects them from `pyproject.toml`, `package.json`, `pom.xml`/`build.gradle`, `go.mod`, a `.sln`/`.csproj` at the root, or a `Gemfile` with `config/application.rb`. When a team uses `_unknown.md`, their `SETUP.md` includes a draft of `stacks/<lang>.md`. Review it and add it.
 
 ## 6. Quality of this repository
 

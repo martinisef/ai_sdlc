@@ -9,6 +9,9 @@ const es: Messages = {
     `Bloqueado por ai-sdlc: '${p.path}' es una ruta protegida ('${p.glob}' en ${p.config} → protected_paths).
 Estos archivos no se editan desde una sesión del agente (código generado, paquetes congelados, migraciones o infra).
 Si el cambio es necesario: dejalo anotado en plan.md como riesgo y pedile a un code owner que lo haga o que apruebe sacar la ruta de protected_paths.`,
+  'appendonly.deny': (p) =>
+    `Bloqueado por ai-sdlc: '${p.path}' ya existe y es de solo agregar ('${p.glob}' en ${p.config} → append_only_paths).
+Una migración aplicada no se edita: el cambio va en un archivo nuevo (por ejemplo, una migración nueva que corrija la anterior).`,
   'secret.deny': (p) =>
     `Bloqueado por ai-sdlc: el contenido parece incluir una credencial (match: '${p.preview}…', patrón: ${p.pattern}).
 Las credenciales no van al código ni al diff. Leela de una variable de entorno o del secret manager del proyecto.
@@ -74,6 +77,9 @@ const en: Messages = {
     `Blocked by ai-sdlc: '${p.path}' is a protected path ('${p.glob}' in ${p.config} → protected_paths).
 These files are not edited from an agent session (generated code, frozen packages, migrations or infra).
 If the change is needed: record it in plan.md as a risk and ask a code owner to make it or to approve removing the path from protected_paths.`,
+  'appendonly.deny': (p) =>
+    `Blocked by ai-sdlc: '${p.path}' already exists and is append-only ('${p.glob}' in ${p.config} → append_only_paths).
+An applied migration is not edited: the change goes in a new file (for example, a new migration that corrects the previous one).`,
   'secret.deny': (p) =>
     `Blocked by ai-sdlc: the content looks like it contains a credential (match: '${p.preview}…', pattern: ${p.pattern}).
 Credentials do not go into code or diffs. Read it from an environment variable or the project's secret manager.

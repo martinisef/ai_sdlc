@@ -57,6 +57,7 @@ export const ConfigSchema = z.looseObject({
     .optional(),
   format_on_edit: commandMap.optional(),
   protected_paths: z.array(z.string()).optional(),
+  append_only_paths: z.array(z.string()).optional(),
   test_globs: z.array(z.string()).optional(),
   secret_patterns_extra: z.array(z.string()).optional(),
   risk: z.looseObject({ high_risk_paths: z.array(z.string()).optional() }).optional(),
