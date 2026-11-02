@@ -86,3 +86,24 @@ sdlc:mention:
     - git remote set-url origin "https://oauth2:${GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
     - git checkout -B "$CI_COMMIT_REF_NAME"
     - npx -y @morsadev/sdlc@0 ci mention
+
+# /approve spec, /reject plan … in MR comments: triggered by `sdlc webhook` (SDLC_JOB=gate). The decision is a
+# commit on the change branch; sdlc/gates is the commit status to require before merging.
+sdlc:gate:
+  extends: .sdlc-base
+  stage: review
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "trigger" && $SDLC_JOB == "gate"
+  script:
+    - git config user.name "ai-sdlc-bot" && git config user.email "ai-sdlc-bot@noreply"
+    - git remote set-url origin "https://oauth2:${GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
+    - git checkout -B "$CI_COMMIT_REF_NAME"
+    - npx -y @morsadev/sdlc@0 ci gate
+
+sdlc:gate-status:
+  extends: .sdlc-base
+  stage: review
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - HEAD_SHA="$CI_COMMIT_SHA" npx -y @morsadev/sdlc@0 ci gate-status

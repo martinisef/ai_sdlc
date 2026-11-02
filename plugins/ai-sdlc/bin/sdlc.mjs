@@ -1761,7 +1761,7 @@ var require_merge = __commonJS({
 var require_addPairToJSMap = __commonJS({
   "node_modules/yaml/dist/nodes/addPairToJSMap.js"(exports) {
     "use strict";
-    var log2 = require_log();
+    var log3 = require_log();
     var merge2 = require_merge();
     var stringify = require_stringify();
     var identity = require_identity();
@@ -1810,7 +1810,7 @@ var require_addPairToJSMap = __commonJS({
           let jsonStr = JSON.stringify(strKey);
           if (jsonStr.length > 40)
             jsonStr = jsonStr.substring(0, 36) + '..."';
-          log2.warn(ctx.doc.options.logLevel, `Keys with collection values will be stringified due to JS Object restrictions: ${jsonStr}. Set mapAsMap: true to use object keys.`);
+          log3.warn(ctx.doc.options.logLevel, `Keys with collection values will be stringified due to JS Object restrictions: ${jsonStr}. Set mapAsMap: true to use object keys.`);
           ctx.mapKeyWarned = true;
         }
         return strKey;
@@ -7227,7 +7227,7 @@ var require_public_api = __commonJS({
     var composer = require_composer();
     var Document = require_Document();
     var errors = require_errors();
-    var log2 = require_log();
+    var log3 = require_log();
     var identity = require_identity();
     var lineCounter = require_line_counter();
     var parser = require_parser();
@@ -7279,7 +7279,7 @@ var require_public_api = __commonJS({
       const doc = parseDocument(src, options);
       if (!doc)
         return null;
-      doc.warnings.forEach((warning) => log2.warn(doc.options.logLevel, warning));
+      doc.warnings.forEach((warning) => log3.warn(doc.options.logLevel, warning));
       if (doc.errors.length > 0) {
         if (doc.options.logLevel !== "silent")
           throw doc.errors[0];
@@ -28592,8 +28592,8 @@ var init_funnel = __esm({
 import { readFileSync as readFileSync5, writeFileSync as writeFileSync3 } from "node:fs";
 import { join as join6 } from "node:path";
 function canApprove(change, artifact, who, loaded) {
-  const id = `${who.name ?? ""} <${who.email ?? ""}>`;
-  if (!who.email && !who.name) return { ok: false, reason: "git user.name / user.email is not set" };
+  const id = `${who.name ?? ""} <${who.email ?? ""}>${who.login ? ` @${who.login}` : ""}`;
+  if (!who.email && !who.name && !who.login) return { ok: false, reason: "git user.name / user.email is not set" };
   if (AGENT_IDENTITY.test(id)) return { ok: false, reason: `${id} looks like an agent or bot; a person must approve` };
   const info = change.artifacts[artifact];
   if (!info) return { ok: false, reason: `${change.id}/${artifact}.md does not exist` };
@@ -28607,7 +28607,11 @@ function canApprove(change, artifact, who, loaded) {
   if (required2.length === 0) return { ok: true };
   const members2 = required2.flatMap((r) => loaded?.config.roles?.[r] ?? []);
   if (members2.length === 0) return { ok: true };
-  const match2 = members2.some((m) => m.toLowerCase() === who.email?.toLowerCase() || m.toLowerCase() === who.name?.toLowerCase());
+  const match2 = members2.some((m) => {
+    const x = m.toLowerCase();
+    if (x.startsWith("@")) return !!who.login && x.slice(1) === who.login.toLowerCase();
+    return x === who.email?.toLowerCase() || x === who.name?.toLowerCase();
+  });
   return match2 ? { ok: true } : { ok: false, reason: `${artifact} needs approval from: ${required2.join(", ")}` };
 }
 function decideGate(root, loaded, changeId, artifact, decision, opts2 = {}) {
@@ -28619,7 +28623,7 @@ function decideGate(root, loaded, changeId, artifact, decision, opts2 = {}) {
   if (!check2.ok) throw new Error(check2.reason);
   const info = change.artifacts[artifact];
   const status = decision === "rejected" ? "rejected" : artifact === "intent" ? "accepted" : "approved";
-  const by = who.name ?? who.email;
+  const by = who.name ?? who.email ?? `@${who.login}`;
   const fields = { status };
   if (decision === "approved") {
     fields.approved_by = by;
@@ -28842,20 +28846,20 @@ function rolesFor(change, artifact, loaded) {
 }
 function forChange(change, loaded, who, locale) {
   const base = { change: change.slug, stage: change.stage };
-  const gate = GATE[change.stage];
-  if (gate) {
-    const ok = canApprove(change, gate, who, loaded);
+  const gate2 = GATE[change.stage];
+  if (gate2) {
+    const ok = canApprove(change, gate2, who, loaded);
     if (ok.ok) {
-      return { ...base, kind: "approve", artifact: gate, command: `sdlc approve ${change.slug} ${gate}`, message: t(locale, "nx.approve", { change: change.slug, artifact: gate }) };
+      return { ...base, kind: "approve", artifact: gate2, command: `sdlc approve ${change.slug} ${gate2}`, message: t(locale, "nx.approve", { change: change.slug, artifact: gate2 }) };
     }
-    const roles = rolesFor(change, gate, loaded);
+    const roles = rolesFor(change, gate2, loaded);
     const people = roles.flatMap((r) => loaded.config.roles?.[r] ?? []);
     return {
       ...base,
       kind: "wait",
-      artifact: gate,
+      artifact: gate2,
       waitingOn: people.length ? people : roles,
-      message: t(locale, "nx.wait", { change: change.slug, artifact: gate, who: (people.length ? people : roles).join(", ") || t(locale, "nx.someone"), reason: ok.reason ?? "" })
+      message: t(locale, "nx.wait", { change: change.slug, artifact: gate2, who: (people.length ? people : roles).join(", ") || t(locale, "nx.someone"), reason: ok.reason ?? "" })
     };
   }
   if (change.stage === "merged") return { ...base, kind: "done", command: "sdlc new <slug>", message: t(locale, "nx.done", { change: change.slug }) };
@@ -28960,13 +28964,13 @@ function checkTestLock(ctx, path, locale) {
   return { action: "deny", policy: "test-lock", message: t(locale, "testlock.deny", { path: rel, glob }) };
 }
 function checkProductionGate(ctx, command, locale) {
-  const gate = ctx.loaded?.config.production_gate;
-  const envName = gate?.approval_env || "RELEASE_APPROVAL";
+  const gate2 = ctx.loaded?.config.production_gate;
+  const envName = gate2?.approval_env || "RELEASE_APPROVAL";
   if ((ctx.env ?? process.env)[envName]) return ALLOW;
   for (const seg of command.split(/&&|\|\||;|\||\n/)) {
     const first = seg.replace(/^\s*([A-Za-z_][A-Za-z0-9_]*=\S*\s+)*/, "").trim().split(/\s+/)[0];
     if (MENTION_ONLY.has(first)) continue;
-    for (const pattern of gate?.patterns ?? []) {
+    for (const pattern of gate2?.patterns ?? []) {
       if (ereToRegExp(pattern)?.test(seg)) {
         return { action: "deny", policy: "production-gate", message: t(locale, "prodgate.deny", { pattern, env: envName }) };
       }
@@ -29338,6 +29342,28 @@ async function prComment(ctx, n, body) {
       await bitbucket(ctx)("POST", `/pullrequests/${n}/comments`, { content: { raw: body } });
       return `comment posted on PR #${n}`;
   }
+}
+async function commitStatus(ctx, sha2, s) {
+  const env = ctx.env ?? process.env;
+  const description = s.description.slice(0, 139);
+  switch (vcsProvider(ctx)) {
+    case "github":
+      tool(ctx, "gh", ["api", "-X", "POST", `repos/{owner}/{repo}/statuses/${sha2}`, "-f", `state=${s.state}`, "-f", `context=${s.context}`, "-f", `description=${description}`, ...s.url ? ["-f", `target_url=${s.url}`] : []]);
+      break;
+    case "gitlab": {
+      if (!env.GITLAB_TOKEN || !env.CI_API_V4_URL || !env.CI_PROJECT_ID) throw new SdlcError("GITLAB_TOKEN, CI_API_V4_URL and CI_PROJECT_ID are required for commit statuses");
+      const state = s.state === "failure" ? "failed" : s.state;
+      await httpJson("POST", `${env.CI_API_V4_URL}/projects/${env.CI_PROJECT_ID}/statuses/${sha2}`, { "private-token": env.GITLAB_TOKEN }, { state, name: s.context, description, ...s.url ? { target_url: s.url } : {} });
+      break;
+    }
+    case "bitbucket": {
+      const state = s.state === "success" ? "SUCCESSFUL" : s.state === "failure" ? "FAILED" : "INPROGRESS";
+      const url2 = s.url ?? env.BITBUCKET_GIT_HTTP_ORIGIN ?? "https://bitbucket.org";
+      await bitbucket(ctx)("POST", `/commit/${sha2}/statuses/build`, { state, key: s.context, name: s.context, description, url: url2 });
+      break;
+    }
+  }
+  return `${s.context}: ${s.state} on ${sha2.slice(0, 7)}`;
 }
 async function prComments(ctx, n) {
   switch (vcsProvider(ctx)) {
@@ -33081,10 +33107,12 @@ var init_src3 = __esm({
 // packages/webhook/src/index.ts
 var src_exports2 = {};
 __export(src_exports2, {
+  GATE_COMMAND: () => GATE_COMMAND2,
   REPLY_MARKER: () => REPLY_MARKER,
   bitbucketMention: () => bitbucketMention,
   createWebhookApp: () => createWebhookApp,
   gitlabMention: () => gitlabMention,
+  isGateCommand: () => isGateCommand,
   mentions: () => mentions,
   pipelineVariables: () => pipelineVariables,
   startWebhook: () => startWebhook,
@@ -33107,14 +33135,17 @@ function safeEqual(a, b) {
   return x.length === y.length && timingSafeEqual(x, y);
 }
 function pipelineVariables(m) {
-  return {
-    SDLC_JOB: "mention",
-    PR_NUMBER: String(m.number),
-    BASE_REF: m.targetBranch,
-    HEAD_REF: m.sourceBranch,
-    SDLC_MENTION_AUTHOR: m.author,
-    SDLC_MENTION_BODY: m.body.slice(0, 4e3)
-  };
+  const base = { SDLC_JOB: m.job, PR_NUMBER: String(m.number), BASE_REF: m.targetBranch, HEAD_REF: m.sourceBranch };
+  if (m.job === "gate") {
+    return {
+      ...base,
+      COMMENT_AUTHOR: m.author,
+      COMMENT_BODY: m.body.slice(0, 4e3),
+      ...m.authorName ? { COMMENT_AUTHOR_NAME: m.authorName } : {},
+      ...m.prAuthor ? { PR_AUTHOR: m.prAuthor } : {}
+    };
+  }
+  return { ...base, SDLC_MENTION_AUTHOR: m.author, SDLC_MENTION_BODY: m.body.slice(0, 4e3) };
 }
 async function post2(url2, init) {
   const r = await fetch(url2, init);
@@ -33133,7 +33164,7 @@ async function triggerBitbucket(env, m) {
     method: "POST",
     headers: { authorization: `Bearer ${env.BITBUCKET_ACCESS_TOKEN}`, "content-type": "application/json" },
     body: JSON.stringify({
-      target: { type: "pipeline_ref_target", ref_type: "branch", ref_name: m.sourceBranch, selector: { type: "custom", pattern: "sdlc-mention" } },
+      target: { type: "pipeline_ref_target", ref_type: "branch", ref_name: m.sourceBranch, selector: { type: "custom", pattern: `sdlc-${m.job}` } },
       variables: Object.entries(pipelineVariables(m)).map(([key, value]) => ({ key, value }))
     })
   });
@@ -33142,14 +33173,17 @@ function gitlabMention(p, mention2) {
   const note = p?.object_attributes;
   const mr = p?.merge_request;
   if (p?.object_kind !== "note" || note?.noteable_type !== "MergeRequest" || !mr) return "not a merge request comment";
-  if (!mentions(note.note ?? "", mention2)) return "no mention";
+  const job = isGateCommand(note.note ?? "") ? "gate" : mentions(note.note ?? "", mention2) ? "mention" : void 0;
+  if (!job) return "no mention";
   return {
     provider: "gitlab",
+    job,
     project: String(p.project?.id ?? mr.target_project_id),
     number: Number(mr.iid),
     sourceBranch: mr.source_branch,
     targetBranch: mr.target_branch,
     author: p.user?.username ?? "",
+    authorName: p.user?.name,
     body: note.note
   };
 }
@@ -33157,14 +33191,18 @@ function bitbucketMention(p, mention2) {
   const pr = p?.pullrequest;
   const body = p?.comment?.content?.raw ?? "";
   if (!pr || !p?.comment) return "not a pull request comment";
-  if (!mentions(body, mention2)) return "no mention";
+  const job = isGateCommand(body) ? "gate" : mentions(body, mention2) ? "mention" : void 0;
+  if (!job) return "no mention";
   return {
     provider: "bitbucket",
+    job,
     project: p.repository?.full_name ?? "",
     number: Number(pr.id),
     sourceBranch: pr.source?.branch?.name,
     targetBranch: pr.destination?.branch?.name,
     author: p.actor?.nickname ?? p.actor?.username ?? p.actor?.display_name ?? "",
+    authorName: p.actor?.display_name,
+    prAuthor: pr.author?.nickname ?? pr.author?.username,
     body
   };
 }
@@ -33213,11 +33251,13 @@ async function startWebhook(opts2 = {}) {
     console.log(`sdlc webhook: listening on :${info.port} (POST /gitlab, POST /bitbucket, GET /health)`);
   });
 }
-var REPLY_MARKER, BOT;
+var GATE_COMMAND2, isGateCommand, REPLY_MARKER, BOT;
 var init_src4 = __esm({
   "packages/webhook/src/index.ts"() {
     "use strict";
     init_dist2();
+    GATE_COMMAND2 = /^\/(approve|reject) (intent|spec|plan)(?:[ \t]+.*)?$/m;
+    isGateCommand = (body) => GATE_COMMAND2.test(body.replace(/\r/g, "")) && !body.includes(REPLY_MARKER);
     REPLY_MARKER = "(ai-sdlc)";
     BOT = /(\[bot\]|\bbot\b|ai-sdlc)/i;
   }
@@ -34132,7 +34172,7 @@ async function bandsCommand(root, args) {
 
 // packages/cli/src/ci/index.ts
 init_src();
-import { execFileSync as execFileSync8, spawnSync as spawnSync3 } from "node:child_process";
+import { execFileSync as execFileSync9, spawnSync as spawnSync3 } from "node:child_process";
 import { existsSync as existsSync15, readdirSync as readdirSync7, readFileSync as readFileSync18, rmSync as rmSync6, writeFileSync as writeFileSync10 } from "node:fs";
 import { homedir as homedir2 } from "node:os";
 import { join as join18 } from "node:path";
@@ -34238,6 +34278,99 @@ function runEvals(c, pattern, out) {
   return rate >= min ? 0 : 1;
 }
 
+// packages/cli/src/ci/gates.ts
+init_src();
+import { execFileSync as execFileSync8 } from "node:child_process";
+var GATE_COMMAND = /^\/(approve|reject) (intent|spec|plan)(?:[ \t]+(.*))?$/m;
+var GATES_CONTEXT = "sdlc/gates";
+var GATE_HEADER = "## Gate (ai-sdlc)";
+var TRUSTED = /* @__PURE__ */ new Set(["OWNER", "MEMBER", "COLLABORATOR"]);
+function parseGateCommand(body) {
+  const m = GATE_COMMAND.exec(body.replace(/\r/g, ""));
+  if (!m) return void 0;
+  return { decision: m[1] === "approve" ? "approved" : "rejected", artifact: m[2], comment: m[3]?.trim() || void 0 };
+}
+var log = (msg) => process.stderr.write(`[sdlc-ci] ${msg}
+`);
+function changeForBranch(c, branch) {
+  const slug = branch.replace(/^change\//, "");
+  return listChanges(c.root, { locale: localeOf(c.loaded), defaultBranch: c.loaded?.config.vcs?.default_branch }).find(
+    (x) => x.branch === branch || x.slug === slug || x.dir === slug
+  );
+}
+function gateState(change) {
+  if (!change) return { state: "success", description: "no change folder on this branch: not gated" };
+  if (change.stage === "rejected") return { state: "failure", description: `${change.slug}: rejected` };
+  if (isQuick(change)) return { state: "success", description: `${change.slug}: quick lane (limits checked on push)` };
+  if (isApproved(change.artifacts.plan?.status)) return { state: "success", description: `${change.slug}: intent, spec and plan approved` };
+  const pending = ARTIFACTS.find((a) => !isApproved(change.artifacts[a]?.status)) ?? "plan";
+  const missing = !change.artifacts[pending];
+  return { state: "pending", description: `${change.slug}: ${pending} ${missing ? "not written yet" : "waiting for approval"} (/approve ${pending})` };
+}
+async function reply(c, n, body) {
+  if (c.dryRun) return void console.log(body);
+  log(await prComment({ root: c.root, loaded: c.loaded, env: c.env }, n, `${GATE_HEADER}
+
+${body}`));
+}
+async function gateStatus(c) {
+  const branch = headRef(c);
+  const g = gateState(changeForBranch(c, branch));
+  const sha2 = c.env.HEAD_SHA || git(c.root, ["rev-parse", "HEAD"]);
+  if (!sha2) throw new SdlcError("no HEAD_SHA and no git HEAD");
+  if (c.dryRun) {
+    console.log(`${GATES_CONTEXT}: ${g.state} \u2014 ${g.description}`);
+    return 0;
+  }
+  log(await commitStatus({ root: c.root, loaded: c.loaded, env: c.env }, sha2, { context: GATES_CONTEXT, ...g }));
+  return 0;
+}
+async function gate(c) {
+  const n = prNumber(c.env);
+  const body = c.env.COMMENT_BODY ?? c.env.SDLC_MENTION_BODY ?? "";
+  const login = c.env.COMMENT_AUTHOR ?? c.env.SDLC_MENTION_AUTHOR ?? "";
+  const cmd = parseGateCommand(body);
+  if (n === void 0 || !cmd) {
+    log("no /approve or /reject command in the comment");
+    return 0;
+  }
+  const association = c.env.AUTHOR_ASSOCIATION;
+  if (association !== void 0 && !TRUSTED.has(association)) {
+    await reply(c, n, `@${login} cannot decide gates here (${association.toLowerCase()}): only owners, members and collaborators can.`);
+    return 0;
+  }
+  const branch = headRef(c);
+  const change = changeForBranch(c, branch);
+  if (!change) {
+    await reply(c, n, `No change folder for branch \`${branch}\`: nothing to ${cmd.decision === "approved" ? "approve" : "reject"}.`);
+    return 0;
+  }
+  const prAuthor = c.env.PR_AUTHOR;
+  if (cmd.artifact !== "intent" && prAuthor && prAuthor.toLowerCase() === login.toLowerCase() && !c.loaded?.config.gates_self_approval) {
+    await reply(c, n, `@${login} opened this PR, so another person must decide the ${cmd.artifact}.`);
+    return 0;
+  }
+  const approver = { login, name: c.env.COMMENT_AUTHOR_NAME || login };
+  const authorEnv = {
+    GIT_AUTHOR_NAME: approver.name,
+    GIT_AUTHOR_EMAIL: c.env.COMMENT_AUTHOR_EMAIL || `${login}@users.noreply.${c.env.CI_SERVER_HOST ?? "github.com"}`
+  };
+  Object.assign(process.env, authorEnv);
+  let result;
+  try {
+    result = decideGate(c.root, c.loaded, change.id, cmd.artifact, cmd.decision, { approver, comment: cmd.comment });
+  } catch (e) {
+    await reply(c, n, `Not recorded: ${e.message}.`);
+    return 0;
+  }
+  if (!c.dryRun) execFileSync8("git", ["push", "origin", `HEAD:${branch}`], { cwd: c.root, stdio: ["ignore", "inherit", "inherit"] });
+  const verb = cmd.decision === "approved" ? "approved" : "rejected";
+  await reply(c, n, `**${cmd.artifact}** of \`${change.slug}\` ${verb} by @${login} (${result.commit}).${cmd.comment ? `
+
+> ${cmd.comment}` : ""}`);
+  return gateStatus({ ...c, env: { ...c.env, HEAD_SHA: "" } });
+}
+
 // packages/cli/src/ci/index.ts
 var CI_HELP = `sdlc ci install [--provider github|gitlab|bitbucket] [--preset solo|team-github|regulated]
                                copy the pipeline templates (stack setup filled in; never overwrites)
@@ -34247,13 +34380,15 @@ sdlc ci intent-to-spec         for accepted intents without spec.md: write the s
 sdlc ci triage <log>           summarize a failed build and comment on the PR/MR
 sdlc ci jira-merged            move the merged change's tickets to tracker.transitions.merged
 sdlc ci evals [pattern] [--out results.json]   run evals/*.json against the agent; fail below ci.min_pass_rate (0.8)
+sdlc ci gate                   /approve|/reject intent|spec|plan in a PR/MR comment \u2192 gate commit on the branch + reply
+sdlc ci gate-status            set the sdlc/gates commit status (success once the plan is approved or the change is quick)
 sdlc ci mention                answer an @claude comment on the PR/MR (triggered by \`sdlc webhook\`; ci.mention_mode read|edit)
 
 Options: --agent claude|codex|cursor (or SDLC_CI_AGENT, or ci.agent) \xB7 --model M \xB7 --dry-run (print, do not post/push)
 Env: ANTHROPIC_API_KEY | OPENAI_API_KEY | CURSOR_API_KEY \xB7 GH_TOKEN | GITLAB_TOKEN | BITBUCKET_ACCESS_TOKEN
      JIRA_EMAIL + JIRA_API_TOKEN (or JIRA_PAT) \xB7 SDLC_PLUGIN_REPO_URL / SDLC_PLUGIN_TOKEN (private marketplace)
 `;
-var log = (msg) => process.stderr.write(`[sdlc-ci] ${msg}
+var log2 = (msg) => process.stderr.write(`[sdlc-ci] ${msg}
 `);
 function prNumber(env) {
   const n = env.PR_NUMBER || env.CI_MERGE_REQUEST_IID || env.BITBUCKET_PR_ID;
@@ -34307,6 +34442,10 @@ async function ciCommand(root, args) {
       return runEvals(c, rest[0], typeof flags.out === "string" ? flags.out : void 0);
     case "install":
       return install(c, flags);
+    case "gate":
+      return gate(c);
+    case "gate-status":
+      return gateStatus(c);
     default:
       process.stderr.write(CI_HELP);
       return 1;
@@ -34334,36 +34473,36 @@ var INSTALL = {
 };
 function bootstrap(c) {
   const bin = AGENT_BIN[c.agent];
-  if (hasTool(bin, c.env)) log(`${bin} already installed`);
+  if (hasTool(bin, c.env)) log2(`${bin} already installed`);
   else {
     const [cmd, args] = INSTALL[c.agent];
-    log(`installing ${bin}: ${cmd} ${args.join(" ")}`);
+    log2(`installing ${bin}: ${cmd} ${args.join(" ")}`);
     const r = spawnSync3(cmd, args, { stdio: ["ignore", "ignore", "inherit"] });
     if (r.status !== 0) throw new SdlcError(`could not install ${bin}`);
   }
   if (c.agent !== "claude") {
-    log(`${bin} reads the rendered skills in .agents/skills (commit the output of sdlc sync)`);
+    log2(`${bin} reads the rendered skills in .agents/skills (commit the output of sdlc sync)`);
     return 0;
   }
   let url2 = c.env.SDLC_PLUGIN_REPO_URL || c.loaded?.config.plugin?.marketplace_repo;
   if (!url2) {
-    log("no plugin.marketplace_repo: Claude uses the project skills in .claude/skills (commit the output of sdlc sync)");
+    log2("no plugin.marketplace_repo: Claude uses the project skills in .claude/skills (commit the output of sdlc sync)");
     return 0;
   }
   if (c.env.SDLC_PLUGIN_TOKEN) url2 = url2.replace("https://", `https://${c.env.SDLC_PLUGIN_TOKEN_USER || "x-access-token"}:${c.env.SDLC_PLUGIN_TOKEN}@`);
   const home = c.env.SDLC_HOME || join18(homedir2(), ".ai-sdlc");
   rmSync6(home, { recursive: true, force: true });
-  execFileSync8("git", ["clone", "-q", "--depth", "1", url2, home], { stdio: ["ignore", "ignore", "inherit"] });
-  execFileSync8("claude", ["plugin", "marketplace", "add", home], { stdio: ["ignore", "ignore", "inherit"] });
-  execFileSync8("claude", ["plugin", "install", "ai-sdlc@ai-native-sdlc"], { stdio: ["ignore", "ignore", "inherit"] });
-  log("ai-sdlc plugin installed");
+  execFileSync9("git", ["clone", "-q", "--depth", "1", url2, home], { stdio: ["ignore", "ignore", "inherit"] });
+  execFileSync9("claude", ["plugin", "marketplace", "add", home], { stdio: ["ignore", "ignore", "inherit"] });
+  execFileSync9("claude", ["plugin", "install", "ai-sdlc@ai-native-sdlc"], { stdio: ["ignore", "ignore", "inherit"] });
+  log2("ai-sdlc plugin installed");
   return 0;
 }
 var TALLY = /Important: \d+ · Nit: \d+/g;
 async function review(c) {
   const n = prNumber(c.env);
   if (n === void 0) {
-    log("not a PR/MR, nothing to review");
+    log2("not a PR/MR, nothing to review");
     return 0;
   }
   const base = baseRef(c);
@@ -34390,7 +34529,7 @@ async function post(c, n, body) {
     console.log(body);
     return;
   }
-  log(await prComment({ root: c.root, loaded: c.loaded, env: c.env }, n, body));
+  log2(await prComment({ root: c.root, loaded: c.loaded, env: c.env }, n, body));
 }
 function pendingIntents(root) {
   const dir = join18(root, "changes");
@@ -34400,12 +34539,12 @@ function pendingIntents(root) {
 function intentToSpec(c) {
   const pending = pendingIntents(c.root);
   if (!pending.length) {
-    log("no accepted intents without a spec");
+    log2("no accepted intents without a spec");
     return 0;
   }
   const before = git(c.root, ["rev-parse", "HEAD"]);
   for (const d of pending) {
-    log(`generating spec for ${d} with ${c.agent}`);
+    log2(`generating spec for ${d} with ${c.agent}`);
     runAgent(
       c.agent,
       {
@@ -34418,11 +34557,11 @@ function intentToSpec(c) {
     );
   }
   if (git(c.root, ["rev-parse", "HEAD"]) === before) {
-    log("the agent made no commits; nothing to push");
+    log2("the agent made no commits; nothing to push");
     return 1;
   }
-  if (c.dryRun) log(`dry run: not pushing HEAD:${headRef(c)}`);
-  else execFileSync8("git", ["push", "origin", `HEAD:${headRef(c)}`], { cwd: c.root, stdio: ["ignore", "inherit", "inherit"] });
+  if (c.dryRun) log2(`dry run: not pushing HEAD:${headRef(c)}`);
+  else execFileSync9("git", ["push", "origin", `HEAD:${headRef(c)}`], { cwd: c.root, stdio: ["ignore", "inherit", "inherit"] });
   return 0;
 }
 async function triage(c, logFile) {
@@ -34444,21 +34583,21 @@ async function triage(c, logFile) {
 }
 async function jiraMerged(c) {
   if (!trackerEnabled(c.loaded)) {
-    log("tracker not configured");
+    log2("tracker not configured");
     return 0;
   }
   const text = [git(c.root, ["log", "-1", "--format=%B"]) ?? "", headRef(c), c.env.MERGED_BRANCH ?? ""].join("\n");
   const keys = ticketKeys(text, c.loaded?.config.tracker?.project_key);
   if (!keys.length) {
-    log("the merge does not reference any tickets");
+    log2("the merge does not reference any tickets");
     return 0;
   }
   const j = jira(c.loaded, c.env);
   for (const k of keys) {
     try {
-      log(await j.transition(k, "merged"));
+      log2(await j.transition(k, "merged"));
     } catch (e) {
-      log(`could not transition ${k}: ${e.message} (continuing; Jira does not block)`);
+      log2(`could not transition ${k}: ${e.message} (continuing; Jira does not block)`);
     }
   }
   return 0;
@@ -34497,8 +34636,8 @@ ${quoted}
 
 ${out.trim()}`;
   if (edit && git(c.root, ["rev-parse", "HEAD"]) !== before) {
-    if (c.dryRun) log(`dry run: not pushing HEAD:${headRef(c)}`);
-    else execFileSync8("git", ["push", "origin", `HEAD:${headRef(c)}`], { cwd: c.root, stdio: ["ignore", "inherit", "inherit"] });
+    if (c.dryRun) log2(`dry run: not pushing HEAD:${headRef(c)}`);
+    else execFileSync9("git", ["push", "origin", `HEAD:${headRef(c)}`], { cwd: c.root, stdio: ["ignore", "inherit", "inherit"] });
     body += `
 
 _Pushed ${git(c.root, ["rev-parse", "--short", "HEAD"])} to ${headRef(c)}._`;

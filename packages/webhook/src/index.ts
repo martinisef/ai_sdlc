@@ -1,4 +1,4 @@
-// `@claude` in GitLab MR and Bitbucket PR comments. Neither provider starts pipelines from comments, so this
+// `@claude` and `/approve <artifact>` in GitLab MR and Bitbucket PR comments. Neither provider starts pipelines from comments, so this
 // small service receives the comment webhook and triggers the project's pipeline, where `sdlc ci mention`
 // runs the agent. The service holds no model credentials and no state: it only validates and forwards.
 import { createHmac, timingSafeEqual } from 'node:crypto';
@@ -23,14 +23,24 @@ export interface WebhookEnv {
 
 export interface Mention {
   provider: 'gitlab' | 'bitbucket';
+  /** `mention` runs `sdlc ci mention`; `gate` runs `sdlc ci gate` for /approve and /reject. */
+  job: 'mention' | 'gate';
   /** GitLab project id or Bitbucket workspace/repo. */
   project: string;
   number: number;
   sourceBranch: string;
   targetBranch: string;
   author: string;
+  /** Display name of the commenter, for the gate commit and the author check. */
+  authorName?: string;
+  /** Username of whoever opened the PR/MR, when the payload has it. */
+  prAuthor?: string;
   body: string;
 }
+
+/** Same grammar as `sdlc ci gate`. */
+export const GATE_COMMAND = /^\/(approve|reject) (intent|spec|plan)(?:[ \t]+.*)?$/m;
+export const isGateCommand = (body: string) => GATE_COMMAND.test(body.replace(/\r/g, '')) && !body.includes(REPLY_MARKER);
 
 /** Our own replies carry this marker; never react to them (no loops). */
 export const REPLY_MARKER = '(ai-sdlc)';
@@ -55,14 +65,17 @@ function safeEqual(a: string, b: string): boolean {
 
 /** Pipeline variables `sdlc ci mention` reads (same names as the other `sdlc ci` commands). */
 export function pipelineVariables(m: Mention): Record<string, string> {
-  return {
-    SDLC_JOB: 'mention',
-    PR_NUMBER: String(m.number),
-    BASE_REF: m.targetBranch,
-    HEAD_REF: m.sourceBranch,
-    SDLC_MENTION_AUTHOR: m.author,
-    SDLC_MENTION_BODY: m.body.slice(0, 4000),
-  };
+  const base = { SDLC_JOB: m.job, PR_NUMBER: String(m.number), BASE_REF: m.targetBranch, HEAD_REF: m.sourceBranch };
+  if (m.job === 'gate') {
+    return {
+      ...base,
+      COMMENT_AUTHOR: m.author,
+      COMMENT_BODY: m.body.slice(0, 4000),
+      ...(m.authorName ? { COMMENT_AUTHOR_NAME: m.authorName } : {}),
+      ...(m.prAuthor ? { PR_AUTHOR: m.prAuthor } : {}),
+    };
+  }
+  return { ...base, SDLC_MENTION_AUTHOR: m.author, SDLC_MENTION_BODY: m.body.slice(0, 4000) };
 }
 
 async function post(url: string, init: RequestInit): Promise<void> {
@@ -84,7 +97,7 @@ export async function triggerBitbucket(env: WebhookEnv, m: Mention): Promise<voi
     method: 'POST',
     headers: { authorization: `Bearer ${env.BITBUCKET_ACCESS_TOKEN}`, 'content-type': 'application/json' },
     body: JSON.stringify({
-      target: { type: 'pipeline_ref_target', ref_type: 'branch', ref_name: m.sourceBranch, selector: { type: 'custom', pattern: 'sdlc-mention' } },
+      target: { type: 'pipeline_ref_target', ref_type: 'branch', ref_name: m.sourceBranch, selector: { type: 'custom', pattern: `sdlc-${m.job}` } },
       variables: Object.entries(pipelineVariables(m)).map(([key, value]) => ({ key, value })),
     }),
   });
@@ -95,14 +108,17 @@ export function gitlabMention(p: any, mention?: string): Mention | string {
   const note = p?.object_attributes;
   const mr = p?.merge_request;
   if (p?.object_kind !== 'note' || note?.noteable_type !== 'MergeRequest' || !mr) return 'not a merge request comment';
-  if (!mentions(note.note ?? '', mention)) return 'no mention';
+  const job = isGateCommand(note.note ?? '') ? 'gate' : mentions(note.note ?? '', mention) ? 'mention' : undefined;
+  if (!job) return 'no mention';
   return {
     provider: 'gitlab',
+    job,
     project: String(p.project?.id ?? mr.target_project_id),
     number: Number(mr.iid),
     sourceBranch: mr.source_branch,
     targetBranch: mr.target_branch,
     author: p.user?.username ?? '',
+    authorName: p.user?.name,
     body: note.note,
   };
 }
@@ -112,14 +128,18 @@ export function bitbucketMention(p: any, mention?: string): Mention | string {
   const pr = p?.pullrequest;
   const body = p?.comment?.content?.raw ?? '';
   if (!pr || !p?.comment) return 'not a pull request comment';
-  if (!mentions(body, mention)) return 'no mention';
+  const job = isGateCommand(body) ? 'gate' : mentions(body, mention) ? 'mention' : undefined;
+  if (!job) return 'no mention';
   return {
     provider: 'bitbucket',
+    job,
     project: p.repository?.full_name ?? '',
     number: Number(pr.id),
     sourceBranch: pr.source?.branch?.name,
     targetBranch: pr.destination?.branch?.name,
     author: p.actor?.nickname ?? p.actor?.username ?? p.actor?.display_name ?? '',
+    authorName: p.actor?.display_name,
+    prAuthor: pr.author?.nickname ?? pr.author?.username,
     body,
   };
 }

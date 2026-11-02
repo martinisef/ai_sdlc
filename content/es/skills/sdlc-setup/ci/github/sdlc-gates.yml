@@ -1,0 +1,69 @@
+name: sdlc gates
+# Gates desde el PR: un comentario "/approve spec" (o "/reject plan motivo…") registra la decisión como commit
+# en la rama del cambio, igual que `sdlc approve` en local. Solo owners, members y collaborators pueden decidir;
+# los roles en .sdlc/config.json aceptan usuarios de GitHub como "@login".
+# El commit status sdlc/gates se pone verde cuando el plan está aprobado (o el cambio va por el carril rápido):
+# hacelo check requerido en la branch protection para que el código no se mergee antes de sus gates.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  issue_comment:
+    types: [created]
+
+concurrency:
+  group: sdlc-gates-${{ github.event.pull_request.number || github.event.issue.number }}
+
+jobs:
+  status:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      statuses: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: sdlc/gates status
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_REF: ${{ github.head_ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: npx -y @morsadev/sdlc@0 ci gate-status
+
+  decide:
+    if: >-
+      github.event_name == 'issue_comment' && github.event.issue.pull_request &&
+      (contains(github.event.comment.body, '/approve ') || contains(github.event.comment.body, '/reject '))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      statuses: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Checkout de la rama del PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr checkout ${{ github.event.issue.number }}
+          echo "HEAD_REF=$(git branch --show-current)" >> "$GITHUB_ENV"
+          echo "PR_AUTHOR=$(gh pr view ${{ github.event.issue.number }} --json author --jq .author.login)" >> "$GITHUB_ENV"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Registrar la decisión del gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
+          AUTHOR_ASSOCIATION: ${{ github.event.comment.author_association }}
+        run: npx -y @morsadev/sdlc@0 ci gate

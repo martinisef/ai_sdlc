@@ -103,6 +103,40 @@ test('bitbucket: HMAC signature checked, PR comment triggers the sdlc-mention cu
   assert.equal(vars.HEAD_REF, 'change/y');
 });
 
+test('gitlab and bitbucket: /approve <artifact> triggers the gate job with the commenter', async () => {
+  calls.length = 0;
+  const gl = await app().request('/gitlab', {
+    method: 'POST',
+    headers: { 'x-gitlab-token': SECRET, 'x-gitlab-event': 'Note Hook', 'content-type': 'application/json' },
+    body: JSON.stringify({ ...note('/approve spec looks right'), user: { username: 'ana', name: 'Ana Product' } }),
+  });
+  assert.equal(gl.status, 202);
+  const form = new URLSearchParams(calls[0].body);
+  assert.equal(form.get('variables[SDLC_JOB]'), 'gate');
+  assert.equal(form.get('variables[COMMENT_BODY]'), '/approve spec looks right');
+  assert.equal(form.get('variables[COMMENT_AUTHOR]'), 'ana');
+  assert.equal(form.get('variables[COMMENT_AUTHOR_NAME]'), 'Ana Product');
+
+  calls.length = 0;
+  const payload = JSON.stringify({
+    actor: { nickname: 'juan', display_name: 'Juan Lead' },
+    repository: { full_name: 'acme/app' },
+    pullrequest: { id: 12, author: { nickname: 'ana' }, source: { branch: { name: 'change/y' } }, destination: { branch: { name: 'main' } } },
+    comment: { content: { raw: '/reject plan\nsplit the migration' } },
+  });
+  const bb = await app().request('/bitbucket', {
+    method: 'POST',
+    headers: { 'x-hub-signature': `sha256=${createHmac('sha256', SECRET).update(payload).digest('hex')}`, 'x-event-key': 'pullrequest:comment_created' },
+    body: payload,
+  });
+  assert.equal(bb.status, 202);
+  const sent = JSON.parse(calls[0].body);
+  assert.equal(sent.target.selector.pattern, 'sdlc-gate');
+  const vars = Object.fromEntries(sent.variables.map((v: { key: string; value: string }) => [v.key, v.value]));
+  assert.equal(vars.PR_AUTHOR, 'ana');
+  assert.equal(vars.COMMENT_AUTHOR, 'juan');
+});
+
 test('the secret is mandatory', () => {
   assert.throws(() => createWebhookApp({}), /SDLC_WEBHOOK_SECRET/);
 });

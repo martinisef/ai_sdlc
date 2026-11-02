@@ -24,6 +24,7 @@ import {
 import { AGENT_BIN, pickAgent, READ_TOOLS, runAgent, skillRef } from './agent.ts';
 import { runEvals } from './evals.ts';
 import { ciSecrets, installCi } from './install.ts';
+import { gate, gateStatus } from './gates.ts';
 import { isPreset, PRESET_SPECS } from '../presets.ts';
 
 export const CI_HELP = `sdlc ci install [--provider github|gitlab|bitbucket] [--preset solo|team-github|regulated]
@@ -34,6 +35,8 @@ sdlc ci intent-to-spec         for accepted intents without spec.md: write the s
 sdlc ci triage <log>           summarize a failed build and comment on the PR/MR
 sdlc ci jira-merged            move the merged change's tickets to tracker.transitions.merged
 sdlc ci evals [pattern] [--out results.json]   run evals/*.json against the agent; fail below ci.min_pass_rate (0.8)
+sdlc ci gate                   /approve|/reject intent|spec|plan in a PR/MR comment → gate commit on the branch + reply
+sdlc ci gate-status            set the sdlc/gates commit status (success once the plan is approved or the change is quick)
 sdlc ci mention                answer an @claude comment on the PR/MR (triggered by \`sdlc webhook\`; ci.mention_mode read|edit)
 
 Options: --agent claude|codex|cursor (or SDLC_CI_AGENT, or ci.agent) · --model M · --dry-run (print, do not post/push)
@@ -108,6 +111,10 @@ export async function ciCommand(root: string, args: string[]): Promise<number> {
       return runEvals(c, rest[0], typeof flags.out === 'string' ? flags.out : undefined);
     case 'install':
       return install(c, flags);
+    case 'gate':
+      return gate(c);
+    case 'gate-status':
+      return gateStatus(c);
     default:
       process.stderr.write(CI_HELP);
       return 1;

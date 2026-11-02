@@ -39,6 +39,11 @@ pipelines:
       - parallel:
           - step: *build
           - step: *review
+          - step:
+              name: sdlc/gates
+              image: node:22
+              script:
+                - HEAD_REF="$BITBUCKET_BRANCH" HEAD_SHA="$BITBUCKET_COMMIT" npx -y @morsadev/sdlc@0 ci gate-status
 
   branches:
     'change/**':
@@ -100,3 +105,20 @@ pipelines:
             - git config user.name "ai-sdlc-bot" && git config user.email "ai-sdlc-bot@noreply"
             - npx -y @morsadev/sdlc@0 ci bootstrap
             - npx -y @morsadev/sdlc@0 ci mention
+    sdlc-gate:
+      # /approve spec, /reject plan … in PR comments: run by `sdlc webhook` through the API (SDLC_JOB=gate).
+      - variables:
+          - name: PR_NUMBER
+          - name: BASE_REF
+          - name: HEAD_REF
+          - name: PR_AUTHOR
+          - name: COMMENT_AUTHOR
+          - name: COMMENT_AUTHOR_NAME
+          - name: COMMENT_BODY
+      - step:
+          name: Gate decision
+          image: node:22
+          script:
+            - git config user.name "ai-sdlc-bot" && git config user.email "ai-sdlc-bot@noreply"
+            - git checkout -B "$HEAD_REF"
+            - npx -y @morsadev/sdlc@0 ci gate
