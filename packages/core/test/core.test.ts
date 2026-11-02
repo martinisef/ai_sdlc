@@ -4,7 +4,7 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { gitIn, repo } from './helpers.ts';
+import { gitIn, repo, writeArtifact } from './helpers.ts';
 import {
   checkProductionGate,
   decideGate,
@@ -19,11 +19,6 @@ import {
   validateConfig,
 } from '@ai-native-sdlc/core';
 
-
-function writeArtifact(root: string, dir: string, name: string, status: string, extra = '') {
-  mkdirSync(join(root, 'changes', dir), { recursive: true });
-  writeFileSync(join(root, 'changes', dir, `${name}.md`), `---\nstatus: ${status}            # draft → approved\n${extra}---\n# ${name}: Claims status\n`);
-}
 
 test('glob: * crosses /, leading **/ optional, classes', () => {
   assert.ok(globMatch('src/gen/a/b.py', 'src/gen/**'));

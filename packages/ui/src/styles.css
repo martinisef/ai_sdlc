@@ -106,6 +106,13 @@ textarea { font-family: var(--mono); font-size: 12px; }
 .top nav a.on, .top nav a:hover { background: var(--accent-soft); color: var(--accent); }
 .who { margin-left: auto; display: flex; gap: 10px; align-items: center; color: var(--muted); }
 main { padding: 20px; max-width: 1500px; margin: 0 auto; }
+.next-bar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding: 8px 20px; background: var(--accent-soft); border-bottom: 1px solid var(--line); }
+.next-bar strong { color: var(--accent); }
+.next-bar code { font-family: var(--mono); }
+.next-bar a { margin-left: auto; color: var(--accent); }
+.next-bar a + a { margin-left: 0; }
+.next-bar.approve { background: var(--wait-soft); }
+.next-bar.approve strong { color: var(--wait); }
 
 .empty { padding: 60px 20px; text-align: center; color: var(--muted); }
 .empty.error { color: var(--bad); }

@@ -20,6 +20,8 @@ const es: Record<string, string> = {
   Reject: 'Rechazar',
   'Comment (optional)': 'Comentario (opcional)',
   'Next step': 'Siguiente paso',
+  Open: 'Abrir',
+  'in your inbox': 'en tu bandeja',
   Timeline: 'Historial',
   'No changes yet': 'Todavía no hay cambios',
   'Start one with': 'Empezá uno con',

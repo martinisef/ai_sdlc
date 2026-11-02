@@ -8,6 +8,7 @@ import { localeOf, type LoadedConfig } from './config.ts';
 import { currentBranch, git, lines } from './git.ts';
 import { globMatch, matchAny } from './glob.ts';
 import { t, type Locale } from './i18n.ts';
+import { formatNext, nextAction } from './next.ts';
 import { relPath } from './project.ts';
 
 export type HookEvent =
@@ -164,13 +165,16 @@ export function sessionContext(ctx: PolicyContext, locale: Locale): Decision {
   }
   const out = [t(locale, 'session.config', { config: loaded.path })];
   const change = activeChange(root);
+  const changes = listChanges(root, { locale, defaultBranch: loaded.config.vcs?.default_branch });
   if (change) {
-    const c = listChanges(root, { locale, defaultBranch: loaded.config.vcs?.default_branch }).find((x) => x.id === change);
+    const c = changes.find((x) => x.id === change);
     const stage = c?.stage ?? 'no-intent';
     out.push(t(locale, 'session.active', { branch: currentBranch(root) ?? '', change, stage, ticket: c?.ticket ?? '' }));
-    out.push(t(locale, 'session.next', { next: c?.next ?? t(locale, 'next.no-intent') }));
+    out.push(t(locale, 'session.next', { next: c ? formatNext(nextAction(root, loaded, { changes })) : t(locale, 'next.no-intent') }));
   } else {
     out.push(t(locale, 'session.noactive'));
+    const n = nextAction(root, loaded, { changes });
+    if (n.kind !== 'new') out.push(t(locale, 'session.next', { next: formatNext(n) }));
   }
   if (fixLockActive(root)) out.push(t(locale, 'session.lock'));
   const setup = join(root, 'SETUP.md');

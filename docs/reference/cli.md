@@ -22,6 +22,7 @@ Every command works from any directory inside the repository. The project root i
 
 | Command | What it does |
 |---|---|
+| `sdlc next [--json]` | The one thing to do now, for you: approve a gate (`sdlc approve …`), ask the agent for the next skill, wait for someone, ship, switch to your open change or start one. Gates on other changes that you can decide are listed below. The same line appears in the session-start context, the dashboard and the editor. |
 | `sdlc status [--json \| --metrics]` | Changes and their stage. `*` marks the active change (current branch). |
 | `sdlc metrics [--json]` | Leading indicators from git and the activity log. |
 | `sdlc new <slug> [--ticket KEY] [--title T] [--no-branch]` | Creates `changes/<YYYY-MM>-<slug>/intent.md` (status `draft`) on a new branch `change/<slug>`. |

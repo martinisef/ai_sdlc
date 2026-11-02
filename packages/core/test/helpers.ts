@@ -17,4 +17,9 @@ export function repo(config: object = { version: 1, locale: 'en' }): string {
   return root;
 }
 
+export function writeArtifact(root: string, dir: string, name: string, status: string, extra = '') {
+  mkdirSync(join(root, 'changes', dir), { recursive: true });
+  writeFileSync(join(root, 'changes', dir, `${name}.md`), `---\nstatus: ${status}            # draft → approved\n${extra}---\n# ${name}: Claims status\n`);
+}
+
 export const gitIn = (root: string, ...a: string[]) => execFileSync('git', a, { cwd: root, encoding: 'utf8' }).trim();
