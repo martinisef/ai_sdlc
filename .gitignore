@@ -14,3 +14,5 @@ packages/vscode/dist/
 packages/vscode/.stage/
 *.vsix
 .vscode-test/
+test-results/
+playwright-report/

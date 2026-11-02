@@ -77,6 +77,28 @@ jobs:
       - run: npm ci
       - run: npm run docs:build
 
+  ui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: git config --global user.name ci && git config --global user.email ci@example.com
+      - run: npm run build:ui && npm run build:cli
+      - run: npx playwright install --with-deps chromium
+      - name: dashboard end-to-end (Playwright)
+        run: npm run test:ui
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+
   vscode:
     runs-on: ubuntu-latest
     steps:
