@@ -14,6 +14,6 @@
     "@ai-native-sdlc/core": "*",
     "@ai-native-sdlc/adapters": "*",
     "hono": "^4.9.0",
-    "@hono/node-server": "^1.19.0"
+    "@hono/node-server": "^2.1.6"
   }
 }

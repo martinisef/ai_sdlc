@@ -37,5 +37,13 @@
     "esbuild": "^0.25.0",
     "typescript": "^5.9.0",
     "vitepress": "^1.6.4"
+  },
+  "overrides": {
+    "vitepress": {
+      "vite": "^6.4.4"
+    },
+    "@vscode/vsce": {
+      "minimatch": "^11.0.1"
+    }
   }
 }
