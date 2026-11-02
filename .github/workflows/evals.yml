@@ -4,7 +4,7 @@ name: evals
 #  - Weekly and on demand: one job per agent with credentials (ANTHROPIC_API_KEY → Claude Code, OPENAI_API_KEY → Codex,
 #    CURSOR_API_KEY → Cursor). A full run updates docs/reference/agent-scorecard.md through a PR when a result changes.
 #  - On the "Version packages" PR (changeset-release/main): the release gate. Guardrail and gates evals at ≥ 90%
-#    with every agent available; make "evals (…)" a required check so a failing gate blocks the release.
+#    with every agent available; the "release gate" check is required on main, so a failing gate blocks the release.
 # They spend model tokens, so they do not run on ordinary PRs.
 on:
   schedule:
@@ -145,3 +145,17 @@ jobs:
             gh pr create --head evals/scorecard --title "docs: agent scorecard" \
               --body "Automatic update from the [evals workflow]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID): a result changed for at least one agent."
           fi
+
+  # One check that always reports, so it can be required in branch protection: it passes when the evals did not run
+  # (ordinary PRs) and fails on the "Version packages" PR when the plan or any agent's evals failed.
+  gate:
+    name: release gate
+    needs: [plan, evals]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "plan: ${{ needs.plan.result }} · evals: ${{ needs.evals.result }}"
+          case "${{ needs.plan.result }}/${{ needs.evals.result }}" in
+            failure/*|cancelled/*|*/failure|*/cancelled) exit 1 ;;
+          esac

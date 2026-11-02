@@ -63,4 +63,4 @@ Each eval runs in a throwaway, detached git worktree of `HEAD`, so commit what y
 `.github/workflows/evals.yml` runs them:
 
 - **Weekly and on demand, per agent.** A `plan` job builds the matrix from the API keys the repository has (`ANTHROPIC_API_KEY` → Claude Code, `OPENAI_API_KEY` → Codex, `CURSOR_API_KEY` → Cursor; `sdlc ci matrix`), and each agent runs in parallel. A full run (`pattern: '*'`) then updates the [agent scorecard](./agent-scorecard) through an automatic PR, only when a result changed (`sdlc ci scorecard`).
-- **As the release gate.** On the "Version packages" PR (`changeset-release/main`), the evals tagged `guardrail` or `gates` run with every available agent and must pass at 90% or more. Make the `evals (…)` checks required in branch protection for `main` so a failing gate blocks the release.
+- **As the release gate.** On the "Version packages" PR (`changeset-release/main`), the evals tagged `guardrail` or `gates` run with every available agent and must pass at 90% or more. The `release gate` job reports on every PR (it passes when the evals did not run), so require it in branch protection for `main` and a failing gate blocks the release.
