@@ -16,6 +16,8 @@
     "build:ui": "npm run build -w @ai-native-sdlc/ui",
     "build:cli": "node scripts/build-cli.mjs",
     "build:plugin": "node --conditions=source scripts/build-plugin.ts",
+    "build:vscode": "node scripts/build-vscode.mjs",
+    "package:vscode": "node scripts/build-vscode.mjs --package",
     "build": "npm run build:ui && npm run build:cli && npm run build:plugin",
     "sdlc": "node --conditions=source packages/cli/src/main.ts",
     "check:pack": "node scripts/check-pack.mjs",

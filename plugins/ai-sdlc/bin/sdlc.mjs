@@ -29018,10 +29018,6 @@ var init_metrics = __esm({
 });
 
 // packages/core/src/next.ts
-function rolesFor(change, artifact, loaded) {
-  const roles = loaded.config.gates?.[artifact] ?? [];
-  return artifact === "plan" && change.risk === "high" && !roles.includes("tech-lead") ? [...roles, "tech-lead"] : roles;
-}
 function forChange(change, loaded, who, locale) {
   const base = { change: change.slug, stage: change.stage };
   const gate2 = GATE[change.stage];
@@ -29030,8 +29026,7 @@ function forChange(change, loaded, who, locale) {
     if (ok.ok) {
       return { ...base, kind: "approve", artifact: gate2, command: `sdlc approve ${change.slug} ${gate2}`, message: t(locale, "nx.approve", { change: change.slug, artifact: gate2 }) };
     }
-    const roles = rolesFor(change, gate2, loaded);
-    const people = roles.flatMap((r) => loaded.config.roles?.[r] ?? []);
+    const { roles, people } = requiredApprovers(change, gate2, loaded);
     return {
       ...base,
       kind: "wait",
@@ -35245,9 +35240,10 @@ async function main() {
       const loaded = loadConfig(root);
       const locale = localeOf(loaded);
       const changes = listChanges(root, { locale, defaultBranch: loaded?.config.vcs?.default_branch });
-      if (!changes.length) return void console.log(t(locale, "status.empty"));
+      if (!changes.length) return void (flags.json || console.log(t(locale, "status.empty")));
       for (const c of changes) {
-        if (flags.json) console.log(JSON.stringify({ change: c.id, stage: c.stage, ticket: c.ticket ?? "", statuses: c.statuses, active: c.active, next: c.next }));
+        if (flags.json)
+          console.log(JSON.stringify({ change: c.id, slug: c.slug, title: c.title ?? "", stage: c.stage, ticket: c.ticket ?? "", statuses: c.statuses, active: c.active, next: c.next }));
         else console.log(`${c.active ? "*" : ""}${c.id}	${c.stage}	${c.ticket ?? "-"}	${c.statuses}`);
       }
       return;

@@ -73,3 +73,23 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run docs:build
+
+  vscode:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: git config --global user.name ci && git config --global user.email ci@example.com
+      - run: npm run build:ui && npm run build:cli
+      - name: build and package the extension
+        run: npm run package:vscode
+      - name: smoke test in VS Code (xvfb)
+        run: xvfb-run -a node packages/vscode/smoke/run.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vsix
+          path: packages/vscode/*.vsix

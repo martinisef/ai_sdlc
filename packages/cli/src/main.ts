@@ -285,9 +285,10 @@ async function main() {
       const loaded = loadConfig(root);
       const locale = localeOf(loaded);
       const changes = listChanges(root, { locale, defaultBranch: loaded?.config.vcs?.default_branch });
-      if (!changes.length) return void console.log(t(locale, 'status.empty'));
+      if (!changes.length) return void (flags.json || console.log(t(locale, 'status.empty')));
       for (const c of changes) {
-        if (flags.json) console.log(JSON.stringify({ change: c.id, stage: c.stage, ticket: c.ticket ?? '', statuses: c.statuses, active: c.active, next: c.next }));
+        if (flags.json)
+          console.log(JSON.stringify({ change: c.id, slug: c.slug, title: c.title ?? '', stage: c.stage, ticket: c.ticket ?? '', statuses: c.statuses, active: c.active, next: c.next }));
         else console.log(`${c.active ? '*' : ''}${c.id}\t${c.stage}\t${c.ticket ?? '-'}\t${c.statuses}`);
       }
       return;
