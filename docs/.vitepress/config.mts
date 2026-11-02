@@ -63,6 +63,7 @@ export default defineConfig({
               { text: 'Trackers', link: '/reference/trackers' },
               { text: 'Control bands', link: '/reference/bands' },
               { text: 'Evals', link: '/reference/evals' },
+              { text: 'Agent scorecard', link: '/reference/agent-scorecard' },
               { text: 'Telemetry', link: '/reference/telemetry' },
               { text: 'RFC: hosted', link: '/rfc/hosted' },
             ],

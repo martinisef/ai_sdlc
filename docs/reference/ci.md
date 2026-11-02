@@ -26,7 +26,7 @@ Env: ANTHROPIC_API_KEY | OPENAI_API_KEY | CURSOR_API_KEY · GH_TOKEN | GITLAB_TO
 |---|---|---|---|
 | `claude` (default) | `claude -p` | `--allowedTools` with read tools only | `--permission-mode acceptEdits` |
 | `codex` | `codex exec` | `--sandbox read-only` | `--sandbox workspace-write` |
-| `cursor` | `cursor-agent -p` | without `--force` | `--force` |
+| `cursor` | `agent -p --trust` (or `cursor-agent`) | `--mode ask` | `--force` |
 
 Claude Code is told to use "the sdlc-spec skill". The other agents are pointed at `.agents/skills/sdlc-spec/SKILL.md`. The guardrails apply in CI the same way they do locally.
 

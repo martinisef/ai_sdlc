@@ -6,6 +6,7 @@ Evals are regression tests for the **agent configuration**: the skills, `CLAUDE.
 sdlc ci evals                       # every eval; fails below ci.min_pass_rate (default 0.8)
 sdlc ci evals 'py-*' --out report.json
 sdlc ci evals --agent codex
+sdlc ci evals '*' --tags guardrail,gates   # only evals carrying one of these tags
 ```
 
 Each eval runs in a throwaway, detached git worktree of `HEAD`, so commit what you want to test. The order is:
@@ -57,4 +58,9 @@ Each eval runs in a throwaway, detached git worktree of `HEAD`, so commit what y
 
 ## The product evals in this repository
 
-`evals/` at the root of this repository holds the product's own evals: 22 tasks over `examples/python-api` and `examples/typescript-lib`. They cover every stage of the loop (intent, spec, plan, build, fix, review, status, incident) and every guardrail (protected paths, secrets, test-lock, production gate, gates). They run weekly in `.github/workflows/evals.yml`, and a test checks their structure on every PR.
+`evals/` at the root of this repository holds the product's own evals: 24 tasks over `examples/python-api` and `examples/typescript-lib`. They cover every stage of the loop (intent, spec, plan, build, fix, review, status, quick lane, incident) and every guardrail (protected paths, secrets, test-lock, production gate, gates). A test checks their structure on every PR.
+
+`.github/workflows/evals.yml` runs them:
+
+- **Weekly and on demand, per agent.** A `plan` job builds the matrix from the API keys the repository has (`ANTHROPIC_API_KEY` → Claude Code, `OPENAI_API_KEY` → Codex, `CURSOR_API_KEY` → Cursor; `sdlc ci matrix`), and each agent runs in parallel. A full run (`pattern: '*'`) then updates the [agent scorecard](./agent-scorecard) through an automatic PR, only when a result changed (`sdlc ci scorecard`).
+- **As the release gate.** On the "Version packages" PR (`changeset-release/main`), the evals tagged `guardrail` or `gates` run with every available agent and must pass at 90% or more. Make the `evals (…)` checks required in branch protection for `main` so a failing gate blocks the release.

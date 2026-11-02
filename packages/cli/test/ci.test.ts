@@ -42,6 +42,15 @@ test('ci review with codex: sandboxed read-only, answer taken from the last mess
   assert.match(bad.err, /unknown agent 'gemini'/);
 });
 
+test('ci review with cursor: `agent` found on PATH, trusted workspace, ask mode for read-only', async () => {
+  const root = project({ vcs: { provider: 'github' }, ci: { agent: 'cursor' } }, 'change/x');
+  const log = stubLog();
+  const r = await sdlc(root, ['ci', 'review', '--dry-run'], { STUB_LOG: log, PR_NUMBER: '5' });
+  assert.equal(r.code, 0, r.err);
+  assert.match(read(log), new RegExp(`^agent -p --output-format text --trust --workspace ${root.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} --mode ask `, 'm'));
+  assert.equal(r.out, '## Automated review (ai-sdlc)\n\nImportant: 1 · Nit: 0');
+});
+
 test('ci intent-to-spec: only accepted intents without a spec; pushes the new commits', async () => {
   const root = project({}, 'change/a');
   const intent = (slug: string, status: string, spec = false) => {
