@@ -4,13 +4,14 @@ El loop del *AI-Native SDLC Playbook* de Anthropic, en tu repo. **intent → spe
 
 ```bash
 npm i -D @morsadev/sdlc
-npx sdlc init --locale es       # skills, mensajes de los guardrails y dashboard en español
-npx sdlc doctor
+npx sdlc init --locale es --preset team-github   # o solo, o regulated: config, agentes, git hooks y CI en un paso
+npx sdlc next                                     # lo único que hay que hacer ahora, siempre
 ```
 
-Después abrí tu agente en el repo y corré `/sdlc-setup`.
+¿Cambio chico? `npx sdlc quick "<qué>"` y `/sdlc-quick` en tu agente. ¿Algo no anda? `npx sdlc doctor --fix`.
 
 ## Guías en español
+- [Tu primer cambio en 10 minutos](./primer-cambio)
 - [El loop en una página (equipos)](./guia-equipo)
 - [Guía de plataforma](./guia-plataforma)
 - [Managed settings](./managed-settings)

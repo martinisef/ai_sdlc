@@ -87,6 +87,6 @@ export function nextAction(root: string, loaded: LoadedConfig | undefined, opts:
 
 /** One line for terminals and hook context. */
 export function formatNext(n: NextAction): string {
-  const how = n.command ? ` → ${n.command}` : n.skill ? ` → ${n.skill}` : '';
+  const how = n.command ? ` → ${n.command}` : n.skill && !n.message.includes(n.skill) ? ` → ${n.skill}` : '';
   return `${n.message}${how}`;
 }

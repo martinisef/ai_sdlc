@@ -17,11 +17,11 @@ idea / ticket / incident
 ```bash
 cd your-repo
 npm i -D @morsadev/sdlc
-npx sdlc init        # detect stack, VCS and agents; write .sdlc/config.json; scaffold; generate agent files + git hooks
-npx sdlc doctor      # health checks + what each guardrail enforces, per agent
+npx sdlc init --preset team-github   # or solo, or regulated: config, agent files, git hooks and CI in one step
+npx sdlc next                        # the one thing to do now, every time
 ```
 
-Then open your agent in the repository and run `/sdlc-setup` to finish `CLAUDE.md`, `REVIEW.md` and CI. Start a change with `/sdlc-intent …`, and decide gates with `npx sdlc approve <change> <intent|spec|plan>` or in the dashboard (`npx sdlc ui`).
+Small change? `npx sdlc quick "<what>"`, then `/sdlc-quick` in your agent. A real feature? `npx sdlc new <slug>`, then follow `sdlc next`: the agent writes intent, spec and plan, and you approve each with `npx sdlc approve <change> <intent|spec|plan>` or in the dashboard (`npx sdlc ui`). Walkthrough: [your first change in 10 minutes](docs/guide/first-change.md). Something off? `npx sdlc doctor --fix`.
 
 Claude Code users can also install the plugin: `/plugin marketplace add martinisef/ai_sdlc`, then `/plugin install ai-sdlc@ai-native-sdlc`.
 
@@ -39,10 +39,11 @@ Claude Code users can also install the plugin: `/plugin marketplace add martinis
 
 **[martinisef.github.io/ai_sdlc](https://martinisef.github.io/ai_sdlc/)**, built from [`docs/`](docs/) (`npm run docs:dev` locally):
 
+- [Your first change in 10 minutes](docs/guide/first-change.md)
 - [Introduction](docs/guide/introduction.md), with quickstarts for [Claude Code](docs/guide/quickstart-claude.md), [Cursor](docs/guide/quickstart-cursor.md) and [AGENTS.md agents](docs/guide/quickstart-agents-md.md)
 - [The loop](docs/guide/concepts.md), [Guardrails](docs/guide/guardrails.md), [Dashboard](docs/guide/dashboard.md)
 - [Team guide](docs/guide/team.md), [Platform guide](docs/guide/platform.md), [Managed settings](docs/guide/managed-settings.md)
-- Reference: [CLI](docs/reference/cli.md), [configuration](docs/reference/config.md), [CI](docs/reference/ci.md), [control bands](docs/reference/bands.md), [evals](docs/reference/evals.md)
+- Reference: [CLI](docs/reference/cli.md), [configuration](docs/reference/config.md), [CI](docs/reference/ci.md), [control bands](docs/reference/bands.md), [evals](docs/reference/evals.md), [telemetry](docs/reference/telemetry.md)
 - Español: [docs/es](docs/es/index.md)
 
 ## Examples

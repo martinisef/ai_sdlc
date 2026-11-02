@@ -2,16 +2,20 @@
 layout: home
 hero:
   name: ai-native-sdlc
-  text: The AI-native SDLC loop, in your repo
-  tagline: Intent → spec → plan → build → ship → incident. Agents produce each artifact; people own the gates. Works with Claude Code, Cursor and any agent that reads AGENTS.md.
+  text: Ship with AI agents, keep humans on the decisions
+  tagline: One command sets up your repo. Agents write the intent, spec, plan and code; you approve each gate with one command; guardrails stop what should never happen. Claude Code, Cursor, Codex and any agent that reads AGENTS.md.
   actions:
     - theme: brand
-      text: Get started
-      link: /guide/introduction
+      text: Your first change in 10 minutes
+      link: /guide/first-change
     - theme: alt
-      text: Quickstart (Claude Code)
-      link: /guide/quickstart-claude
+      text: How the loop works
+      link: /guide/concepts
 features:
+  - title: npx sdlc init, and you are done
+    details: Presets for solo developers, GitHub teams and regulated teams. Agent files, git hooks and CI installed in one step; sdlc doctor --fix repairs the rest.
+  - title: Always one next step
+    details: sdlc next (and the dashboard, and the session context of your agent) says the one thing to do now. Small changes take the quick lane, with limits checked on every push.
   - title: One change, one folder, one branch
     details: changes/&lt;slug&gt;/intent.md → spec.md → plan.md on change/&lt;slug&gt;. Every stage ends by committing its artifact; the next stage reads it.
   - title: Human gates, recorded in git
