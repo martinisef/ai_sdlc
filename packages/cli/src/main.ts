@@ -36,6 +36,7 @@ import {
 import { askConfig, detectConfig, presetConfig, scaffold, templateFor } from './init.ts';
 import { defaultPreset, isPreset, PRESET_SPECS, PRESETS, type Preset } from './presets.ts';
 import { ciSecrets, installCi } from './ci/install.ts';
+import { fixDoctor, migrateLegacy } from './doctor-fix.ts';
 import { trackerCommand, vcsCommand } from './integrations.ts';
 import { bandsCommand } from './bands.ts';
 import { ciCommand } from './ci/index.ts';
@@ -53,7 +54,7 @@ Setup
   init [--preset solo|team-github|regulated] [--yes] [--no-ci] [--first-change "title"] [--locale en|es] [--verbose]
                                      detect stack/VCS/agents, apply the preset, scaffold, sync, install CI
   sync [--force] [--dry-run]         regenerate agent files (Claude, Cursor, AGENTS.md) and git hooks
-  doctor [--json]                    health checks + enforcement matrix per agent
+  doctor [--fix] [--json]            health checks + enforcement matrix per agent; --fix repairs what it can
   migrate                            .claude/sdlc.json → .sdlc/config.json
   schema                             JSON Schema of .sdlc/config.json
 
@@ -230,6 +231,13 @@ async function main() {
     }
 
     case 'doctor': {
+      if (flags.fix) {
+        const fixes = fixDoctor(root);
+        if (flags.json) return void console.log(JSON.stringify(fixes, null, 2));
+        if (!fixes.length) console.log('nothing to fix');
+        for (const f of fixes) console.log(`${f.fixed ? 'fixed ' : 'manual'}  ${f.id.padEnd(14)} ${f.message}`);
+        console.log('');
+      }
       const r = doctor(root);
       if (flags.json) return void console.log(JSON.stringify(r, null, 2));
       for (const c of r.checks) console.log(`${c.ok ? '✓' : c.level === 'warn' ? '!' : '✗'} ${c.message}`);
@@ -247,16 +255,7 @@ async function main() {
       const legacy = join(root, LEGACY_CONFIG_PATH);
       if (!existsSync(legacy)) fail(`no ${LEGACY_CONFIG_PATH} to migrate`);
       if (existsSync(join(root, CONFIG_PATH))) fail(`${CONFIG_PATH} already exists`);
-      const config = JSON.parse(readFileSync(legacy, 'utf8'));
-      config.locale ??= 'es';
-      config.agents ??= ['claude'];
-      writeConfig(root, config);
-      rmSync(legacy);
-      if (existsSync(join(root, '.claude/.sdlc-fix-lock'))) {
-        ensureSdlcDir(root);
-        writeFileSync(join(root, '.sdlc/fix-lock'), '');
-        rmSync(join(root, '.claude/.sdlc-fix-lock'));
-      }
+      migrateLegacy(root);
       console.log(`moved ${LEGACY_CONFIG_PATH} → ${CONFIG_PATH}`);
       printSync(sync(root, requireConfig(root)));
       return;

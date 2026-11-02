@@ -29631,7 +29631,7 @@ ${cmds}`
 
 // packages/adapters/src/doctor.ts
 import { execFileSync as execFileSync5 } from "node:child_process";
-import { existsSync as existsSync8 } from "node:fs";
+import { existsSync as existsSync8, readdirSync as readdirSync4, readFileSync as readFileSync10 } from "node:fs";
 import { join as join11 } from "node:path";
 function has(bin) {
   try {
@@ -29640,6 +29640,14 @@ function has(bin) {
   } catch {
     return false;
   }
+}
+function ciInstalled(root, provider) {
+  let files = CI_FILES[provider];
+  if (provider === "github") {
+    const dir = join11(root, ".github/workflows");
+    files = existsSync8(dir) ? readdirSync4(dir).filter((f) => /\.ya?ml$/.test(f)).map((f) => `.github/workflows/${f}`) : [];
+  }
+  return files.some((f) => existsSync8(join11(root, f)) && /\bsdlc\b|martinisef\/ai_sdlc/.test(readFileSync10(join11(root, f), "utf8")));
 }
 function doctor(root) {
   const checks = [];
@@ -29671,6 +29679,10 @@ function doctor(root) {
   if (agents.includes("agents-md")) add("agents-md", existsSync8(join11(root, "AGENTS.md")), existsSync8(join11(root, "AGENTS.md")) ? "AGENTS.md present" : "AGENTS.md missing \u2014 run `sdlc sync`");
   const provider = detectProvider(root, loaded);
   add("vcs", !!provider, provider ? `VCS provider: ${provider}` : "VCS provider unknown (vcs.provider or an origin remote)", provider ? "info" : "warn");
+  if (provider) {
+    const ci = ciInstalled(root, provider);
+    add("ci", ci, ci ? `CI pipelines call sdlc (${provider})` : `no ${provider} pipeline calls sdlc \u2014 run \`sdlc ci install\``, ci ? "info" : "warn");
+  }
   if (provider === "github") add("gh", has("gh"), has("gh") ? "gh installed" : "gh not installed: PR status unavailable", has("gh") ? "info" : "warn");
   if (provider === "gitlab") add("glab", has("glab"), has("glab") ? "glab installed" : "glab not installed: MR status unavailable", has("glab") ? "info" : "warn");
   if (existsSync8(join11(root, BANDS_PATH))) {
@@ -29685,7 +29697,7 @@ function doctor(root) {
   add("drift", drift.length === 0, drift.length ? `generated files edited by hand: ${drift.join(", ")} (sdlc sync --force to regenerate)` : "generated files in sync", drift.length ? "warn" : "info");
   return { checks, agents, matrix: ENFORCEMENT_MATRIX };
 }
-var ENFORCEMENT_MATRIX;
+var ENFORCEMENT_MATRIX, CI_FILES;
 var init_doctor = __esm({
   "packages/adapters/src/doctor.ts"() {
     "use strict";
@@ -29700,6 +29712,11 @@ var init_doctor = __esm({
       { guardrail: "plan-sync", claude: ["blocks"], cursor: ["blocks"], "agents-md": ["advisory"] },
       { guardrail: "plan-first", claude: ["advisory", "push"], cursor: ["advisory", "push"], "agents-md": ["advisory", "push"] }
     ];
+    CI_FILES = {
+      github: [],
+      gitlab: [".gitlab-ci.yml", "ci/sdlc.gitlab-ci.yml"],
+      bitbucket: ["bitbucket-pipelines.yml"]
+    };
   }
 });
 
@@ -32704,26 +32721,26 @@ __export(src_exports, {
   startServer: () => startServer
 });
 import { randomBytes } from "node:crypto";
-import { existsSync as existsSync14, mkdirSync as mkdirSync7, readFileSync as readFileSync16, watch, writeFileSync as writeFileSync9 } from "node:fs";
+import { existsSync as existsSync15, mkdirSync as mkdirSync7, readFileSync as readFileSync18, watch, writeFileSync as writeFileSync10 } from "node:fs";
 import { homedir as homedir2 } from "node:os";
-import { basename as basename2, dirname as dirname5, extname, join as join17, resolve as resolve3 } from "node:path";
+import { basename as basename2, dirname as dirname5, extname, join as join18, resolve as resolve3 } from "node:path";
 import { fileURLToPath as fileURLToPath2 } from "node:url";
 import { execFile } from "node:child_process";
 function uiDir() {
-  const candidates = [process.env.SDLC_UI_DIR, join17(here2, "ui"), join17(here2, "..", "..", "ui", "dist")];
-  return candidates.find((c) => c && existsSync14(join17(c, "index.html")));
+  const candidates = [process.env.SDLC_UI_DIR, join18(here2, "ui"), join18(here2, "..", "..", "ui", "dist")];
+  return candidates.find((c) => c && existsSync15(join18(c, "index.html")));
 }
 function loadWorkspaces(current) {
   let list = [];
   try {
-    list = JSON.parse(readFileSync16(WORKSPACES_FILE, "utf8"));
+    list = JSON.parse(readFileSync18(WORKSPACES_FILE, "utf8"));
   } catch {
   }
-  return [current, ...list.filter((p) => p !== current && existsSync14(p))];
+  return [current, ...list.filter((p) => p !== current && existsSync15(p))];
 }
 function saveWorkspaces(list) {
   mkdirSync7(dirname5(WORKSPACES_FILE), { recursive: true });
-  writeFileSync9(WORKSPACES_FILE, JSON.stringify([...new Set(list)], null, 2));
+  writeFileSync10(WORKSPACES_FILE, JSON.stringify([...new Set(list)], null, 2));
 }
 function cachedPr(root, branch, loaded) {
   const key = `${root}#${branch}`;
@@ -32773,7 +32790,7 @@ function createApp(opts2) {
   app.post("/api/workspaces", async (c) => {
     const { path } = await c.req.json();
     const p = resolve3(path);
-    if (!existsSync14(join17(p, ".git"))) throw new Error(`${p} is not a git repository`);
+    if (!existsSync15(join18(p, ".git"))) throw new Error(`${p} is not a git repository`);
     workspaces = [...workspaces.filter((w) => w !== p), p];
     saveWorkspaces(workspaces.slice(1).concat(opts2.root));
     return c.json({ ok: true });
@@ -32866,8 +32883,8 @@ function createApp(opts2) {
         timer = setTimeout(() => void stream2.writeSSE({ event: "change", data: String(Date.now()) }), 300);
       };
       for (const p of ["changes", ".sdlc", ".git/refs", ".git/HEAD", CONFIG_PATH]) {
-        const full = join17(root, p);
-        if (!existsSync14(full)) continue;
+        const full = join18(root, p);
+        if (!existsSync15(full)) continue;
         try {
           watchers.push(watch(full, { recursive: !extname(p) && p !== ".git/HEAD" }, ping));
         } catch {
@@ -32885,9 +32902,9 @@ function createApp(opts2) {
     if (!dir) return c.html("<p>UI not built. Run <code>npm run build:ui</code>.</p>");
     const rel = c.req.path === "/" ? "index.html" : c.req.path.slice(1);
     const file2 = resolve3(dir, rel);
-    const target = file2.startsWith(dir) && existsSync14(file2) && extname(file2) ? file2 : join17(dir, "index.html");
+    const target = file2.startsWith(dir) && existsSync15(file2) && extname(file2) ? file2 : join18(dir, "index.html");
     const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png" };
-    let body = readFileSync16(target);
+    let body = readFileSync18(target);
     if (target.endsWith("index.html")) body = body.toString().replace("__SDLC_TOKEN__", opts2.token);
     return c.body(body, 200, { "content-type": types[extname(target)] ?? "application/octet-stream", "cache-control": "no-store" });
   });
@@ -32921,7 +32938,7 @@ var init_src3 = __esm({
     init_src2();
     init_src();
     here2 = dirname5(fileURLToPath2(import.meta.url));
-    WORKSPACES_FILE = join17(process.env.XDG_CONFIG_HOME ?? join17(homedir2(), ".config"), "sdlc", "workspaces.json");
+    WORKSPACES_FILE = join18(process.env.XDG_CONFIG_HOME ?? join18(homedir2(), ".config"), "sdlc", "workspaces.json");
     prCache = /* @__PURE__ */ new Map();
   }
 });
@@ -33221,14 +33238,14 @@ __export(src_exports3, {
   startHosted: () => startHosted
 });
 import { createHmac as createHmac2, timingSafeEqual as timingSafeEqual2 } from "node:crypto";
-import { readFileSync as readFileSync17 } from "node:fs";
+import { readFileSync as readFileSync19 } from "node:fs";
 function equal(a, b) {
   const x = Buffer.from(a);
   const y = Buffer.from(b);
   return x.length === y.length && timingSafeEqual2(x, y);
 }
 function client(env) {
-  const privateKey = env.GITHUB_APP_PRIVATE_KEY?.replace(/\\n/g, "\n") ?? (env.GITHUB_APP_PRIVATE_KEY_FILE ? readFileSync17(env.GITHUB_APP_PRIVATE_KEY_FILE, "utf8") : void 0);
+  const privateKey = env.GITHUB_APP_PRIVATE_KEY?.replace(/\\n/g, "\n") ?? (env.GITHUB_APP_PRIVATE_KEY_FILE ? readFileSync19(env.GITHUB_APP_PRIVATE_KEY_FILE, "utf8") : void 0);
   if (!env.GITHUB_APP_ID || !privateKey || !env.GITHUB_INSTALLATION_ID) {
     throw new Error("sdlc hosted needs GITHUB_APP_ID, GITHUB_APP_PRIVATE_KEY (or _FILE) and GITHUB_INSTALLATION_ID");
   }
@@ -33321,13 +33338,13 @@ var init_src5 = __esm({
 // packages/cli/src/main.ts
 init_src2();
 init_src();
-import { existsSync as existsSync15, mkdirSync as mkdirSync8, readFileSync as readFileSync18, rmSync as rmSync6, writeFileSync as writeFileSync10 } from "node:fs";
-import { join as join18 } from "node:path";
+import { existsSync as existsSync16, mkdirSync as mkdirSync8, readFileSync as readFileSync20, rmSync as rmSync7, writeFileSync as writeFileSync11 } from "node:fs";
+import { join as join19 } from "node:path";
 
 // packages/cli/src/init.ts
 init_src2();
 init_src();
-import { copyFileSync, existsSync as existsSync9, mkdirSync as mkdirSync5, readdirSync as readdirSync4, readFileSync as readFileSync10, statSync as statSync3 } from "node:fs";
+import { copyFileSync, existsSync as existsSync9, mkdirSync as mkdirSync5, readdirSync as readdirSync5, readFileSync as readFileSync11, statSync as statSync3 } from "node:fs";
 import { join as join12, relative as relative3 } from "node:path";
 import { createInterface } from "node:readline/promises";
 
@@ -33491,7 +33508,7 @@ function scaffold(root, opts2) {
   const src = join12(localeDir(opts2.locale), "skills", "sdlc-setup", "scaffold");
   const created = [];
   const walk2 = (dir) => {
-    for (const name of readdirSync4(dir)) {
+    for (const name of readdirSync5(dir)) {
       const from = join12(dir, name);
       const rel = relative3(src, from);
       if (rel === "CLAUDE.md" && !opts2.claudeMd) continue;
@@ -33510,13 +33527,13 @@ function scaffold(root, opts2) {
 }
 function templateFor(root, artifact, locale) {
   const local = join12(root, "changes", "_templates", `${artifact}.md`);
-  if (existsSync9(local)) return readFileSync10(local, "utf8");
-  return readFileSync10(join12(localeDir(locale), "skills", "sdlc-setup", "scaffold", "changes", "_templates", `${artifact}.md`), "utf8");
+  if (existsSync9(local)) return readFileSync11(local, "utf8");
+  return readFileSync11(join12(localeDir(locale), "skills", "sdlc-setup", "scaffold", "changes", "_templates", `${artifact}.md`), "utf8");
 }
 
 // packages/cli/src/ci/install.ts
 init_src2();
-import { existsSync as existsSync10, mkdirSync as mkdirSync6, readFileSync as readFileSync11, writeFileSync as writeFileSync6 } from "node:fs";
+import { existsSync as existsSync10, mkdirSync as mkdirSync6, readFileSync as readFileSync12, writeFileSync as writeFileSync6 } from "node:fs";
 import { dirname as dirname4, join as join13 } from "node:path";
 var TARGETS = {
   github: {
@@ -33534,7 +33551,7 @@ function stackCi(locale, language) {
   if (!language) return {};
   const file2 = join13(localeDir(locale), "skills", "sdlc-setup", "stacks", `${language}.md`);
   if (!existsSync10(file2)) return {};
-  const md = readFileSync11(file2, "utf8");
+  const md = readFileSync12(file2, "utf8");
   const section = md.slice(md.search(/^## CI\b/m));
   const gh = /\*\*GitHub\*\*[^\n]*\n\s*```ya?ml\n([\s\S]*?)```/.exec(section)?.[1];
   const image = /\*\*GitLab\*\*:\s*`image:\s*([^`]+)`/.exec(section)?.[1]?.trim();
@@ -33574,7 +33591,7 @@ function installCi(root, config2, opts2) {
       report.conflicts.push(target);
       continue;
     }
-    let yaml = readFileSync11(join13(src, name), "utf8");
+    let yaml = readFileSync12(join13(src, name), "utf8");
     yaml = fillStack(yaml, ci, opts2.provider);
     yaml = fillCommands(yaml, config2, hasMakefile);
     if (branch !== "main") yaml = yaml.replace(/branches: \[main\]/g, `branches: [${branch}]`).replace(/^( {4})main:$/m, `$1${branch}:`);
@@ -33589,9 +33606,90 @@ function ciSecrets(config2) {
   return [agent === "codex" ? "OPENAI_API_KEY" : agent === "cursor" ? "CURSOR_API_KEY" : "ANTHROPIC_API_KEY"];
 }
 
+// packages/cli/src/doctor-fix.ts
+init_src2();
+init_src();
+import { existsSync as existsSync11, readFileSync as readFileSync13, rmSync as rmSync3, writeFileSync as writeFileSync7 } from "node:fs";
+import { join as join14 } from "node:path";
+function migrateLegacy(root) {
+  const config2 = JSON.parse(readFileSync13(join14(root, LEGACY_CONFIG_PATH), "utf8"));
+  config2.locale ??= "es";
+  config2.agents ??= ["claude"];
+  writeConfig(root, config2);
+  rmSync3(join14(root, LEGACY_CONFIG_PATH));
+  if (existsSync11(join14(root, ".claude/.sdlc-fix-lock"))) {
+    ensureSdlcDir(root);
+    writeFileSync7(join14(root, ".sdlc/fix-lock"), "");
+    rmSync3(join14(root, ".claude/.sdlc-fix-lock"));
+  }
+}
+var SYNC_FIXES = /* @__PURE__ */ new Set(["git-hooks", "shim", "cursor", "agents-md"]);
+var MANUAL = {
+  git: "git init (artifacts and gates live in git)",
+  config: "fix the reported fields in .sdlc/config.json (sdlc ui \u2192 Settings validates them)",
+  cli: "npm i -D @morsadev/sdlc (or npm i -g @morsadev/sdlc)",
+  vcs: "set vcs.provider in .sdlc/config.json or add an origin remote",
+  gh: "install the GitHub CLI: https://cli.github.com",
+  glab: "install the GitLab CLI: https://gitlab.com/gitlab-org/cli",
+  drift: "review the hand edits, then sdlc sync --force to regenerate",
+  bands: "fix ops/bands.yaml (sdlc bands check --dry-run)"
+};
+function presetFiles(loaded) {
+  const gates = loaded.config.gates ?? {};
+  if (!Object.keys(gates).length) return PRESET_SPECS.solo.github;
+  return PRESET_SPECS["team-github"].github;
+}
+function fixDoctor(root, checks = doctor(root).checks) {
+  const out = [];
+  const failing = checks.filter((c) => !c.ok);
+  let synced = false;
+  for (const c of failing) {
+    if (c.id === "config" && !loadConfig(root)) {
+      out.push({ id: c.id, fixed: false, message: "no config: run sdlc init (it asks three questions)" });
+      continue;
+    }
+    if (c.id === "config-legacy") {
+      migrateLegacy(root);
+      out.push({ id: c.id, fixed: true, message: `moved ${LEGACY_CONFIG_PATH} \u2192 ${CONFIG_PATH}` });
+      continue;
+    }
+    const loaded = loadConfig(root);
+    if (!loaded) continue;
+    if (c.id.startsWith("command.")) {
+      const k = c.id.slice("command.".length);
+      const detected = detectConfig(root, localeOf(loaded)).commands?.[k];
+      if (detected && (!/^make /.test(detected) || existsSync11(join14(root, "Makefile")))) {
+        writeConfig(root, { ...loaded.config, commands: { ...loaded.config.commands, [k]: detected } });
+        out.push({ id: c.id, fixed: true, message: `commands.${k} = ${detected} (detected from the stack)` });
+      } else out.push({ id: c.id, fixed: false, message: `set commands.${k} in .sdlc/config.json (no stack detected to infer it)` });
+      continue;
+    }
+    if (SYNC_FIXES.has(c.id)) {
+      if (!synced) {
+        const r = sync(root, loaded);
+        synced = true;
+        out.push({ id: c.id, fixed: true, message: `sdlc sync: ${r.written.length} file(s) written${r.hooksPath?.set ? ", git hooks installed" : ""}` });
+      } else out.push({ id: c.id, fixed: true, message: "covered by sdlc sync" });
+      continue;
+    }
+    if (c.id === "ci") {
+      const provider = detectProvider(root, loaded);
+      if (!provider) {
+        out.push({ id: c.id, fixed: false, message: MANUAL.vcs });
+        continue;
+      }
+      const r = installCi(root, loaded.config, { provider, locale: localeOf(loaded), files: presetFiles(loaded) });
+      out.push({ id: c.id, fixed: r.written.length > 0, message: r.written.length ? `sdlc ci install: ${r.written.join(", ")}` : `kept existing ${r.conflicts.join(", ")}` });
+      continue;
+    }
+    out.push({ id: c.id, fixed: false, message: MANUAL[c.id] ?? c.message });
+  }
+  return out;
+}
+
 // packages/cli/src/integrations.ts
 init_src();
-import { existsSync as existsSync11, readFileSync as readFileSync12 } from "node:fs";
+import { existsSync as existsSync12, readFileSync as readFileSync14 } from "node:fs";
 import { resolve as resolve2 } from "node:path";
 var VCS_HELP = `sdlc vcs provider                                            \u2192 github | gitlab | bitbucket
 sdlc vcs pr-create --title T --body-file F [--base B] [--draft]  \u2192 PR URL
@@ -33623,9 +33721,9 @@ function opts(args) {
 }
 function bodyFile(o, cwd) {
   const f = o["body-file"];
-  if (typeof f !== "string" || !existsSync11(resolve2(cwd, f))) throw new SdlcError("missing --body-file <file>");
+  if (typeof f !== "string" || !existsSync12(resolve2(cwd, f))) throw new SdlcError("missing --body-file <file>");
   const path = resolve2(cwd, f);
-  return { path, body: readFileSync12(path, "utf8") };
+  return { path, body: readFileSync14(path, "utf8") };
 }
 function number4(s, usage) {
   if (!s || !/^\d+$/.test(s)) throw new SdlcError(`usage: ${usage}`);
@@ -33712,9 +33810,9 @@ import { execFileSync as execFileSync6 } from "node:child_process";
 // packages/cli/src/ci/agent.ts
 init_src();
 import { spawnSync } from "node:child_process";
-import { mkdtempSync as mkdtempSync2, readFileSync as readFileSync13, rmSync as rmSync3 } from "node:fs";
+import { mkdtempSync as mkdtempSync2, readFileSync as readFileSync15, rmSync as rmSync4 } from "node:fs";
 import { tmpdir as tmpdir2 } from "node:os";
-import { join as join14 } from "node:path";
+import { join as join15 } from "node:path";
 var READ_TOOLS = "Read,Grep,Glob,Bash(git diff:*),Bash(git log:*),Bash(git show:*)";
 function pickAgent(flag, loaded, env = process.env) {
   const a = flag || env.SDLC_CI_AGENT || loaded?.config.ci?.agent || "claude";
@@ -33726,7 +33824,7 @@ function skillRef(agent, name) {
   return agent === "claude" ? `the ${name} skill` : `the skill in .agents/skills/${name}/SKILL.md`;
 }
 function runAgent(agent, task, model, env = process.env) {
-  const tmp = mkdtempSync2(join14(tmpdir2(), "sdlc-agent-"));
+  const tmp = mkdtempSync2(join15(tmpdir2(), "sdlc-agent-"));
   try {
     let args;
     let lastMessage;
@@ -33737,7 +33835,7 @@ function runAgent(agent, task, model, env = process.env) {
         if (model) args.push("--model", model);
         break;
       case "codex":
-        lastMessage = join14(tmp, "last.md");
+        lastMessage = join15(tmp, "last.md");
         args = ["exec", "--sandbox", task.mode !== "edit" ? "read-only" : env.CI ? "danger-full-access" : "workspace-write", "--output-last-message", lastMessage];
         if (model) args.push("-m", model);
         args.push(task.prompt);
@@ -33755,13 +33853,13 @@ function runAgent(agent, task, model, env = process.env) {
     if (r.status !== 0) throw new SdlcError(`${AGENT_BIN[agent]} exited with ${r.status}`);
     if (lastMessage) {
       try {
-        return readFileSync13(lastMessage, "utf8").trim();
+        return readFileSync15(lastMessage, "utf8").trim();
       } catch {
       }
     }
     return r.stdout.trim();
   } finally {
-    rmSync3(tmp, { recursive: true, force: true });
+    rmSync4(tmp, { recursive: true, force: true });
   }
 }
 
@@ -33900,16 +33998,16 @@ async function bandsCommand(root, args) {
 // packages/cli/src/ci/index.ts
 init_src();
 import { execFileSync as execFileSync8, spawnSync as spawnSync3 } from "node:child_process";
-import { existsSync as existsSync13, readdirSync as readdirSync6, readFileSync as readFileSync15, rmSync as rmSync5, writeFileSync as writeFileSync8 } from "node:fs";
+import { existsSync as existsSync14, readdirSync as readdirSync7, readFileSync as readFileSync17, rmSync as rmSync6, writeFileSync as writeFileSync9 } from "node:fs";
 import { homedir } from "node:os";
-import { join as join16 } from "node:path";
+import { join as join17 } from "node:path";
 
 // packages/cli/src/ci/evals.ts
 init_src();
 import { execFileSync as execFileSync7, spawnSync as spawnSync2 } from "node:child_process";
-import { existsSync as existsSync12, mkdtempSync as mkdtempSync3, readdirSync as readdirSync5, readFileSync as readFileSync14, rmSync as rmSync4, writeFileSync as writeFileSync7 } from "node:fs";
+import { existsSync as existsSync13, mkdtempSync as mkdtempSync3, readdirSync as readdirSync6, readFileSync as readFileSync16, rmSync as rmSync5, writeFileSync as writeFileSync8 } from "node:fs";
 import { tmpdir as tmpdir3 } from "node:os";
-import { join as join15 } from "node:path";
+import { join as join16 } from "node:path";
 function touched(dir, base) {
   const rel = ["--relative"];
   return [
@@ -33917,7 +34015,7 @@ function touched(dir, base) {
   ];
 }
 function filesMatching(dir, glob, base) {
-  return touched(dir, base).filter((f) => globMatch(f, glob) && existsSync12(join15(dir, f)));
+  return touched(dir, base).filter((f) => globMatch(f, glob) && existsSync13(join16(dir, f)));
 }
 function applyChecks(e, dir, output2, env = process.env, base = "HEAD") {
   const failures = [];
@@ -33941,7 +34039,7 @@ function applyChecks(e, dir, output2, env = process.env, base = "HEAD") {
         break;
       case "file_matches": {
         const re = new RegExp(c.pattern, c.ignore_case ? "mi" : "m");
-        if (!filesMatching(dir, c.glob, base).some((f) => re.test(readFileSync14(join15(dir, f), "utf8")))) failures.push(`no file matching ${c.glob} contains /${c.pattern}/`);
+        if (!filesMatching(dir, c.glob, base).some((f) => re.test(readFileSync16(join16(dir, f), "utf8")))) failures.push(`no file matching ${c.glob} contains /${c.pattern}/`);
         break;
       }
       default:
@@ -33951,10 +34049,10 @@ function applyChecks(e, dir, output2, env = process.env, base = "HEAD") {
   return failures;
 }
 function loadEvals(root, pattern = "*") {
-  const dir = join15(root, "evals");
-  if (!existsSync12(dir)) return [];
-  return readdirSync5(dir).filter((f) => f.endsWith(".json") && !f.startsWith("_") && globMatch(f.slice(0, -5), pattern)).sort().map((f) => {
-    const e = JSON.parse(readFileSync14(join15(dir, f), "utf8"));
+  const dir = join16(root, "evals");
+  if (!existsSync13(dir)) return [];
+  return readdirSync6(dir).filter((f) => f.endsWith(".json") && !f.startsWith("_") && globMatch(f.slice(0, -5), pattern)).sort().map((f) => {
+    const e = JSON.parse(readFileSync16(join16(dir, f), "utf8"));
     if (!e.prompt || !Array.isArray(e.checks)) throw new SdlcError(`evals/${f}: needs "prompt" and "checks"`);
     return { ...e, name: e.name ?? f.slice(0, -5) };
   });
@@ -33973,14 +34071,14 @@ function runEvals(c, pattern, out) {
   const min = Number(c.env.EVAL_MIN_PASS_RATE ?? c.loaded?.config.ci?.min_pass_rate ?? 0.8);
   const results = [];
   for (const e of evals) {
-    const wt = join15(mkdtempSync3(join15(tmpdir3(), "sdlc-eval-")), "wt");
+    const wt = join16(mkdtempSync3(join16(tmpdir3(), "sdlc-eval-")), "wt");
     execFileSync7("git", ["worktree", "add", "-q", "--detach", wt, "HEAD"], { cwd: c.root, stdio: "ignore" });
-    const dir = join15(wt, e.cwd ?? ".");
-    const env = { ...c.env, EVAL_DIR: join15(c.root, "evals"), EVAL_ROOT: wt, CLAUDE_PROJECT_DIR: dir, SDLC_PROJECT_DIR: dir };
+    const dir = join16(wt, e.cwd ?? ".");
+    const env = { ...c.env, EVAL_DIR: join16(c.root, "evals"), EVAL_ROOT: wt, CLAUDE_PROJECT_DIR: dir, SDLC_PROJECT_DIR: dir };
     let failures;
     const started = Date.now();
     try {
-      if (!existsSync12(dir)) throw new SdlcError(`cwd ${e.cwd} does not exist`);
+      if (!existsSync13(dir)) throw new SdlcError(`cwd ${e.cwd} does not exist`);
       if (e.setup) {
         const r = spawnSync2("sh", ["-c", e.setup], { cwd: dir, env, encoding: "utf8", timeout: 15 * 6e4 });
         if (r.status !== 0) throw new SdlcError(`setup failed: ${(r.stderr || r.stdout).trim().slice(0, 500)}`);
@@ -33992,7 +34090,7 @@ function runEvals(c, pattern, out) {
       failures = [err.message];
     } finally {
       git(c.root, ["worktree", "remove", "--force", wt]);
-      rmSync4(join15(wt, ".."), { recursive: true, force: true });
+      rmSync5(join16(wt, ".."), { recursive: true, force: true });
     }
     results.push({ name: e.name, passed: !failures.length, failures, seconds: Math.round((Date.now() - started) / 1e3) });
     console.log(`${failures.length ? "FAIL" : "PASS"} ${e.name}`);
@@ -34001,7 +34099,7 @@ function runEvals(c, pattern, out) {
   const passed = results.filter((r) => r.passed).length;
   const rate = passed / results.length;
   console.log(`pass rate: ${passed}/${results.length} = ${rate.toFixed(2)} (minimum ${min})`);
-  if (out) writeFileSync7(out, JSON.stringify({ agent: c.agent, model: c.model, rate, min, results }, null, 2) + "\n");
+  if (out) writeFileSync8(out, JSON.stringify({ agent: c.agent, model: c.model, rate, min, results }, null, 2) + "\n");
   return rate >= min ? 0 : 1;
 }
 
@@ -34118,8 +34216,8 @@ function bootstrap(c) {
     return 0;
   }
   if (c.env.SDLC_PLUGIN_TOKEN) url2 = url2.replace("https://", `https://${c.env.SDLC_PLUGIN_TOKEN_USER || "x-access-token"}:${c.env.SDLC_PLUGIN_TOKEN}@`);
-  const home = c.env.SDLC_HOME || join16(homedir(), ".ai-sdlc");
-  rmSync5(home, { recursive: true, force: true });
+  const home = c.env.SDLC_HOME || join17(homedir(), ".ai-sdlc");
+  rmSync6(home, { recursive: true, force: true });
   execFileSync8("git", ["clone", "-q", "--depth", "1", url2, home], { stdio: ["ignore", "ignore", "inherit"] });
   execFileSync8("claude", ["plugin", "marketplace", "add", home], { stdio: ["ignore", "ignore", "inherit"] });
   execFileSync8("claude", ["plugin", "install", "ai-sdlc@ai-native-sdlc"], { stdio: ["ignore", "ignore", "inherit"] });
@@ -34148,7 +34246,7 @@ Do not approve or block: the findings inform the code owner. Do not modify any f
     },
     c.model
   );
-  writeFileSync8(join16(c.root, "review-tally.txt"), (out.match(TALLY)?.at(-1) ?? "") + "\n");
+  writeFileSync9(join17(c.root, "review-tally.txt"), (out.match(TALLY)?.at(-1) ?? "") + "\n");
   await post(c, n, out);
   return 0;
 }
@@ -34160,9 +34258,9 @@ async function post(c, n, body) {
   log(await prComment({ root: c.root, loaded: c.loaded, env: c.env }, n, body));
 }
 function pendingIntents(root) {
-  const dir = join16(root, "changes");
-  if (!existsSync13(dir)) return [];
-  return readdirSync6(dir, { withFileTypes: true }).filter((d) => d.isDirectory() && !d.name.startsWith("_")).map((d) => `changes/${d.name}`).filter((d) => existsSync13(join16(root, d, "intent.md")) && !existsSync13(join16(root, d, "spec.md"))).filter((d) => isApproved(parseFrontmatter(readFileSync15(join16(root, d, "intent.md"), "utf8")).data.status)).sort();
+  const dir = join17(root, "changes");
+  if (!existsSync14(dir)) return [];
+  return readdirSync7(dir, { withFileTypes: true }).filter((d) => d.isDirectory() && !d.name.startsWith("_")).map((d) => `changes/${d.name}`).filter((d) => existsSync14(join17(root, d, "intent.md")) && !existsSync14(join17(root, d, "spec.md"))).filter((d) => isApproved(parseFrontmatter(readFileSync17(join17(root, d, "intent.md"), "utf8")).data.status)).sort();
 }
 function intentToSpec(c) {
   const pending = pendingIntents(c.root);
@@ -34193,7 +34291,7 @@ function intentToSpec(c) {
   return 0;
 }
 async function triage(c, logFile) {
-  if (!logFile || !existsSync13(logFile)) throw new SdlcError("usage: sdlc ci triage <log-file>");
+  if (!logFile || !existsSync14(logFile)) throw new SdlcError("usage: sdlc ci triage <log-file>");
   const out = runAgent(
     c.agent,
     {
@@ -34275,14 +34373,14 @@ _Pushed ${git(c.root, ["rev-parse", "--short", "HEAD"])} to ${headRef(c)}._`;
 }
 
 // packages/cli/src/main.ts
-var VERSION = true ? "0.3.0" : JSON.parse(readFileSync18(new URL("../package.json", import.meta.url), "utf8")).version;
+var VERSION = true ? "0.3.0" : JSON.parse(readFileSync20(new URL("../package.json", import.meta.url), "utf8")).version;
 var HELP = `sdlc ${VERSION} \u2014 AI-native SDLC loop (intent \u2192 spec \u2192 plan \u2192 build \u2192 ship \u2192 incident)
 
 Setup
   init [--preset solo|team-github|regulated] [--yes] [--no-ci] [--first-change "title"] [--locale en|es] [--verbose]
                                      detect stack/VCS/agents, apply the preset, scaffold, sync, install CI
   sync [--force] [--dry-run]         regenerate agent files (Claude, Cursor, AGENTS.md) and git hooks
-  doctor [--json]                    health checks + enforcement matrix per agent
+  doctor [--fix] [--json]            health checks + enforcement matrix per agent; --fix repairs what it can
   migrate                            .claude/sdlc.json \u2192 .sdlc/config.json
   schema                             JSON Schema of .sdlc/config.json
 
@@ -34331,7 +34429,7 @@ function fail3(msg) {
 }
 function readStdin() {
   try {
-    return readFileSync18(0, "utf8");
+    return readFileSync20(0, "utf8");
   } catch {
     return "";
   }
@@ -34355,7 +34453,7 @@ function slugify2(title) {
 function newChange(root, slug, opts2) {
   const loaded = loadConfig(root);
   const dir = `changes/${(/* @__PURE__ */ new Date()).toISOString().slice(0, 7)}-${slug}`;
-  if (existsSync15(join18(root, dir))) fail3(`${dir} already exists`);
+  if (existsSync16(join19(root, dir))) fail3(`${dir} already exists`);
   if (opts2.branch) gitOrThrow(root, ["checkout", "-b", `change/${slug}`]);
   const who = gitUser(root);
   const fields = { change: slug, created: (/* @__PURE__ */ new Date()).toISOString().slice(0, 10), author: who.name ?? who.email ?? "" };
@@ -34372,8 +34470,8 @@ ${opts2.title}
     body = setFrontmatter(templateFor(root, "intent", localeOf(loaded)), fields);
     if (opts2.title) body = body.replace(/^# (Intent: )?.*$/m, (_m, p) => `# ${p ?? ""}${opts2.title}`);
   }
-  mkdirSync8(join18(root, dir), { recursive: true });
-  writeFileSync10(join18(root, dir, "intent.md"), body);
+  mkdirSync8(join19(root, dir), { recursive: true });
+  writeFileSync11(join19(root, dir, "intent.md"), body);
   recordEvent(root, { type: opts2.quick ? "change.quick" : "change.new", change: slug, by: who.name });
   console.log(`created ${dir}/intent.md${opts2.branch ? ` on branch change/${slug}` : ""}${opts2.quick ? " (quick lane: no spec, no plan)" : ""}`);
   if (!loaded) console.log("Note: project not configured (sdlc init).");
@@ -34450,6 +34548,13 @@ async function main() {
       return;
     }
     case "doctor": {
+      if (flags.fix) {
+        const fixes = fixDoctor(root);
+        if (flags.json) return void console.log(JSON.stringify(fixes, null, 2));
+        if (!fixes.length) console.log("nothing to fix");
+        for (const f of fixes) console.log(`${f.fixed ? "fixed " : "manual"}  ${f.id.padEnd(14)} ${f.message}`);
+        console.log("");
+      }
       const r = doctor(root);
       if (flags.json) return void console.log(JSON.stringify(r, null, 2));
       for (const c of r.checks) console.log(`${c.ok ? "\u2713" : c.level === "warn" ? "!" : "\u2717"} ${c.message}`);
@@ -34463,19 +34568,10 @@ async function main() {
       return;
     }
     case "migrate": {
-      const legacy = join18(root, LEGACY_CONFIG_PATH);
-      if (!existsSync15(legacy)) fail3(`no ${LEGACY_CONFIG_PATH} to migrate`);
-      if (existsSync15(join18(root, CONFIG_PATH))) fail3(`${CONFIG_PATH} already exists`);
-      const config2 = JSON.parse(readFileSync18(legacy, "utf8"));
-      config2.locale ??= "es";
-      config2.agents ??= ["claude"];
-      writeConfig(root, config2);
-      rmSync6(legacy);
-      if (existsSync15(join18(root, ".claude/.sdlc-fix-lock"))) {
-        ensureSdlcDir(root);
-        writeFileSync10(join18(root, ".sdlc/fix-lock"), "");
-        rmSync6(join18(root, ".claude/.sdlc-fix-lock"));
-      }
+      const legacy = join19(root, LEGACY_CONFIG_PATH);
+      if (!existsSync16(legacy)) fail3(`no ${LEGACY_CONFIG_PATH} to migrate`);
+      if (existsSync16(join19(root, CONFIG_PATH))) fail3(`${CONFIG_PATH} already exists`);
+      migrateLegacy(root);
       console.log(`moved ${LEGACY_CONFIG_PATH} \u2192 ${CONFIG_PATH}`);
       printSync(sync(root, requireConfig(root)));
       return;
@@ -34564,16 +34660,16 @@ async function main() {
       return;
     }
     case "lock": {
-      const lock = join18(root, FIX_LOCKS[0]);
+      const lock = join19(root, FIX_LOCKS[0]);
       if (pos[0] === "on") {
         ensureSdlcDir(root);
-        writeFileSync10(lock, (/* @__PURE__ */ new Date()).toISOString() + "\n");
+        writeFileSync11(lock, (/* @__PURE__ */ new Date()).toISOString() + "\n");
         console.log("test-lock ON: test files cannot be edited until `sdlc lock off`");
       } else if (pos[0] === "off") {
-        for (const p of FIX_LOCKS) rmSync6(join18(root, p), { force: true });
+        for (const p of FIX_LOCKS) rmSync7(join19(root, p), { force: true });
         console.log("test-lock OFF");
       } else {
-        console.log(FIX_LOCKS.some((p) => existsSync15(join18(root, p))) ? "on" : "off");
+        console.log(FIX_LOCKS.some((p) => existsSync16(join19(root, p))) ? "on" : "off");
       }
       return;
     }

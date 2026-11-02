@@ -14,7 +14,7 @@ Every command works from any directory inside the repository. The project root i
 |---|---|
 | `sdlc init [--preset solo\|team-github\|regulated] [--yes] [--no-ci] [--first-change "title"] [--locale en\|es] [--verbose]` | Detects the stack, VCS and agents; applies the preset; writes `.sdlc/config.json`; scaffolds `changes/`, `lessons/`, `evals/`, `ops/`, `CLAUDE.md`, `REVIEW.md` and `SETUP.md`; runs `sync`; installs the CI templates for the detected provider (`sdlc ci install`). Asks three questions (preset, PO, tech lead); `--yes` accepts the defaults. `--first-change` also runs `sdlc new` with that title. |
 | `sdlc sync [--force] [--dry-run]` | Regenerates the agent files for `agents` (Claude Code, Cursor, AGENTS.md), the `.sdlc/bin/sdlc` shim and the git hooks. Files edited by hand are kept and reported as drift. |
-| `sdlc doctor [--json]` | Health checks (config, commands, git hooks, CLI, VCS tool, bands, drift) and the enforcement matrix per agent. Exits 1 on errors. |
+| `sdlc doctor [--fix] [--json]` | Health checks (config, commands, git hooks, CLI, CI, VCS tool, bands, drift) and the enforcement matrix per agent. Exits 1 on errors. `--fix` repairs what it can, idempotently: migrates a legacy config, runs `sync` (hooks, shim, agent files), fills missing `commands` from the detected stack and runs `sdlc ci install`. What needs a person (credentials, hand-edited files, an invalid config) is listed as `manual` with the command to run. |
 | `sdlc migrate` | Moves a legacy `.claude/sdlc.json` to `.sdlc/config.json`. |
 | `sdlc schema` | Prints the JSON Schema of `.sdlc/config.json`. |
 
