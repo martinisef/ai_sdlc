@@ -26,6 +26,7 @@ export default defineConfig({
             text: 'Getting started',
             items: [
               { text: 'Introduction', link: '/guide/introduction' },
+              { text: 'Your first change in 10 minutes', link: '/guide/first-change' },
               { text: 'Quickstart: Claude Code', link: '/guide/quickstart-claude' },
               { text: 'Quickstart: Cursor', link: '/guide/quickstart-cursor' },
               { text: 'Quickstart: AGENTS.md agents', link: '/guide/quickstart-agents-md' },
@@ -79,6 +80,7 @@ export default defineConfig({
             text: 'Guías',
             items: [
               { text: 'Inicio', link: '/es/' },
+              { text: 'Tu primer cambio en 10 minutos', link: '/es/primer-cambio' },
               { text: 'Para equipos', link: '/es/guia-equipo' },
               { text: 'Para plataforma', link: '/es/guia-plataforma' },
               { text: 'Managed settings', link: '/es/managed-settings' },

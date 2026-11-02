@@ -28322,7 +28322,7 @@ Si sigue exactamente el plan, no hace falta hacer nada: respond\xE9 brevemente y
       "nx.approve": (p) => `Te toca decidir el ${p.artifact} de ${p.change}`,
       "nx.wait": (p) => `${p.change} espera la aprobaci\xF3n del ${p.artifact} por ${p.who}`,
       "nx.someone": () => "otra persona",
-      "nx.agent": (p) => `Pedile a tu agente ${p.skill}: ${p.next}`,
+      "nx.agent": (p) => `Siguiente: ${p.next}`,
       "nx.done": (p) => `${p.change} est\xE1 mergeado; empez\xE1 el pr\xF3ximo`,
       "git.override": (p) => `Si sos una persona y el cambio es intencional: SDLC_OVERRIDE=${p.policy} git commit \u2026 (queda registrado en .sdlc/events.jsonl).`,
       "prepush.noplan": (p) => `Bloqueado por ai-sdlc: la rama ${p.branch} tiene cambios de c\xF3digo pero ${p.change}/plan.md no est\xE1 aprobado (etapa: ${p.stage}). Plan antes que c\xF3digo: aprob\xE1 el plan (sdlc approve ${p.change} plan) o mov\xE9 el trabajo fuera de la rama del cambio.`
@@ -28371,7 +28371,7 @@ If it follows the plan exactly, nothing to do: answer briefly and finish.`,
       "nx.approve": (p) => `Your call: the ${p.artifact} of ${p.change}`,
       "nx.wait": (p) => `${p.change} is waiting for ${p.who} to approve the ${p.artifact}`,
       "nx.someone": () => "another person",
-      "nx.agent": (p) => `Ask your agent for ${p.skill}: ${p.next}`,
+      "nx.agent": (p) => `Next: ${p.next}`,
       "nx.done": (p) => `${p.change} is merged; start the next one`,
       "git.override": (p) => `If you are a person and the change is intentional: SDLC_OVERRIDE=${p.policy} git commit \u2026 (recorded in .sdlc/events.jsonl).`,
       "prepush.noplan": (p) => `Blocked by ai-sdlc: branch ${p.branch} has code changes but ${p.change}/plan.md is not approved (stage: ${p.stage}). Plan before code: approve the plan (sdlc approve ${p.change} plan) or move the work off the change branch.`
@@ -28881,7 +28881,7 @@ function nextAction(root, loaded, opts2 = {}) {
   return { kind: "new", command: "sdlc new <slug>", message: t(locale, "nx.new"), inbox };
 }
 function formatNext(n) {
-  const how = n.command ? ` \u2192 ${n.command}` : n.skill ? ` \u2192 ${n.skill}` : "";
+  const how = n.command ? ` \u2192 ${n.command}` : n.skill && !n.message.includes(n.skill) ? ` \u2192 ${n.skill}` : "";
   return `${n.message}${how}`;
 }
 var SKILL, GATE;
