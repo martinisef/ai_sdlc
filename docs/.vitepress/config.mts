@@ -47,6 +47,7 @@ export default defineConfig({
               { text: 'Running a pilot', link: '/guide/pilot' },
               { text: 'For platform teams', link: '/guide/platform' },
               { text: 'Managed settings', link: '/guide/managed-settings' },
+              { text: 'Notifications', link: '/guide/notifications' },
             ],
           },
           {
@@ -84,6 +85,7 @@ export default defineConfig({
               { text: 'Para equipos', link: '/es/guia-equipo' },
               { text: 'Para plataforma', link: '/es/guia-plataforma' },
               { text: 'Managed settings', link: '/es/managed-settings' },
+              { text: 'Avisos', link: '/es/avisos' },
             ],
           },
         ],

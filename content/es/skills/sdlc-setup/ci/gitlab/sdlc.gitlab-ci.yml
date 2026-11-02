@@ -4,7 +4,7 @@
 # Variables (Settings → CI/CD → Variables, masked + protected según corresponda):
 #   ANTHROPIC_API_KEY (u OPENAI_API_KEY / CURSOR_API_KEY si ci.agent es codex / cursor)
 #   GITLAB_TOKEN (project access token, scope api) · SDLC_PLUGIN_TOKEN (si el marketplace es privado)
-#   JIRA_EMAIL + JIRA_API_TOKEN (si hay Jira)
+#   JIRA_EMAIL + JIRA_API_TOKEN (si hay Jira) · SDLC_NOTIFY_WEBHOOK (avisos a Slack/webhook, opcional)
 
 .sdlc-base:
   image: node:22
@@ -106,4 +106,4 @@ sdlc:gate-status:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
   script:
-    - HEAD_SHA="$CI_COMMIT_SHA" npx -y @morsadev/sdlc@0 ci gate-status
+    - HEAD_SHA="$CI_COMMIT_SHA" BEFORE_SHA="$CI_COMMIT_BEFORE_SHA" npx -y @morsadev/sdlc@0 ci gate-status

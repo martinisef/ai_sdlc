@@ -25,6 +25,13 @@ export interface GateResult {
 /** Agents and bots cannot approve: separation of duties. */
 const AGENT_IDENTITY = /(\[bot\]|\bbot\b|claude|anthropic|cursor|codex|copilot|noreply@github)/i;
 
+/** Roles that must decide `artifact` (high-risk plans add tech-lead) and the people holding them. */
+export function requiredApprovers(change: Change, artifact: Artifact, loaded: LoadedConfig | undefined): { roles: string[]; people: string[] } {
+  let roles = loaded?.config.gates?.[artifact] ?? [];
+  if (artifact === 'plan' && change.risk === 'high' && !roles.includes('tech-lead')) roles = [...roles, 'tech-lead'];
+  return { roles, people: [...new Set(roles.flatMap((r) => loaded?.config.roles?.[r] ?? []))] };
+}
+
 export function canApprove(change: Change, artifact: Artifact, who: Approver, loaded: LoadedConfig | undefined): { ok: boolean; reason?: string } {
   const id = `${who.name ?? ''} <${who.email ?? ''}>${who.login ? ` @${who.login}` : ''}`;
   if (!who.email && !who.name && !who.login) return { ok: false, reason: 'git user.name / user.email is not set' };
@@ -35,11 +42,8 @@ export function canApprove(change: Change, artifact: Artifact, who: Approver, lo
   if (author && who.name && !loaded?.config.gates_self_approval && author.toLowerCase().startsWith(who.name.toLowerCase()) && artifact !== 'intent') {
     return { ok: false, reason: `${who.name} authored ${artifact}.md; another person must approve it` };
   }
-  const roles = loaded?.config.gates?.[artifact] ?? [];
-  let required = roles;
-  if (artifact === 'plan' && change.risk === 'high' && !required.includes('tech-lead')) required = [...required, 'tech-lead'];
+  const { roles: required, people: members } = requiredApprovers(change, artifact, loaded);
   if (required.length === 0) return { ok: true };
-  const members = required.flatMap((r) => loaded?.config.roles?.[r] ?? []);
   if (members.length === 0) return { ok: true }; // roles declared but nobody assigned: do not lock the team out
   const match = members.some((m) => {
     const x = m.toLowerCase();

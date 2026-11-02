@@ -28079,7 +28079,7 @@ function localeOf(loaded) {
 function configJsonSchema() {
   return external_exports.toJSONSchema(ConfigSchema, { io: "input" });
 }
-var AGENTS, ARTIFACTS, CI_AGENTS, commandMap, ConfigSchema, CONFIG_PATH, LEGACY_CONFIG_PATH;
+var AGENTS, ARTIFACTS, CI_AGENTS, NOTIFY_EVENTS, commandMap, ConfigSchema, CONFIG_PATH, LEGACY_CONFIG_PATH;
 var init_config = __esm({
   "packages/core/src/config.ts"() {
     "use strict";
@@ -28087,6 +28087,7 @@ var init_config = __esm({
     AGENTS = ["claude", "cursor", "agents-md"];
     ARTIFACTS = ["intent", "spec", "plan"];
     CI_AGENTS = ["claude", "codex", "cursor"];
+    NOTIFY_EVENTS = ["gate.pending", "gate.decided", "spec.ready", "review.done", "change.merged"];
     commandMap = external_exports.record(external_exports.string(), external_exports.string());
     ConfigSchema = external_exports.looseObject({
       version: external_exports.literal(1),
@@ -28134,6 +28135,14 @@ var init_config = __esm({
         enabled: external_exports.boolean().optional(),
         max_files: external_exports.number().int().positive().optional(),
         forbid_paths: external_exports.array(external_exports.string()).optional()
+      }).optional(),
+      /** `sdlc notify`: loop events to Slack or any webhook (Teams, Discord, …). Off while the webhook env var is unset. */
+      notify: external_exports.looseObject({
+        webhook_env: external_exports.string().optional(),
+        format: external_exports.enum(["slack", "generic"]).optional(),
+        events: external_exports.array(external_exports.enum(NOTIFY_EVENTS)).optional(),
+        /** `@login`, email or git name → Slack member ID, to mention whoever has to act. */
+        people: external_exports.record(external_exports.string(), external_exports.string()).optional()
       }).optional(),
       /** Headless runs in CI (`sdlc ci …`): which agent CLI to drive. */
       ci: external_exports.looseObject({
@@ -28324,6 +28333,15 @@ Si sigue exactamente el plan, no hace falta hacer nada: respond\xE9 brevemente y
       "nx.someone": () => "otra persona",
       "nx.agent": (p) => `Siguiente: ${p.next}`,
       "nx.done": (p) => `${p.change} est\xE1 mergeado; empez\xE1 el pr\xF3ximo`,
+      "nt.gate.pending": (p) => `${p.change}: el ${p.artifact} espera aprobaci\xF3n`,
+      "nt.gate.decided": (p) => `${p.change}: ${p.artifact} ${p.decision} por ${p.by}`,
+      "nt.spec.ready": (p) => `${p.change}: la spec est\xE1 lista para revisar`,
+      "nt.review.done": (p) => `${p.change}: termin\xF3 la revisi\xF3n autom\xE1tica`,
+      "nt.change.merged": (p) => `${p.change}: mergeado`,
+      "nt.approved": () => "aprobado",
+      "nt.rejected": () => "rechazado",
+      "nt.stage": (p) => `Etapa: ${p.stage}`,
+      "nt.who": (p) => `Le toca a: ${p.who}`,
       "git.override": (p) => `Si sos una persona y el cambio es intencional: SDLC_OVERRIDE=${p.policy} git commit \u2026 (queda registrado en .sdlc/events.jsonl).`,
       "prepush.noplan": (p) => `Bloqueado por ai-sdlc: la rama ${p.branch} tiene cambios de c\xF3digo pero ${p.change}/plan.md no est\xE1 aprobado (etapa: ${p.stage}). Plan antes que c\xF3digo: aprob\xE1 el plan (sdlc approve ${p.change} plan) o mov\xE9 el trabajo fuera de la rama del cambio.`
     };
@@ -28373,6 +28391,15 @@ If it follows the plan exactly, nothing to do: answer briefly and finish.`,
       "nx.someone": () => "another person",
       "nx.agent": (p) => `Next: ${p.next}`,
       "nx.done": (p) => `${p.change} is merged; start the next one`,
+      "nt.gate.pending": (p) => `${p.change}: the ${p.artifact} is waiting for approval`,
+      "nt.gate.decided": (p) => `${p.change}: ${p.artifact} ${p.decision} by ${p.by}`,
+      "nt.spec.ready": (p) => `${p.change}: the spec is ready for review`,
+      "nt.review.done": (p) => `${p.change}: the automated review is done`,
+      "nt.change.merged": (p) => `${p.change}: merged`,
+      "nt.approved": () => "approved",
+      "nt.rejected": () => "rejected",
+      "nt.stage": (p) => `Stage: ${p.stage}`,
+      "nt.who": (p) => `Who acts: ${p.who}`,
       "git.override": (p) => `If you are a person and the change is intentional: SDLC_OVERRIDE=${p.policy} git commit \u2026 (recorded in .sdlc/events.jsonl).`,
       "prepush.noplan": (p) => `Blocked by ai-sdlc: branch ${p.branch} has code changes but ${p.change}/plan.md is not approved (stage: ${p.stage}). Plan before code: approve the plan (sdlc approve ${p.change} plan) or move the work off the change branch.`
     };
@@ -28591,6 +28618,11 @@ var init_funnel = __esm({
 // packages/core/src/gates.ts
 import { readFileSync as readFileSync5, writeFileSync as writeFileSync3 } from "node:fs";
 import { join as join6 } from "node:path";
+function requiredApprovers(change, artifact, loaded) {
+  let roles = loaded?.config.gates?.[artifact] ?? [];
+  if (artifact === "plan" && change.risk === "high" && !roles.includes("tech-lead")) roles = [...roles, "tech-lead"];
+  return { roles, people: [...new Set(roles.flatMap((r) => loaded?.config.roles?.[r] ?? []))] };
+}
 function canApprove(change, artifact, who, loaded) {
   const id = `${who.name ?? ""} <${who.email ?? ""}>${who.login ? ` @${who.login}` : ""}`;
   if (!who.email && !who.name && !who.login) return { ok: false, reason: "git user.name / user.email is not set" };
@@ -28601,11 +28633,8 @@ function canApprove(change, artifact, who, loaded) {
   if (author && who.name && !loaded?.config.gates_self_approval && author.toLowerCase().startsWith(who.name.toLowerCase()) && artifact !== "intent") {
     return { ok: false, reason: `${who.name} authored ${artifact}.md; another person must approve it` };
   }
-  const roles = loaded?.config.gates?.[artifact] ?? [];
-  let required2 = roles;
-  if (artifact === "plan" && change.risk === "high" && !required2.includes("tech-lead")) required2 = [...required2, "tech-lead"];
+  const { roles: required2, people: members2 } = requiredApprovers(change, artifact, loaded);
   if (required2.length === 0) return { ok: true };
-  const members2 = required2.flatMap((r) => loaded?.config.roles?.[r] ?? []);
   if (members2.length === 0) return { ok: true };
   const match2 = members2.some((m) => {
     const x = m.toLowerCase();
@@ -28906,6 +28935,113 @@ var init_next = __esm({
       building: "/sdlc-ship"
     };
     GATE = { "intent-draft": "intent", "spec-draft": "spec", "plan-draft": "plan" };
+  }
+});
+
+// packages/core/src/notify.ts
+function prUrlFromEnv(env) {
+  if (env.PR_URL) return env.PR_URL;
+  const n = env.PR_NUMBER ?? env.CI_MERGE_REQUEST_IID ?? env.BITBUCKET_PR_ID;
+  if (!n) return void 0;
+  if (env.GITHUB_REPOSITORY) return `${env.GITHUB_SERVER_URL ?? "https://github.com"}/${env.GITHUB_REPOSITORY}/pull/${n}`;
+  if (env.CI_PROJECT_URL) return `${env.CI_PROJECT_URL}/-/merge_requests/${n}`;
+  if (env.BITBUCKET_GIT_HTTP_ORIGIN) return `${env.BITBUCKET_GIT_HTTP_ORIGIN}/pull-requests/${n}`;
+  return void 0;
+}
+function fileUrl(env, ref, path) {
+  if (env.GITHUB_REPOSITORY) return `${env.GITHUB_SERVER_URL ?? "https://github.com"}/${env.GITHUB_REPOSITORY}/blob/${ref}/${path}`;
+  if (env.CI_PROJECT_URL) return `${env.CI_PROJECT_URL}/-/blob/${ref}/${path}`;
+  if (env.BITBUCKET_GIT_HTTP_ORIGIN) return `${env.BITBUCKET_GIT_HTTP_ORIGIN}/src/${ref}/${path}`;
+  return void 0;
+}
+function noticeMessage(n, loaded, env = process.env) {
+  const locale = localeOf(loaded);
+  const title0 = n.change?.title;
+  const change = title0 && title0.toLowerCase() !== n.change.slug ? `${n.change.slug} (${title0})` : n.change?.slug ?? "-";
+  const artifact = n.artifact ?? n.change?.waitingFor ?? (n.event === "spec.ready" ? "spec" : void 0);
+  const decision = n.decision ? t(locale, `nt.${n.decision}`) : "";
+  const title = t(locale, `nt.${n.event}`, { change, artifact: artifact ?? "", decision, by: n.by ?? "" });
+  let people = n.people;
+  if (!people && n.change && artifact && (n.event === "gate.pending" || n.event === "spec.ready")) {
+    const r = requiredApprovers(n.change, artifact, loaded);
+    people = r.people.length ? r.people : r.roles;
+  }
+  const lines3 = [];
+  if (n.change) lines3.push(t(locale, "nt.stage", { stage: n.change.stage }));
+  if (people?.length) lines3.push(t(locale, "nt.who", { who: people.map((p) => mention(p, loaded)).join(", ") }));
+  if (n.note) lines3.push(n.note);
+  const links = [];
+  const pr = n.prUrl ?? prUrlFromEnv(env);
+  if (pr) links.push({ label: "PR", url: pr });
+  const ref = n.change?.branch ?? env.HEAD_REF ?? env.MERGED_BRANCH;
+  const path = artifact && n.change?.artifacts[artifact]?.path;
+  const url2 = path && ref && n.event !== "change.merged" ? fileUrl(env, ref, path) : void 0;
+  if (url2) links.push({ label: `${artifact}.md`, url: url2 });
+  return { title, lines: lines3, people: people ?? [], links };
+}
+function mention(person, loaded) {
+  const people = loaded?.config.notify?.people ?? {};
+  const id = people[person] ?? people[person.toLowerCase()];
+  return id && (loaded?.config.notify?.format ?? "slack") === "slack" ? `<@${id}>` : person;
+}
+function notifyPayload(n, loaded, env = process.env) {
+  const m = noticeMessage(n, loaded, env);
+  if (notifyFormat(loaded, env) === "slack") {
+    const links = m.links.map((l) => `<${l.url}|${l.label}>`).join(" \xB7 ");
+    return {
+      text: m.title,
+      blocks: [{ type: "section", text: { type: "mrkdwn", text: [`*${m.title}*`, ...m.lines, links].filter(Boolean).join("\n") } }]
+    };
+  }
+  const text = [m.title, ...m.lines, ...m.links.map((l) => `${l.label}: ${l.url}`)].join("\n");
+  return {
+    event: n.event,
+    title: m.title,
+    text,
+    content: text,
+    change: n.change && { id: n.change.id, slug: n.change.slug, stage: n.change.stage, ticket: n.change.ticket },
+    artifact: n.artifact,
+    decision: n.decision,
+    by: n.by,
+    people: m.people,
+    links: m.links
+  };
+}
+function notifyFormat(loaded, env = process.env) {
+  const f = loaded?.config.notify?.format;
+  if (f) return f;
+  return /hooks\.slack\.com/.test(notifyUrl(loaded, env) ?? "") ? "slack" : "generic";
+}
+function notifyUrl(loaded, env = process.env) {
+  return env[loaded?.config.notify?.webhook_env ?? DEFAULT_NOTIFY_ENV] || void 0;
+}
+async function notify(n, loaded, env = process.env) {
+  const url2 = notifyUrl(loaded, env);
+  if (!url2) return `notify ${n.event}: off (${loaded?.config.notify?.webhook_env ?? DEFAULT_NOTIFY_ENV} not set)`;
+  const events = loaded?.config.notify?.events;
+  if (events && !events.includes(n.event)) return `notify ${n.event}: skipped (not in notify.events)`;
+  try {
+    const res = await fetch(url2, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(notifyPayload(n, loaded, env)),
+      signal: AbortSignal.timeout(1e4)
+    });
+    if (!res.ok) return `notify ${n.event}: failed (HTTP ${res.status}; continuing)`;
+    return `notify ${n.event}: sent`;
+  } catch (e) {
+    return `notify ${n.event}: failed (${e.message}; continuing)`;
+  }
+}
+var DEFAULT_NOTIFY_ENV, isNotifyEvent;
+var init_notify = __esm({
+  "packages/core/src/notify.ts"() {
+    "use strict";
+    init_config();
+    init_gates();
+    init_i18n();
+    DEFAULT_NOTIFY_ENV = "SDLC_NOTIFY_WEBHOOK";
+    isNotifyEvent = (s) => NOTIFY_EVENTS.includes(s);
   }
 });
 
@@ -29425,6 +29561,7 @@ var init_src = __esm({
     init_i18n();
     init_metrics();
     init_next();
+    init_notify();
     init_policies();
     init_project();
     init_quick();
@@ -33120,8 +33257,8 @@ __export(src_exports2, {
   triggerGitlab: () => triggerGitlab
 });
 import { createHmac, timingSafeEqual } from "node:crypto";
-function mentions(body, mention2 = "@claude") {
-  const m = mention2.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+function mentions(body, mention3 = "@claude") {
+  const m = mention3.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   return new RegExp(`(^|[^\\w@])${m}(?![\\w-])`, "i").test(body) && !body.includes(REPLY_MARKER);
 }
 function allowed(env, author) {
@@ -33169,11 +33306,11 @@ async function triggerBitbucket(env, m) {
     })
   });
 }
-function gitlabMention(p, mention2) {
+function gitlabMention(p, mention3) {
   const note = p?.object_attributes;
   const mr = p?.merge_request;
   if (p?.object_kind !== "note" || note?.noteable_type !== "MergeRequest" || !mr) return "not a merge request comment";
-  const job = isGateCommand(note.note ?? "") ? "gate" : mentions(note.note ?? "", mention2) ? "mention" : void 0;
+  const job = isGateCommand(note.note ?? "") ? "gate" : mentions(note.note ?? "", mention3) ? "mention" : void 0;
   if (!job) return "no mention";
   return {
     provider: "gitlab",
@@ -33187,11 +33324,11 @@ function gitlabMention(p, mention2) {
     body: note.note
   };
 }
-function bitbucketMention(p, mention2) {
+function bitbucketMention(p, mention3) {
   const pr = p?.pullrequest;
   const body = p?.comment?.content?.raw ?? "";
   if (!pr || !p?.comment) return "not a pull request comment";
-  const job = isGateCommand(body) ? "gate" : mentions(body, mention2) ? "mention" : void 0;
+  const job = isGateCommand(body) ? "gate" : mentions(body, mention3) ? "mention" : void 0;
   if (!job) return "no mention";
   return {
     provider: "bitbucket",
@@ -34313,16 +34450,31 @@ async function reply(c, n, body) {
 
 ${body}`));
 }
-async function gateStatus(c) {
+function waitingArtifact(change) {
+  if (!change || change.stage === "rejected" || isQuick(change)) return void 0;
+  const a = ARTIFACTS.find((x) => !isApproved(change.artifacts[x]?.status));
+  return a && change.artifacts[a] ? a : void 0;
+}
+function touched2(c, path) {
+  if (c.env.PR_ACTION === "opened" || c.env.PR_ACTION === "reopened") return true;
+  const before = c.env.BEFORE_SHA && !/^0+$/.test(c.env.BEFORE_SHA) ? c.env.BEFORE_SHA : "HEAD~1";
+  return (git(c.root, ["diff", "--name-only", before, "HEAD"]) ?? "").split("\n").includes(path);
+}
+async function gateStatus(c, announce = false) {
   const branch = headRef(c);
-  const g = gateState(changeForBranch(c, branch));
+  const change = changeForBranch(c, branch);
+  const g = gateState(change);
   const sha2 = c.env.HEAD_SHA || git(c.root, ["rev-parse", "HEAD"]);
   if (!sha2) throw new SdlcError("no HEAD_SHA and no git HEAD");
+  const waiting = waitingArtifact(change);
+  const pending = waiting && (announce || touched2(c, change.artifacts[waiting].path));
   if (c.dryRun) {
     console.log(`${GATES_CONTEXT}: ${g.state} \u2014 ${g.description}`);
+    if (pending) console.log(`notify gate.pending: ${change.slug}/${waiting}`);
     return 0;
   }
   log(await commitStatus({ root: c.root, loaded: c.loaded, env: c.env }, sha2, { context: GATES_CONTEXT, ...g }));
+  if (pending) log(await notify({ event: "gate.pending", change, artifact: waiting }, c.loaded, c.env));
   return 0;
 }
 async function gate(c) {
@@ -34368,7 +34520,63 @@ async function gate(c) {
   await reply(c, n, `**${cmd.artifact}** of \`${change.slug}\` ${verb} by @${login} (${result.commit}).${cmd.comment ? `
 
 > ${cmd.comment}` : ""}`);
-  return gateStatus({ ...c, env: { ...c.env, HEAD_SHA: "" } });
+  const decided = changeForBranch(c, branch) ?? change;
+  if (!c.dryRun) log(await notify({ event: "gate.decided", change: decided, artifact: cmd.artifact, decision: cmd.decision, by: `@${login}`, note: cmd.comment }, c.loaded, c.env));
+  return gateStatus({ ...c, env: { ...c.env, HEAD_SHA: "" } }, cmd.decision === "approved");
+}
+
+// packages/cli/src/notify.ts
+init_src();
+function findChange(root, loaded, o) {
+  const all = listChanges(root, { locale: localeOf(loaded), defaultBranch: loaded?.config.vcs?.default_branch });
+  if (o.id) return all.find((c) => c.id === o.id || c.slug === o.id || c.dir === o.id || c.id === `changes/${o.id}`);
+  if (o.branch) {
+    const slug = o.branch.replace(/^change\//, "");
+    const hit = all.find((c) => c.branch === o.branch || c.slug === slug || c.dir === slug);
+    if (hit) return hit;
+  }
+  return all.find((c) => c.active);
+}
+async function notifyCommand(root, loaded, pos, flags) {
+  const event = pos[0] ?? "";
+  const str = (k) => typeof flags[k] === "string" ? flags[k] : void 0;
+  if (!isNotifyEvent(event)) {
+    process.stderr.write(
+      `usage: sdlc notify <${NOTIFY_EVENTS.join("|")}> [--change ID] [--artifact intent|spec|plan] [--decision approved|rejected] [--by WHO] [-m NOTE] [--dry-run]
+`
+    );
+    return 1;
+  }
+  const artifact = str("artifact");
+  if (artifact && !ARTIFACTS.includes(artifact)) {
+    process.stderr.write(`sdlc notify: --artifact must be one of ${ARTIFACTS.join(", ")}
+`);
+    return 1;
+  }
+  const decision = str("decision");
+  const env = process.env;
+  const change = findChange(root, loaded, { id: str("change"), branch: env.HEAD_REF || env.MERGED_BRANCH || currentBranch(root) });
+  if (str("change") && !change) {
+    process.stderr.write(`sdlc notify: no change '${str("change")}' (see sdlc status)
+`);
+    return 1;
+  }
+  const n = {
+    event,
+    change,
+    artifact,
+    decision: decision === "approved" || decision === "rejected" ? decision : void 0,
+    by: str("by"),
+    note: str("m"),
+    prUrl: str("pr-url")
+  };
+  if (flags["dry-run"]) {
+    console.log(JSON.stringify(notifyPayload(n, loaded, env), null, 2));
+    return 0;
+  }
+  process.stderr.write(`[sdlc] ${await notify(n, loaded, env)}
+`);
+  return 0;
 }
 
 // packages/cli/src/ci/index.ts
@@ -34387,6 +34595,7 @@ sdlc ci mention                answer an @claude comment on the PR/MR (triggered
 Options: --agent claude|codex|cursor (or SDLC_CI_AGENT, or ci.agent) \xB7 --model M \xB7 --dry-run (print, do not post/push)
 Env: ANTHROPIC_API_KEY | OPENAI_API_KEY | CURSOR_API_KEY \xB7 GH_TOKEN | GITLAB_TOKEN | BITBUCKET_ACCESS_TOKEN
      JIRA_EMAIL + JIRA_API_TOKEN (or JIRA_PAT) \xB7 SDLC_PLUGIN_REPO_URL / SDLC_PLUGIN_TOKEN (private marketplace)
+     SDLC_NOTIFY_WEBHOOK (Slack or generic webhook: gate.pending, gate.decided, spec.ready, review.done, change.merged)
 `;
 var log2 = (msg) => process.stderr.write(`[sdlc-ci] ${msg}
 `);
@@ -34437,7 +34646,7 @@ async function ciCommand(root, args) {
     case "jira-merged":
       return jiraMerged(c);
     case "mention":
-      return mention(c);
+      return mention2(c);
     case "evals":
       return runEvals(c, rest[0], typeof flags.out === "string" ? flags.out : void 0);
     case "install":
@@ -34522,6 +34731,10 @@ Do not approve or block: the findings inform the code owner. Do not modify any f
   );
   writeFileSync10(join18(c.root, "review-tally.txt"), (out.match(TALLY)?.at(-1) ?? "") + "\n");
   await post(c, n, out);
+  if (!c.dryRun) {
+    const tally = out.match(TALLY)?.at(-1);
+    log2(await notify({ event: "review.done", change: findChange(c.root, c.loaded, { branch: headRef(c) }), note: tally }, c.loaded, c.env));
+  }
   return 0;
 }
 async function post(c, n, body) {
@@ -34536,7 +34749,7 @@ function pendingIntents(root) {
   if (!existsSync15(dir)) return [];
   return readdirSync7(dir, { withFileTypes: true }).filter((d) => d.isDirectory() && !d.name.startsWith("_")).map((d) => `changes/${d.name}`).filter((d) => existsSync15(join18(root, d, "intent.md")) && !existsSync15(join18(root, d, "spec.md"))).filter((d) => isApproved(parseFrontmatter(readFileSync18(join18(root, d, "intent.md"), "utf8")).data.status)).sort();
 }
-function intentToSpec(c) {
+async function intentToSpec(c) {
   const pending = pendingIntents(c.root);
   if (!pending.length) {
     log2("no accepted intents without a spec");
@@ -34560,8 +34773,14 @@ function intentToSpec(c) {
     log2("the agent made no commits; nothing to push");
     return 1;
   }
-  if (c.dryRun) log2(`dry run: not pushing HEAD:${headRef(c)}`);
-  else execFileSync9("git", ["push", "origin", `HEAD:${headRef(c)}`], { cwd: c.root, stdio: ["ignore", "inherit", "inherit"] });
+  if (c.dryRun) {
+    log2(`dry run: not pushing HEAD:${headRef(c)}`);
+    return 0;
+  }
+  execFileSync9("git", ["push", "origin", `HEAD:${headRef(c)}`], { cwd: c.root, stdio: ["ignore", "inherit", "inherit"] });
+  for (const d of pending.filter((x) => existsSync15(join18(c.root, x, "spec.md")))) {
+    log2(await notify({ event: "spec.ready", change: findChange(c.root, c.loaded, { id: d }), artifact: "spec" }, c.loaded, c.env));
+  }
   return 0;
 }
 async function triage(c, logFile) {
@@ -34582,6 +34801,8 @@ async function triage(c, logFile) {
   return 0;
 }
 async function jiraMerged(c) {
+  const merged = c.env.MERGED_BRANCH ? findChange(c.root, c.loaded, { branch: c.env.MERGED_BRANCH }) : void 0;
+  if (merged && !c.dryRun) log2(await notify({ event: "change.merged", change: merged }, c.loaded, c.env));
   if (!trackerEnabled(c.loaded)) {
     log2("tracker not configured");
     return 0;
@@ -34603,7 +34824,7 @@ async function jiraMerged(c) {
   return 0;
 }
 var MENTION_HEADER = "## Agent reply (ai-sdlc)";
-async function mention(c) {
+async function mention2(c) {
   const n = prNumber(c.env);
   const request = (c.env.SDLC_MENTION_BODY ?? "").trim();
   if (n === void 0 || !request) throw new SdlcError("sdlc ci mention needs PR_NUMBER and SDLC_MENTION_BODY (set by `sdlc webhook`)");
@@ -34678,6 +34899,7 @@ Integrations
   tracker <args\u2026>                    Jira helper
   ci <cmd>                           CI entry point: bootstrap, review, intent-to-spec, triage, jira-merged, evals
   bands check [--json] [--dry-run]   Stage 6: evaluate ops/bands.yaml; log / diagnose / open an incident intent
+  notify <event> [--change ID] [--dry-run]   gate.pending|gate.decided|spec.ready|review.done|change.merged \u2192 Slack or a webhook
   webhook [--port N]                 @claude in GitLab/Bitbucket comments \u2192 triggers \`sdlc ci mention\` in CI
   hosted [--port N]                  read-only org board over a GitHub App installation (docs/rfc/hosted.md)
 `;
@@ -34691,7 +34913,7 @@ function parseArgs(argv) {
     else if (a.startsWith("--")) {
       const [k, v] = a.slice(2).split("=", 2);
       if (v !== void 0) flags[k] = v;
-      else if (["agent", "port", "ticket", "title", "locale", "preset", "first-change"].includes(k)) flags[k] = argv[++i] ?? "";
+      else if (["agent", "port", "ticket", "title", "locale", "preset", "first-change", "change", "artifact", "decision", "by", "pr-url"].includes(k)) flags[k] = argv[++i] ?? "";
       else flags[k] = true;
     } else pos.push(a);
   }
@@ -34957,6 +35179,9 @@ async function main() {
       }
       return;
     }
+    case "notify":
+      process.exitCode = await notifyCommand(root, loadConfig(root), pos, flags);
+      return;
     case "lock": {
       const lock = join20(root, FIX_LOCKS[0]);
       if (pos[0] === "on") {

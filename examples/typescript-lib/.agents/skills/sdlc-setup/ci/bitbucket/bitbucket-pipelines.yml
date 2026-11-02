@@ -1,6 +1,6 @@
 # Bitbucket Pipelines for the AI-native loop.
 # Repository variables (secured): ANTHROPIC_API_KEY (or OPENAI_API_KEY / CURSOR_API_KEY for ci.agent codex / cursor) · BITBUCKET_ACCESS_TOKEN (repository access token: pull requests write, repository write)
-#   SDLC_PLUGIN_TOKEN (if the marketplace is private) · JIRA_EMAIL + JIRA_API_TOKEN (if there is Jira)
+#   SDLC_PLUGIN_TOKEN (if the marketplace is private) · JIRA_EMAIL + JIRA_API_TOKEN (if there is Jira) · SDLC_NOTIFY_WEBHOOK (optional)
 
 # >>> stack: language image (filled in by /sdlc-setup from stacks/<lang>.md)
 image: atlassian/default-image:4

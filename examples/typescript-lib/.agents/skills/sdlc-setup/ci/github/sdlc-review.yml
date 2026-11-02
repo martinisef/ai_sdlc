@@ -34,6 +34,13 @@ jobs:
             and the final line "Important: N · Nit: M". Do not approve or block the PR.
           claude_args: >-
             --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Read,Grep,Glob"
+      - name: Notify the team
+        if: success()
+        env:
+          SDLC_NOTIFY_WEBHOOK: ${{ secrets.SDLC_NOTIFY_WEBHOOK }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: npx -y @morsadev/sdlc@0 notify review.done
 
   mention:
     if: >-

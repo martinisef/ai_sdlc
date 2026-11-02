@@ -50,6 +50,7 @@ import { fixDoctor, migrateLegacy } from './doctor-fix.ts';
 import { trackerCommand, vcsCommand } from './integrations.ts';
 import { bandsCommand } from './bands.ts';
 import { ciCommand } from './ci/index.ts';
+import { notifyCommand } from './notify.ts';
 
 declare const __SDLC_VERSION__: string | undefined;
 /** Injected by scripts/build-cli.mjs; from source, read package.json. */
@@ -88,6 +89,7 @@ Integrations
   tracker <args…>                    Jira helper
   ci <cmd>                           CI entry point: bootstrap, review, intent-to-spec, triage, jira-merged, evals
   bands check [--json] [--dry-run]   Stage 6: evaluate ops/bands.yaml; log / diagnose / open an incident intent
+  notify <event> [--change ID] [--dry-run]   gate.pending|gate.decided|spec.ready|review.done|change.merged → Slack or a webhook
   webhook [--port N]                 @claude in GitLab/Bitbucket comments → triggers \`sdlc ci mention\` in CI
   hosted [--port N]                  read-only org board over a GitHub App installation (docs/rfc/hosted.md)
 `;
@@ -102,7 +104,7 @@ function parseArgs(argv: string[]) {
     else if (a.startsWith('--')) {
       const [k, v] = a.slice(2).split('=', 2);
       if (v !== undefined) flags[k] = v;
-      else if (['agent', 'port', 'ticket', 'title', 'locale', 'preset', 'first-change'].includes(k)) flags[k] = argv[++i] ?? '';
+      else if (['agent', 'port', 'ticket', 'title', 'locale', 'preset', 'first-change', 'change', 'artifact', 'decision', 'by', 'pr-url'].includes(k)) flags[k] = argv[++i] ?? '';
       else flags[k] = true;
     } else pos.push(a);
   }
@@ -386,6 +388,10 @@ async function main() {
       }
       return;
     }
+
+    case 'notify':
+      process.exitCode = await notifyCommand(root, loadConfig(root), pos, flags);
+      return;
 
     case 'lock': {
       const lock = join(root, FIX_LOCKS[0]);
