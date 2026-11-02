@@ -10,6 +10,7 @@ import {
   isQuick,
   listChanges,
   localeOf,
+  notify,
   prComment,
   SdlcError,
   type Approver,
@@ -62,16 +63,36 @@ async function reply(c: CiEnv, n: number, body: string) {
   log(await prComment({ root: c.root, loaded: c.loaded, env: c.env }, n, `${GATE_HEADER}\n\n${body}`));
 }
 
-export async function gateStatus(c: CiEnv): Promise<number> {
+/** The artifact a pending gate waits on, if it is written: that is what people are asked to decide. */
+function waitingArtifact(change: Change | undefined): Artifact | undefined {
+  if (!change || change.stage === 'rejected' || isQuick(change)) return undefined;
+  const a = ARTIFACTS.find((x) => !isApproved(change.artifacts[x]?.status));
+  return a && change.artifacts[a] ? a : undefined;
+}
+
+/** Did this push touch `path`? PR_ACTION=opened|reopened counts as new for everything on the branch. */
+function touched(c: CiEnv, path: string): boolean {
+  if (c.env.PR_ACTION === 'opened' || c.env.PR_ACTION === 'reopened') return true;
+  const before = c.env.BEFORE_SHA && !/^0+$/.test(c.env.BEFORE_SHA) ? c.env.BEFORE_SHA : 'HEAD~1';
+  return (git(c.root, ['diff', '--name-only', before, 'HEAD']) ?? '').split('\n').includes(path);
+}
+
+/** Sets `sdlc/gates`; announces gate.pending when the waiting artifact is new in this push (or `announce`). */
+export async function gateStatus(c: CiEnv, announce = false): Promise<number> {
   const branch = headRef(c);
-  const g = gateState(changeForBranch(c, branch));
+  const change = changeForBranch(c, branch);
+  const g = gateState(change);
   const sha = c.env.HEAD_SHA || git(c.root, ['rev-parse', 'HEAD']);
   if (!sha) throw new SdlcError('no HEAD_SHA and no git HEAD');
+  const waiting = waitingArtifact(change);
+  const pending = waiting && (announce || touched(c, change!.artifacts[waiting]!.path));
   if (c.dryRun) {
     console.log(`${GATES_CONTEXT}: ${g.state} — ${g.description}`);
+    if (pending) console.log(`notify gate.pending: ${change!.slug}/${waiting}`);
     return 0;
   }
   log(await commitStatus({ root: c.root, loaded: c.loaded, env: c.env }, sha, { context: GATES_CONTEXT, ...g }));
+  if (pending) log(await notify({ event: 'gate.pending', change, artifact: waiting }, c.loaded, c.env));
   return 0;
 }
 
@@ -116,5 +137,7 @@ export async function gate(c: CiEnv): Promise<number> {
   if (!c.dryRun) execFileSync('git', ['push', 'origin', `HEAD:${branch}`], { cwd: c.root, stdio: ['ignore', 'inherit', 'inherit'] });
   const verb = cmd.decision === 'approved' ? 'approved' : 'rejected';
   await reply(c, n, `**${cmd.artifact}** of \`${change.slug}\` ${verb} by @${login} (${result.commit}).${cmd.comment ? `\n\n> ${cmd.comment}` : ''}`);
-  return gateStatus({ ...c, env: { ...c.env, HEAD_SHA: '' } });
+  const decided = changeForBranch(c, branch) ?? change;
+  if (!c.dryRun) log(await notify({ event: 'gate.decided', change: decided, artifact: cmd.artifact, decision: cmd.decision, by: `@${login}`, note: cmd.comment }, c.loaded, c.env));
+  return gateStatus({ ...c, env: { ...c.env, HEAD_SHA: '' } }, cmd.decision === 'approved');
 }

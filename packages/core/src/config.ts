@@ -8,6 +8,8 @@ export type AgentId = (typeof AGENTS)[number];
 export const ARTIFACTS = ['intent', 'spec', 'plan'] as const;
 export type Artifact = (typeof ARTIFACTS)[number];
 export const CI_AGENTS = ['claude', 'codex', 'cursor'] as const;
+export const NOTIFY_EVENTS = ['gate.pending', 'gate.decided', 'spec.ready', 'review.done', 'change.merged'] as const;
+export type NotifyEvent = (typeof NOTIFY_EVENTS)[number];
 export type CiAgent = (typeof CI_AGENTS)[number];
 
 const commandMap = z.record(z.string(), z.string());
@@ -69,6 +71,16 @@ export const ConfigSchema = z.looseObject({
       enabled: z.boolean().optional(),
       max_files: z.number().int().positive().optional(),
       forbid_paths: z.array(z.string()).optional(),
+    })
+    .optional(),
+  /** `sdlc notify`: loop events to Slack or any webhook (Teams, Discord, …). Off while the webhook env var is unset. */
+  notify: z
+    .looseObject({
+      webhook_env: z.string().optional(),
+      format: z.enum(['slack', 'generic']).optional(),
+      events: z.array(z.enum(NOTIFY_EVENTS)).optional(),
+      /** `@login`, email or git name → Slack member ID, to mention whoever has to act. */
+      people: z.record(z.string(), z.string()).optional(),
     })
     .optional(),
   /** Headless runs in CI (`sdlc ci …`): which agent CLI to drive. */

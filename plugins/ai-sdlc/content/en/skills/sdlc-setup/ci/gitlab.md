@@ -18,7 +18,7 @@ Without Jira: remove `sdlc:jira-merged`. Without Stage 6: remove `sdlc:bands`.
 - **Required Code Owners and approval rules**: depend on the tier (Premium/Ultimate). On Free: protected branch + "Allowed to merge: Maintainers" and review by convention.
 
 ## Manual configuration (add to SETUP.md)
-1. **CI/CD variables**: `ANTHROPIC_API_KEY` (masked), `GITLAB_TOKEN` (project access token with `api` scope and Developer role: comments on MRs and pushes to `change/**`), `SDLC_PLUGIN_TOKEN` if the marketplace is private, `JIRA_EMAIL` + `JIRA_API_TOKEN` if there is Jira.
+1. **CI/CD variables**: `ANTHROPIC_API_KEY` (masked), `GITLAB_TOKEN` (project access token with `api` scope and Developer role: comments on MRs and pushes to `change/**`), `SDLC_PLUGIN_TOKEN` if the marketplace is private, `JIRA_EMAIL` + `JIRA_API_TOKEN` if there is Jira, `SDLC_NOTIFY_WEBHOOK` for [notifications](https://martinisef.github.io/ai_sdlc/guide/notifications).
 2. Default **protected branch**: no direct push, merge only via MR.
 3. **Approval rules / CODEOWNERS** (Premium+): `CLAUDE.md`, `REVIEW.md`, `.claude/`, `evals/` with owners.
 4. Nightly **pipeline schedule** (CI/CD → Schedules) for `sdlc:evals`; with Stage 6, a second daily schedule with the variable `SDLC_JOB=bands` for `sdlc:bands`.

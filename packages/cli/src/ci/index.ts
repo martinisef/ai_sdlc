@@ -12,6 +12,7 @@ import {
   jira,
   loadConfig,
   localeOf,
+  notify,
   parseFrontmatter,
   prComment,
   SdlcError,
@@ -26,6 +27,7 @@ import { runEvals } from './evals.ts';
 import { ciSecrets, installCi } from './install.ts';
 import { gate, gateStatus } from './gates.ts';
 import { isPreset, PRESET_SPECS } from '../presets.ts';
+import { findChange } from '../notify.ts';
 
 export const CI_HELP = `sdlc ci install [--provider github|gitlab|bitbucket] [--preset solo|team-github|regulated]
                                copy the pipeline templates (stack setup filled in; never overwrites)
@@ -42,6 +44,7 @@ sdlc ci mention                answer an @claude comment on the PR/MR (triggered
 Options: --agent claude|codex|cursor (or SDLC_CI_AGENT, or ci.agent) · --model M · --dry-run (print, do not post/push)
 Env: ANTHROPIC_API_KEY | OPENAI_API_KEY | CURSOR_API_KEY · GH_TOKEN | GITLAB_TOKEN | BITBUCKET_ACCESS_TOKEN
      JIRA_EMAIL + JIRA_API_TOKEN (or JIRA_PAT) · SDLC_PLUGIN_REPO_URL / SDLC_PLUGIN_TOKEN (private marketplace)
+     SDLC_NOTIFY_WEBHOOK (Slack or generic webhook: gate.pending, gate.decided, spec.ready, review.done, change.merged)
 `;
 
 const log = (msg: string) => process.stderr.write(`[sdlc-ci] ${msg}\n`);
@@ -198,6 +201,10 @@ Do not approve or block: the findings inform the code owner. Do not modify any f
   // Machine-readable tally for teams that want to gate merges on findings.
   writeFileSync(join(c.root, 'review-tally.txt'), (out.match(TALLY)?.at(-1) ?? '') + '\n');
   await post(c, n, out);
+  if (!c.dryRun) {
+    const tally = out.match(TALLY)?.at(-1);
+    log(await notify({ event: 'review.done', change: findChange(c.root, c.loaded, { branch: headRef(c) }), note: tally }, c.loaded, c.env));
+  }
   return 0;
 }
 
@@ -220,7 +227,7 @@ function pendingIntents(root: string): string[] {
     .sort();
 }
 
-function intentToSpec(c: CiEnv): number {
+async function intentToSpec(c: CiEnv): Promise<number> {
   const pending = pendingIntents(c.root);
   if (!pending.length) {
     log('no accepted intents without a spec');
@@ -244,8 +251,14 @@ function intentToSpec(c: CiEnv): number {
     log('the agent made no commits; nothing to push');
     return 1;
   }
-  if (c.dryRun) log(`dry run: not pushing HEAD:${headRef(c)}`);
-  else execFileSync('git', ['push', 'origin', `HEAD:${headRef(c)}`], { cwd: c.root, stdio: ['ignore', 'inherit', 'inherit'] });
+  if (c.dryRun) {
+    log(`dry run: not pushing HEAD:${headRef(c)}`);
+    return 0;
+  }
+  execFileSync('git', ['push', 'origin', `HEAD:${headRef(c)}`], { cwd: c.root, stdio: ['ignore', 'inherit', 'inherit'] });
+  for (const d of pending.filter((x) => existsSync(join(c.root, x, 'spec.md')))) {
+    log(await notify({ event: 'spec.ready', change: findChange(c.root, c.loaded, { id: d }), artifact: 'spec' }, c.loaded, c.env));
+  }
   return 0;
 }
 
@@ -268,6 +281,8 @@ async function triage(c: CiEnv, logFile: string | undefined): Promise<number> {
 }
 
 async function jiraMerged(c: CiEnv): Promise<number> {
+  const merged = c.env.MERGED_BRANCH ? findChange(c.root, c.loaded, { branch: c.env.MERGED_BRANCH }) : undefined;
+  if (merged && !c.dryRun) log(await notify({ event: 'change.merged', change: merged }, c.loaded, c.env));
   if (!trackerEnabled(c.loaded)) {
     log('tracker not configured');
     return 0;

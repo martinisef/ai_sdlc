@@ -47,6 +47,7 @@ Every command works from any directory inside the repository. The project root i
 | `sdlc tracker …` | Jira helper (Cloud or Data Center). |
 | `sdlc ci <cmd>` | CI entry point. See [CI](./ci). |
 | `sdlc bands check` | Stage 6. See [Control bands](./bands). |
+| `sdlc notify <event> [--change ID] [--artifact A] [--decision D] [--by WHO] [-m NOTE] [--dry-run]` | Posts `gate.pending`, `gate.decided`, `spec.ready`, `review.done` or `change.merged` to Slack or a webhook (`SDLC_NOTIFY_WEBHOOK`). Always exits 0. See [Notifications](../guide/notifications). |
 | `sdlc webhook [--port N]` | `@claude` for GitLab and Bitbucket: receives comment webhooks and triggers `sdlc ci mention` in CI. See [CI](./ci#claude-on-gitlab-and-bitbucket). |
 | `sdlc hosted [--port N]` | Read-only org board (every repository of a GitHub App installation, by stage and pending gate). See the [hosted RFC](../rfc/hosted). |
 
@@ -88,3 +89,4 @@ Auth: `JIRA_EMAIL` + `JIRA_API_TOKEN` (Cloud) or `JIRA_PAT` (Data Center). Exit 
 | `RELEASE_APPROVAL` (or `production_gate.approval_env`) | Lets commands that match the production gate run. |
 | `SDLC_CI_AGENT`, `SDLC_CI_MODEL` | Agent and model for `sdlc ci` and `sdlc bands check`. |
 | `EVAL_MIN_PASS_RATE` | Overrides `ci.min_pass_rate`. |
+| `SDLC_NOTIFY_WEBHOOK` (or `notify.webhook_env`) | Where `sdlc notify` and `sdlc ci` post loop events. Unset: no notifications. |

@@ -12,6 +12,7 @@ export * from './tracker.ts';
 export * from './i18n.ts';
 export * from './metrics.ts';
 export * from './next.ts';
+export * from './notify.ts';
 export * from './policies.ts';
 export * from './project.ts';
 export * from './quick.ts';

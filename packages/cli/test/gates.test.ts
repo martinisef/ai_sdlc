@@ -84,3 +84,34 @@ test('ci gate-status: success once the plan is approved, and for branches withou
   assert.match(calls, /statuses\/abc1234 -f state=success -f context=sdlc\/gates -f description=export: intent, spec and plan approved/);
   assert.match(calls, /statuses\/def5678 -f state=success .*not gated/);
 });
+
+test('ci gate notifies gate.decided and the next gate.pending; gate-status announces only new artifacts', async () => {
+  const { createServer } = await import('node:http');
+  const bodies: any[] = [];
+  const server = createServer((req, res) => {
+    let raw = '';
+    req.on('data', (d) => (raw += d));
+    req.on('end', () => (bodies.push(JSON.parse(raw)), res.end('ok')));
+  });
+  await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
+  const hook = `http://127.0.0.1:${(server.address() as { port: number }).port}/`;
+  try {
+    const { root } = changeRepo({ notify: { format: 'generic' } });
+    writeFileSync(join(root, 'changes/2026-11-export/plan.md'), '---\nstatus: draft\n---\n# Plan\n');
+    commitAll(root, 'plan');
+    const r = await sdlc(root, ['ci', 'gate'], env(stubLog(), '/approve spec', 'ana', { SDLC_NOTIFY_WEBHOOK: hook }));
+    assert.equal(r.code, 0, r.err);
+    assert.deepEqual(bodies.map((b) => b.event), ['gate.decided', 'gate.pending']);
+    assert.equal(bodies[0].title, 'export: spec approved by @ana');
+    assert.equal(bodies[1].artifact, 'plan');
+
+    bodies.length = 0;
+    const status = { STUB_LOG: stubLog(), HEAD_REF: 'change/export', SDLC_NOTIFY_WEBHOOK: hook };
+    await sdlc(root, ['ci', 'gate-status'], status);
+    assert.equal(bodies.length, 0, 'the last commit did not touch plan.md');
+    await sdlc(root, ['ci', 'gate-status'], { ...status, PR_ACTION: 'opened' });
+    assert.deepEqual(bodies.map((b) => [b.event, b.artifact]), [['gate.pending', 'plan']]);
+  } finally {
+    server.close();
+  }
+});
