@@ -1,9 +1,9 @@
 // `sdlc ci <cmd>`: the CI entry point. Same behaviour on GitHub Actions, GitLab CI and Bitbucket Pipelines;
 // the provider YAML only decides *when* each subcommand runs.
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import {
   currentBranch,
   git,
@@ -22,8 +22,9 @@ import {
   type LoadedConfig,
   type Provider,
 } from '@ai-native-sdlc/core';
-import { AGENT_BIN, pickAgent, READ_TOOLS, runAgent, skillRef } from './agent.ts';
-import { runEvals } from './evals.ts';
+import { agentBin, pickAgent, READ_TOOLS, runAgent, skillRef } from './agent.ts';
+import { loadEvals, runEvals } from './evals.ts';
+import { matrixAgents, renderScorecard, updateScorecard, type EvalReport } from './scorecard.ts';
 import { ciSecrets, installCi } from './install.ts';
 import { gate, gateStatus } from './gates.ts';
 import { isPreset, PRESET_SPECS } from '../presets.ts';
@@ -36,7 +37,9 @@ sdlc ci review                 review the PR/MR with REVIEW.md and post the resu
 sdlc ci intent-to-spec         for accepted intents without spec.md: write the spec headless, commit, push
 sdlc ci triage <log>           summarize a failed build and comment on the PR/MR
 sdlc ci tracker-merged         move the merged change's tickets to tracker.transitions.merged (alias: jira-merged)
-sdlc ci evals [pattern] [--out results.json]   run evals/*.json against the agent; fail below ci.min_pass_rate (0.8)
+sdlc ci evals [pattern] [--tags a,b] [--out results.json]   run evals/*.json against the agent; fail below ci.min_pass_rate (0.8)
+sdlc ci matrix [--only agent]  agents with credentials here, as JSON (the evals workflow's matrix)
+sdlc ci scorecard <report.json…> [--out docs/reference/agent-scorecard.md]   eval × agent table; rewritten only when a result changed
 sdlc ci gate                   /approve|/reject intent|spec|plan in a PR/MR comment → gate commit on the branch + reply
 sdlc ci gate-status            set the sdlc/gates commit status (success once the plan is approved or the change is quick)
 sdlc ci mention                answer an @claude comment on the PR/MR (triggered by \`sdlc webhook\`; ci.mention_mode read|edit)
@@ -112,7 +115,12 @@ export async function ciCommand(root: string, args: string[]): Promise<number> {
     case 'mention':
       return mention(c);
     case 'evals':
-      return runEvals(c, rest[0], typeof flags.out === 'string' ? flags.out : undefined);
+      return runEvals(c, rest[0], typeof flags.out === 'string' ? flags.out : undefined, typeof flags.tags === 'string' ? flags.tags.split(',').filter(Boolean) : []);
+    case 'matrix':
+      console.log(JSON.stringify(matrixAgents(c.env, typeof flags.only === 'string' ? flags.only : undefined)));
+      return 0;
+    case 'scorecard':
+      return scorecard(c, rest, typeof flags.out === 'string' ? flags.out : 'docs/reference/agent-scorecard.md');
     case 'install':
       return install(c, flags);
     case 'gate':
@@ -148,13 +156,16 @@ const INSTALL: Record<CiAgent, [string, string[]]> = {
 };
 
 function bootstrap(c: CiEnv): number {
-  const bin = AGENT_BIN[c.agent];
+  let bin = agentBin(c.agent, c.env);
   if (hasTool(bin, c.env)) log(`${bin} already installed`);
   else {
     const [cmd, args] = INSTALL[c.agent];
     log(`installing ${bin}: ${cmd} ${args.join(' ')}`);
     const r = spawnSync(cmd, args, { stdio: ['ignore', 'ignore', 'inherit'] });
     if (r.status !== 0) throw new SdlcError(`could not install ${bin}`);
+    bin = agentBin(c.agent, c.env);
+    const dir = dirname(bin);
+    if (dir !== '.' && c.env.GITHUB_PATH) appendFileSync(c.env.GITHUB_PATH, `${dir}\n`);
   }
   if (c.agent !== 'claude') {
     log(`${bin} reads the rendered skills in .agents/skills (commit the output of sdlc sync)`);
@@ -260,6 +271,18 @@ async function intentToSpec(c: CiEnv): Promise<number> {
   for (const d of pending.filter((x) => existsSync(join(c.root, x, 'spec.md')))) {
     log(await notify({ event: 'spec.ready', change: findChange(c.root, c.loaded, { id: d }), artifact: 'spec' }, c.loaded, c.env));
   }
+  return 0;
+}
+
+function scorecard(c: CiEnv, files: string[], out: string): number {
+  const reports = files.filter((f) => existsSync(f)).map((f) => JSON.parse(readFileSync(f, 'utf8')) as EvalReport);
+  if (!reports.length) throw new SdlcError('usage: sdlc ci scorecard <report.json…> (no reports found)');
+  const block = renderScorecard(reports, loadEvals(c.root), new Date().toISOString().slice(0, 10));
+  if (c.dryRun) {
+    console.log(block);
+    return 0;
+  }
+  console.log(updateScorecard(join(c.root, out), block) ? `updated ${out}` : `${out}: no result changed`);
   return 0;
 }
 

@@ -3,9 +3,9 @@
 // read-only vs workspace-write sandbox for Codex, proposal vs --force for Cursor).
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { CI_AGENTS, SdlcError, type CiAgent, type LoadedConfig } from '@ai-native-sdlc/core';
+import { CI_AGENTS, hasTool, SdlcError, type CiAgent, type LoadedConfig } from '@ai-native-sdlc/core';
 
 export interface AgentTask {
   prompt: string;
@@ -25,6 +25,13 @@ export function pickAgent(flag: string | undefined, loaded: LoadedConfig | undef
 }
 
 export const AGENT_BIN: Record<CiAgent, string> = { claude: 'claude', codex: 'codex', cursor: 'cursor-agent' };
+
+/** The executable to run. Cursor's installer puts `agent` (and the older `cursor-agent`) in ~/.local/bin, often not on PATH yet. */
+export function agentBin(agent: CiAgent, env: NodeJS.ProcessEnv = process.env): string {
+  if (agent !== 'cursor') return AGENT_BIN[agent];
+  const local = join(env.HOME ?? homedir(), '.local/bin');
+  return ['cursor-agent', 'agent', join(local, 'cursor-agent'), join(local, 'agent')].find((b) => hasTool(b, env)) ?? AGENT_BIN.cursor;
+}
 
 /** How to point the agent at a skill: Claude resolves skills by name; the others read the rendered SKILL.md. */
 export function skillRef(agent: CiAgent, name: string): string {
@@ -51,17 +58,19 @@ export function runAgent(agent: CiAgent, task: AgentTask, model?: string, env = 
         args.push(task.prompt);
         break;
       case 'cursor':
-        args = ['-p', '--output-format', 'text'];
-        if (task.mode === 'edit') args.push('--force');
+        // --trust: headless runs cannot answer the workspace-trust prompt; ask mode is Cursor's read-only mode
+        args = ['-p', '--output-format', 'text', '--trust', '--workspace', task.cwd];
+        args.push(...(task.mode === 'edit' ? ['--force'] : ['--mode', 'ask']));
         if (model) args.push('--model', model);
         args.push(task.prompt);
         break;
     }
     // `codex exec` authenticates non-interactively with CODEX_API_KEY
     if (agent === 'codex' && !env.CODEX_API_KEY && env.OPENAI_API_KEY) env = { ...env, CODEX_API_KEY: env.OPENAI_API_KEY };
-    const r = spawnSync(AGENT_BIN[agent], args, { cwd: task.cwd, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'], maxBuffer: 64 * 1024 * 1024 });
-    if (r.error) throw new SdlcError(`${AGENT_BIN[agent]}: ${(r.error as NodeJS.ErrnoException).code === 'ENOENT' ? 'not installed (run: sdlc ci bootstrap)' : r.error.message}`);
-    if (r.status !== 0) throw new SdlcError(`${AGENT_BIN[agent]} exited with ${r.status}`);
+    const bin = agentBin(agent, env);
+    const r = spawnSync(bin, args, { cwd: task.cwd, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'], maxBuffer: 64 * 1024 * 1024 });
+    if (r.error) throw new SdlcError(`${bin}: ${(r.error as NodeJS.ErrnoException).code === 'ENOENT' ? 'not installed (run: sdlc ci bootstrap)' : r.error.message}`);
+    if (r.status !== 0) throw new SdlcError(`${bin} exited with ${r.status}`);
     if (lastMessage) {
       try {
         return readFileSync(lastMessage, 'utf8').trim();

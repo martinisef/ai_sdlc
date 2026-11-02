@@ -1,31 +1,69 @@
 name: evals
 
 # Product evals (evals/*.json over examples/): does the agent, with this configuration, do the right thing?
-# Weekly and on demand; they spend model tokens, so they do not run on every PR.
+#  - Weekly and on demand: one job per agent with credentials (ANTHROPIC_API_KEY → Claude Code, OPENAI_API_KEY → Codex,
+#    CURSOR_API_KEY → Cursor). A full run updates docs/reference/agent-scorecard.md through a PR when a result changes.
+#  - On the "Version packages" PR (changeset-release/main): the release gate. Guardrail and gates evals at ≥ 90%
+#    with every agent available; make "evals (…)" a required check so a failing gate blocks the release.
+# They spend model tokens, so they do not run on ordinary PRs.
 on:
   schedule:
     - cron: '0 6 * * 1'
   workflow_dispatch:
     inputs:
       pattern:
-        description: Eval name glob (e.g. 'py-*')
+        description: Eval name glob (e.g. 'py-*'); the scorecard is only updated for '*'
         default: '*'
       agent:
-        description: claude | codex | cursor (empty = claude if ANTHROPIC_API_KEY is set, else codex)
+        description: claude | codex | cursor (empty = every agent with an API key)
         default: ''
       model:
         description: Model override (empty = agent default)
         default: ''
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: read
 
 jobs:
+  plan:
+    if: github.event_name != 'pull_request' || github.head_ref == 'changeset-release/main'
+    runs-on: ubuntu-latest
+    outputs:
+      agents: ${{ steps.matrix.outputs.agents }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - id: matrix
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+        run: |
+          agents=$(node --conditions=source packages/cli/src/main.ts ci matrix --only "${{ inputs.agent }}")
+          echo "agents=$agents" >> "$GITHUB_OUTPUT"
+          echo "agents: $agents"
+          if [ "$agents" = "[]" ] && [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "::error::the release gate needs at least one of ANTHROPIC_API_KEY, OPENAI_API_KEY, CURSOR_API_KEY"
+            exit 1
+          fi
+
   evals:
+    needs: plan
+    if: needs.plan.outputs.agents != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        agent: ${{ fromJSON(needs.plan.outputs.agents) }}
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
-      AGENT: ${{ inputs.agent || (secrets.ANTHROPIC_API_KEY != '' && 'claude') || 'codex' }}
+      AGENT: ${{ matrix.agent }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -36,34 +74,74 @@ jobs:
       - run: npm ci && npm run build
       - run: git config --global user.name evals && git config --global user.email evals@example.com
       # Codex sandboxes commands with bubblewrap, which needs unprivileged user namespaces (restricted by AppArmor on ubuntu-24.04)
-      - if: env.AGENT == 'codex'
+      - if: matrix.agent == 'codex'
         run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
       - name: install the agent CLI
         run: node packages/cli/dist/sdlc.mjs ci bootstrap
         env:
-          SDLC_CI_AGENT: ${{ env.AGENT }}
+          SDLC_CI_AGENT: ${{ matrix.agent }}
       - name: run evals
-        run: node packages/cli/dist/sdlc.mjs ci evals "${{ inputs.pattern || '*' }}" --out evals-report.json
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            node packages/cli/dist/sdlc.mjs ci evals '*' --tags guardrail,gates --out "evals-$AGENT.json"
+          else
+            node packages/cli/dist/sdlc.mjs ci evals "${{ inputs.pattern || '*' }}" --out "evals-$AGENT.json"
+          fi
         env:
-          SDLC_CI_AGENT: ${{ env.AGENT }}
+          SDLC_CI_AGENT: ${{ matrix.agent }}
           SDLC_CI_MODEL: ${{ inputs.model }}
           SDLC_BIN: node ${{ github.workspace }}/packages/cli/dist/sdlc.mjs
-          EVAL_MIN_PASS_RATE: '0.8'
+          EVAL_MIN_PASS_RATE: ${{ github.event_name == 'pull_request' && '0.9' || '0.8' }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
       - name: summary
         if: always()
         run: |
-          [ -f evals-report.json ] || exit 0
+          [ -f "evals-$AGENT.json" ] || exit 0
           node -e '
-            const r = require("./evals-report.json");
+            const r = require(`./evals-${process.env.AGENT}.json`);
             const rows = r.results.map(x => `| ${x.passed ? "✅" : "❌"} | ${x.name} | ${x.seconds ?? ""}s | ${x.failures.join("<br>")} |`);
             console.log(`### Evals: ${(r.rate * 100).toFixed(0)}% (minimum ${r.min * 100}%) · ${r.agent}${r.model ? " · " + r.model : ""}\n\n| | eval | time | failures |\n|---|---|---|---|\n${rows.join("\n")}`);
           ' >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: evals-report
-          path: evals-report.json
+          name: evals-${{ matrix.agent }}
+          path: evals-${{ matrix.agent }}.json
           if-no-files-found: ignore
+
+  scorecard:
+    needs: evals
+    if: always() && github.event_name != 'pull_request' && (inputs.pattern || '*') == '*' && needs.evals.result != 'skipped'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: evals-*
+          merge-multiple: true
+          path: reports
+      - run: node --conditions=source packages/cli/src/main.ts ci scorecard reports/*.json
+      - name: open or update the scorecard PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet docs/reference/agent-scorecard.md; then echo "no result changed"; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B evals/scorecard
+          git commit -qam "docs: agent scorecard $(date -u +%F)"
+          git push -f origin evals/scorecard
+          if [ "$(gh pr view evals/scorecard --json state -q .state 2>/dev/null)" != "OPEN" ]; then
+            gh pr create --head evals/scorecard --title "docs: agent scorecard" \
+              --body "Automatic update from the [evals workflow]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID): a result changed for at least one agent."
+          fi

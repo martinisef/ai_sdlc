@@ -83,7 +83,8 @@ export function applyChecks(e: EvalCase, dir: string, output: string, env: NodeJ
   return failures;
 }
 
-export function loadEvals(root: string, pattern = '*'): EvalCase[] {
+/** Evals whose name matches `pattern` and, with `tags`, that carry at least one of them. */
+export function loadEvals(root: string, pattern = '*', tags: string[] = []): EvalCase[] {
   const dir = join(root, 'evals');
   if (!existsSync(dir)) return [];
   return readdirSync(dir)
@@ -93,7 +94,8 @@ export function loadEvals(root: string, pattern = '*'): EvalCase[] {
       const e = JSON.parse(readFileSync(join(dir, f), 'utf8')) as EvalCase;
       if (!e.prompt || !Array.isArray(e.checks)) throw new SdlcError(`evals/${f}: needs "prompt" and "checks"`);
       return { ...e, name: e.name ?? f.slice(0, -5) };
-    });
+    })
+    .filter((e) => !tags.length || (e.tags ?? []).some((t) => tags.includes(t)));
 }
 
 /** Eval prompts are written as Claude slash commands (`/sdlc-spec …`); other agents get the rendered skill instead. */
@@ -103,8 +105,8 @@ export function promptFor(agent: CiAgent, prompt: string): string {
   return `Use ${skillRef(agent, m[1])}${m[2] ? ` with these arguments: ${m[2]}` : ''}`;
 }
 
-export function runEvals(c: CiEnv, pattern?: string, out?: string): number {
-  const evals = loadEvals(c.root, pattern);
+export function runEvals(c: CiEnv, pattern?: string, out?: string, tags: string[] = []): number {
+  const evals = loadEvals(c.root, pattern, tags);
   if (!evals.length) {
     console.log('No evals (only _example.json). Add real cases in evals/.');
     return 0;
@@ -140,6 +142,6 @@ export function runEvals(c: CiEnv, pattern?: string, out?: string): number {
   const passed = results.filter((r) => r.passed).length;
   const rate = passed / results.length;
   console.log(`pass rate: ${passed}/${results.length} = ${rate.toFixed(2)} (minimum ${min})`);
-  if (out) writeFileSync(out, JSON.stringify({ agent: c.agent, model: c.model, rate, min, results }, null, 2) + '\n');
+  if (out) writeFileSync(out, JSON.stringify({ agent: c.agent, model: c.model, rate, min, date: new Date().toISOString().slice(0, 10), results }, null, 2) + '\n');
   return rate >= min ? 0 : 1;
 }

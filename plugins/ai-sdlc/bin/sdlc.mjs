@@ -33163,26 +33163,26 @@ __export(src_exports, {
   startServer: () => startServer
 });
 import { randomBytes } from "node:crypto";
-import { existsSync as existsSync16, mkdirSync as mkdirSync8, readFileSync as readFileSync19, watch, writeFileSync as writeFileSync11 } from "node:fs";
-import { homedir as homedir3 } from "node:os";
-import { basename as basename2, dirname as dirname6, extname, join as join19, resolve as resolve3 } from "node:path";
+import { existsSync as existsSync17, mkdirSync as mkdirSync8, readFileSync as readFileSync20, watch, writeFileSync as writeFileSync12 } from "node:fs";
+import { homedir as homedir4 } from "node:os";
+import { basename as basename2, dirname as dirname7, extname, join as join19, resolve as resolve3 } from "node:path";
 import { fileURLToPath as fileURLToPath2 } from "node:url";
 import { execFile } from "node:child_process";
 function uiDir() {
   const candidates = [process.env.SDLC_UI_DIR, join19(here2, "ui"), join19(here2, "..", "..", "ui", "dist")];
-  return candidates.find((c) => c && existsSync16(join19(c, "index.html")));
+  return candidates.find((c) => c && existsSync17(join19(c, "index.html")));
 }
 function loadWorkspaces(current) {
   let list = [];
   try {
-    list = JSON.parse(readFileSync19(WORKSPACES_FILE, "utf8"));
+    list = JSON.parse(readFileSync20(WORKSPACES_FILE, "utf8"));
   } catch {
   }
-  return [current, ...list.filter((p) => p !== current && existsSync16(p))];
+  return [current, ...list.filter((p) => p !== current && existsSync17(p))];
 }
 function saveWorkspaces(list) {
-  mkdirSync8(dirname6(WORKSPACES_FILE), { recursive: true });
-  writeFileSync11(WORKSPACES_FILE, JSON.stringify([...new Set(list)], null, 2));
+  mkdirSync8(dirname7(WORKSPACES_FILE), { recursive: true });
+  writeFileSync12(WORKSPACES_FILE, JSON.stringify([...new Set(list)], null, 2));
 }
 function cachedPr(root, branch, loaded) {
   const key = `${root}#${branch}`;
@@ -33232,7 +33232,7 @@ function createApp(opts2) {
   app.post("/api/workspaces", async (c) => {
     const { path } = await c.req.json();
     const p = resolve3(path);
-    if (!existsSync16(join19(p, ".git"))) throw new Error(`${p} is not a git repository`);
+    if (!existsSync17(join19(p, ".git"))) throw new Error(`${p} is not a git repository`);
     workspaces = [...workspaces.filter((w) => w !== p), p];
     saveWorkspaces(workspaces.slice(1).concat(opts2.root));
     return c.json({ ok: true });
@@ -33326,7 +33326,7 @@ function createApp(opts2) {
       };
       for (const p of ["changes", ".sdlc", ".git/refs", ".git/HEAD", CONFIG_PATH]) {
         const full = join19(root, p);
-        if (!existsSync16(full)) continue;
+        if (!existsSync17(full)) continue;
         try {
           watchers.push(watch(full, { recursive: !extname(p) && p !== ".git/HEAD" }, ping));
         } catch {
@@ -33344,9 +33344,9 @@ function createApp(opts2) {
     if (!dir) return c.html("<p>UI not built. Run <code>npm run build:ui</code>.</p>");
     const rel = c.req.path === "/" ? "index.html" : c.req.path.slice(1);
     const file2 = resolve3(dir, rel);
-    const target = file2.startsWith(dir) && existsSync16(file2) && extname(file2) ? file2 : join19(dir, "index.html");
+    const target = file2.startsWith(dir) && existsSync17(file2) && extname(file2) ? file2 : join19(dir, "index.html");
     const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png" };
-    let body = readFileSync19(target);
+    let body = readFileSync20(target);
     if (target.endsWith("index.html")) body = body.toString().replace("__SDLC_TOKEN__", opts2.token);
     return c.body(body, 200, { "content-type": types[extname(target)] ?? "application/octet-stream", "cache-control": "no-store" });
   });
@@ -33379,8 +33379,8 @@ var init_src3 = __esm({
     init_streaming();
     init_src2();
     init_src();
-    here2 = dirname6(fileURLToPath2(import.meta.url));
-    WORKSPACES_FILE = join19(process.env.XDG_CONFIG_HOME ?? join19(homedir3(), ".config"), "sdlc", "workspaces.json");
+    here2 = dirname7(fileURLToPath2(import.meta.url));
+    WORKSPACES_FILE = join19(process.env.XDG_CONFIG_HOME ?? join19(homedir4(), ".config"), "sdlc", "workspaces.json");
     prCache = /* @__PURE__ */ new Map();
   }
 });
@@ -33694,14 +33694,14 @@ __export(src_exports3, {
   startHosted: () => startHosted
 });
 import { createHmac as createHmac2, timingSafeEqual as timingSafeEqual2 } from "node:crypto";
-import { readFileSync as readFileSync20 } from "node:fs";
+import { readFileSync as readFileSync21 } from "node:fs";
 function equal(a, b) {
   const x = Buffer.from(a);
   const y = Buffer.from(b);
   return x.length === y.length && timingSafeEqual2(x, y);
 }
 function client(env) {
-  const privateKey = env.GITHUB_APP_PRIVATE_KEY?.replace(/\\n/g, "\n") ?? (env.GITHUB_APP_PRIVATE_KEY_FILE ? readFileSync20(env.GITHUB_APP_PRIVATE_KEY_FILE, "utf8") : void 0);
+  const privateKey = env.GITHUB_APP_PRIVATE_KEY?.replace(/\\n/g, "\n") ?? (env.GITHUB_APP_PRIVATE_KEY_FILE ? readFileSync21(env.GITHUB_APP_PRIVATE_KEY_FILE, "utf8") : void 0);
   if (!env.GITHUB_APP_ID || !privateKey || !env.GITHUB_INSTALLATION_ID) {
     throw new Error("sdlc hosted needs GITHUB_APP_ID, GITHUB_APP_PRIVATE_KEY (or _FILE) and GITHUB_INSTALLATION_ID");
   }
@@ -33794,7 +33794,7 @@ var init_src5 = __esm({
 // packages/cli/src/main.ts
 init_src2();
 init_src();
-import { existsSync as existsSync17, mkdirSync as mkdirSync9, readFileSync as readFileSync21, rmSync as rmSync7, writeFileSync as writeFileSync12 } from "node:fs";
+import { existsSync as existsSync18, mkdirSync as mkdirSync9, readFileSync as readFileSync22, rmSync as rmSync7, writeFileSync as writeFileSync13 } from "node:fs";
 import { join as join20 } from "node:path";
 
 // packages/cli/src/init.ts
@@ -34274,7 +34274,7 @@ import { execFileSync as execFileSync6 } from "node:child_process";
 init_src();
 import { spawnSync } from "node:child_process";
 import { mkdtempSync as mkdtempSync2, readFileSync as readFileSync16, rmSync as rmSync4 } from "node:fs";
-import { tmpdir as tmpdir2 } from "node:os";
+import { homedir as homedir2, tmpdir as tmpdir2 } from "node:os";
 import { join as join16 } from "node:path";
 var READ_TOOLS = "Read,Grep,Glob,Bash(git diff:*),Bash(git log:*),Bash(git show:*)";
 function pickAgent(flag, loaded, env = process.env) {
@@ -34283,6 +34283,11 @@ function pickAgent(flag, loaded, env = process.env) {
   return a;
 }
 var AGENT_BIN = { claude: "claude", codex: "codex", cursor: "cursor-agent" };
+function agentBin(agent, env = process.env) {
+  if (agent !== "cursor") return AGENT_BIN[agent];
+  const local = join16(env.HOME ?? homedir2(), ".local/bin");
+  return ["cursor-agent", "agent", join16(local, "cursor-agent"), join16(local, "agent")].find((b) => hasTool(b, env)) ?? AGENT_BIN.cursor;
+}
 function skillRef(agent, name) {
   return agent === "claude" ? `the ${name} skill` : `the skill in .agents/skills/${name}/SKILL.md`;
 }
@@ -34304,16 +34309,17 @@ function runAgent(agent, task, model, env = process.env) {
         args.push(task.prompt);
         break;
       case "cursor":
-        args = ["-p", "--output-format", "text"];
-        if (task.mode === "edit") args.push("--force");
+        args = ["-p", "--output-format", "text", "--trust", "--workspace", task.cwd];
+        args.push(...task.mode === "edit" ? ["--force"] : ["--mode", "ask"]);
         if (model) args.push("--model", model);
         args.push(task.prompt);
         break;
     }
     if (agent === "codex" && !env.CODEX_API_KEY && env.OPENAI_API_KEY) env = { ...env, CODEX_API_KEY: env.OPENAI_API_KEY };
-    const r = spawnSync(AGENT_BIN[agent], args, { cwd: task.cwd, env, encoding: "utf8", stdio: ["ignore", "pipe", "inherit"], maxBuffer: 64 * 1024 * 1024 });
-    if (r.error) throw new SdlcError(`${AGENT_BIN[agent]}: ${r.error.code === "ENOENT" ? "not installed (run: sdlc ci bootstrap)" : r.error.message}`);
-    if (r.status !== 0) throw new SdlcError(`${AGENT_BIN[agent]} exited with ${r.status}`);
+    const bin = agentBin(agent, env);
+    const r = spawnSync(bin, args, { cwd: task.cwd, env, encoding: "utf8", stdio: ["ignore", "pipe", "inherit"], maxBuffer: 64 * 1024 * 1024 });
+    if (r.error) throw new SdlcError(`${bin}: ${r.error.code === "ENOENT" ? "not installed (run: sdlc ci bootstrap)" : r.error.message}`);
+    if (r.status !== 0) throw new SdlcError(`${bin} exited with ${r.status}`);
     if (lastMessage) {
       try {
         return readFileSync16(lastMessage, "utf8").trim();
@@ -34461,9 +34467,9 @@ async function bandsCommand(root, args) {
 // packages/cli/src/ci/index.ts
 init_src();
 import { execFileSync as execFileSync9, spawnSync as spawnSync3 } from "node:child_process";
-import { existsSync as existsSync15, readdirSync as readdirSync7, readFileSync as readFileSync18, rmSync as rmSync6, writeFileSync as writeFileSync10 } from "node:fs";
-import { homedir as homedir2 } from "node:os";
-import { join as join18 } from "node:path";
+import { appendFileSync as appendFileSync3, existsSync as existsSync16, readdirSync as readdirSync7, readFileSync as readFileSync19, rmSync as rmSync6, writeFileSync as writeFileSync11 } from "node:fs";
+import { homedir as homedir3 } from "node:os";
+import { dirname as dirname6, join as join18 } from "node:path";
 
 // packages/cli/src/ci/evals.ts
 init_src();
@@ -34511,22 +34517,22 @@ function applyChecks(e, dir, output2, env = process.env, base = "HEAD") {
   }
   return failures;
 }
-function loadEvals(root, pattern = "*") {
+function loadEvals(root, pattern = "*", tags = []) {
   const dir = join17(root, "evals");
   if (!existsSync14(dir)) return [];
   return readdirSync6(dir).filter((f) => f.endsWith(".json") && !f.startsWith("_") && globMatch(f.slice(0, -5), pattern)).sort().map((f) => {
     const e = JSON.parse(readFileSync17(join17(dir, f), "utf8"));
     if (!e.prompt || !Array.isArray(e.checks)) throw new SdlcError(`evals/${f}: needs "prompt" and "checks"`);
     return { ...e, name: e.name ?? f.slice(0, -5) };
-  });
+  }).filter((e) => !tags.length || (e.tags ?? []).some((t2) => tags.includes(t2)));
 }
 function promptFor(agent, prompt) {
   const m = /^\/(sdlc-[a-z-]+)\b\s*([\s\S]*)$/.exec(prompt.trim());
   if (!m || agent === "claude") return prompt;
   return `Use ${skillRef(agent, m[1])}${m[2] ? ` with these arguments: ${m[2]}` : ""}`;
 }
-function runEvals(c, pattern, out) {
-  const evals = loadEvals(c.root, pattern);
+function runEvals(c, pattern, out, tags = []) {
+  const evals = loadEvals(c.root, pattern, tags);
   if (!evals.length) {
     console.log("No evals (only _example.json). Add real cases in evals/.");
     return 0;
@@ -34562,8 +34568,68 @@ function runEvals(c, pattern, out) {
   const passed = results.filter((r) => r.passed).length;
   const rate = passed / results.length;
   console.log(`pass rate: ${passed}/${results.length} = ${rate.toFixed(2)} (minimum ${min})`);
-  if (out) writeFileSync9(out, JSON.stringify({ agent: c.agent, model: c.model, rate, min, results }, null, 2) + "\n");
+  if (out) writeFileSync9(out, JSON.stringify({ agent: c.agent, model: c.model, rate, min, date: (/* @__PURE__ */ new Date()).toISOString().slice(0, 10), results }, null, 2) + "\n");
   return rate >= min ? 0 : 1;
+}
+
+// packages/cli/src/ci/scorecard.ts
+init_src();
+import { existsSync as existsSync15, readFileSync as readFileSync18, writeFileSync as writeFileSync10 } from "node:fs";
+var KEY = {
+  claude: ["ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN"],
+  codex: ["OPENAI_API_KEY", "CODEX_API_KEY"],
+  cursor: ["CURSOR_API_KEY"]
+};
+var NAME = { claude: "Claude Code", codex: "Codex", cursor: "Cursor" };
+function matrixAgents(env, only) {
+  const agents = CI_AGENTS.filter((a) => KEY[a].some((k) => env[k]));
+  return only ? agents.filter((a) => a === only) : agents;
+}
+var SCORECARD_START = "<!-- scorecard:start -->";
+var SCORECARD_END = "<!-- scorecard:end -->";
+function renderScorecard(reports, evals, date5) {
+  const by = new Map(reports.map((r) => [r.agent, r]));
+  const agents = CI_AGENTS.filter((a) => by.has(a));
+  const summary2 = agents.map((a) => {
+    const r = by.get(a);
+    const passed = r.results.filter((x) => x.passed).length;
+    return `| ${NAME[a]} | ${passed}/${r.results.length} (${Math.round(r.rate * 100)}%) | ${r.model || "default"} | ${r.date ?? date5} |`;
+  });
+  const names = [.../* @__PURE__ */ new Set([...evals.map((e) => e.name), ...reports.flatMap((r) => r.results.map((x) => x.name))])].sort();
+  const tags = new Map(evals.map((e) => [e.name, e.tags ?? []]));
+  const rows = names.map((n) => {
+    const cells = agents.map((a) => {
+      const x = by.get(a).results.find((y) => y.name === n);
+      return !x ? "\u2014" : x.passed ? "\u2705" : "\u274C";
+    });
+    return `| ${n} | ${(tags.get(n) ?? []).join(", ")} | ${cells.join(" | ")} |`;
+  });
+  return [
+    SCORECARD_START,
+    "| Agent | Passed | Model | Date |",
+    "|---|---|---|---|",
+    ...summary2,
+    "",
+    `| Eval | Tags | ${agents.map((a) => NAME[a]).join(" | ")} |`,
+    `|---|---|${agents.map(() => "---").join("|")}|`,
+    ...rows,
+    SCORECARD_END
+  ].join("\n");
+}
+var comparable = (block2) => block2.split("\n").map((l) => l.replace(/\| \d{4}-\d{2}-\d{2} \|$/, "|")).join("\n");
+function updateScorecard(file2, block2) {
+  const doc = existsSync15(file2) ? readFileSync18(file2, "utf8") : "";
+  const start = doc.indexOf(SCORECARD_START);
+  const end = doc.indexOf(SCORECARD_END);
+  if (start < 0 || end < 0) {
+    writeFileSync10(file2, `${doc.trimEnd()}${doc ? "\n\n" : ""}${block2}
+`);
+    return true;
+  }
+  const old = doc.slice(start, end + SCORECARD_END.length);
+  if (comparable(old) === comparable(block2)) return false;
+  writeFileSync10(file2, doc.slice(0, start) + block2 + doc.slice(end + SCORECARD_END.length));
+  return true;
 }
 
 // packages/cli/src/ci/gates.ts
@@ -34738,7 +34804,9 @@ sdlc ci review                 review the PR/MR with REVIEW.md and post the resu
 sdlc ci intent-to-spec         for accepted intents without spec.md: write the spec headless, commit, push
 sdlc ci triage <log>           summarize a failed build and comment on the PR/MR
 sdlc ci tracker-merged         move the merged change's tickets to tracker.transitions.merged (alias: jira-merged)
-sdlc ci evals [pattern] [--out results.json]   run evals/*.json against the agent; fail below ci.min_pass_rate (0.8)
+sdlc ci evals [pattern] [--tags a,b] [--out results.json]   run evals/*.json against the agent; fail below ci.min_pass_rate (0.8)
+sdlc ci matrix [--only agent]  agents with credentials here, as JSON (the evals workflow's matrix)
+sdlc ci scorecard <report.json\u2026> [--out docs/reference/agent-scorecard.md]   eval \xD7 agent table; rewritten only when a result changed
 sdlc ci gate                   /approve|/reject intent|spec|plan in a PR/MR comment \u2192 gate commit on the branch + reply
 sdlc ci gate-status            set the sdlc/gates commit status (success once the plan is approved or the change is quick)
 sdlc ci mention                answer an @claude comment on the PR/MR (triggered by \`sdlc webhook\`; ci.mention_mode read|edit)
@@ -34800,7 +34868,12 @@ async function ciCommand(root, args) {
     case "mention":
       return mention2(c);
     case "evals":
-      return runEvals(c, rest[0], typeof flags.out === "string" ? flags.out : void 0);
+      return runEvals(c, rest[0], typeof flags.out === "string" ? flags.out : void 0, typeof flags.tags === "string" ? flags.tags.split(",").filter(Boolean) : []);
+    case "matrix":
+      console.log(JSON.stringify(matrixAgents(c.env, typeof flags.only === "string" ? flags.only : void 0)));
+      return 0;
+    case "scorecard":
+      return scorecard(c, rest, typeof flags.out === "string" ? flags.out : "docs/reference/agent-scorecard.md");
     case "install":
       return install(c, flags);
     case "gate":
@@ -34833,13 +34906,17 @@ var INSTALL = {
   cursor: ["sh", ["-c", "curl -fsS https://cursor.com/install | bash"]]
 };
 function bootstrap(c) {
-  const bin = AGENT_BIN[c.agent];
+  let bin = agentBin(c.agent, c.env);
   if (hasTool(bin, c.env)) log2(`${bin} already installed`);
   else {
     const [cmd, args] = INSTALL[c.agent];
     log2(`installing ${bin}: ${cmd} ${args.join(" ")}`);
     const r = spawnSync3(cmd, args, { stdio: ["ignore", "ignore", "inherit"] });
     if (r.status !== 0) throw new SdlcError(`could not install ${bin}`);
+    bin = agentBin(c.agent, c.env);
+    const dir = dirname6(bin);
+    if (dir !== "." && c.env.GITHUB_PATH) appendFileSync3(c.env.GITHUB_PATH, `${dir}
+`);
   }
   if (c.agent !== "claude") {
     log2(`${bin} reads the rendered skills in .agents/skills (commit the output of sdlc sync)`);
@@ -34851,7 +34928,7 @@ function bootstrap(c) {
     return 0;
   }
   if (c.env.SDLC_PLUGIN_TOKEN) url2 = url2.replace("https://", `https://${c.env.SDLC_PLUGIN_TOKEN_USER || "x-access-token"}:${c.env.SDLC_PLUGIN_TOKEN}@`);
-  const home = c.env.SDLC_HOME || join18(homedir2(), ".ai-sdlc");
+  const home = c.env.SDLC_HOME || join18(homedir3(), ".ai-sdlc");
   rmSync6(home, { recursive: true, force: true });
   execFileSync9("git", ["clone", "-q", "--depth", "1", url2, home], { stdio: ["ignore", "ignore", "inherit"] });
   execFileSync9("claude", ["plugin", "marketplace", "add", home], { stdio: ["ignore", "ignore", "inherit"] });
@@ -34881,7 +34958,7 @@ Do not approve or block: the findings inform the code owner. Do not modify any f
     },
     c.model
   );
-  writeFileSync10(join18(c.root, "review-tally.txt"), (out.match(TALLY)?.at(-1) ?? "") + "\n");
+  writeFileSync11(join18(c.root, "review-tally.txt"), (out.match(TALLY)?.at(-1) ?? "") + "\n");
   await post(c, n, out);
   if (!c.dryRun) {
     const tally = out.match(TALLY)?.at(-1);
@@ -34898,8 +34975,8 @@ async function post(c, n, body) {
 }
 function pendingIntents(root) {
   const dir = join18(root, "changes");
-  if (!existsSync15(dir)) return [];
-  return readdirSync7(dir, { withFileTypes: true }).filter((d) => d.isDirectory() && !d.name.startsWith("_")).map((d) => `changes/${d.name}`).filter((d) => existsSync15(join18(root, d, "intent.md")) && !existsSync15(join18(root, d, "spec.md"))).filter((d) => isApproved(parseFrontmatter(readFileSync18(join18(root, d, "intent.md"), "utf8")).data.status)).sort();
+  if (!existsSync16(dir)) return [];
+  return readdirSync7(dir, { withFileTypes: true }).filter((d) => d.isDirectory() && !d.name.startsWith("_")).map((d) => `changes/${d.name}`).filter((d) => existsSync16(join18(root, d, "intent.md")) && !existsSync16(join18(root, d, "spec.md"))).filter((d) => isApproved(parseFrontmatter(readFileSync19(join18(root, d, "intent.md"), "utf8")).data.status)).sort();
 }
 async function intentToSpec(c) {
   const pending = pendingIntents(c.root);
@@ -34930,13 +35007,24 @@ async function intentToSpec(c) {
     return 0;
   }
   execFileSync9("git", ["push", "origin", `HEAD:${headRef(c)}`], { cwd: c.root, stdio: ["ignore", "inherit", "inherit"] });
-  for (const d of pending.filter((x) => existsSync15(join18(c.root, x, "spec.md")))) {
+  for (const d of pending.filter((x) => existsSync16(join18(c.root, x, "spec.md")))) {
     log2(await notify({ event: "spec.ready", change: findChange(c.root, c.loaded, { id: d }), artifact: "spec" }, c.loaded, c.env));
   }
   return 0;
 }
+function scorecard(c, files, out) {
+  const reports = files.filter((f) => existsSync16(f)).map((f) => JSON.parse(readFileSync19(f, "utf8")));
+  if (!reports.length) throw new SdlcError("usage: sdlc ci scorecard <report.json\u2026> (no reports found)");
+  const block2 = renderScorecard(reports, loadEvals(c.root), (/* @__PURE__ */ new Date()).toISOString().slice(0, 10));
+  if (c.dryRun) {
+    console.log(block2);
+    return 0;
+  }
+  console.log(updateScorecard(join18(c.root, out), block2) ? `updated ${out}` : `${out}: no result changed`);
+  return 0;
+}
 async function triage(c, logFile) {
-  if (!logFile || !existsSync15(logFile)) throw new SdlcError("usage: sdlc ci triage <log-file>");
+  if (!logFile || !existsSync16(logFile)) throw new SdlcError("usage: sdlc ci triage <log-file>");
   const out = runAgent(
     c.agent,
     {
@@ -35025,7 +35113,7 @@ _Pushed ${git(c.root, ["rev-parse", "--short", "HEAD"])} to ${headRef(c)}._`;
 }
 
 // packages/cli/src/main.ts
-var VERSION = true ? "0.3.0" : JSON.parse(readFileSync21(new URL("../package.json", import.meta.url), "utf8")).version;
+var VERSION = true ? "0.3.0" : JSON.parse(readFileSync22(new URL("../package.json", import.meta.url), "utf8")).version;
 var HELP = `sdlc ${VERSION} \u2014 AI-native SDLC loop (intent \u2192 spec \u2192 plan \u2192 build \u2192 ship \u2192 incident)
 
 Setup
@@ -35083,7 +35171,7 @@ function fail3(msg) {
 }
 function readStdin() {
   try {
-    return readFileSync21(0, "utf8");
+    return readFileSync22(0, "utf8");
   } catch {
     return "";
   }
@@ -35107,7 +35195,7 @@ function slugify2(title) {
 function newChange(root, slug, opts2) {
   const loaded = loadConfig(root);
   const dir = `changes/${(/* @__PURE__ */ new Date()).toISOString().slice(0, 7)}-${slug}`;
-  if (existsSync17(join20(root, dir))) fail3(`${dir} already exists`);
+  if (existsSync18(join20(root, dir))) fail3(`${dir} already exists`);
   if (opts2.branch) gitOrThrow(root, ["checkout", "-b", `change/${slug}`]);
   const who = gitUser(root);
   const fields = { change: slug, created: (/* @__PURE__ */ new Date()).toISOString().slice(0, 10), author: who.name ?? who.email ?? "" };
@@ -35125,7 +35213,7 @@ ${opts2.title}
     if (opts2.title) body = body.replace(/^# (Intent: )?.*$/m, (_m, p) => `# ${p ?? ""}${opts2.title}`);
   }
   mkdirSync9(join20(root, dir), { recursive: true });
-  writeFileSync12(join20(root, dir, "intent.md"), body);
+  writeFileSync13(join20(root, dir, "intent.md"), body);
   recordEvent(root, { type: opts2.quick ? "change.quick" : "change.new", change: slug, by: who.name });
   console.log(`created ${dir}/intent.md${opts2.branch ? ` on branch change/${slug}` : ""}${opts2.quick ? " (quick lane: no spec, no plan)" : ""}`);
   if (!loaded) console.log("Note: project not configured (sdlc init).");
@@ -35225,8 +35313,8 @@ async function main() {
     }
     case "migrate": {
       const legacy = join20(root, LEGACY_CONFIG_PATH);
-      if (!existsSync17(legacy)) fail3(`no ${LEGACY_CONFIG_PATH} to migrate`);
-      if (existsSync17(join20(root, CONFIG_PATH))) fail3(`${CONFIG_PATH} already exists`);
+      if (!existsSync18(legacy)) fail3(`no ${LEGACY_CONFIG_PATH} to migrate`);
+      if (existsSync18(join20(root, CONFIG_PATH))) fail3(`${CONFIG_PATH} already exists`);
       migrateLegacy(root);
       console.log(`moved ${LEGACY_CONFIG_PATH} \u2192 ${CONFIG_PATH}`);
       printSync(sync(root, requireConfig(root)));
@@ -35344,13 +35432,13 @@ async function main() {
       const lock = join20(root, FIX_LOCKS[0]);
       if (pos[0] === "on") {
         ensureSdlcDir(root);
-        writeFileSync12(lock, (/* @__PURE__ */ new Date()).toISOString() + "\n");
+        writeFileSync13(lock, (/* @__PURE__ */ new Date()).toISOString() + "\n");
         console.log("test-lock ON: test files cannot be edited until `sdlc lock off`");
       } else if (pos[0] === "off") {
         for (const p of FIX_LOCKS) rmSync7(join20(root, p), { force: true });
         console.log("test-lock OFF");
       } else {
-        console.log(FIX_LOCKS.some((p) => existsSync17(join20(root, p))) ? "on" : "off");
+        console.log(FIX_LOCKS.some((p) => existsSync18(join20(root, p))) ? "on" : "off");
       }
       return;
     }
