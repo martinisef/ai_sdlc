@@ -5,7 +5,7 @@
     "build"
   ],
   "setup": "npm ci --silent",
-  "prompt": "format() should accept an optional second argument { symbol?: boolean } (default true); with symbol: false it prints the currency code after the number (\"12.30 USD\"). Keep existing callers working. Run npm test and npm run lint.",
+  "prompt": "Small change outside the loop: no intent, spec or plan needed. format() should accept an optional second argument { symbol?: boolean } (default true); with symbol: false it prints the currency code after the number (\"12.30 USD\"). Keep existing callers working. Run npm test and npm run lint.",
   "allowed_tools": "Read,Edit,Write,Grep,Glob,Bash(npm test),Bash(npm run lint)",
   "checks": [
     {

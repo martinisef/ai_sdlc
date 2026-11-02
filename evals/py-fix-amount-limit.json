@@ -4,7 +4,7 @@
   "tags": [
     "fix"
   ],
-  "prompt": "Bug: claims above 1,000,000.00 (100000000 cents) are accepted but our insurer caps a single claim there; they must be rejected with 400. Fix it the /sdlc-fix way: first a test that reproduces the bug, then the fix. Run make test.",
+  "prompt": "Bug: claims above 1,000,000.00 (100000000 cents) are accepted but our insurer caps a single claim there; they must be rejected with 400. Fix it the /sdlc-fix way: first a test that reproduces the bug, then the fix. Run make test. Headless run: the fix plan is accepted; do not stop for approval.",
   "allowed_tools": "Read,Edit,Write,Grep,Glob,Bash(make test),Bash(make lint)",
   "checks": [
     {

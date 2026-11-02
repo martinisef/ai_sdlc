@@ -5,7 +5,7 @@
     "fix"
   ],
   "setup": "npm ci --silent",
-  "prompt": "Bug report: allocate(money(-100, \"USD\"), [1, 1, 1]) returns shares that add up to -99: a cent disappears. Fix it the /sdlc-fix way (failing test first). Run npm test.",
+  "prompt": "Bug report: allocate(money(-100, \"USD\"), [1, 1, 1]) returns shares that add up to -99: a cent disappears. Fix it the /sdlc-fix way (failing test first). Run npm test. Headless run: the fix plan is accepted; do not stop for approval.",
   "allowed_tools": "Read,Edit,Write,Grep,Glob,Bash(npm test),Bash(npm run lint)",
   "checks": [
     {

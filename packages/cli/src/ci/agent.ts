@@ -44,7 +44,9 @@ export function runAgent(agent: CiAgent, task: AgentTask, model?: string, env = 
         break;
       case 'codex':
         lastMessage = join(tmp, 'last.md');
-        args = ['exec', '--sandbox', task.mode === 'edit' ? 'workspace-write' : 'read-only', '--output-last-message', lastMessage];
+        // workspace-write keeps .git read-only and has no network, so on an (ephemeral) CI runner edit mode could
+        // neither commit nor install dependencies; there the guardrails are the git hooks and the pipeline
+        args = ['exec', '--sandbox', task.mode !== 'edit' ? 'read-only' : env.CI ? 'danger-full-access' : 'workspace-write', '--output-last-message', lastMessage];
         if (model) args.push('-m', model);
         args.push(task.prompt);
         break;
@@ -55,6 +57,8 @@ export function runAgent(agent: CiAgent, task: AgentTask, model?: string, env = 
         args.push(task.prompt);
         break;
     }
+    // `codex exec` authenticates non-interactively with CODEX_API_KEY
+    if (agent === 'codex' && !env.CODEX_API_KEY && env.OPENAI_API_KEY) env = { ...env, CODEX_API_KEY: env.OPENAI_API_KEY };
     const r = spawnSync(AGENT_BIN[agent], args, { cwd: task.cwd, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'], maxBuffer: 64 * 1024 * 1024 });
     if (r.error) throw new SdlcError(`${AGENT_BIN[agent]}: ${(r.error as NodeJS.ErrnoException).code === 'ENOENT' ? 'not installed (run: sdlc ci bootstrap)' : r.error.message}`);
     if (r.status !== 0) throw new SdlcError(`${AGENT_BIN[agent]} exited with ${r.status}`);

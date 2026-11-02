@@ -4,7 +4,7 @@
   "tags": [
     "build"
   ],
-  "prompt": "Add GET /claims/stats that returns {\"total\": N, \"by_status\": {status: count}} with every status present (0 when empty). Add tests. Run make test and make lint before finishing.",
+  "prompt": "Small change outside the loop: no intent, spec or plan needed. Add GET /claims/stats that returns {\"total\": N, \"by_status\": {status: count}} with every status present (0 when empty). Add tests. Run make test and make lint before finishing.",
   "allowed_tools": "Read,Edit,Write,Grep,Glob,Bash(make test),Bash(make lint),Bash(make format)",
   "checks": [
     {
