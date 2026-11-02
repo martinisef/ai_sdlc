@@ -1,8 +1,8 @@
 // Health checks and the enforcement matrix: what each guardrail really guarantees per agent.
 import { execFileSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { BANDS_PATH, detectProvider, git, loadBands, loadConfig, type AgentId } from '@ai-native-sdlc/core';
+import { BANDS_PATH, detectProvider, git, loadBands, loadConfig, type AgentId, type Provider } from '@ai-native-sdlc/core';
 import { detectDrift } from './render.ts';
 
 export type Enforcement = 'blocks' | 'post-hoc' | 'commit' | 'push' | 'ci' | 'advisory';
@@ -41,6 +41,21 @@ function has(bin: string): boolean {
   }
 }
 
+const CI_FILES: Record<Provider, string[]> = {
+  github: [],
+  gitlab: ['.gitlab-ci.yml', 'ci/sdlc.gitlab-ci.yml'],
+  bitbucket: ['bitbucket-pipelines.yml'],
+};
+
+function ciInstalled(root: string, provider: Provider): boolean {
+  let files = CI_FILES[provider];
+  if (provider === 'github') {
+    const dir = join(root, '.github/workflows');
+    files = existsSync(dir) ? readdirSync(dir).filter((f) => /\.ya?ml$/.test(f)).map((f) => `.github/workflows/${f}`) : [];
+  }
+  return files.some((f) => existsSync(join(root, f)) && /\bsdlc\b|martinisef\/ai_sdlc/.test(readFileSync(join(root, f), 'utf8')));
+}
+
 export function doctor(root: string): { checks: Check[]; agents: AgentId[]; matrix: MatrixRow[] } {
   const checks: Check[] = [];
   const add = (id: string, ok: boolean, message: string, level: Check['level'] = ok ? 'info' : 'error') => checks.push({ id, ok, level, message });
@@ -71,6 +86,10 @@ export function doctor(root: string): { checks: Check[]; agents: AgentId[]; matr
   if (agents.includes('agents-md')) add('agents-md', existsSync(join(root, 'AGENTS.md')), existsSync(join(root, 'AGENTS.md')) ? 'AGENTS.md present' : 'AGENTS.md missing — run `sdlc sync`');
   const provider = detectProvider(root, loaded);
   add('vcs', !!provider, provider ? `VCS provider: ${provider}` : 'VCS provider unknown (vcs.provider or an origin remote)', provider ? 'info' : 'warn');
+  if (provider) {
+    const ci = ciInstalled(root, provider);
+    add('ci', ci, ci ? `CI pipelines call sdlc (${provider})` : `no ${provider} pipeline calls sdlc — run \`sdlc ci install\``, ci ? 'info' : 'warn');
+  }
   if (provider === 'github') add('gh', has('gh'), has('gh') ? 'gh installed' : 'gh not installed: PR status unavailable', has('gh') ? 'info' : 'warn');
   if (provider === 'gitlab') add('glab', has('glab'), has('glab') ? 'glab installed' : 'glab not installed: MR status unavailable', has('glab') ? 'info' : 'warn');
   if (existsSync(join(root, BANDS_PATH))) {
