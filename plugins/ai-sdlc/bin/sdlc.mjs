@@ -33424,7 +33424,7 @@ function runAgent(agent, task, model, env = process.env) {
         break;
       case "codex":
         lastMessage = join12(tmp, "last.md");
-        args = ["exec", "--sandbox", task.mode === "edit" ? "workspace-write" : "read-only", "--output-last-message", lastMessage];
+        args = ["exec", "--sandbox", task.mode !== "edit" ? "read-only" : env.CI ? "danger-full-access" : "workspace-write", "--output-last-message", lastMessage];
         if (model) args.push("-m", model);
         args.push(task.prompt);
         break;
@@ -33435,6 +33435,7 @@ function runAgent(agent, task, model, env = process.env) {
         args.push(task.prompt);
         break;
     }
+    if (agent === "codex" && !env.CODEX_API_KEY && env.OPENAI_API_KEY) env = { ...env, CODEX_API_KEY: env.OPENAI_API_KEY };
     const r = spawnSync(AGENT_BIN[agent], args, { cwd: task.cwd, env, encoding: "utf8", stdio: ["ignore", "pipe", "inherit"], maxBuffer: 64 * 1024 * 1024 });
     if (r.error) throw new SdlcError(`${AGENT_BIN[agent]}: ${r.error.code === "ENOENT" ? "not installed (run: sdlc ci bootstrap)" : r.error.message}`);
     if (r.status !== 0) throw new SdlcError(`${AGENT_BIN[agent]} exited with ${r.status}`);
@@ -33644,6 +33645,11 @@ function loadEvals(root, pattern = "*") {
     return { ...e, name: e.name ?? f.slice(0, -5) };
   });
 }
+function promptFor(agent, prompt) {
+  const m = /^\/(sdlc-[a-z-]+)\b\s*([\s\S]*)$/.exec(prompt.trim());
+  if (!m || agent === "claude") return prompt;
+  return `Use ${skillRef(agent, m[1])}${m[2] ? ` with these arguments: ${m[2]}` : ""}`;
+}
 function runEvals(c, pattern, out) {
   const evals = loadEvals(c.root, pattern);
   if (!evals.length) {
@@ -33666,7 +33672,7 @@ function runEvals(c, pattern, out) {
         if (r.status !== 0) throw new SdlcError(`setup failed: ${(r.stderr || r.stdout).trim().slice(0, 500)}`);
       }
       const base = git(wt, ["rev-parse", "HEAD"]) ?? "HEAD";
-      const output2 = runAgent(c.agent, { mode: "edit", cwd: dir, prompt: e.prompt, allowedTools: e.allowed_tools ?? "Read,Edit,Write,Grep,Glob" }, c.model, env);
+      const output2 = runAgent(c.agent, { mode: "edit", cwd: dir, prompt: promptFor(c.agent, e.prompt), allowedTools: e.allowed_tools ?? "Read,Edit,Write,Grep,Glob" }, c.model, env);
       failures = applyChecks(e, dir, output2, env, base);
     } catch (err) {
       failures = [err.message];

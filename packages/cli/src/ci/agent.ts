@@ -44,7 +44,9 @@ export function runAgent(agent: CiAgent, task: AgentTask, model?: string, env = 
         break;
       case 'codex':
         lastMessage = join(tmp, 'last.md');
-        args = ['exec', '--sandbox', task.mode === 'edit' ? 'workspace-write' : 'read-only', '--output-last-message', lastMessage];
+        // workspace-write keeps .git read-only and has no network, so on an (ephemeral) CI runner edit mode could
+        // neither commit nor install dependencies; there the guardrails are the git hooks and the pipeline
+        args = ['exec', '--sandbox', task.mode !== 'edit' ? 'read-only' : env.CI ? 'danger-full-access' : 'workspace-write', '--output-last-message', lastMessage];
         if (model) args.push('-m', model);
         args.push(task.prompt);
         break;
