@@ -33898,7 +33898,8 @@ var init_streaming = __esm({
 var src_exports = {};
 __export(src_exports, {
   createApp: () => createApp,
-  startServer: () => startServer
+  startServer: () => startServer,
+  staticFile: () => staticFile
 });
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import { existsSync as existsSync17, mkdirSync as mkdirSync8, readFileSync as readFileSync20, watch, writeFileSync as writeFileSync12 } from "node:fs";
@@ -33946,6 +33947,10 @@ function timeline(root, c) {
     const [sha2, author, email3, date5, subject] = l.split("");
     return { sha: sha2, author, email: email3, date: date5, subject, agent: /claude|cursor|codex|bot|noreply/i.test(`${author} ${email3}`) };
   });
+}
+function staticFile(dir, path) {
+  const file2 = resolve3(dir, path === "/" ? "index.html" : path.slice(1));
+  return file2.startsWith(dir + sep) && existsSync17(file2) && extname(file2) ? file2 : join19(dir, "index.html");
 }
 function createApp(opts2) {
   const app = new Hono3();
@@ -34081,9 +34086,7 @@ function createApp(opts2) {
   const dir = uiDir();
   app.get("*", (c) => {
     if (!dir) return c.html("<p>UI not built. Run <code>npm run build:ui</code>.</p>");
-    const rel = c.req.path === "/" ? "index.html" : c.req.path.slice(1);
-    const file2 = resolve3(dir, rel);
-    const target = file2.startsWith(dir + sep) && existsSync17(file2) && extname(file2) ? file2 : join19(dir, "index.html");
+    const target = staticFile(dir, c.req.path);
     const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png" };
     let body = readFileSync20(target);
     if (target.endsWith("index.html")) body = body.toString().replace("__SDLC_TOKEN__", opts2.token);
