@@ -14,6 +14,16 @@ import {
   decideGate,
   ensureSdlcDir,
   formatNext,
+  funnel,
+  FUNNEL_STEPS,
+  maybeSendTelemetry,
+  readTelemetry,
+  telemetryPath,
+  telemetryPayload,
+  telemetryState,
+  writeTelemetry,
+  type Funnel,
+  type TelemetryState,
   nextAction,
   FIX_LOCKS,
   gitOrThrow,
@@ -61,7 +71,8 @@ Setup
 Loop
   next [--json]                      the one thing to do now: approve, ask the agent, ship, or start a change
   status [--json | --metrics]        changes and their stage
-  metrics [--json]                   leading indicators from git + activity log
+  metrics [--json] [--funnel]        leading indicators from git + activity log; --funnel: how far changes get
+  telemetry on|off|status [--payload]   opt-in anonymous counts (off by default; needs SDLC_TELEMETRY_URL)
   new <slug> [--ticket KEY] [--title T] [--no-branch]
   quick "<what>" [--ticket KEY] [--no-branch]   small change without spec/plan (limits checked on push)
   quick --check [--json]             is the active quick change still within quick_lane limits?
@@ -201,6 +212,7 @@ async function main() {
       let config = presetConfig(detected, preset);
       if (!flags.yes && process.stdin.isTTY) ({ preset, config } = await askConfig(detected, isPreset(flags.preset) ? flags.preset : undefined));
       writeConfig(root, config);
+      recordEvent(root, { type: 'setup.init', detail: preset });
       const created = scaffold(root, { claudeMd: (config.agents ?? []).includes('claude'), locale });
       const report = sync(root, requireConfig(root));
       const provider = config.vcs?.provider;
@@ -233,6 +245,7 @@ async function main() {
     case 'doctor': {
       if (flags.fix) {
         const fixes = fixDoctor(root);
+        if (fixes.some((f) => f.fixed)) recordEvent(root, { type: 'setup.fix', detail: fixes.filter((f) => f.fixed).map((f) => f.id).join(',') });
         if (flags.json) return void console.log(JSON.stringify(fixes, null, 2));
         if (!fixes.length) console.log('nothing to fix');
         for (const f of fixes) console.log(`${f.fixed ? 'fixed ' : 'manual'}  ${f.id.padEnd(14)} ${f.message}`);
@@ -278,6 +291,23 @@ async function main() {
       return;
     }
 
+    case 'telemetry': {
+      const sub = pos[0] ?? 'status';
+      if (sub === 'on' || sub === 'off') writeTelemetry({ ...readTelemetry(), enabled: sub === 'on' });
+      else if (sub !== 'status') fail('usage: sdlc telemetry on|off|status');
+      const state = telemetryState();
+      const why: Record<TelemetryState, string> = {
+        on: `on: one anonymous summary a day to ${process.env.SDLC_TELEMETRY_URL}`,
+        off: 'off (default). `sdlc telemetry on` to share anonymous counts; nothing leaves this machine until then',
+        'blocked-dnt': 'off: DO_NOT_TRACK is set',
+        'no-endpoint': 'enabled, but nothing is sent: SDLC_TELEMETRY_URL is not set',
+      };
+      console.log(`telemetry ${why[state]}`);
+      console.log(`settings: ${telemetryPath()} · what is sent: sdlc telemetry status --payload · docs/reference/telemetry.md`);
+      if (flags.payload) console.log(JSON.stringify(telemetryPayload(root, loadConfig(root), VERSION), null, 2));
+      return;
+    }
+
     case 'next': {
       const n = nextAction(root, loadConfig(root));
       if (flags.json) return void console.log(JSON.stringify(n, null, 2));
@@ -288,6 +318,11 @@ async function main() {
 
     case 'metrics': {
       const loaded = loadConfig(root);
+      if (flags.funnel) {
+        const f = funnel(root, loaded);
+        if (flags.json) return void console.log(JSON.stringify(f, null, 2));
+        return printFunnel(f);
+      }
       const m = metrics(root, { locale: localeOf(loaded), defaultBranch: loaded?.config.vcs?.default_branch });
       if (flags.json) return void console.log(JSON.stringify(m, null, 2));
       return printMetricsLegacy(root, m);
@@ -403,6 +438,15 @@ async function main() {
   }
 }
 
+function printFunnel(f: Funnel) {
+  const top = f.loop.started || 1;
+  console.log(`Full loop (${f.loop.started} change${f.loop.started === 1 ? '' : 's'}${f.rejected ? `, ${f.rejected} rejected` : ''})`);
+  for (const s of FUNNEL_STEPS) console.log(`  ${s.padEnd(16)} ${String(f.loop[s]).padStart(4)}  ${'█'.repeat(Math.round((f.loop[s] / top) * 20)).padEnd(20)} ${Math.round((f.loop[s] / top) * 100)}%`);
+  console.log(`Quick lane: ${f.quick.started} started, ${f.quick.merged} merged, ${f.quick.promoted} promoted to the full loop`);
+  const m = (x?: number) => (x === undefined ? '-' : x < 120 ? `${x} min` : `${(x / 60).toFixed(1)} h`);
+  console.log(`From sdlc init (this machine): first change ${m(f.firsts.change)} · first quick change ${m(f.firsts.quick)} · first gate decision ${m(f.firsts.gate)}`);
+}
+
 function printMetricsLegacy(root: string, m = metrics(root)) {
   for (const c of m.changes) {
     const h = (x?: number) => (x === undefined ? '-' : x.toFixed(1));
@@ -410,10 +454,14 @@ function printMetricsLegacy(root: string, m = metrics(root)) {
   }
 }
 
-main().catch((e) => {
-  if (e instanceof SdlcError) {
-    process.stderr.write(`sdlc: ${e.message}\n`);
-    process.exit(e.exitCode);
-  }
-  fail((e as Error).stack ?? String(e));
-});
+const TELEMETRY_CMDS = new Set(['init', 'next', 'status', 'metrics', 'new', 'quick', 'promote', 'approve', 'reject', 'doctor', 'sync']);
+
+main()
+  .then(() => (TELEMETRY_CMDS.has(process.argv[2] ?? '') ? maybeSendTelemetry(projectDir(), loadConfig(projectDir()), VERSION) : undefined))
+  .catch((e) => {
+    if (e instanceof SdlcError) {
+      process.stderr.write(`sdlc: ${e.message}\n`);
+      process.exit(e.exitCode);
+    }
+    fail((e as Error).stack ?? String(e));
+  });
