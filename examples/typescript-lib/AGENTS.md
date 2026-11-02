@@ -22,7 +22,7 @@
 - **policy-secure-api** — Applies the organization's API security standard. → `.agents/skills/policy-secure-api/SKILL.md`
 
 ### Guardrails (no hooks stop you here: you enforce them)
-- Protected paths, never edited: `src/gen/**`, `**/*.generated.ts`. To change them, add a new file instead (for example, a new migration).
+- Protected paths, never edited by hand: `src/gen/**`, `**/*.generated.ts`. If one has to change: a generated file is regenerated from its source (edit the generator and run it); an applied migration is corrected with a new migration.
 - Production gate: never run commands matching `deploy.*prod`, `terraform apply`, `kubectl .*--context[= ].*prod`, even when asked. Stop and ask a person to run it with `RELEASE_APPROVAL` set.
 - Secrets: never write credentials, tokens or keys in code or committed files; read them from the environment.
 - Test-lock: while `sdlc lock status` is ON, do not edit `test/**`, `**/*.test.ts`.

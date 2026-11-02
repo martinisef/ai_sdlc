@@ -119,7 +119,7 @@ test('sync renders every agent, merges foreign hooks, and detects drift', () => 
   const agentsMd = readFileSync(join(root, 'AGENTS.md'), 'utf8');
   assert.match(agentsMd, /Keep this\.[\s\S]*ai-sdlc:start[\s\S]*sdlc-intent/);
   // agents without hooks get the guardrails as rules, from the config
-  assert.match(agentsMd, /### Guardrails[\s\S]*Protected paths, never edited: `migrations\/\*\*`/);
+  assert.match(agentsMd, /### Guardrails[\s\S]*Protected paths, never edited by hand: `migrations\/\*\*`/);
   assert.match(agentsMd, /Production gate: never run commands matching `deploy\.\*prod`[\s\S]*`RELEASE_APPROVAL`/);
   assert.match(agentsMd, /Test-lock: [^\n]*`tests\/\*\*`/);
   assert.doesNotMatch(readFileSync(join(root, '.agents/skills/sdlc-build/SKILL.md'), 'utf8'), /\{\{sdlc_hint\}\}/);

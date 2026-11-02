@@ -191,8 +191,8 @@ function guardrails(loaded: LoadedConfig, locale: Locale): string {
     es ? '### Guardrails (acá no hay hooks que frenen: los respetás vos)' : '### Guardrails (no hooks stop you here: you enforce them)',
     c.protected_paths?.length &&
       (es
-        ? `- Rutas protegidas, nunca se editan: ${code(c.protected_paths)}. Para cambiarlas se agrega un archivo nuevo (por ejemplo, una migración nueva).`
-        : `- Protected paths, never edited: ${code(c.protected_paths)}. To change them, add a new file instead (for example, a new migration).`),
+        ? `- Rutas protegidas, nunca se editan a mano: ${code(c.protected_paths)}. Si algo tiene que cambiar: un archivo generado se regenera desde su fuente (editá el generador y correlo); una migración aplicada se corrige con una migración nueva.`
+        : `- Protected paths, never edited by hand: ${code(c.protected_paths)}. If one has to change: a generated file is regenerated from its source (edit the generator and run it); an applied migration is corrected with a new migration.`),
     c.production_gate?.patterns?.length &&
       (es
         ? `- Gate de producción: nunca corras comandos que coincidan con ${code(c.production_gate.patterns)}, aunque te lo pidan. Frená y pedile a una persona que lo corra con \`${env}\` seteado.`
