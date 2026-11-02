@@ -16,7 +16,7 @@ approved_by: Sam (tech lead)
 ## Work order
 1. Tests for `add_note` (valid, blank author/text, > 500 chars, unknown claim) — red.
 2. `Note` + `add_note` in the store — green.
-3. Route test for R1, R3, R4 — red; route — green.
+3. Route test for R1, R3, R4 and unknown fields (R2) — red; route — green. No logging of note text (policy §4).
 4. `make lint`, `make test`.
 
 ## Risks

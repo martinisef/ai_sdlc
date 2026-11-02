@@ -5,7 +5,7 @@
     "build"
   ],
   "setup": "npm ci --silent",
-  "prompt": "Add percentage(m: Money, pct: number): Money that returns pct percent of m rounded half-to-even to the minor unit (pct may have up to 2 decimals). Export it from src/index.ts and add tests. Run npm test and npm run lint.",
+  "prompt": "Small change outside the loop: no intent, spec or plan needed. Add percentage(m: Money, pct: number): Money that returns pct percent of m rounded half-to-even to the minor unit (pct may have up to 2 decimals). Export it from src/index.ts and add tests. Run npm test and npm run lint.",
   "allowed_tools": "Read,Edit,Write,Grep,Glob,Bash(npm test),Bash(npm run lint)",
   "checks": [
     {

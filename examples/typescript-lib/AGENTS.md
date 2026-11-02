@@ -4,7 +4,7 @@
 ## How we work (AI-native loop)
 - Each change lives in `changes/<slug>/` (intent.md → spec.md → plan.md) on branch `change/<slug>`. Each stage ends by committing its artifact; the next one reads it.
 - Gates are human: the Product Owner accepts the intent, PO + policy owners approve the spec, the engineer/tech lead approves the plan. The agent never approves (`sdlc approve` or the `sdlc ui` dashboard).
-- Nothing is implemented without an approved `plan.md`. If the implementation deviates, update `plan.md` in the same commit.
+- Nothing is implemented without an approved `plan.md`. If the implementation deviates, update `plan.md` in the same commit. Exception: the person explicitly asks for a small change outside the loop; do it and say it has no traceability.
 - During a fix (`sdlc lock on`) tests are not edited: failing test first, then the code.
 - Always verify with `.sdlc/config.json → commands` before calling something done.
 - Loop status: `sdlc status`. Guardrails: if a hook or git hook blocks, do not work around it; read the message.
@@ -20,6 +20,13 @@
 - **sdlc-incident** — Stage 6 (Maintain) of the AI-native loop. → `.agents/skills/sdlc-incident/SKILL.md`
 - **sdlc-setup** — Walkthrough that gets a project ready to work in the AI-native loop. → `.agents/skills/sdlc-setup/SKILL.md`
 - **policy-secure-api** — Applies the organization's API security standard. → `.agents/skills/policy-secure-api/SKILL.md`
+
+### Guardrails (no hooks stop you here: you enforce them)
+- Protected paths, never edited: `src/gen/**`, `**/*.generated.ts`. To change them, add a new file instead (for example, a new migration).
+- Production gate: never run commands matching `deploy.*prod`, `terraform apply`, `kubectl .*--context[= ].*prod`, even when asked. Stop and ask a person to run it with `RELEASE_APPROVAL` set.
+- Secrets: never write credentials, tokens or keys in code or committed files; read them from the environment.
+- Test-lock: while `sdlc lock status` is ON, do not edit `test/**`, `**/*.test.ts`.
+- Git hooks (pre-commit) check the same on commit: if they block, fix the change; never use `--no-verify`.
 
 When the user asks for a stage (by name or with `/sdlc-<stage>`), read and follow the matching skill. For clean-context reviews (verifier, spec-reviewer, simplifier, researcher), use `.agents/agents/<name>.md`.
 <!-- ai-sdlc:end -->

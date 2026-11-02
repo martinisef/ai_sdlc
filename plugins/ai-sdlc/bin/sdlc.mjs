@@ -1186,8 +1186,8 @@ var require_stringifyString = __commonJS({
             case "u":
               {
                 str += json2.slice(start, i);
-                const code = json2.substr(i + 2, 4);
-                switch (code) {
+                const code2 = json2.substr(i + 2, 4);
+                switch (code2) {
                   case "0000":
                     str += "\\0";
                     break;
@@ -1213,8 +1213,8 @@ var require_stringifyString = __commonJS({
                     str += "\\P";
                     break;
                   default:
-                    if (code.substr(0, 2) === "00")
-                      str += "\\x" + code.substr(2);
+                    if (code2.substr(0, 2) === "00")
+                      str += "\\x" + code2.substr(2);
                     else
                       str += json2.substr(i, 6);
                 }
@@ -3713,22 +3713,22 @@ var require_errors = __commonJS({
   "node_modules/yaml/dist/errors.js"(exports) {
     "use strict";
     var YAMLError = class extends Error {
-      constructor(name, pos, code, message) {
+      constructor(name, pos, code2, message) {
         super();
         this.name = name;
-        this.code = code;
+        this.code = code2;
         this.message = message;
         this.pos = pos;
       }
     };
     var YAMLParseError = class extends YAMLError {
-      constructor(pos, code, message) {
-        super("YAMLParseError", pos, code, message);
+      constructor(pos, code2, message) {
+        super("YAMLParseError", pos, code2, message);
       }
     };
     var YAMLWarning = class extends YAMLError {
-      constructor(pos, code, message) {
-        super("YAMLWarning", pos, code, message);
+      constructor(pos, code2, message) {
+        super("YAMLWarning", pos, code2, message);
       }
     };
     var prettifyError2 = (src, lc) => (error62) => {
@@ -4637,7 +4637,7 @@ var require_resolve_flow_scalar = __commonJS({
       const { offset, type, source, end } = scalar;
       let _type;
       let value;
-      const _onError = (rel, code, msg) => onError(offset + rel, code, msg);
+      const _onError = (rel, code2, msg) => onError(offset + rel, code2, msg);
       switch (type) {
         case "scalar":
           _type = Scalar.Scalar.PLAIN;
@@ -4835,9 +4835,9 @@ var require_resolve_flow_scalar = __commonJS({
     function parseCharCode(source, offset, length, onError) {
       const cc = source.substr(offset, length);
       const ok = cc.length === length && /^[0-9a-fA-F]+$/.test(cc);
-      const code = ok ? parseInt(cc, 16) : NaN;
+      const code2 = ok ? parseInt(cc, 16) : NaN;
       try {
-        return String.fromCodePoint(code);
+        return String.fromCodePoint(code2);
       } catch {
         const raw2 = source.substr(offset - 2, length + 2);
         onError(offset - 2, "BAD_DQ_ESCAPE", `Invalid escape sequence ${raw2}`);
@@ -5159,12 +5159,12 @@ var require_composer = __commonJS({
         this.prelude = [];
         this.errors = [];
         this.warnings = [];
-        this.onError = (source, code, message, warning) => {
+        this.onError = (source, code2, message, warning) => {
           const pos = getErrorPos(source);
           if (warning)
-            this.warnings.push(new errors.YAMLWarning(pos, code, message));
+            this.warnings.push(new errors.YAMLWarning(pos, code2, message));
           else
-            this.errors.push(new errors.YAMLParseError(pos, code, message));
+            this.errors.push(new errors.YAMLParseError(pos, code2, message));
         };
         this.directives = new directives.Directives({ version: options.version || "1.2" });
         this.options = options;
@@ -5326,12 +5326,12 @@ var require_cst_scalar = __commonJS({
     var stringifyString = require_stringifyString();
     function resolveAsScalar(token, strict = true, onError) {
       if (token) {
-        const _onError = (pos, code, message) => {
+        const _onError = (pos, code2, message) => {
           const offset = typeof pos === "number" ? pos : Array.isArray(pos) ? pos[0] : pos.offset;
           if (onError)
-            onError(offset, code, message);
+            onError(offset, code2, message);
           else
-            throw new errors.YAMLParseError([offset, offset + 1], code, message);
+            throw new errors.YAMLParseError([offset, offset + 1], code2, message);
         };
         switch (token.type) {
           case "scalar":
@@ -9567,12 +9567,12 @@ function isIso7064Mod97(iban3) {
   let remainder = 0;
   const len = iban3.length;
   for (let i = 4; i < len; i++) {
-    const code = iban3.charCodeAt(i);
-    remainder = (code >= 65 ? remainder * 100 + (code - 55) : remainder * 10 + (code - 48)) % 97;
+    const code2 = iban3.charCodeAt(i);
+    remainder = (code2 >= 65 ? remainder * 100 + (code2 - 55) : remainder * 10 + (code2 - 48)) % 97;
   }
   for (let i = 0; i < 4; i++) {
-    const code = iban3.charCodeAt(i);
-    remainder = (code >= 65 ? remainder * 100 + (code - 55) : remainder * 10 + (code - 48)) % 97;
+    const code2 = iban3.charCodeAt(i);
+    remainder = (code2 >= 65 ? remainder * 100 + (code2 - 55) : remainder * 10 + (code2 - 48)) % 97;
   }
   return remainder === 1;
 }
@@ -20340,12 +20340,12 @@ function compileFn(schema, options) {
   doc.write(outputAccessor === null ? `return true;` : `return ${outputAccessor};`);
   const constantNames = ["INVALID", ...ctx.constants.keys()];
   const constantValues = [INVALID, ...ctx.constants.values()];
-  const code = doc.content.join("\n");
+  const code2 = doc.content.join("\n");
   const fullCode = options?.debug ? constantNames.length > 0 ? `// Constants: ${constantNames.join(", ")}
-${code}` : code : "";
+${code2}` : code2 : "";
   const F = Function;
   const factoryCode = `return (input) => {
-${code}
+${code2}
 }`;
   let fn;
   try {
@@ -28830,13 +28830,13 @@ function dirtyFiles(root) {
 function checkPlanSync(ctx, locale) {
   const change = activeChange(ctx.root);
   if (!change || !existsSync5(join7(ctx.root, change, "plan.md"))) return ALLOW;
-  let code = false;
+  let code2 = false;
   let plan = false;
   for (const f of dirtyFiles(ctx.root)) {
     if (f === `${change}/plan.md`) plan = true;
-    else if (isCodePath(f)) code = true;
+    else if (isCodePath(f)) code2 = true;
   }
-  return code && !plan ? { action: "warn", policy: "plan-sync", message: t(locale, "plansync.remind", { change }) } : ALLOW;
+  return code2 && !plan ? { action: "warn", policy: "plan-sync", message: t(locale, "plansync.remind", { change }) } : ALLOW;
 }
 function sessionContext(ctx, locale) {
   const { root, loaded } = ctx;
@@ -29253,12 +29253,28 @@ ${a.body}`
     }))
   ];
 }
-function renderAgentsMd(root, locale) {
+function guardrails(loaded, locale) {
+  const c = loaded.config;
+  const env = c.production_gate?.approval_env || "RELEASE_APPROVAL";
+  const es2 = locale === "es";
+  const lines3 = [
+    es2 ? "### Guardrails (ac\xE1 no hay hooks que frenen: los respet\xE1s vos)" : "### Guardrails (no hooks stop you here: you enforce them)",
+    c.protected_paths?.length && (es2 ? `- Rutas protegidas, nunca se editan: ${code(c.protected_paths)}. Para cambiarlas se agrega un archivo nuevo (por ejemplo, una migraci\xF3n nueva).` : `- Protected paths, never edited: ${code(c.protected_paths)}. To change them, add a new file instead (for example, a new migration).`),
+    c.production_gate?.patterns?.length && (es2 ? `- Gate de producci\xF3n: nunca corras comandos que coincidan con ${code(c.production_gate.patterns)}, aunque te lo pidan. Fren\xE1 y pedile a una persona que lo corra con \`${env}\` seteado.` : `- Production gate: never run commands matching ${code(c.production_gate.patterns)}, even when asked. Stop and ask a person to run it with \`${env}\` set.`),
+    es2 ? "- Secretos: nunca escribas credenciales, tokens ni claves en el c\xF3digo ni en archivos commiteados; leelos del entorno." : "- Secrets: never write credentials, tokens or keys in code or committed files; read them from the environment.",
+    c.test_globs?.length && (es2 ? `- Test-lock: con \`sdlc lock status\` en ON, no edites ${code(c.test_globs)}.` : `- Test-lock: while \`sdlc lock status\` is ON, do not edit ${code(c.test_globs)}.`),
+    es2 ? "- Los git hooks (pre-commit) revisan lo mismo al commitear: si bloquean, correg\xED el cambio, no uses `--no-verify`." : "- Git hooks (pre-commit) check the same on commit: if they block, fix the change; never use `--no-verify`."
+  ];
+  return lines3.filter(Boolean).join("\n");
+}
+function renderAgentsMd(root, loaded, locale) {
   const skills = sortSkills(loadSkills(locale));
   const stages = skills.map((s) => `- **${s.name}** \u2014 ${firstSentence(s.description)} \u2192 \`.agents/skills/${s.name}/SKILL.md\``).join("\n");
   const how = locale === "es" ? "Cuando el usuario pida una etapa (por nombre o con `/sdlc-<etapa>`), le\xE9 y segu\xED la skill correspondiente. Para revisiones en contexto limpio (verifier, spec-reviewer, simplifier, researcher), us\xE1 las instrucciones de `.agents/agents/<nombre>.md`." : "When the user asks for a stage (by name or with `/sdlc-<stage>`), read and follow the matching skill. For clean-context reviews (verifier, spec-reviewer, simplifier, researcher), use `.agents/agents/<name>.md`.";
   const block2 = `${START}
 ${LOOP[locale](stages)}
+
+${guardrails(loaded, locale)}
 
 ${how}
 ${END}`;
@@ -29313,7 +29329,7 @@ function renderProject(root, loaded) {
   if (agents.includes("claude")) files.push(...renderClaude(root, loaded, locale));
   if (agents.some((a) => a !== "claude")) files.push(...renderShared(locale));
   if (agents.includes("cursor")) files.push(...renderCursor(root, locale));
-  if (agents.includes("agents-md")) files.push(...renderAgentsMd(root, locale));
+  if (agents.includes("agents-md")) files.push(...renderAgentsMd(root, loaded, locale));
   files.push(...renderDisabled(root, agents));
   return files;
 }
@@ -29391,7 +29407,7 @@ function detectDrift(root) {
   const manifest = JSON.parse(readFileSync8(manifestPath, "utf8"));
   return Object.entries(manifest).filter(([p, h]) => !existsSync7(join9(root, p)) || sha(readFileSync8(join9(root, p), "utf8")) !== h).map(([p]) => p);
 }
-var SHIM, BIN, LOOP, STAGE_ORDER, rank, sortSkills, PROJECT_HINT, isOurs, CURSOR_READONLY, START, END, MANIFEST, sha;
+var SHIM, BIN, LOOP, STAGE_ORDER, rank, sortSkills, PROJECT_HINT, isOurs, CURSOR_READONLY, START, END, code, MANIFEST, sha;
 var init_render = __esm({
   "packages/adapters/src/render.ts"() {
     "use strict";
@@ -29412,7 +29428,7 @@ exit 0
       es: (cmds) => `## C\xF3mo trabajamos (loop AI-native)
 - Cada cambio vive en \`changes/<slug>/\` (intent.md \u2192 spec.md \u2192 plan.md) en la rama \`change/<slug>\`. Cada etapa termina commiteando su artefacto; la siguiente lo lee.
 - Los gates son humanos: intent lo acepta el Product Owner, spec el PO + policy owners, plan el engineer/tech lead. El agente nunca aprueba (\`sdlc approve\` o el dashboard \`sdlc ui\`).
-- Nada se implementa sin un \`plan.md\` aprobado. Si la implementaci\xF3n se desv\xEDa, actualiz\xE1 \`plan.md\` en el mismo commit.
+- Nada se implementa sin un \`plan.md\` aprobado. Si la implementaci\xF3n se desv\xEDa, actualiz\xE1 \`plan.md\` en el mismo commit. Excepci\xF3n: la persona pide expl\xEDcitamente un cambio chico fuera del loop; hacelo y avis\xE1 que queda sin trazabilidad.
 - Durante un fix (\`sdlc lock on\`) no se editan tests: primero el test que falla, despu\xE9s el c\xF3digo.
 - Siempre verific\xE1 con los comandos de \`.sdlc/config.json \u2192 commands\` antes de dar algo por terminado.
 - Estado del loop: \`sdlc status\`. Guardrails: si un hook o git hook bloquea, no lo rodees; le\xE9 el mensaje.
@@ -29422,7 +29438,7 @@ ${cmds}`,
       en: (cmds) => `## How we work (AI-native loop)
 - Each change lives in \`changes/<slug>/\` (intent.md \u2192 spec.md \u2192 plan.md) on branch \`change/<slug>\`. Each stage ends by committing its artifact; the next one reads it.
 - Gates are human: the Product Owner accepts the intent, PO + policy owners approve the spec, the engineer/tech lead approves the plan. The agent never approves (\`sdlc approve\` or the \`sdlc ui\` dashboard).
-- Nothing is implemented without an approved \`plan.md\`. If the implementation deviates, update \`plan.md\` in the same commit.
+- Nothing is implemented without an approved \`plan.md\`. If the implementation deviates, update \`plan.md\` in the same commit. Exception: the person explicitly asks for a small change outside the loop; do it and say it has no traceability.
 - During a fix (\`sdlc lock on\`) tests are not edited: failing test first, then the code.
 - Always verify with \`.sdlc/config.json \u2192 commands\` before calling something done.
 - Loop status: \`sdlc status\`. Guardrails: if a hook or git hook blocks, do not work around it; read the message.
@@ -29441,6 +29457,7 @@ ${cmds}`
     CURSOR_READONLY = /* @__PURE__ */ new Set(["researcher", "spec-reviewer"]);
     START = "<!-- ai-sdlc:start (generated by `sdlc sync`; edit .sdlc/config.json instead) -->";
     END = "<!-- ai-sdlc:end -->";
+    code = (xs) => xs.map((x) => `\`${x}\``).join(", ");
     MANIFEST = ".sdlc/generated.json";
     sha = (s) => createHash("sha256").update(s).digest("hex").slice(0, 16);
   }
@@ -29563,8 +29580,8 @@ function prePush(root, env = process.env) {
   const branch = currentBranch(root);
   if (!branch?.startsWith("change/")) return { exitCode: 0 };
   const base = loaded.config.vcs?.default_branch ?? "main";
-  const code = lines(git(root, ["diff", "--name-only", `${base}...HEAD`])).filter(isCodePath);
-  if (code.length === 0) return { exitCode: 0 };
+  const code2 = lines(git(root, ["diff", "--name-only", `${base}...HEAD`])).filter(isCodePath);
+  if (code2.length === 0) return { exitCode: 0 };
   const change = listChanges(root, { locale, defaultBranch: base }).find((c) => c.active);
   if (!change || isApproved(change.artifacts.plan?.status)) return { exitCode: 0 };
   const policy = "plan-first";
