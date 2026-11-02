@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { api, setWorkspace, useApi, type State, type Workspace } from './api';
+import { api, setWorkspace, useApi, type NextAction, type State, type Workspace } from './api';
 import { LangContext, useT } from './i18n';
 import { Activity } from './views/Activity';
 import { Board } from './views/Board';
@@ -71,7 +71,28 @@ function Shell({ state, workspaces, onWorkspace }: { state: State; workspaces: W
           <span>{state.user.name ?? state.user.email ?? '?'}</span>
         </div>
       </header>
+      {state.next && <NextBar next={state.next} />}
       <main>{view}</main>
+    </div>
+  );
+}
+
+function NextBar({ next }: { next: NextAction }) {
+  const t = useT();
+  const how = next.command ?? next.skill;
+  return (
+    <div className={`next-bar ${next.kind}`}>
+      <strong>{t('Next step')}</strong>
+      <span>{next.message}</span>
+      {how && <code>{how}</code>}
+      {next.change && (
+        <a href={`#/change/${encodeURIComponent(next.change)}`}>{t('Open')}</a>
+      )}
+      {next.inbox.length > 0 && (
+        <a href="#/inbox">
+          +{next.inbox.length} {t('in your inbox')}
+        </a>
+      )}
     </div>
   );
 }

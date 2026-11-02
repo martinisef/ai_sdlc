@@ -114,6 +114,17 @@ export interface State {
   agents: string[];
   user: { name?: string; email?: string };
   branch?: string;
+  next?: NextAction;
+}
+
+export interface NextAction {
+  kind: string;
+  message: string;
+  command?: string;
+  skill?: string;
+  change?: string;
+  artifact?: string;
+  inbox: { change: string; artifact: string }[];
 }
 
 export interface SdlcEvent {

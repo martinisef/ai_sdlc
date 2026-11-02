@@ -24,6 +24,7 @@ import {
   loadConfig,
   localeOf,
   metrics,
+  nextAction,
   prForBranch,
   readEvents,
   validateConfig,
@@ -139,6 +140,7 @@ export function createApp(opts: { root: string; token: string }) {
       agents: loaded?.config.agents ?? [],
       user: gitUser(root),
       branch: git(root, ['rev-parse', '--abbrev-ref', 'HEAD']),
+      next: nextAction(root, loaded),
     });
   });
 

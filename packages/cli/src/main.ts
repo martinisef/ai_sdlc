@@ -11,6 +11,8 @@ import {
   configJsonSchema,
   decideGate,
   ensureSdlcDir,
+  formatNext,
+  nextAction,
   FIX_LOCKS,
   gitOrThrow,
   gitUser,
@@ -50,6 +52,7 @@ Setup
   schema                             JSON Schema of .sdlc/config.json
 
 Loop
+  next [--json]                      the one thing to do now: approve, ask the agent, ship, or start a change
   status [--json | --metrics]        changes and their stage
   metrics [--json]                   leading indicators from git + activity log
   new <slug> [--ticket KEY] [--title T] [--no-branch]
@@ -195,7 +198,7 @@ async function main() {
         const title = flags['first-change'];
         const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'first-change';
         newChange(root, slug, { title, branch: true });
-      } else console.log('Next: sdlc new <slug> to start a change, then /sdlc-intent in your agent.');
+      } else console.log('Next: sdlc next (it always tells you what to do), or sdlc new <slug> to start a change.');
       return;
     }
 
@@ -252,6 +255,14 @@ async function main() {
         if (flags.json) console.log(JSON.stringify({ change: c.id, stage: c.stage, ticket: c.ticket ?? '', statuses: c.statuses, active: c.active, next: c.next }));
         else console.log(`${c.active ? '*' : ''}${c.id}\t${c.stage}\t${c.ticket ?? '-'}\t${c.statuses}`);
       }
+      return;
+    }
+
+    case 'next': {
+      const n = nextAction(root, loadConfig(root));
+      if (flags.json) return void console.log(JSON.stringify(n, null, 2));
+      console.log(formatNext(n));
+      for (const g of n.inbox) console.log(`  also yours: sdlc approve ${g.change} ${g.artifact}`);
       return;
     }
 

@@ -28306,6 +28306,14 @@ Si sigue exactamente el plan, no hace falta hacer nada: respond\xE9 brevemente y
       "next.plan-draft": () => "terminar de iterar plan.md y aceptarlo (status: approved)",
       "next.plan-approved": () => "/sdlc-build para implementar, despu\xE9s /sdlc-ship",
       "next.rejected": () => "cambio rechazado: archivarlo o reabrir el intent",
+      "nx.init": () => "Este repo no est\xE1 configurado para el loop",
+      "nx.new": () => "No hay cambios en curso: empez\xE1 uno",
+      "nx.switch": (p) => `Sin cambio activo en esta rama; ${p.change} est\xE1 en ${p.stage}`,
+      "nx.approve": (p) => `Te toca decidir el ${p.artifact} de ${p.change}`,
+      "nx.wait": (p) => `${p.change} espera la aprobaci\xF3n del ${p.artifact} por ${p.who}`,
+      "nx.someone": () => "otra persona",
+      "nx.agent": (p) => `Pedile a tu agente ${p.skill}: ${p.next}`,
+      "nx.done": (p) => `${p.change} est\xE1 mergeado; empez\xE1 el pr\xF3ximo`,
       "git.override": (p) => `Si sos una persona y el cambio es intencional: SDLC_OVERRIDE=${p.policy} git commit \u2026 (queda registrado en .sdlc/events.jsonl).`,
       "prepush.noplan": (p) => `Bloqueado por ai-sdlc: la rama ${p.branch} tiene cambios de c\xF3digo pero ${p.change}/plan.md no est\xE1 aprobado (etapa: ${p.stage}). Plan antes que c\xF3digo: aprob\xE1 el plan (sdlc approve ${p.change} plan) o mov\xE9 el trabajo fuera de la rama del cambio.`
     };
@@ -28343,6 +28351,14 @@ If it follows the plan exactly, nothing to do: answer briefly and finish.`,
       "next.plan-draft": () => "finish iterating plan.md and approve it (status: approved)",
       "next.plan-approved": () => "/sdlc-build to implement, then /sdlc-ship",
       "next.rejected": () => "change rejected: archive it or reopen the intent",
+      "nx.init": () => "This repo is not set up for the loop",
+      "nx.new": () => "No change in progress: start one",
+      "nx.switch": (p) => `No active change on this branch; ${p.change} is at ${p.stage}`,
+      "nx.approve": (p) => `Your call: the ${p.artifact} of ${p.change}`,
+      "nx.wait": (p) => `${p.change} is waiting for ${p.who} to approve the ${p.artifact}`,
+      "nx.someone": () => "another person",
+      "nx.agent": (p) => `Ask your agent for ${p.skill}: ${p.next}`,
+      "nx.done": (p) => `${p.change} is merged; start the next one`,
       "git.override": (p) => `If you are a person and the change is intentional: SDLC_OVERRIDE=${p.policy} git commit \u2026 (recorded in .sdlc/events.jsonl).`,
       "prepush.noplan": (p) => `Blocked by ai-sdlc: branch ${p.branch} has code changes but ${p.change}/plan.md is not approved (stage: ${p.stage}). Plan before code: approve the plan (sdlc approve ${p.change} plan) or move the work off the change branch.`
     };
@@ -28739,6 +28755,75 @@ var init_metrics = __esm({
   }
 });
 
+// packages/core/src/next.ts
+function rolesFor(change, artifact, loaded) {
+  const roles = loaded.config.gates?.[artifact] ?? [];
+  return artifact === "plan" && change.risk === "high" && !roles.includes("tech-lead") ? [...roles, "tech-lead"] : roles;
+}
+function forChange(change, loaded, who, locale) {
+  const base = { change: change.slug, stage: change.stage };
+  const gate = GATE[change.stage];
+  if (gate) {
+    const ok = canApprove(change, gate, who, loaded);
+    if (ok.ok) {
+      return { ...base, kind: "approve", artifact: gate, command: `sdlc approve ${change.slug} ${gate}`, message: t(locale, "nx.approve", { change: change.slug, artifact: gate }) };
+    }
+    const roles = rolesFor(change, gate, loaded);
+    const people = roles.flatMap((r) => loaded.config.roles?.[r] ?? []);
+    return {
+      ...base,
+      kind: "wait",
+      artifact: gate,
+      waitingOn: people.length ? people : roles,
+      message: t(locale, "nx.wait", { change: change.slug, artifact: gate, who: (people.length ? people : roles).join(", ") || t(locale, "nx.someone"), reason: ok.reason ?? "" })
+    };
+  }
+  if (change.stage === "merged") return { ...base, kind: "done", command: "sdlc new <slug>", message: t(locale, "nx.done", { change: change.slug }) };
+  if (change.stage === "rejected") return { ...base, kind: "rejected", message: t(locale, "next.rejected") };
+  const skill = SKILL[change.stage] ?? "/sdlc-intent";
+  return { ...base, kind: change.stage === "building" ? "ship" : "agent", skill, message: t(locale, "nx.agent", { skill, next: change.next }) };
+}
+function nextAction(root, loaded, opts2 = {}) {
+  const locale = localeOf(loaded);
+  if (!loaded) return { kind: "init", command: "sdlc init", message: t(locale, "nx.init"), inbox: [] };
+  const who = opts2.who ?? gitUser(root);
+  const changes = opts2.changes ?? listChanges(root, { locale, defaultBranch: loaded.config.vcs?.default_branch });
+  const open2 = changes.filter((c) => c.stage !== "merged" && c.stage !== "rejected");
+  const inbox = open2.filter((c) => !c.active && GATE[c.stage] && canApprove(c, GATE[c.stage], who, loaded).ok).map((c) => ({ change: c.slug, artifact: GATE[c.stage] }));
+  const active = changes.find((c) => c.active);
+  if (active) return { ...forChange(active, loaded, who, locale), inbox };
+  if (inbox[0]) {
+    const { change, artifact } = inbox[0];
+    return { kind: "approve", change, artifact, command: `sdlc approve ${change} ${artifact}`, message: t(locale, "nx.approve", { change, artifact }), inbox: inbox.slice(1) };
+  }
+  const mine = open2.find((c) => c.branch && (!c.author || c.author === who.name || c.author === who.email)) ?? open2.find((c) => c.branch);
+  if (mine) return { kind: "switch", change: mine.slug, stage: mine.stage, command: `git checkout ${mine.branch}`, message: t(locale, "nx.switch", { change: mine.slug, stage: mine.stage }), inbox };
+  return { kind: "new", command: "sdlc new <slug>", message: t(locale, "nx.new"), inbox };
+}
+function formatNext(n) {
+  const how = n.command ? ` \u2192 ${n.command}` : n.skill ? ` \u2192 ${n.skill}` : "";
+  return `${n.message}${how}`;
+}
+var SKILL, GATE;
+var init_next = __esm({
+  "packages/core/src/next.ts"() {
+    "use strict";
+    init_changes();
+    init_config();
+    init_gates();
+    init_git();
+    init_i18n();
+    SKILL = {
+      "no-intent": "/sdlc-intent",
+      "intent-accepted": "/sdlc-spec",
+      "spec-approved": "/sdlc-plan",
+      "plan-approved": "/sdlc-build",
+      building: "/sdlc-ship"
+    };
+    GATE = { "intent-draft": "intent", "spec-draft": "spec", "plan-draft": "plan" };
+  }
+});
+
 // packages/core/src/project.ts
 import { isAbsolute, relative, resolve } from "node:path";
 function projectDir(opts2 = {}) {
@@ -28847,13 +28932,16 @@ function sessionContext(ctx, locale) {
   }
   const out = [t(locale, "session.config", { config: loaded.path })];
   const change = activeChange(root);
+  const changes = listChanges(root, { locale, defaultBranch: loaded.config.vcs?.default_branch });
   if (change) {
-    const c = listChanges(root, { locale, defaultBranch: loaded.config.vcs?.default_branch }).find((x) => x.id === change);
+    const c = changes.find((x) => x.id === change);
     const stage = c?.stage ?? "no-intent";
     out.push(t(locale, "session.active", { branch: currentBranch(root) ?? "", change, stage, ticket: c?.ticket ?? "" }));
-    out.push(t(locale, "session.next", { next: c?.next ?? t(locale, "next.no-intent") }));
+    out.push(t(locale, "session.next", { next: c ? formatNext(nextAction(root, loaded, { changes })) : t(locale, "next.no-intent") }));
   } else {
     out.push(t(locale, "session.noactive"));
+    const n = nextAction(root, loaded, { changes });
+    if (n.kind !== "new") out.push(t(locale, "session.next", { next: formatNext(n) }));
   }
   if (fixLockActive(root)) out.push(t(locale, "session.lock"));
   const setup = join7(root, "SETUP.md");
@@ -28904,6 +28992,7 @@ var init_policies = __esm({
     init_git();
     init_glob();
     init_i18n();
+    init_next();
     init_project();
     ALLOW = { action: "allow" };
     BUILTIN_SECRET_PATTERNS = [
@@ -29104,6 +29193,7 @@ var init_src = __esm({
     init_tracker();
     init_i18n();
     init_metrics();
+    init_next();
     init_policies();
     init_project();
     init_vcs();
@@ -32619,7 +32709,8 @@ function createApp(opts2) {
       locale: localeOf(loaded),
       agents: loaded?.config.agents ?? [],
       user: gitUser(root),
-      branch: git(root, ["rev-parse", "--abbrev-ref", "HEAD"])
+      branch: git(root, ["rev-parse", "--abbrev-ref", "HEAD"]),
+      next: nextAction(root, loaded)
     });
   });
   app.get("/api/changes", (c) => {
@@ -34115,6 +34206,7 @@ Setup
   schema                             JSON Schema of .sdlc/config.json
 
 Loop
+  next [--json]                      the one thing to do now: approve, ask the agent, ship, or start a change
   status [--json | --metrics]        changes and their stage
   metrics [--json]                   leading indicators from git + activity log
   new <slug> [--ticket KEY] [--title T] [--no-branch]
@@ -34249,7 +34341,7 @@ async function main() {
         const title = flags["first-change"];
         const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "first-change";
         newChange(root, slug, { title, branch: true });
-      } else console.log("Next: sdlc new <slug> to start a change, then /sdlc-intent in your agent.");
+      } else console.log("Next: sdlc next (it always tells you what to do), or sdlc new <slug> to start a change.");
       return;
     }
     case "sync": {
@@ -34301,6 +34393,13 @@ async function main() {
         if (flags.json) console.log(JSON.stringify({ change: c.id, stage: c.stage, ticket: c.ticket ?? "", statuses: c.statuses, active: c.active, next: c.next }));
         else console.log(`${c.active ? "*" : ""}${c.id}	${c.stage}	${c.ticket ?? "-"}	${c.statuses}`);
       }
+      return;
+    }
+    case "next": {
+      const n = nextAction(root, loadConfig(root));
+      if (flags.json) return void console.log(JSON.stringify(n, null, 2));
+      console.log(formatNext(n));
+      for (const g of n.inbox) console.log(`  also yours: sdlc approve ${g.change} ${g.artifact}`);
       return;
     }
     case "metrics": {
