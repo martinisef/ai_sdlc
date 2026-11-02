@@ -234,7 +234,7 @@ export function Settings() {
           <section className="panel">
             <h3>Tracker</h3>
             <div className="row3">
-              <Select cfg={cfg} path="tracker.provider" label="Provider" options={['jira', 'none']} onChange={change} />
+              <Select cfg={cfg} path="tracker.provider" label="Provider" options={['jira', 'github', 'linear', 'none']} onChange={change} />
               <Select cfg={cfg} path="tracker.mode" label="Mode" options={['linkage', 'jira-sot', 'repo-sot']} onChange={change} />
               <Text cfg={cfg} path="tracker.base_url" label="Base URL" onChange={change} />
               <Text cfg={cfg} path="tracker.project_key" label="Project key" onChange={change} />

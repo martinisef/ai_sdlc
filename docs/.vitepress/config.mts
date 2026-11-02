@@ -59,6 +59,7 @@ export default defineConfig({
               { text: 'CI · GitHub', link: '/reference/ci-github' },
               { text: 'CI · GitLab', link: '/reference/ci-gitlab' },
               { text: 'CI · Bitbucket', link: '/reference/ci-bitbucket' },
+              { text: 'Trackers', link: '/reference/trackers' },
               { text: 'Control bands', link: '/reference/bands' },
               { text: 'Evals', link: '/reference/evals' },
               { text: 'Telemetry', link: '/reference/telemetry' },

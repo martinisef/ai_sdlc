@@ -18,7 +18,7 @@ CLI del loop: `sdlc` ({{sdlc_hint}}).
 ## 1. Contexto
 - Leé `intent.md` completo, `CLAUDE.md` y la arquitectura relevante del código (usá el subagent `researcher` si el repo es grande, para no llenar el contexto).
 - Identificá **qué skills de política aplican** (seguridad de APIs, brand, compliance, UX, datos): las que el proyecto tiene disponibles y cuya descripción matchea el cambio. Cargalas y aplicalas.
-- Si hay ticket y Jira, leé comentarios recientes del ticket por si hay contexto nuevo.
+- Si hay ticket y tracker, leé comentarios recientes del ticket por si hay contexto nuevo.
 
 ## 2. Escribir spec.md
 Desde `changes/_templates/spec.md`. Reglas:
@@ -32,9 +32,9 @@ Desde `changes/_templates/spec.md`. Reglas:
 ## 3. Revisión adversarial
 Antes de mostrarla, corré el subagent `spec-reviewer` sobre intent.md + spec.md. Incorporá lo que encuentre (o agregalo como concern si no se puede resolver).
 
-## 4. Commit y Jira
+## 4. Commit y tracker
 - Commit: `spec(<slug>): <título>` (+ key). `status: draft`.
-- Jira según `tracker.mode`: transición `spec` (`sdlc tracker transition <KEY> spec`); comentario con path + SHA; en `jira-sot` además un resumen de la spec y los concerns como comentario. Si falla, avisá y seguí.
+- Tracker según `tracker.mode`: transición `spec` (`sdlc tracker transition <KEY> spec`); comentario con path + SHA; en `jira-sot` además un resumen de la spec y los concerns como comentario. Si falla, avisá y seguí.
 
 ## 5. Gate: Product Owner (+ tech lead si `risk: high`)
 Indicá al PO qué revisar, en este orden:

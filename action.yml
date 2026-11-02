@@ -1,5 +1,5 @@
 name: ai-native-sdlc
-description: Run a step of the AI-native SDLC loop (review, intent-to-spec, triage, jira-merged, evals, bands) with Claude Code, Codex or Cursor.
+description: Run a step of the AI-native SDLC loop (review, intent-to-spec, triage, tracker-merged, evals, bands) with Claude Code, Codex or Cursor.
 author: ai-native-sdlc
 branding:
   icon: refresh-cw
@@ -7,7 +7,7 @@ branding:
 
 inputs:
   command:
-    description: "sdlc subcommand: `ci review`, `ci intent-to-spec`, `ci triage build.log`, `ci jira-merged`, `ci evals`, `bands check` …"
+    description: "sdlc subcommand: `ci review`, `ci intent-to-spec`, `ci triage build.log`, `ci tracker-merged`, `ci evals`, `bands check` …"
     required: true
   agent:
     description: claude | codex | cursor (default ci.agent in .sdlc/config.json, else claude)
@@ -18,7 +18,7 @@ inputs:
     required: false
     default: '0'
   bootstrap:
-    description: Install the agent CLI first (not needed for `ci jira-merged`)
+    description: Install the agent CLI first (not needed for `ci tracker-merged`)
     required: false
     default: 'true'
 

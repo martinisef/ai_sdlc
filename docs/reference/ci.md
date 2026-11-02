@@ -9,7 +9,7 @@ sdlc ci bootstrap              install the agent CLI (and the Claude plugin when
 sdlc ci review                 review the PR/MR with REVIEW.md and post the result as a comment
 sdlc ci intent-to-spec         for accepted intents without spec.md: write the spec headless, commit, push
 sdlc ci triage <log>           summarize a failed build and comment on the PR/MR
-sdlc ci jira-merged            move the merged change's tickets to tracker.transitions.merged
+sdlc ci tracker-merged         move the merged change's tickets to tracker.transitions.merged (alias: jira-merged)
 sdlc ci evals [pattern] [--out results.json]   run evals/*.json against the agent; fail below ci.min_pass_rate (0.8)
 sdlc ci gate                   /approve|/reject intent|spec|plan in a PR/MR comment → gate commit on the branch + reply
 sdlc ci gate-status            set the sdlc/gates commit status (success once the plan is approved or the change is quick)

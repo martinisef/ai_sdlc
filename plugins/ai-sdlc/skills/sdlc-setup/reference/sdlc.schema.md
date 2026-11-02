@@ -15,7 +15,7 @@ It is read by the guardrails (`sdlc hook`, for any agent), the loop skills, the 
     "default_branch": "main"
   },
   "tracker": {
-    "provider": "jira | none",
+    "provider": "jira | github | linear | none",
     "mode": "linkage | jira-sot | repo-sot",
     "base_url": "https://example.atlassian.net",
     "project_key": "PROJ",
@@ -55,7 +55,7 @@ It is read by the guardrails (`sdlc hook`, for any agent), the loop skills, the 
 | `locale` | guardrail messages, dashboard | `en` or `es`. |
 | `agents` | `sdlc sync`, `sdlc doctor` | Which adapters to generate: `claude`, `cursor`, `agents-md` (Codex, Copilot and others that read AGENTS.md). |
 | `vcs.*` | `sdlc vcs`, `/sdlc-ship`, CI | If `provider` is missing, it is inferred from the remote. |
-| `tracker.*` | `sdlc tracker`, loop skills, CI | `transitions` accepts a transition name **or** a target status name. |
+| `tracker.*` | `sdlc tracker`, loop skills, CI | `provider`: `jira`, `github` (GitHub Issues; `repo` if not the code's repository), `linear` (`team_key`) or `none`. `transitions` maps each stage to a Jira transition or target status, a GitHub label (default `sdlc:<stage>`; `merged` closes the issue) or a Linear workflow state. |
 | `commands.*` | skills, `verifier`, evals | Each one is a single command that exits ≠ 0 on failure. |
 | `format_on_edit` | PostToolUse hook | Glob → command; `{file}` is replaced with the path. Keep it fast (one file). |
 | `protected_paths` | `protect-paths` hook | `*` crosses `/`; leading `**/` is optional. |

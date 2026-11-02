@@ -95,6 +95,11 @@ test('ci jira-merged: no tracker → no-op; ticket keys from the merge commit an
   const r = await sdlc(withJira, ['ci', 'jira-merged'], { JIRA_PAT: 'p', MERGED_BRANCH: 'change/PROJ-12-x', HEAD_REF: 'main' });
   assert.equal(r.code, 0, 'Jira failures never fail the pipeline');
   assert.match(r.err, /could not transition PROJ-12/);
+
+  const gh = project({ tracker: { provider: 'github', repo: 'acme/app' } });
+  const alias = await sdlc(gh, ['ci', 'tracker-merged'], { GH_TOKEN: 'g', GITHUB_API_URL: 'http://127.0.0.1:9', MERGED_BRANCH: 'change/issue-31-x', HEAD_REF: 'main' });
+  assert.equal(alias.code, 0);
+  assert.match(alias.err, /could not transition #31/);
 });
 
 test('ci evals: worktree per case, checks, pass rate', async () => {

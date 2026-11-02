@@ -1,7 +1,7 @@
 name: SDLC loop
 # Automates the handoffs between stages:
 #  - intent accepted on a change/** branch → generates spec.md (headless) and pushes it to the same branch
-#  - PR merged → transitions the Jira ticket to "merged"
+#  - PR merged → moves the ticket (Jira, GitHub Issues or Linear) to "merged" and notifies the team
 on:
   push:
     branches: ['change/**']
@@ -38,20 +38,23 @@ jobs:
           npx -y @morsadev/sdlc@0 ci bootstrap
           npx -y @morsadev/sdlc@0 ci intent-to-spec
 
-  jira-merged:
+  tracker-merged:
     if: github.event_name == 'pull_request' && github.event.pull_request.merged
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      issues: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Transition ticket to merged
+      - name: Tracker and notifications on merge
         env:
           MERGED_BRANCH: ${{ github.head_ref }}
+          GH_TOKEN: ${{ github.token }}
           JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
           JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
         run: |
-          npx -y @morsadev/sdlc@0 ci jira-merged
+          npx -y @morsadev/sdlc@0 ci tracker-merged

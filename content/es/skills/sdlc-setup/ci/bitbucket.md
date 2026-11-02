@@ -23,7 +23,7 @@ En `.sdlc/config.json` completá `vcs.workspace` y `vcs.repo` (el remote puede n
 - Local (para `/sdlc-ship`): el mismo tipo de token o `BITBUCKET_USER` (email de Atlassian) + `BITBUCKET_API_TOKEN` (API token con scopes de Bitbucket). Las app passwords están deprecadas.
 
 ## Configuración manual (agregar a SETUP.md)
-1. **Repository variables** (secured): `ANTHROPIC_API_KEY`, `BITBUCKET_ACCESS_TOKEN`, `SDLC_PLUGIN_TOKEN` si aplica, `JIRA_EMAIL` + `JIRA_API_TOKEN`, `SDLC_NOTIFY_WEBHOOK` para [avisos](https://martinisef.github.io/ai_sdlc/es/avisos).
+1. **Repository variables** (secured): `ANTHROPIC_API_KEY`, `BITBUCKET_ACCESS_TOKEN`, `SDLC_PLUGIN_TOKEN` si aplica, `JIRA_EMAIL` + `JIRA_API_TOKEN`, `LINEAR_API_KEY` con Linear, `SDLC_NOTIFY_WEBHOOK` para [avisos](https://martinisef.github.io/ai_sdlc/es/avisos).
 2. **Branch restrictions** en `main`: sin push directo, merge solo vía PR.
 3. **Merge checks**: mínimo 1 aprobación, builds verdes. *Verificar en el plan del workspace* qué checks son obligatorios (en algunos planes son solo advertencias).
 4. **Default reviewers** / code owners para `CLAUDE.md`, `REVIEW.md`, `.claude/`, `evals/` (disponibilidad según plan).

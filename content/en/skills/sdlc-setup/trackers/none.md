@@ -8,4 +8,4 @@ The repo is the only source of truth: `changes/<YYYY-MM>-<slug>/` with intent, s
 
 - The skills do not try to call any tracker.
 - Branches: `change/<slug>`. Folders with a date prefix.
-- If Jira is added later: run `/sdlc-setup --only tracker`. Existing changes can be linked by filling in `ticket:` in their `intent.md`.
+- If a tracker (Jira, GitHub Issues, Linear) is added later: run `/sdlc-setup --only tracker`. Existing changes can be linked by filling in `ticket:` in their `intent.md`.

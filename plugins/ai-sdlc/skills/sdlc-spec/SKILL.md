@@ -18,7 +18,7 @@ Loop CLI: `sdlc` (if `sdlc` is not on the PATH: `node <this skill's base directo
 ## 1. Context
 - Read the full `intent.md`, `CLAUDE.md` and the relevant architecture of the code (use the `researcher` subagent if the repo is large, so you don't fill up the context).
 - Identify **which policy skills apply** (API security, brand, compliance, UX, data): the ones the project has available whose description matches the change. Load them and apply them.
-- If there is a ticket and Jira, read the ticket's recent comments in case there is new context.
+- If there is a ticket and a tracker, read the ticket's recent comments in case there is new context.
 
 ## 2. Write spec.md
 From `changes/_templates/spec.md`. Rules:
@@ -32,9 +32,9 @@ From `changes/_templates/spec.md`. Rules:
 ## 3. Adversarial review
 Before showing it, run the `spec-reviewer` subagent on intent.md + spec.md. Incorporate what it finds (or add it as a concern if it cannot be resolved).
 
-## 4. Commit and Jira
+## 4. Commit and tracker
 - Commit: `spec(<slug>): <title>` (+ key). `status: draft`.
-- Jira according to `tracker.mode`: `spec` transition (`sdlc tracker transition <KEY> spec`); comment with path + SHA; in `jira-sot` also a summary of the spec and the concerns as a comment. If it fails, say so and continue.
+- Tracker according to `tracker.mode`: `spec` transition (`sdlc tracker transition <KEY> spec`); comment with path + SHA; in `jira-sot` also a summary of the spec and the concerns as a comment. If it fails, say so and continue.
 
 ## 5. Gate: Product Owner (+ tech lead if `risk: high`)
 Tell the PO what to review, in this order:

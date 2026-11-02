@@ -14,12 +14,12 @@ Todos los workflows llaman a `npx -y @morsadev/sdlc@0 ci <cmd>` (Node 22 vía `a
 
 Si ya existe un `ci.yml`, no lo reemplaces: agregá el step de triage al job existente.
 Completá los bloques `# >>> stack` con el setup del lenguaje (`stacks/<lang>.md` → "CI · GitHub").
-Si el proyecto no usa Jira, sacá el job `jira-merged`.
+El job `tracker-merged` mueve el ticket (Jira, GitHub Issues o Linear) y manda `change.merged`; sin tracker ni avisos no hace nada.
 Sin Stage 6 (todavía no hay métricas con baseline estable), no instales `sdlc-bands.yml`.
 Otros agentes: el review usa `claude-code-action` (comentarios inline); con `ci.agent: codex|cursor`, reemplazá ese job por `npx -y @morsadev/sdlc@0 ci review`, que publica un único comentario resumen.
 
 ## Configuración manual (agregar a SETUP.md)
-1. **Secrets** (Settings → Secrets and variables → Actions): `ANTHROPIC_API_KEY` (o configurar Bedrock/Vertex/Foundry; `OPENAI_API_KEY` / `CURSOR_API_KEY` con `ci.agent` codex / cursor), `SDLC_PLUGIN_TOKEN` si el repo del marketplace es privado (token con read al repo), `JIRA_EMAIL` + `JIRA_API_TOKEN` si hay Jira, `SDLC_NOTIFY_WEBHOOK` para [avisos](https://martinisef.github.io/ai_sdlc/es/avisos).
+1. **Secrets** (Settings → Secrets and variables → Actions): `ANTHROPIC_API_KEY` (o configurar Bedrock/Vertex/Foundry; `OPENAI_API_KEY` / `CURSOR_API_KEY` con `ci.agent` codex / cursor), `SDLC_PLUGIN_TOKEN` si el repo del marketplace es privado (token con read al repo), `JIRA_EMAIL` + `JIRA_API_TOKEN` si hay Jira, `LINEAR_API_KEY` con Linear, `SDLC_NOTIFY_WEBHOOK` para [avisos](https://martinisef.github.io/ai_sdlc/es/avisos).
 2. **Claude GitHub App** instalada en el repo (la usa `claude-code-action`; `/install-github-app` desde Claude Code lo guía). Alternativa: el servicio gestionado de Code Review, que habilita un admin.
 3. **Branch protection** en la default branch: PR obligatorio, 1 aprobación de code owner, checks `CI / build` requeridos, sin push directo.
 4. **CODEOWNERS**: al menos `CLAUDE.md`, `REVIEW.md`, `.claude/**` y `evals/**` con dueños (los cambios a la configuración del agente se revisan como código).

@@ -14,12 +14,12 @@ Every workflow calls `npx -y @morsadev/sdlc@0 ci <cmd>` (Node 22 via `actions/se
 
 If a `ci.yml` already exists, do not replace it: add the triage step to the existing job.
 Fill in the `# >>> stack` blocks with the language setup (`stacks/<lang>.md` → "CI · GitHub").
-If the project does not use Jira, remove the `jira-merged` job.
+The `tracker-merged` job moves the ticket (Jira, GitHub Issues or Linear) and sends `change.merged`; without a tracker or notifications it does nothing.
 Without Stage 6 (no metrics with a stable baseline yet), do not install `sdlc-bands.yml`.
 Other agents: the review uses `claude-code-action` (inline comments); with `ci.agent: codex|cursor`, replace that job with `npx -y @morsadev/sdlc@0 ci review`, which posts a single summary comment.
 
 ## Manual configuration (add to SETUP.md)
-1. **Secrets** (Settings → Secrets and variables → Actions): `ANTHROPIC_API_KEY` (or configure Bedrock/Vertex/Foundry; `OPENAI_API_KEY` / `CURSOR_API_KEY` with `ci.agent` codex / cursor), `SDLC_PLUGIN_TOKEN` if the marketplace repo is private (token with read access to the repo), `JIRA_EMAIL` + `JIRA_API_TOKEN` if there is Jira, `SDLC_NOTIFY_WEBHOOK` for [notifications](https://martinisef.github.io/ai_sdlc/guide/notifications).
+1. **Secrets** (Settings → Secrets and variables → Actions): `ANTHROPIC_API_KEY` (or configure Bedrock/Vertex/Foundry; `OPENAI_API_KEY` / `CURSOR_API_KEY` with `ci.agent` codex / cursor), `SDLC_PLUGIN_TOKEN` if the marketplace repo is private (token with read access to the repo), `JIRA_EMAIL` + `JIRA_API_TOKEN` if there is Jira, `LINEAR_API_KEY` with Linear, `SDLC_NOTIFY_WEBHOOK` for [notifications](https://martinisef.github.io/ai_sdlc/guide/notifications).
 2. **Claude GitHub App** installed on the repo (used by `claude-code-action`; `/install-github-app` from Claude Code walks you through it). Alternative: the managed Code Review service, enabled by an admin.
 3. **Branch protection** on the default branch: PR required, 1 code owner approval, `CI / build` checks required, no direct push.
 4. **CODEOWNERS**: at least `CLAUDE.md`, `REVIEW.md`, `.claude/**` and `evals/**` with owners (changes to the agent configuration are reviewed like code).

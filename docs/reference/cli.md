@@ -44,7 +44,7 @@ Every command works from any directory inside the repository. The project root i
 |---|---|
 | `sdlc hook <event> --agent claude\|cursor\|git` | Guardrail entry point, called by the generated hooks. It reads the agent's JSON payload on stdin. |
 | `sdlc vcs …` | PR/MR helper for GitHub (`gh`), GitLab (`glab`, or REST) and Bitbucket (REST). |
-| `sdlc tracker …` | Jira helper (Cloud or Data Center). |
+| `sdlc tracker …` | Tracker helper: Jira (Cloud or Data Center), GitHub Issues or Linear, per `tracker.provider`. |
 | `sdlc ci <cmd>` | CI entry point. See [CI](./ci). |
 | `sdlc bands check` | Stage 6. See [Control bands](./bands). |
 | `sdlc notify <event> [--change ID] [--artifact A] [--decision D] [--by WHO] [-m NOTE] [--dry-run]` | Posts `gate.pending`, `gate.decided`, `spec.ready`, `review.done` or `change.merged` to Slack or a webhook (`SDLC_NOTIFY_WEBHOOK`). Always exits 0. See [Notifications](../guide/notifications). |
@@ -67,7 +67,7 @@ Bitbucket auth: `BITBUCKET_ACCESS_TOKEN`, or `BITBUCKET_USER` + `BITBUCKET_API_T
 ### `sdlc tracker`
 
 ```text
-sdlc tracker enabled                          → exit 0 if tracker.provider = jira
+sdlc tracker enabled                          → exit 0 if tracker.provider is jira, github or linear
 sdlc tracker get KEY                          → {"key","summary","status","type","description","url"}
 sdlc tracker transitions KEY                  → available transitions, one per line
 sdlc tracker transition KEY <stage|name>      → stage = intent|spec|plan|ship|merged (tracker.transitions)
@@ -77,7 +77,9 @@ sdlc tracker set-description KEY --body-file F
 sdlc tracker statuses                         → project workflow statuses
 ```
 
-Auth: `JIRA_EMAIL` + `JIRA_API_TOKEN` (Cloud) or `JIRA_PAT` (Data Center). Exit code 3 means the tracker is not configured.
+Keys: `PROJ-123` (Jira), `#123` or `owner/repo#123` (GitHub Issues), `ENG-123` (Linear). On GitHub a transition swaps the `sdlc:<stage>` label and `merged` closes the issue.
+
+Auth: Jira `JIRA_EMAIL` + `JIRA_API_TOKEN` (Cloud) or `JIRA_PAT` (Data Center); GitHub `GH_TOKEN`; Linear `LINEAR_API_KEY`. Exit code 3 means the tracker is not configured. Setup per tracker: [Trackers](./trackers).
 
 ## Environment
 

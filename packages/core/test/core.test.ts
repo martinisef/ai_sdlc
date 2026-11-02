@@ -160,3 +160,11 @@ test('metrics: lead times and spec rework after plan', () => {
   assert.equal(m.changes[0].specReworkAfterPlan, 1);
   assert.equal(m.summary.specReworkRate, 1);
 });
+
+test('trackerKeys: Jira/Linear keys; GitHub #n and owner/repo#n, not the squash (#PR) suffix', async () => {
+  const { trackerKeys } = await import('../src/index.ts');
+  const cfg = (tracker: object) => ({ config: { version: 1, tracker }, path: '.sdlc/config.json' }) as any;
+  assert.deepEqual(trackerKeys(cfg({ provider: 'jira', project_key: 'PROJ' }), 'feat: x PROJ-12 (#40)\nENG-3'), ['PROJ-12']);
+  assert.deepEqual(trackerKeys(cfg({ provider: 'linear', team_key: 'ENG' }), 'fixes ENG-3 and PROJ-1'), ['ENG-3']);
+  assert.deepEqual(trackerKeys(cfg({ provider: 'github' }), 'feat: export, closes #12 and acme/api#7 (#40)\nchange/issue-31-x'), ['#12', '#31', 'acme/api#7']);
+});

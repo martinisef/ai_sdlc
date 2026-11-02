@@ -9,15 +9,15 @@ import {
   git,
   hasTool,
   isApproved,
-  jira,
   loadConfig,
   localeOf,
   notify,
   parseFrontmatter,
   prComment,
   SdlcError,
-  ticketKeys,
+  tracker,
   trackerEnabled,
+  trackerKeys,
   type CiAgent,
   type LoadedConfig,
   type Provider,
@@ -35,7 +35,7 @@ sdlc ci bootstrap              install the agent CLI (and the Claude plugin when
 sdlc ci review                 review the PR/MR with REVIEW.md and post the result as a comment
 sdlc ci intent-to-spec         for accepted intents without spec.md: write the spec headless, commit, push
 sdlc ci triage <log>           summarize a failed build and comment on the PR/MR
-sdlc ci jira-merged            move the merged change's tickets to tracker.transitions.merged
+sdlc ci tracker-merged         move the merged change's tickets to tracker.transitions.merged (alias: jira-merged)
 sdlc ci evals [pattern] [--out results.json]   run evals/*.json against the agent; fail below ci.min_pass_rate (0.8)
 sdlc ci gate                   /approve|/reject intent|spec|plan in a PR/MR comment → gate commit on the branch + reply
 sdlc ci gate-status            set the sdlc/gates commit status (success once the plan is approved or the change is quick)
@@ -43,7 +43,7 @@ sdlc ci mention                answer an @claude comment on the PR/MR (triggered
 
 Options: --agent claude|codex|cursor (or SDLC_CI_AGENT, or ci.agent) · --model M · --dry-run (print, do not post/push)
 Env: ANTHROPIC_API_KEY | OPENAI_API_KEY | CURSOR_API_KEY · GH_TOKEN | GITLAB_TOKEN | BITBUCKET_ACCESS_TOKEN
-     JIRA_EMAIL + JIRA_API_TOKEN (or JIRA_PAT) · SDLC_PLUGIN_REPO_URL / SDLC_PLUGIN_TOKEN (private marketplace)
+     JIRA_EMAIL + JIRA_API_TOKEN (or JIRA_PAT) · LINEAR_API_KEY · SDLC_PLUGIN_REPO_URL / SDLC_PLUGIN_TOKEN (private marketplace)
      SDLC_NOTIFY_WEBHOOK (Slack or generic webhook: gate.pending, gate.decided, spec.ready, review.done, change.merged)
 `;
 
@@ -106,8 +106,9 @@ export async function ciCommand(root: string, args: string[]): Promise<number> {
       return intentToSpec(c);
     case 'triage':
       return triage(c, rest[0]);
+    case 'tracker-merged':
     case 'jira-merged':
-      return jiraMerged(c);
+      return trackerMerged(c);
     case 'mention':
       return mention(c);
     case 'evals':
@@ -203,7 +204,7 @@ Do not approve or block: the findings inform the code owner. Do not modify any f
   await post(c, n, out);
   if (!c.dryRun) {
     const tally = out.match(TALLY)?.at(-1);
-    log(await notify({ event: 'review.done', change: findChange(c.root, c.loaded, { branch: headRef(c) }), note: tally }, c.loaded, c.env));
+    log(await notify({ event: 'review.done', change: findChange(c.root, c.loaded, { branch: headRef(c), active: false }), note: tally }, c.loaded, c.env));
   }
   return 0;
 }
@@ -280,25 +281,32 @@ async function triage(c: CiEnv, logFile: string | undefined): Promise<number> {
   return 0;
 }
 
-async function jiraMerged(c: CiEnv): Promise<number> {
-  const merged = c.env.MERGED_BRANCH ? findChange(c.root, c.loaded, { branch: c.env.MERGED_BRANCH }) : undefined;
+/** Source branch of a merge commit: GitLab "Merge branch 'x' into 'main'", Bitbucket "Merged in x (pull request #7)". */
+export function mergedBranch(message: string): string | undefined {
+  return /^Merge branch '([^']+)'/m.exec(message)?.[1] ?? /^Merged in (\S+)/m.exec(message)?.[1];
+}
+
+async function trackerMerged(c: CiEnv): Promise<number> {
+  const message = git(c.root, ['log', '-1', '--format=%B']) ?? '';
+  const branch = c.env.MERGED_BRANCH || mergedBranch(message);
+  const merged = branch ? findChange(c.root, c.loaded, { branch, active: false }) : undefined;
   if (merged && !c.dryRun) log(await notify({ event: 'change.merged', change: merged }, c.loaded, c.env));
   if (!trackerEnabled(c.loaded)) {
     log('tracker not configured');
     return 0;
   }
-  const text = [git(c.root, ['log', '-1', '--format=%B']) ?? '', headRef(c), c.env.MERGED_BRANCH ?? ''].join('\n');
-  const keys = ticketKeys(text, c.loaded?.config.tracker?.project_key);
+  const text = [message, headRef(c), branch ?? ''].join('\n');
+  const keys = trackerKeys(c.loaded, [text, merged?.ticket ?? ''].join('\n'));
   if (!keys.length) {
     log('the merge does not reference any tickets');
     return 0;
   }
-  const j = jira(c.loaded, c.env);
+  const j = tracker(c.loaded, c.env, c.root);
   for (const k of keys) {
     try {
       log(await j.transition(k, 'merged'));
     } catch (e) {
-      log(`could not transition ${k}: ${(e as Error).message} (continuing; Jira does not block)`);
+      log(`could not transition ${k}: ${(e as Error).message} (continuing; the tracker does not block)`);
     }
   }
   return 0;

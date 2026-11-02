@@ -14,8 +14,8 @@ import {
   type Notice,
 } from '@ai-native-sdlc/core';
 
-/** The change a CI run is about: by id/slug, else by branch (`change/<slug>`), else the active one. */
-export function findChange(root: string, loaded: LoadedConfig | undefined, o: { id?: string; branch?: string }): Change | undefined {
+/** The change a CI run is about: by id/slug, else by branch (`change/<slug>`), else the active one (unless `active: false`). */
+export function findChange(root: string, loaded: LoadedConfig | undefined, o: { id?: string; branch?: string; active?: boolean }): Change | undefined {
   const all = listChanges(root, { locale: localeOf(loaded), defaultBranch: loaded?.config.vcs?.default_branch });
   if (o.id) return all.find((c) => c.id === o.id || c.slug === o.id || c.dir === o.id || c.id === `changes/${o.id}`);
   if (o.branch) {
@@ -23,7 +23,7 @@ export function findChange(root: string, loaded: LoadedConfig | undefined, o: { 
     const hit = all.find((c) => c.branch === o.branch || c.slug === slug || c.dir === slug);
     if (hit) return hit;
   }
-  return all.find((c) => c.active);
+  return o.active === false ? undefined : all.find((c) => c.active);
 }
 
 export async function notifyCommand(root: string, loaded: LoadedConfig | undefined, pos: string[], flags: Record<string, string | true>): Promise<number> {

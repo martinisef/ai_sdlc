@@ -27,7 +27,7 @@ Elegí la ruta según el tamaño del fix:
 En los dos casos:
 1. `lessons/<YYYY-MM-DD>-<slug>.md` con el formato de `lessons/README.md`.
 2. Propuesta de eval en `evals/<slug>.json` (prompt + checks) para que la clase de incidente no vuelva a pasar desapercibida.
-3. Jira: crear ticket de tipo `tracker.incident_issue_type` linkeado al intent y a la lesson (`sdlc tracker create --type <tipo> ...`). Si falla, avisá y seguí.
+3. Tracker: crear ticket de tipo `tracker.incident_issue_type` linkeado al intent y a la lesson (`sdlc tracker create --type <tipo> ...`). Si falla, avisá y seguí.
 
 ## 4. Triage
 Dejá claro que el on-call o service owner decide: **fix now / schedule / dismiss**. Los descartes sirven para ajustar las bandas (`ops/bands.yaml`).

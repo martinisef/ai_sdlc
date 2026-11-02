@@ -35,7 +35,7 @@ El engineer acepta el plan (al salir de plan mode). Si `risk: high`, se necesita
 
 ## 4. Registrar plan.md
 Ya fuera de plan mode, escribí `changes/<slug>/plan.md` desde el template con el plan aceptado, `status: approved`, `approved_by: <engineer>`, `risk`. Commit: `plan(<slug>): <título>` (+ key).
-Jira: transición `plan` + comentario con path y SHA (`jira-sot`: también resumen). Si falla, avisá y seguí.
+Tracker: transición `plan` + comentario con path y SHA (`jira-sot`: también resumen). Si falla, avisá y seguí.
 
 ## Cierre
 Una línea con el siguiente paso: "`/sdlc-build` para implementar contra el plan" (o, si hay pasos independientes, sugerir `claude --worktree <nombre>` por paso).

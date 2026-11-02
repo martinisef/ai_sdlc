@@ -1,6 +1,6 @@
 ---
 name: sdlc-setup
-description: Walkthrough that gets a project ready to work in the AI-native loop. Detects or asks for the stack, provider (GitHub/GitLab/Bitbucket) and tracker (Jira), copies the fixed structure, generates the project-specific configuration (sdlc.json, Makefile, CLAUDE.md, REVIEW.md, CI, permissions), verifies it and records progress in SETUP.md. It is re-runnable and resumes whatever is pending. Use when creating a new project, when asked to "set up the loop/SDLC", or when SETUP.md has pending steps.
+description: Walkthrough that gets a project ready to work in the AI-native loop. Detects or asks for the stack, provider (GitHub/GitLab/Bitbucket) and tracker (Jira, GitHub Issues, Linear), copies the fixed structure, generates the project-specific configuration (sdlc.json, Makefile, CLAUDE.md, REVIEW.md, CI, permissions), verifies it and records progress in SETUP.md. It is re-runnable and resumes whatever is pending. Use when creating a new project, when asked to "set up the loop/SDLC", or when SETUP.md has pending steps.
 argument-hint: "[--resume | --only <ci|tracker|policies|claude-md>]"
 ---
 
@@ -31,7 +31,7 @@ Group into 2-3 rounds, no more than 4 questions per round:
 1. **Stack**: language/framework, package manager (defaults from `stacks/<lang>.md`), project type (API / frontend / library / data / CLI).
 2. **Provider**: GitHub / GitLab (host, tier: Free/Premium/Ultimate) / Bitbucket Cloud (workspace). Default branch.
 3. **Sensitive paths**: are there migrations, generated code, IaC, frozen packages? → `protected_paths`. What is high risk (auth, payments, infra)? → `risk.high_risk_paths`. How is production deployed? → `production_gate.patterns`.
-4. **Tracker**: Jira or none. If Jira, follow `trackers/jira.md` (URL, project key, mode, transition mapping).
+4. **Tracker**: Jira, GitHub Issues, Linear or none. Follow `trackers/<jira|github|linear|none>.md` (keys, mode, stage mapping). The `team-github` preset defaults to GitHub Issues.
 5. **Policies**: which of the org's policy skills apply (list the ones available in the plugin).
 6. **Agents**: which agents the team uses (Claude Code, Cursor, Codex or others with AGENTS.md) → `agents` in the config.
 
@@ -50,7 +50,7 @@ Follow `stacks/<lang>.md` (if it does not exist, `stacks/_unknown.md`) and `ci/<
 4. **CLAUDE.md**: if the project already has code, run the analysis equivalent to `/init` and trim it. Fill in Commands (the real ones), Conventions (from the stack + answers), Architecture. **Less than one page.**
 5. **REVIEW.md**: fill in "What Important means here" according to the project type (e.g. API: broken contracts, auth; frontend: accessibility, visual regressions) and "Do not report" (generated code, vendored).
 6. **CI**: `sdlc init` already ran `sdlc ci install` (templates from `ci/<provider>/` with the `# >>> stack` blocks filled in from `stacks/<lang>.md`); if they are missing, run it. Review what is left: a `# >>> stack` block still there means the stack has no reference, so fill it in by hand. The pipelines only decide *when*; the logic is `sdlc ci <cmd>`, the same on all three providers. If the team does not run Claude in CI, set `ci.agent` (`codex` or `cursor`) in `.sdlc/config.json`.
-7. **Tracker**: `.mcp.json` with the Atlassian MCP and `tracker` block in sdlc.json (`trackers/jira.md`).
+7. **Tracker**: `tracker` block in sdlc.json, plus `.mcp.json` with the Atlassian MCP for Jira (`trackers/<tracker>.md`).
 8. **Policies**: list in CLAUDE.md which policy skills apply to this repo.
 
 ## 5. Verify (mandatory)
@@ -59,7 +59,7 @@ Follow `stacks/<lang>.md` (if it does not exist, `stacks/_unknown.md`) and `ci/<
 - Hooks: simulate a block and show it, for example
   `printf '{"tool_name":"Edit","tool_input":{"file_path":"<protected path>/x"}}' | sdlc hook pre-tool --agent claude; echo $?` → 2.
 - `sdlc vcs provider` → the correct provider.
-- Jira: `sdlc tracker statuses` and a `get` of a test ticket; every mapped transition exists.
+- Tracker: `sdlc tracker statuses` and a `get` of a test ticket; every mapped transition exists.
 - CI: validate syntax (GitHub: valid YAML; GitLab: `glab ci lint` if available; Bitbucket: valid YAML).
 - Evals: `sdlc ci evals` locally (it needs the agent CLI and its API key) once there are real cases in `evals/`.
 - Bands (if Stage 6 applies): `sdlc bands check --dry-run` reads every source in `ops/bands.yaml` without acting.

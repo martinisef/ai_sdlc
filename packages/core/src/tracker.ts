@@ -1,10 +1,17 @@
-// Jira REST (Cloud and Data Center, API v2). Used in CI/headless runs and when the Atlassian MCP is not available.
-// Callers treat failures as warnings: the tracker never blocks the loop.
+// Trackers: Jira REST (Cloud and Data Center, API v2), GitHub Issues (REST) and Linear (GraphQL), behind one interface.
+// Used in CI/headless runs and when no tracker MCP is available. Callers treat failures as warnings: the tracker never blocks the loop.
 import type { LoadedConfig } from './config.ts';
+import { git } from './git.ts';
 import { basicAuth, httpJson, SdlcError } from './http.ts';
 
 /** Exit code for "tracker not configured", distinct from a failure. */
 export const TRACKER_DISABLED = 3;
+
+export const TRACKER_PROVIDERS = ['jira', 'github', 'linear'] as const;
+export type TrackerProvider = (typeof TRACKER_PROVIDERS)[number];
+
+/** Loop stages a tracker can follow (`tracker.transitions` maps them to a transition, status, label or workflow state). */
+export const TRACKER_STAGES = ['intent', 'spec', 'plan', 'ship', 'merged'] as const;
 
 export interface Issue {
   key: string;
@@ -15,12 +22,50 @@ export interface Issue {
   url: string;
 }
 
-export function trackerEnabled(loaded: LoadedConfig | undefined): boolean {
-  return loaded?.config.tracker?.provider === 'jira';
+export interface Transition {
+  id: string;
+  name: string;
+  to: string;
 }
 
-export function jira(loaded: LoadedConfig | undefined, env: NodeJS.ProcessEnv = process.env) {
-  if (!trackerEnabled(loaded)) throw new SdlcError('tracker not configured (tracker.provider != jira)', TRACKER_DISABLED);
+export interface Tracker {
+  provider: TrackerProvider;
+  get(key: string): Promise<Issue>;
+  transitions(key: string): Promise<Transition[]>;
+  /** `target` is a loop stage (mapped in tracker.transitions) or a provider transition/status/label name. */
+  transition(key: string, target: string): Promise<string>;
+  comment(key: string, body: string): Promise<void>;
+  create(o: { summary: string; body: string; type?: string }): Promise<string>;
+  setDescription(key: string, body: string): Promise<void>;
+  statuses(): Promise<string[]>;
+}
+
+export function trackerProvider(loaded: LoadedConfig | undefined): TrackerProvider | undefined {
+  const p = loaded?.config.tracker?.provider;
+  return (TRACKER_PROVIDERS as readonly string[]).includes(p ?? '') ? (p as TrackerProvider) : undefined;
+}
+
+export function trackerEnabled(loaded: LoadedConfig | undefined): boolean {
+  return trackerProvider(loaded) !== undefined;
+}
+
+export function tracker(loaded: LoadedConfig | undefined, env: NodeJS.ProcessEnv = process.env, root = process.cwd()): Tracker {
+  switch (trackerProvider(loaded)) {
+    case 'jira':
+      return jira(loaded, env);
+    case 'github':
+      return githubIssues(loaded!, env, root);
+    case 'linear':
+      return linear(loaded!, env);
+    default:
+      throw new SdlcError('tracker not configured (tracker.provider: jira | github | linear)', TRACKER_DISABLED);
+  }
+}
+
+const isStage = (s: string) => (TRACKER_STAGES as readonly string[]).includes(s);
+
+export function jira(loaded: LoadedConfig | undefined, env: NodeJS.ProcessEnv = process.env): Tracker {
+  if (trackerProvider(loaded) !== 'jira') throw new SdlcError('tracker not configured (tracker.provider != jira)', TRACKER_DISABLED);
   const tracker = loaded!.config.tracker!;
   const base = (env.JIRA_BASE_URL ?? tracker.base_url ?? '').replace(/\/$/, '');
   if (!base) throw new SdlcError('missing tracker.base_url in .sdlc/config.json (or JIRA_BASE_URL)');
@@ -31,16 +76,16 @@ export function jira(loaded: LoadedConfig | undefined, env: NodeJS.ProcessEnv = 
   const projectKey = () => tracker.project_key ?? fail('missing tracker.project_key');
 
   return {
-    async get(key: string): Promise<Issue> {
+    provider: 'jira',
+    async get(key) {
       const i = await call('GET', `/issue/${key}?fields=summary,status,issuetype,description`);
       return { key: i.key, summary: i.fields.summary, status: i.fields.status?.name, type: i.fields.issuetype?.name, description: i.fields.description ?? null, url: `${base}/browse/${i.key}` };
     },
-    async transitions(key: string): Promise<{ id: string; name: string; to: string }[]> {
+    async transitions(key) {
       const r = await call('GET', `/issue/${key}/transitions`);
       return (r.transitions ?? []).map((t: any) => ({ id: t.id, name: t.name, to: t.to?.name }));
     },
-    /** `target` is a loop stage (intent|spec|plan|ship|merged, mapped in tracker.transitions) or a transition/status name. */
-    async transition(key: string, target: string): Promise<string> {
+    async transition(key, target) {
       const name = tracker.transitions?.[target] ?? target;
       const n = name.toLowerCase();
       const t = (await this.transitions(key)).find((x) => x.name.toLowerCase() === n || x.to?.toLowerCase() === n);
@@ -48,21 +93,146 @@ export function jira(loaded: LoadedConfig | undefined, env: NodeJS.ProcessEnv = 
       await call('POST', `/issue/${key}/transitions`, { transition: { id: t.id } });
       return `${key} → ${name}`;
     },
-    async comment(key: string, body: string): Promise<void> {
+    async comment(key, body) {
       await call('POST', `/issue/${key}/comment`, { body });
     },
-    async create(o: { summary: string; body: string; type?: string }): Promise<string> {
+    async create(o) {
       const r = await call('POST', '/issue', {
         fields: { project: { key: projectKey() }, summary: o.summary, description: o.body, issuetype: { name: o.type ?? tracker.default_issue_type ?? 'Task' } },
       });
       return r.key;
     },
-    async setDescription(key: string, body: string): Promise<void> {
+    async setDescription(key, body) {
       await call('PUT', `/issue/${key}`, { fields: { description: body } });
     },
-    async statuses(): Promise<string[]> {
+    async statuses() {
       const r = await call('GET', `/project/${projectKey()}/statuses`);
       return [...new Set<string>(r.flatMap((t: any) => t.statuses.map((s: any) => s.name)))].sort();
+    },
+  };
+}
+
+/** `owner/repo` for GitHub Issues: tracker.repo, GITHUB_REPOSITORY, vcs.workspace/repo, or the origin remote. */
+function githubRepo(loaded: LoadedConfig, env: NodeJS.ProcessEnv, root: string): string {
+  const t = loaded.config.tracker as { repo?: string } | undefined;
+  if (t?.repo) return t.repo;
+  if (env.GITHUB_REPOSITORY) return env.GITHUB_REPOSITORY;
+  const v = loaded.config.vcs;
+  if (v?.workspace && v.repo) return `${v.workspace}/${v.repo}`;
+  const m = /github\.com[:/]([^/]+\/[^/]+?)(\.git)?$/.exec(git(root, ['remote', 'get-url', 'origin']) ?? '');
+  return m?.[1] ?? fail('cannot tell the GitHub repository: set tracker.repo ("owner/repo")');
+}
+
+function githubIssues(loaded: LoadedConfig, env: NodeJS.ProcessEnv, root: string): Tracker {
+  const tracker = loaded.config.tracker!;
+  const token = env.GH_TOKEN ?? env.GITHUB_TOKEN ?? fail('missing GitHub credentials (GH_TOKEN or GITHUB_TOKEN)');
+  const api = (env.GITHUB_API_URL ?? 'https://api.github.com').replace(/\/$/, '');
+  const repo = githubRepo(loaded, env, root);
+  const call = (method: string, path: string, body?: unknown) =>
+    httpJson(method, `${api}/repos/${repo}${path}`, { authorization: `Bearer ${token}`, 'x-github-api-version': '2022-11-28' }, body);
+  const label = (stage: string) => tracker.transitions?.[stage] ?? `sdlc:${stage}`;
+  const stageLabels = () => TRACKER_STAGES.map(label);
+  const num = (key: string) => {
+    const m = /^(?:[\w.-]+\/[\w.-]+)?#?(\d+)$/.exec(key.trim());
+    return m ? m[1] : fail(`not a GitHub issue: ${key} (use #123 or owner/repo#123)`);
+  };
+
+  return {
+    provider: 'github',
+    async get(key) {
+      const i = await call('GET', `/issues/${num(key)}`);
+      const labels: string[] = (i.labels ?? []).map((l: any) => (typeof l === 'string' ? l : l.name));
+      const stage = labels.find((l) => stageLabels().includes(l));
+      return {
+        key: `#${i.number}`,
+        summary: i.title,
+        status: i.state === 'closed' ? 'closed' : (stage ?? 'open'),
+        type: labels.find((l) => !stageLabels().includes(l)) ?? 'issue',
+        description: i.body ?? null,
+        url: i.html_url,
+      };
+    },
+    async transitions() {
+      return TRACKER_STAGES.map((s) => ({ id: label(s), name: s, to: label(s) }));
+    },
+    async transition(key, target) {
+      const n = num(key);
+      const to = isStage(target) ? label(target) : target;
+      const current: string[] = ((await call('GET', `/issues/${n}`)).labels ?? []).map((l: any) => (typeof l === 'string' ? l : l.name));
+      for (const old of current.filter((l) => l !== to && stageLabels().includes(l))) await call('DELETE', `/issues/${n}/labels/${encodeURIComponent(old)}`);
+      await call('POST', `/issues/${n}/labels`, { labels: [to] });
+      if (target === 'merged') await call('PATCH', `/issues/${n}`, { state: 'closed', state_reason: 'completed' });
+      return `#${n} → ${to}${target === 'merged' ? ' (closed)' : ''}`;
+    },
+    async comment(key, body) {
+      await call('POST', `/issues/${num(key)}/comments`, { body });
+    },
+    async create(o) {
+      const type = o.type ?? tracker.default_issue_type;
+      const r = await call('POST', '/issues', { title: o.summary, body: o.body, labels: type ? [type] : [] });
+      return `#${r.number}`;
+    },
+    async setDescription(key, body) {
+      await call('PATCH', `/issues/${num(key)}`, { body });
+    },
+    async statuses() {
+      return [...stageLabels(), 'closed'];
+    },
+  };
+}
+
+function linear(loaded: LoadedConfig, env: NodeJS.ProcessEnv): Tracker {
+  const tracker = loaded.config.tracker as NonNullable<LoadedConfig['config']['tracker']> & { team_key?: string };
+  const key = env.LINEAR_API_KEY ?? fail('missing Linear credentials (LINEAR_API_KEY)');
+  const url = env.LINEAR_API_URL ?? 'https://api.linear.app/graphql';
+  const teamKey = () => tracker.team_key ?? tracker.project_key ?? fail('missing tracker.team_key (the Linear team key, e.g. ENG)');
+  const gql = async (query: string, variables: Record<string, unknown> = {}) => {
+    const r = await httpJson('POST', url, { authorization: key }, { query, variables });
+    if (r?.errors?.length) throw new SdlcError(`Linear: ${r.errors.map((e: any) => e.message).join('; ')}`);
+    return r.data;
+  };
+  type Team = { id: string; states: { id: string; name: string }[] };
+  let team: Promise<Team> | undefined;
+  const getTeam = (): Promise<Team> =>
+    (team ??= gql('query($key: String!) { teams(filter: { key: { eq: $key } }) { nodes { id states { nodes { id name } } } } }', { key: teamKey() }).then((d) => {
+      const t = d.teams.nodes[0] ?? fail(`no Linear team with key ${teamKey()}`);
+      return { id: t.id, states: t.states.nodes };
+    }));
+  const issueId = async (k: string) => (await gql('query($id: String!) { issue(id: $id) { id } }', { id: k })).issue?.id ?? fail(`no Linear issue ${k}`);
+
+  return {
+    provider: 'linear',
+    async get(k) {
+      const d = await gql('query($id: String!) { issue(id: $id) { identifier title description url state { name } labels { nodes { name } } } }', { id: k });
+      const i = d.issue ?? fail(`no Linear issue ${k}`);
+      return { key: i.identifier, summary: i.title, status: i.state?.name, type: i.labels?.nodes?.[0]?.name ?? 'issue', description: i.description ?? null, url: i.url };
+    },
+    async transitions() {
+      return (await getTeam()).states.map((s) => ({ id: s.id, name: s.name, to: s.name }));
+    },
+    async transition(k, target) {
+      const name = tracker.transitions?.[target] ?? target;
+      const s = (await getTeam()).states.find((x) => x.name.toLowerCase() === name.toLowerCase());
+      if (!s) throw new SdlcError(`workflow state '${name}' does not exist in team ${teamKey()} (see: sdlc tracker statuses)`);
+      await gql('mutation($id: String!, $state: String!) { issueUpdate(id: $id, input: { stateId: $state }) { success } }', { id: await issueId(k), state: s.id });
+      return `${k} → ${s.name}`;
+    },
+    async comment(k, body) {
+      await gql('mutation($id: String!, $body: String!) { commentCreate(input: { issueId: $id, body: $body }) { success } }', { id: await issueId(k), body });
+    },
+    async create(o) {
+      const d = await gql('mutation($team: String!, $title: String!, $body: String) { issueCreate(input: { teamId: $team, title: $title, description: $body }) { issue { identifier } } }', {
+        team: (await getTeam()).id,
+        title: o.summary,
+        body: o.body,
+      });
+      return d.issueCreate.issue.identifier;
+    },
+    async setDescription(k, body) {
+      await gql('mutation($id: String!, $body: String!) { issueUpdate(id: $id, input: { description: $body }) { success } }', { id: await issueId(k), body });
+    },
+    async statuses() {
+      return (await getTeam()).states.map((s) => s.name).sort();
     },
   };
 }
@@ -75,4 +245,17 @@ function fail(msg: string): never {
 export function ticketKeys(text: string, projectKey?: string): string[] {
   const re = new RegExp(`${projectKey ? projectKey.replace(/[^A-Z0-9]/gi, '') : '[A-Z][A-Z0-9]+'}-[0-9]+`, 'g');
   return [...new Set(text.match(re) ?? [])].sort();
+}
+
+/**
+ * Ticket keys for the configured tracker: `ENG-123` for Jira and Linear; `#123` / `owner/repo#123` for GitHub Issues.
+ * GitHub's squash suffix `(#123)` is the PR number, not an issue, so it is skipped.
+ */
+export function trackerKeys(loaded: LoadedConfig | undefined, text: string): string[] {
+  const t = loaded?.config.tracker as { project_key?: string; team_key?: string } | undefined;
+  if (trackerProvider(loaded) !== 'github') return ticketKeys(text, trackerProvider(loaded) === 'linear' ? (t?.team_key ?? t?.project_key) : t?.project_key);
+  const clean = text.replace(/\(#\d+\)\s*$/gm, '');
+  const found = [...clean.matchAll(/(?:^|[\s(,:/-])((?:[\w.-]+\/[\w.-]+)?#(\d+))\b/g)].map((m) => m[1]);
+  const branchIssue = /(?:^|\n)(?:change\/)?(?:issue-|gh-)(\d+)\b/.exec(clean)?.[1];
+  return [...new Set([...found, ...(branchIssue ? [`#${branchIssue}`] : [])])].sort();
 }

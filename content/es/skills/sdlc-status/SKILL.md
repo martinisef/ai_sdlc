@@ -11,7 +11,7 @@ CLI del loop: `sdlc` ({{sdlc_hint}}).
 ## Estado
 1. `sdlc status --json` → un objeto por cambio: `change`, `stage`, `ticket`, `statuses` (intent/spec/plan), `active`, `next`.
 2. Para el cambio activo (y para los otros si son pocos, ≤ 5): `sdlc vcs pr-current` desde su rama o buscando por rama, para saber si hay PR y su estado.
-3. Si `tracker.provider = jira` y el cambio tiene ticket: estado del ticket (MCP de Atlassian o `sdlc tracker get <KEY>`).
+3. Si hay tracker (`tracker.provider` distinto de `none`) y el cambio tiene ticket: estado del ticket (MCP del tracker o `sdlc tracker get <KEY>`).
 4. Mostrá una tabla:
 
 | Cambio | Etapa | Ticket (estado) | PR | Siguiente paso |

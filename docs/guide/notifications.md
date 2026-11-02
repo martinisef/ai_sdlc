@@ -8,7 +8,7 @@ The loop waits on people: the PO accepts the intent, someone approves the spec a
 | `gate.pending` | `sdlc ci gate-status`, when the push adds or changes the artifact a gate waits on | which artifact waits, and who has to decide |
 | `gate.decided` | `sdlc ci gate`, after `/approve` or `/reject` in a comment | the decision, who made it, the reason |
 | `review.done` | `sdlc ci review`, and `sdlc-review.yml` on GitHub | the review finished; the `Important: N · Nit: M` tally |
-| `change.merged` | `sdlc ci jira-merged` (the merged-PR job) | the change is merged |
+| `change.merged` | `sdlc ci tracker-merged` (the merged-PR job) | the change is merged |
 
 Each message carries the change, its stage, whoever has to act (from `gates` and `roles`), and links to the PR and to the artifact on the branch.
 

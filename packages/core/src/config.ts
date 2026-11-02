@@ -29,10 +29,15 @@ export const ConfigSchema = z.looseObject({
     .optional(),
   tracker: z
     .looseObject({
-      provider: z.enum(['jira', 'none']).optional(),
+      provider: z.enum(['jira', 'github', 'linear', 'none']).optional(),
+      /** `jira-sot`: the tracker (Jira, GitHub Issues or Linear) is the source of truth; the name is historical. */
       mode: z.enum(['linkage', 'jira-sot', 'repo-sot']).optional(),
       base_url: z.string().optional(),
       project_key: z.string().optional(),
+      /** Linear: team key (`ENG` in `ENG-123`). */
+      team_key: z.string().optional(),
+      /** GitHub Issues: `owner/repo` when the issues live in another repository than the code. */
+      repo: z.string().optional(),
       default_issue_type: z.string().optional(),
       incident_issue_type: z.string().optional(),
       transitions: z.record(z.string(), z.string()).optional(),
