@@ -16,7 +16,9 @@ export interface SdlcEvent {
     | 'band.break'
     | 'change.new'
     | 'change.quick'
-    | 'change.promote';
+    | 'change.promote'
+    | 'setup.init'
+    | 'setup.fix';
   metric?: string;
   agent?: string;
   policy?: string;
