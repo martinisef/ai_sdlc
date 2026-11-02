@@ -8,4 +8,4 @@ El repo es la única fuente de verdad: `changes/<YYYY-MM>-<slug>/` con intent, s
 
 - Las skills no intentan llamar a ningún tracker.
 - Ramas: `change/<slug>`. Carpetas con prefijo de fecha.
-- Si más adelante se suma Jira: correr `/sdlc-setup --only tracker`. Los cambios existentes pueden linkearse completando `ticket:` en su `intent.md`.
+- Si más adelante se suma un tracker (Jira, GitHub Issues, Linear): correr `/sdlc-setup --only tracker`. Los cambios existentes pueden linkearse completando `ticket:` en su `intent.md`.

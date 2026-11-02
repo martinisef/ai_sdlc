@@ -4,7 +4,7 @@
 # Variables (Settings → CI/CD → Variables, masked + protected as appropriate):
 #   ANTHROPIC_API_KEY (or OPENAI_API_KEY / CURSOR_API_KEY when ci.agent is codex / cursor)
 #   GITLAB_TOKEN (project access token, scope api) · SDLC_PLUGIN_TOKEN (if the marketplace is private)
-#   JIRA_EMAIL + JIRA_API_TOKEN (if there is Jira) · SDLC_NOTIFY_WEBHOOK (Slack/webhook notifications, optional)
+#   JIRA_EMAIL + JIRA_API_TOKEN (if there is Jira) · LINEAR_API_KEY · SDLC_NOTIFY_WEBHOOK (Slack/webhook notifications, optional)
 
 .sdlc-base:
   image: node:22
@@ -39,13 +39,13 @@ sdlc:intent-to-spec:
     - git checkout -B "$CI_COMMIT_BRANCH"
     - npx -y @morsadev/sdlc@0 ci intent-to-spec
 
-sdlc:jira-merged:
+sdlc:tracker-merged:
   extends: .sdlc-base
   stage: loop
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "push"
   script:
-    - npx -y @morsadev/sdlc@0 ci jira-merged
+    - npx -y @morsadev/sdlc@0 ci tracker-merged
 
 sdlc:evals:
   extends: .sdlc-agent

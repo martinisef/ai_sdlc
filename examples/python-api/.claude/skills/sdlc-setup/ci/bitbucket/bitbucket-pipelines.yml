@@ -1,6 +1,6 @@
 # Bitbucket Pipelines for the AI-native loop.
 # Repository variables (secured): ANTHROPIC_API_KEY (or OPENAI_API_KEY / CURSOR_API_KEY for ci.agent codex / cursor) · BITBUCKET_ACCESS_TOKEN (repository access token: pull requests write, repository write)
-#   SDLC_PLUGIN_TOKEN (if the marketplace is private) · JIRA_EMAIL + JIRA_API_TOKEN (if there is Jira) · SDLC_NOTIFY_WEBHOOK (optional)
+#   SDLC_PLUGIN_TOKEN (if the marketplace is private) · JIRA_EMAIL + JIRA_API_TOKEN (if there is Jira) · LINEAR_API_KEY · SDLC_NOTIFY_WEBHOOK (optional)
 
 # >>> stack: language image (filled in by /sdlc-setup from stacks/<lang>.md)
 image: atlassian/default-image:4
@@ -62,10 +62,10 @@ pipelines:
     main:
       - step: *build
       - step:
-          name: Jira → merged
+          name: Tracker and notifications on merge
           image: node:22
           script:
-            - npx -y @morsadev/sdlc@0 ci jira-merged
+            - npx -y @morsadev/sdlc@0 ci tracker-merged
 
   custom:
     agent-evals:

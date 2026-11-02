@@ -11,7 +11,7 @@ Loop CLI: `sdlc` (if it is not on the PATH: `.sdlc/bin/sdlc`).
 ## Status
 1. `sdlc status --json` → one object per change: `change`, `stage`, `ticket`, `statuses` (intent/spec/plan), `active`, `next`.
 2. For the active change (and for the others if there are few, ≤ 5): `sdlc vcs pr-current` from its branch or by searching by branch, to find out whether there is a PR and its state.
-3. If `tracker.provider = jira` and the change has a ticket: ticket status (Atlassian MCP or `sdlc tracker get <KEY>`).
+3. If there is a tracker (`tracker.provider` not `none`) and the change has a ticket: ticket status (the tracker's MCP or `sdlc tracker get <KEY>`).
 4. Show a table:
 
 | Change | Stage | Ticket (status) | PR | Next step |

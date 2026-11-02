@@ -87,7 +87,7 @@ Integrations
   hook <event> --agent claude|cursor|git   guardrail entry point (called by generated hooks)
   vcs <args…>                        PR/MR helper (github, gitlab, bitbucket)
   tracker <args…>                    Jira helper
-  ci <cmd>                           CI entry point: bootstrap, review, intent-to-spec, triage, jira-merged, evals
+  ci <cmd>                           CI entry point: bootstrap, review, intent-to-spec, triage, tracker-merged, gate, evals
   bands check [--json] [--dry-run]   Stage 6: evaluate ops/bands.yaml; log / diagnose / open an incident intent
   notify <event> [--change ID] [--dry-run]   gate.pending|gate.decided|spec.ready|review.done|change.merged → Slack or a webhook
   webhook [--port N]                 @claude in GitLab/Bitbucket comments → triggers \`sdlc ci mention\` in CI

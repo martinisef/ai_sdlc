@@ -13,7 +13,7 @@ Loop CLI: `sdlc` ({{sdlc_hint}}). Commands: `.sdlc/config.json → commands`.
 ## 0. Change context
 - If the bug is part of an in-progress change, work on its branch.
 - If it is a new bug: create a lightweight change. Branch `change/<slug>` (or `change/<KEY>-<slug>` with a ticket), folder `changes/<...>/` with a short `intent.md` (`origin: ticket|incident`) and a brief `plan.md` (files, verification = the test you are going to write). For small bugs it is enough for the engineer to accept the plan in the session; no spec needed.
-- With a ticket and Jira: read it (MCP or `sdlc tracker get <KEY>`).
+- With a ticket and a tracker: read it (MCP or `sdlc tracker get <KEY>`).
 
 ## 1. Reproduce
 1. Write a test that reproduces the bug in the project's test location (`test_globs`).

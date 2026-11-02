@@ -10,7 +10,7 @@ Todos los jobs corren `npx -y @morsadev/sdlc@0 ci <cmd>` sobre `node:22`: no hay
 
 Si ya existe `.gitlab-ci.yml`: agregá `include: - local: ci/sdlc.gitlab-ci.yml` y los stages `review`, `loop`, `evals`. No lo reemplaces.
 Completá el bloque `# >>> stack` (imagen + setup) desde `stacks/<lang>.md` → "CI · GitLab".
-Sin Jira: sacá `sdlc:jira-merged`. Sin Stage 6: sacá `sdlc:bands`.
+`sdlc:tracker-merged` mueve el ticket y manda `change.merged`; sin tracker ni avisos no hace nada. Sin Stage 6: sacá `sdlc:bands`.
 
 ## Diferencias con GitHub
 - **Review**: no hay equivalente de `claude-code-action`; el job corre el agente headless (`claude -p`, o `codex exec` / `cursor-agent` con `ci.agent`) y publica un comentario en el MR por API (`sdlc vcs` usa REST si no hay `glab`). Anthropic documenta una integración de Claude Code con GitLab CI/CD (beta): si el equipo la adopta, puede reemplazar `sdlc:review`.
@@ -18,7 +18,7 @@ Sin Jira: sacá `sdlc:jira-merged`. Sin Stage 6: sacá `sdlc:bands`.
 - **Code Owners obligatorios y approval rules**: dependen del tier (Premium/Ultimate). En Free: protected branch + "Allowed to merge: Maintainers" y review por convención.
 
 ## Configuración manual (agregar a SETUP.md)
-1. **Variables CI/CD**: `ANTHROPIC_API_KEY` (masked), `GITLAB_TOKEN` (project access token con scope `api` y rol Developer: comenta en MRs y pushea a `change/**`), `SDLC_PLUGIN_TOKEN` si el marketplace es privado, `JIRA_EMAIL` + `JIRA_API_TOKEN` si hay Jira, `SDLC_NOTIFY_WEBHOOK` para [avisos](https://martinisef.github.io/ai_sdlc/es/avisos).
+1. **Variables CI/CD**: `ANTHROPIC_API_KEY` (masked), `GITLAB_TOKEN` (project access token con scope `api` y rol Developer: comenta en MRs y pushea a `change/**`), `SDLC_PLUGIN_TOKEN` si el marketplace es privado, `JIRA_EMAIL` + `JIRA_API_TOKEN` si hay Jira, `LINEAR_API_KEY` con Linear, `SDLC_NOTIFY_WEBHOOK` para [avisos](https://martinisef.github.io/ai_sdlc/es/avisos).
 2. **Protected branch** default: sin push directo, merge solo vía MR.
 3. **Approval rules / CODEOWNERS** (Premium+): `CLAUDE.md`, `REVIEW.md`, `.claude/`, `evals/` con dueños.
 4. **Pipeline schedule** nocturno (CI/CD → Schedules) para `sdlc:evals`; con Stage 6, un segundo schedule diario con la variable `SDLC_JOB=bands` para `sdlc:bands`.

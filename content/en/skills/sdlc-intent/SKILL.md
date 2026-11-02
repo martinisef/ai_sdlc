@@ -15,10 +15,10 @@ Loop CLI: `sdlc` ({{sdlc_hint}}). Project config: `.sdlc/config.json`.
 - If there are uncommitted changes on the current branch, warn before creating a new branch.
 
 ## 1. Input
-- **With a ticket** (`$ARGUMENTS` looks like an `ABC-123` key) and `tracker.provider = jira`: read the ticket with the Atlassian MCP if it is available in the session; otherwise, with `sdlc tracker get <KEY>`. Use the summary and description as a starting point. `origin: ticket`.
+- **With a ticket** (`$ARGUMENTS` looks like a key: `ABC-123` for Jira or Linear, `#123` for GitHub Issues) and `tracker.provider` is not `none`: read the ticket with the tracker's MCP (Atlassian, Linear) if it is available in the session; otherwise, with `sdlc tracker get <KEY>`. Use the summary and description as a starting point. `origin: ticket`.
 - **With text**: it is the initial description of the idea. `origin: idea`.
 - **No arguments**: ask the person to describe the problem in their own words.
-- If Jira fails (credentials, network), say so in one line and continue without Jira: the tracker supports the loop, it does not block it.
+- If the tracker fails (credentials, network), say so in one line and continue without it: the tracker supports the loop, it does not block it.
 
 ## 2. Brainstorming
 Ask the questions an analyst would ask, **a few at a time** (2-3 per turn, with AskUserQuestion when there are clear options):
@@ -33,12 +33,12 @@ Stop when the problem, the outcome and the constraints are clear. Whatever is st
 ## 3. Create the change
 1. Short kebab-case slug (`claims-status`). With a ticket: `PROJ-123-claims-status`.
 2. Folder: with a ticket `changes/<KEY>-<slug>/`; without a ticket `changes/<YYYY-MM>-<slug>/`.
-3. Branch: `git switch -c change/<slug>` from the up-to-date default branch (`vcs.default_branch`). With a ticket: `change/<KEY>-<slug>`. The key in the branch name makes Jira's native integration link it automatically.
+3. Branch: `git switch -c change/<slug>` from the up-to-date default branch (`vcs.default_branch`). With a ticket: `change/<KEY>-<slug>` (GitHub Issues: `change/issue-<n>-<slug>`). The key in the branch name makes the tracker's native integration link it automatically.
 4. Write `intent.md` from `changes/_templates/intent.md` (if it does not exist in the repo, use the one at `<base directory>/../sdlc-setup/scaffold/changes/_templates/intent.md`). Frontmatter: `change`, `status: draft`, `author` (name of whoever originated the idea, not yours), `origin`, `ticket`, `created` (today's date).
 5. Show the intent and ask for corrections. Iterate until the person says it reflects what they meant.
 6. Commit: `intent(<slug>): <title>` (+ ` [KEY]` if there is a ticket).
 
-## 4. Jira (if `tracker.provider = jira`)
+## 4. Tracker (if `tracker.provider` is `jira`, `github` or `linear`)
 Depending on `tracker.mode`:
 - **No ticket**: in `jira-sot` create the ticket (mandatory): `sdlc tracker create --summary "<title>" --body-file changes/<...>/intent.md`. In `linkage` offer to create it. In `repo-sot` it is optional. If one is created, rename the folder and branch to include the key and update `ticket:`.
 - **linkage / repo-sot**: comment on the ticket with the intent's path and the commit SHA.

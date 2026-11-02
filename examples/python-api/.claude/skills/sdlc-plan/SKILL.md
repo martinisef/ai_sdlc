@@ -35,7 +35,7 @@ The engineer accepts the plan (when exiting plan mode). If `risk: high`, a tech 
 
 ## 4. Record plan.md
 Once out of plan mode, write `changes/<slug>/plan.md` from the template with the accepted plan, `status: approved`, `approved_by: <engineer>`, `risk`. Commit: `plan(<slug>): <title>` (+ key).
-Jira: `plan` transition + comment with path and SHA (`jira-sot`: also a summary). If it fails, say so and continue.
+Tracker: `plan` transition + comment with path and SHA (`jira-sot`: also a summary). If it fails, say so and continue.
 
 ## Wrap-up
 One line with the next step: "`/sdlc-build` to implement against the plan" (or, if there are independent steps, suggest `claude --worktree <name>` per step).

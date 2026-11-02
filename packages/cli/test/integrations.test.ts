@@ -23,8 +23,21 @@ let api = '';
 let calls: string[] = [];
 let failOn: string | undefined;
 
-function respond(method: string, url: string): unknown {
+function respond(method: string, url: string, data = ''): unknown {
   const m = `${method} ${url}`;
+  if (m === 'GET /gh/repos/acme/app/issues/5')
+    return { number: 5, title: 'Claims status', state: 'open', labels: [{ name: 'sdlc:spec' }, { name: 'enhancement' }], body: 'b', html_url: 'https://github.com/acme/app/issues/5' };
+  if (m === 'POST /gh/repos/acme/app/issues') return { number: 9 };
+  if (url.startsWith('/gh/')) return method === 'DELETE' ? undefined : {};
+  if (url === '/linear') {
+    const q = JSON.parse(data).query as string;
+    if (q.includes('teams(')) return { data: { teams: { nodes: [{ id: 'team-1', states: { nodes: [{ id: 's1', name: 'Todo' }, { id: 's2', name: 'In Design' }, { id: 's3', name: 'Done' }] } }] } } };
+    if (q.includes('issue(id: $id) { id }')) return { data: { issue: { id: 'uuid-1' } } };
+    if (q.includes('issue(id: $id)')) return { data: { issue: { identifier: 'ENG-7', title: 'Claims status', description: null, url: 'https://linear.app/acme/issue/ENG-7', state: { name: 'Todo' }, labels: { nodes: [] } } } };
+    if (q.includes('issueCreate')) return { data: { issueCreate: { issue: { identifier: 'ENG-8' } } } };
+    if (q.includes('commentCreate') && data.includes('fail me')) return { errors: [{ message: 'Entity not found' }] };
+    return { data: { issueUpdate: { success: true }, commentCreate: { success: true } } };
+  }
   if (/^GET .*\/rest\/api\/2\/project\/.*\/statuses$/.test(m))
     return [{ statuses: [{ name: 'To Do' }, { name: 'In Design' }] }, { statuses: [{ name: 'To Do' }, { name: 'Done' }] }];
   if (/^POST .*\/pullrequests$/.test(m)) return { id: 7, links: { html: { href: 'https://bitbucket.org/acme/app/pull-requests/7' } } };
@@ -57,7 +70,7 @@ before(async () => {
         res.writeHead(403).end('forbidden');
         return;
       }
-      const out = respond(req.method!, req.url!);
+      const out = respond(req.method!, req.url!, data);
       res.writeHead(out === undefined ? 204 : 200, { 'content-type': 'application/json' }).end(out === undefined ? '' : JSON.stringify(out));
     });
   });
@@ -198,4 +211,45 @@ test('tracker: jira over REST', async () => {
   const pat = await sdlc(['tracker', 'get', 'PROJ-1'], { JIRA_EMAIL: undefined, JIRA_API_TOKEN: undefined, JIRA_PAT: 'p' });
   assert.equal(pat.code, 0);
   assert.ok(logged('Bearer p'));
+});
+
+test('tracker: github issues over REST (labels per stage, merged closes)', async () => {
+  config('github', { provider: 'github', default_issue_type: 'enhancement' });
+  reset();
+  const env = { GH_TOKEN: 'g', GITHUB_API_URL: `${api}/gh` };
+  const issue = JSON.parse((await sdlc(['tracker', 'get', '#5'], env)).out);
+  assert.deepEqual([issue.key, issue.status, issue.type, issue.url], ['#5', 'sdlc:spec', 'enhancement', 'https://github.com/acme/app/issues/5']);
+  assert.ok(logged('GET /gh/repos/acme/app/issues/5  Bearer g'), 'repo from vcs.workspace/repo');
+  assert.equal((await sdlc(['tracker', 'transition', 'acme/app#5', 'plan'], env)).out, '#5 → sdlc:plan');
+  assert.ok(logged('DELETE /gh/repos/acme/app/issues/5/labels/sdlc%3Aspec'));
+  assert.ok(logged('POST /gh/repos/acme/app/issues/5/labels {"labels":["sdlc:plan"]}'));
+  assert.equal((await sdlc(['tracker', 'transition', '5', 'merged'], env)).out, '#5 → sdlc:merged (closed)');
+  assert.ok(logged('PATCH /gh/repos/acme/app/issues/5 {"state":"closed","state_reason":"completed"}'));
+  assert.equal((await sdlc(['tracker', 'create', '--summary', 'S', '--body-file', body], env)).out, '#9');
+  assert.ok(logged('"labels":["enhancement"]'));
+  await sdlc(['tracker', 'comment', '#5', '--body-file', body], env);
+  assert.ok(logged('POST /gh/repos/acme/app/issues/5/comments'));
+  assert.equal((await sdlc(['tracker', 'statuses'], env)).out.split('\n').at(-1), 'closed');
+  const noToken = await sdlc(['tracker', 'get', '#5'], { GITHUB_API_URL: `${api}/gh`, GH_TOKEN: undefined, GITHUB_TOKEN: undefined });
+  assert.equal(noToken.code, 1);
+  assert.match(noToken.err, /GH_TOKEN/);
+});
+
+test('tracker: linear over GraphQL (workflow states, errors surface)', async () => {
+  config('github', { provider: 'linear', team_key: 'ENG', transitions: { spec: 'In Design', merged: 'Done' } });
+  reset();
+  const env = { LINEAR_API_KEY: 'lin_x', LINEAR_API_URL: `${api}/linear` };
+  const issue = JSON.parse((await sdlc(['tracker', 'get', 'ENG-7'], env)).out);
+  assert.deepEqual([issue.key, issue.status, issue.url], ['ENG-7', 'Todo', 'https://linear.app/acme/issue/ENG-7']);
+  assert.ok(logged(' lin_x'), 'raw API key in the authorization header');
+  assert.equal((await sdlc(['tracker', 'transition', 'ENG-7', 'spec'], env)).out, 'ENG-7 → In Design');
+  assert.ok(logged('"variables":{"id":"uuid-1","state":"s2"}'));
+  assert.equal((await sdlc(['tracker', 'transition', 'ENG-7', 'Shipped'], env)).code, 1);
+  assert.equal((await sdlc(['tracker', 'create', '--summary', 'S', '--body-file', body], env)).out, 'ENG-8');
+  assert.ok(logged('"team":"team-1"'));
+  assert.equal((await sdlc(['tracker', 'statuses'], env)).out, 'Done\nIn Design\nTodo');
+  writeFileSync(join(tmp, 'fail.md'), 'fail me');
+  const r = await sdlc(['tracker', 'comment', 'ENG-7', '--body-file', join(tmp, 'fail.md')], env);
+  assert.equal(r.code, 1);
+  assert.match(r.err, /Linear: Entity not found/);
 });

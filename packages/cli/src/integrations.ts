@@ -3,7 +3,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
-  jira,
   loadConfig,
   prChecks,
   prComment,
@@ -11,6 +10,7 @@ import {
   prCreate,
   prCurrent,
   SdlcError,
+  tracker,
   trackerEnabled,
   vcsProvider,
   type VcsContext,
@@ -24,7 +24,7 @@ sdlc vcs pr-comments <number>                                → review comments
 sdlc vcs pr-checks <number>                                  → name<TAB>state per line
 Bitbucket auth: BITBUCKET_ACCESS_TOKEN, or BITBUCKET_USER + BITBUCKET_API_TOKEN.`;
 
-const TRACKER_HELP = `sdlc tracker enabled                                → exit 0 if tracker.provider = jira
+const TRACKER_HELP = `sdlc tracker enabled                                → exit 0 if tracker.provider is jira, github or linear
 sdlc tracker get KEY                                → {"key","summary","status","type","description","url"}
 sdlc tracker transitions KEY                        → available transitions, one per line
 sdlc tracker transition KEY <stage|name>            → stage = intent|spec|plan|ship|merged (tracker.transitions)
@@ -32,7 +32,9 @@ sdlc tracker comment KEY --body-file F
 sdlc tracker create --summary S --body-file F [--type T]  → new key
 sdlc tracker set-description KEY --body-file F
 sdlc tracker statuses                               → project workflow statuses
-Auth: JIRA_EMAIL + JIRA_API_TOKEN (Cloud) or JIRA_PAT (Data Center). Exit 3 = tracker not configured.`;
+Keys: PROJ-123 (Jira), #123 or owner/repo#123 (GitHub Issues), ENG-123 (Linear).
+Auth: Jira JIRA_EMAIL + JIRA_API_TOKEN (Cloud) or JIRA_PAT (Data Center) · GitHub GH_TOKEN · Linear LINEAR_API_KEY.
+Exit 3 = tracker not configured.`;
 
 /** --flag value pairs and bare flags, in any order after the positional arguments. */
 function opts(args: string[]) {
@@ -100,31 +102,32 @@ export async function trackerCommand(root: string, args: string[]): Promise<numb
   if (sub === 'enabled') return trackerEnabled(loaded) ? 0 : 1;
   const { pos, o } = opts(rest);
   const need = (usage: string) => pos[0] ?? fail(`usage: ${usage}`);
+  const t = () => tracker(loaded, process.env, root);
   switch (sub) {
     case 'get':
-      console.log(JSON.stringify(await jira(loaded).get(need('get KEY'))));
+      console.log(JSON.stringify(await t().get(need('get KEY'))));
       return 0;
     case 'transitions':
-      for (const t of await jira(loaded).transitions(need('transitions KEY'))) console.log(`${t.name}\t→ ${t.to}`);
+      for (const x of await t().transitions(need('transitions KEY'))) console.log(`${x.name}\t→ ${x.to}`);
       return 0;
     case 'transition':
       if (!pos[1]) fail('usage: transition KEY <stage|name>');
-      console.log(await jira(loaded).transition(pos[0], pos[1]));
+      console.log(await t().transition(pos[0], pos[1]));
       return 0;
     case 'comment':
-      await jira(loaded).comment(need('comment KEY --body-file F'), bodyFile(o, process.cwd()).body);
+      await t().comment(need('comment KEY --body-file F'), bodyFile(o, process.cwd()).body);
       console.log(`comment added on ${pos[0]}`);
       return 0;
     case 'create':
       if (typeof o.summary !== 'string') fail('usage: create --summary S --body-file F [--type T]');
-      console.log(await jira(loaded).create({ summary: o.summary as string, body: bodyFile(o, process.cwd()).body, type: typeof o.type === 'string' ? o.type : undefined }));
+      console.log(await t().create({ summary: o.summary as string, body: bodyFile(o, process.cwd()).body, type: typeof o.type === 'string' ? o.type : undefined }));
       return 0;
     case 'set-description':
-      await jira(loaded).setDescription(need('set-description KEY --body-file F'), bodyFile(o, process.cwd()).body);
+      await t().setDescription(need('set-description KEY --body-file F'), bodyFile(o, process.cwd()).body);
       console.log(`description updated on ${pos[0]}`);
       return 0;
     case 'statuses':
-      for (const s of await jira(loaded).statuses()) console.log(s);
+      for (const s of await t().statuses()) console.log(s);
       return 0;
     default:
       console.error(TRACKER_HELP);

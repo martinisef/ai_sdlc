@@ -15,7 +15,7 @@ Lo leen los guardrails (`sdlc hook`, para cualquier agente), las skills del loop
     "default_branch": "main"
   },
   "tracker": {
-    "provider": "jira | none",
+    "provider": "jira | github | linear | none",
     "mode": "linkage | jira-sot | repo-sot",
     "base_url": "https://miorg.atlassian.net",
     "project_key": "PROJ",
@@ -55,7 +55,7 @@ Lo leen los guardrails (`sdlc hook`, para cualquier agente), las skills del loop
 | `locale` | mensajes de guardrails, dashboard | `en` o `es`. |
 | `agents` | `sdlc sync`, `sdlc doctor` | Qué adapters generar: `claude`, `cursor`, `agents-md` (Codex, Copilot y otros que leen AGENTS.md). |
 | `vcs.*` | `sdlc vcs`, `/sdlc-ship`, CI | Si falta `provider`, se deduce del remote. |
-| `tracker.*` | `sdlc tracker`, skills del loop, CI | `transitions` acepta nombre de transición **o** nombre del estado destino. |
+| `tracker.*` | `sdlc tracker`, skills del loop, CI | `provider`: `jira`, `github` (GitHub Issues; `repo` si no es el repositorio del código), `linear` (`team_key`) o `none`. `transitions` mapea cada etapa a una transición o estado destino de Jira, un label de GitHub (por defecto `sdlc:<etapa>`; `merged` cierra el issue) o un estado del workflow de Linear. |
 | `commands.*` | skills, `verifier`, evals | Cada uno es un solo comando que sale ≠ 0 si falla. |
 | `format_on_edit` | hook PostToolUse | Glob → comando; `{file}` se reemplaza por la ruta. Mantenerlo rápido (un archivo). |
 | `protected_paths` | hook `protect-paths` | `*` cruza `/`; `**/` inicial es opcional. |

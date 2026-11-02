@@ -8,7 +8,7 @@ El loop espera a personas: el PO acepta el intent, alguien aprueba la spec y el 
 | `gate.pending` | `sdlc ci gate-status`, cuando el push agrega o cambia el artefacto que espera un gate | qué artefacto espera y quién tiene que decidir |
 | `gate.decided` | `sdlc ci gate`, después de un `/approve` o `/reject` en un comentario | la decisión, quién la tomó y el motivo |
 | `review.done` | `sdlc ci review`, y `sdlc-review.yml` en GitHub | terminó la revisión; el conteo `Important: N · Nit: M` |
-| `change.merged` | `sdlc ci jira-merged` (el job del PR mergeado) | el cambio está mergeado |
+| `change.merged` | `sdlc ci tracker-merged` (el job del PR mergeado) | el cambio está mergeado |
 
 Cada mensaje incluye el cambio, su etapa, a quién le toca (según `gates` y `roles`) y links al PR y al artefacto en la rama.
 

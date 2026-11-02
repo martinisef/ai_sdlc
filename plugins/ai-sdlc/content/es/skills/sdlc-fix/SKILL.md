@@ -13,7 +13,7 @@ CLI del loop: `sdlc` ({{sdlc_hint}}). Comandos: `.sdlc/config.json → commands`
 ## 0. Contexto del cambio
 - Si el bug es parte de un cambio en curso, trabajá en su rama.
 - Si es un bug nuevo: creá un cambio liviano. Rama `change/<slug>` (o `change/<KEY>-<slug>` con ticket), carpeta `changes/<...>/` con un `intent.md` corto (`origin: ticket|incident`) y un `plan.md` breve (archivos, prueba = el test que vas a escribir). Para bugs chicos alcanza con que el engineer acepte el plan en la sesión; no hace falta spec.
-- Con ticket y Jira: leelo (MCP o `sdlc tracker get <KEY>`).
+- Con ticket y tracker: leelo (MCP o `sdlc tracker get <KEY>`).
 
 ## 1. Reproducir
 1. Escribí un test que reproduzca el bug en la ubicación de tests del proyecto (`test_globs`).

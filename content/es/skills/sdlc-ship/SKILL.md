@@ -35,7 +35,7 @@ Si algo falla, arreglalo o reportalo; no abras un PR rojo.
    ```
 3. Título: `<KEY> <título>` si hay ticket (Jira lo linkea), si no `<título>`.
 4. `sdlc vcs pr-create --title "<título>" --body-file <tmp>` (o editá el existente con la CLI del proveedor). Mostrá el link.
-5. Jira: transición `ship` + comentario con el link al PR. Si falla, avisá y seguí.
+5. Tracker: transición `ship` + comentario con el link al PR. Si falla, avisá y seguí.
 
 ## 3. Modo --babysit
 Loop hasta que el PR esté verde y solo espere aprobación humana (máximo ~5 iteraciones; después reportá qué queda):
