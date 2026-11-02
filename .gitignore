@@ -10,3 +10,7 @@ docs/.vitepress/cache/
 docs/.vitepress/dist/
 evals-report.json
 packages/cli/LICENSE
+packages/vscode/dist/
+packages/vscode/.stage/
+*.vsix
+.vscode-test/

@@ -38,6 +38,7 @@ export default defineConfig({
               { text: 'The loop', link: '/guide/concepts' },
               { text: 'Guardrails', link: '/guide/guardrails' },
               { text: 'Dashboard', link: '/guide/dashboard' },
+              { text: 'Editor extension', link: '/guide/editor' },
             ],
           },
           {

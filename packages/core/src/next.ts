@@ -2,7 +2,7 @@
 // Shared by `sdlc next`, the session-start hook, the dashboard and the editor extension.
 import { listChanges, type Change, type Stage } from './changes.ts';
 import { localeOf, type Artifact, type LoadedConfig } from './config.ts';
-import { canApprove, type Approver } from './gates.ts';
+import { canApprove, requiredApprovers, type Approver } from './gates.ts';
 import { gitUser } from './git.ts';
 import { t, type Locale } from './i18n.ts';
 
@@ -36,11 +36,6 @@ const SKILL: Partial<Record<Stage, string>> = {
 
 const GATE: Partial<Record<Stage, Artifact>> = { 'intent-draft': 'intent', 'spec-draft': 'spec', 'plan-draft': 'plan' };
 
-function rolesFor(change: Change, artifact: Artifact, loaded: LoadedConfig): string[] {
-  const roles = loaded.config.gates?.[artifact] ?? [];
-  return artifact === 'plan' && change.risk === 'high' && !roles.includes('tech-lead') ? [...roles, 'tech-lead'] : roles;
-}
-
 export function forChange(change: Change, loaded: LoadedConfig, who: Approver, locale: Locale): Omit<NextAction, 'inbox'> {
   const base = { change: change.slug, stage: change.stage };
   const gate = GATE[change.stage];
@@ -49,8 +44,7 @@ export function forChange(change: Change, loaded: LoadedConfig, who: Approver, l
     if (ok.ok) {
       return { ...base, kind: 'approve', artifact: gate, command: `sdlc approve ${change.slug} ${gate}`, message: t(locale, 'nx.approve', { change: change.slug, artifact: gate }) };
     }
-    const roles = rolesFor(change, gate, loaded);
-    const people = roles.flatMap((r) => loaded.config.roles?.[r] ?? []);
+    const { roles, people } = requiredApprovers(change, gate, loaded);
     return {
       ...base,
       kind: 'wait',

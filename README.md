@@ -31,6 +31,7 @@ Claude Code users can also install the plugin: `/plugin marketplace add martinis
 - **Human gates recorded in git.** An approval is a commit made with the approver's identity, and agents and bots cannot approve.
 - **Guardrails**: protected paths, secrets, a test-lock during fixes, a production gate, format-on-edit, plan sync and plan-before-code. Agent hooks block before the action, and git hooks back them up for every agent.
 - **A local dashboard** (`sdlc ui`): inbox, board, artifact review, metrics, activity, health and settings.
+- **An editor extension** for VS Code and Cursor: the next step in the status bar, your pending gates and the changes by stage ([guide](docs/guide/editor.md); `.vsix` on each release).
 - **CI for GitHub, GitLab and Bitbucket**: review with `REVIEW.md`, triage of failed builds, accepted intent → spec, Jira on merge, and evals. The headless agent can be Claude Code, Codex or Cursor.
 - **Stage 6 control bands** (`sdlc bands check`): Western Electric rules over your metrics. Depending on the tier, a break is logged, diagnosed by the agent read-only, or turned into an incident intent with a draft PR.
 - **English and Spanish** content (`locale`).
@@ -41,7 +42,7 @@ Claude Code users can also install the plugin: `/plugin marketplace add martinis
 
 - [Your first change in 10 minutes](docs/guide/first-change.md)
 - [Introduction](docs/guide/introduction.md), with quickstarts for [Claude Code](docs/guide/quickstart-claude.md), [Cursor](docs/guide/quickstart-cursor.md) and [AGENTS.md agents](docs/guide/quickstart-agents-md.md)
-- [The loop](docs/guide/concepts.md), [Guardrails](docs/guide/guardrails.md), [Dashboard](docs/guide/dashboard.md)
+- [The loop](docs/guide/concepts.md), [Guardrails](docs/guide/guardrails.md), [Dashboard](docs/guide/dashboard.md), [Editor extension](docs/guide/editor.md)
 - [Team guide](docs/guide/team.md), [Platform guide](docs/guide/platform.md), [Managed settings](docs/guide/managed-settings.md)
 - Reference: [CLI](docs/reference/cli.md), [configuration](docs/reference/config.md), [CI](docs/reference/ci.md), [control bands](docs/reference/bands.md), [evals](docs/reference/evals.md), [telemetry](docs/reference/telemetry.md)
 - Español: [docs/es](docs/es/index.md)
@@ -60,6 +61,7 @@ Both are initialized with `sdlc` for all three agents, and the product evals in 
 | `packages/core` | config, changes and gates, policies (guardrails), git, VCS, Jira, bands, metrics |
 | `packages/adapters` | `sdlc sync` renderers (Claude Code, Cursor, AGENTS.md), hook adapters, git hooks, doctor |
 | `packages/server`, `packages/ui` | the local dashboard (Hono + React) |
+| `packages/vscode` | the VS Code / Cursor extension (private; ships as a `.vsix`) |
 | `packages/cli` | the `sdlc` CLI, bundled into one file and published as `@morsadev/sdlc` |
 | `content/{en,es}` | skills, subagents, scaffold and CI templates (the source; `en` first) |
 | `plugins/ai-sdlc` | the Claude Code plugin, **generated** by `npm run build` |

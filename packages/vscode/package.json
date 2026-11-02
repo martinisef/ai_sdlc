@@ -1,0 +1,139 @@
+{
+  "name": "ai-sdlc",
+  "displayName": "AI SDLC",
+  "description": "The AI-native SDLC loop in your editor: the next step, your pending gates and every change by stage.",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "publisher": "morsadev",
+  "license": "Apache-2.0",
+  "homepage": "https://martinisef.github.io/ai_sdlc/guide/editor",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/martinisef/ai_sdlc.git",
+    "directory": "packages/vscode"
+  },
+  "bugs": "https://github.com/martinisef/ai_sdlc/issues",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "sdlc",
+    "ai",
+    "agents",
+    "claude",
+    "cursor",
+    "spec-driven"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "workspaceContains:.sdlc/config.json",
+    "workspaceContains:changes/*/intent.md"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "aiSdlc.menu",
+        "title": "AI SDLC: What next?"
+      },
+      {
+        "command": "aiSdlc.refresh",
+        "title": "AI SDLC: Refresh",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "aiSdlc.next",
+        "title": "AI SDLC: Do the next step"
+      },
+      {
+        "command": "aiSdlc.openArtifact",
+        "title": "AI SDLC: Open intent, spec or plan"
+      },
+      {
+        "command": "aiSdlc.quick",
+        "title": "AI SDLC: Quick change (no spec or plan)"
+      },
+      {
+        "command": "aiSdlc.approve",
+        "title": "AI SDLC: Approve a gate"
+      },
+      {
+        "command": "aiSdlc.reject",
+        "title": "AI SDLC: Reject a gate"
+      },
+      {
+        "command": "aiSdlc.dashboard",
+        "title": "AI SDLC: Open the dashboard"
+      },
+      {
+        "command": "aiSdlc.doctorFix",
+        "title": "AI SDLC: Doctor --fix"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "aiSdlc",
+          "title": "AI SDLC",
+          "icon": "media/loop.svg"
+        }
+      ]
+    },
+    "views": {
+      "aiSdlc": [
+        {
+          "id": "aiSdlc.changes",
+          "name": "Changes"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "aiSdlc.changes",
+        "contents": "No changes yet.\n[Start a quick change](command:aiSdlc.quick)\nOr ask your agent for /sdlc-intent."
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "aiSdlc.refresh",
+          "when": "view == aiSdlc.changes",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "aiSdlc.approve",
+          "when": "view == aiSdlc.changes && viewItem == gate"
+        },
+        {
+          "command": "aiSdlc.reject",
+          "when": "view == aiSdlc.changes && viewItem == gate"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "AI SDLC",
+      "properties": {
+        "aiSdlc.cliPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the sdlc CLI. Empty: node_modules/.bin/sdlc in the workspace, else the CLI bundled with the extension."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node ../../scripts/build-vscode.mjs",
+    "package": "node ../../scripts/build-vscode.mjs --package"
+  },
+  "devDependencies": {
+    "@ai-native-sdlc/core": "*",
+    "@types/vscode": "1.90.0",
+    "@vscode/test-electron": "^3.1.0",
+    "@vscode/vsce": "^4.1.0"
+  }
+}
