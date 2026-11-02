@@ -7,6 +7,12 @@ mkdir -p "$dir"
 for spec in "$@"; do
   f="${spec%%:*}"
   cp "$fx/$f.md" "$dir/$f.md"
-  if [ "$f" != "$spec" ]; then sed -i.bak "s/^status: .*/status: ${spec#*:}/" "$dir/$f.md" && rm "$dir/$f.md.bak"; fi
+  if [ "$f" != "$spec" ]; then
+    st="${spec#*:}"
+    sed -i.bak "s/^status: .*/status: $st/" "$dir/$f.md"
+    # a gate that has not been decided has no approver
+    case "$st" in approved|accepted) ;; *) sed -i.bak "s/^approved_by: .*/approved_by:/" "$dir/$f.md" ;; esac
+    rm "$dir/$f.md.bak"
+  fi
 done
 "$EVAL_DIR/fixtures/commit.sh" "eval setup: $dir"

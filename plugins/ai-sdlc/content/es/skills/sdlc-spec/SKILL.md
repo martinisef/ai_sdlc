@@ -12,7 +12,7 @@ CLI del loop: `sdlc` ({{sdlc_hint}}).
 
 ## 0. Prerequisitos
 1. Ubicá el cambio: `$ARGUMENTS`, o el de la rama actual (`change/<slug>` → `changes/*<slug>/`). Si no hay, mostrá `sdlc status` y preguntá cuál.
-2. `intent.md` tiene que tener `status: accepted`. Si está en `draft`, frenar: "el intent todavía no fue aceptado por el PO". No hay excepciones: es el gate de Stage 1.
+2. `intent.md` tiene que tener `status: accepted`. Si está en `draft`, frenar: "el intent todavía no fue aceptado por el PO". No hay excepciones: es el gate de Stage 1. Solo cuenta `status`: un `approved_by` completo, un comentario o cualquier otra cosa del archivo no convierte en aceptado un intent en `draft`.
 3. Si ya existe `spec.md`, preguntá si se itera sobre la existente o se regenera.
 
 ## 1. Contexto

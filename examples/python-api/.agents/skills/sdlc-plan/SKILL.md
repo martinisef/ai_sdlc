@@ -12,7 +12,7 @@ Loop CLI: `sdlc` (if it is not on the PATH: `.sdlc/bin/sdlc`).
 
 ## 0. Prerequisites
 1. Active change (branch `change/<slug>`) or `$ARGUMENTS`.
-2. `spec.md` with `status: approved`. If it does not exist: for small changes without a spec (bugfix, scoped refactor) you can plan from an accepted `intent.md`; say so explicitly. If the spec is in draft, stop.
+2. `spec.md` with `status: approved`. If it does not exist: for small changes without a spec (bugfix, scoped refactor) you can plan from an accepted `intent.md`; say so explicitly. If the spec is in draft, stop (only `status` counts, not `approved_by`).
 3. **Plan mode**: if the session is not in plan mode, ask the user to enable it (Shift+Tab until "plan mode") before continuing. In plan mode Claude can read the repo but cannot change anything until the plan is accepted. If that is not possible (e.g. headless), work read-only until step 4.
 
 ## 1. Build the plan

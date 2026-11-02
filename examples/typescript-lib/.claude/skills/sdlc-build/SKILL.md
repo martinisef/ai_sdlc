@@ -9,7 +9,7 @@ argument-hint: "[changes/<slug> | plan step number]"
 Loop CLI: `sdlc` (if it is not on the PATH: `.sdlc/bin/sdlc`). Project commands: `.sdlc/config.json → commands` (build, test, lint, run).
 
 ## 0. Prerequisites
-- `plan.md` of the active change with `status: approved`. If there is no approved plan: **do not implement**. Offer `/sdlc-plan`. (Exception: the user explicitly asks for a trivial change outside the loop; in that case say it will have no traceability.)
+- `plan.md` of the active change with `status: approved`. If there is no approved plan (only `status` counts, not `approved_by`): **do not implement**. Offer `/sdlc-plan`. (Exception: the user explicitly asks for a trivial change outside the loop; in that case say it will have no traceability.)
 - Clean tree or understood changes.
 
 ## 1. Implement
