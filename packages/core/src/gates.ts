@@ -10,6 +10,8 @@ import { commitFiles, git, gitOrThrow, gitUser, lines } from './git.ts';
 export interface Approver {
   name?: string;
   email?: string;
+  /** Forge username (GitHub/GitLab/Bitbucket), matched against `@login` entries in `roles`. */
+  login?: string;
 }
 
 export interface GateResult {
@@ -24,8 +26,8 @@ export interface GateResult {
 const AGENT_IDENTITY = /(\[bot\]|\bbot\b|claude|anthropic|cursor|codex|copilot|noreply@github)/i;
 
 export function canApprove(change: Change, artifact: Artifact, who: Approver, loaded: LoadedConfig | undefined): { ok: boolean; reason?: string } {
-  const id = `${who.name ?? ''} <${who.email ?? ''}>`;
-  if (!who.email && !who.name) return { ok: false, reason: 'git user.name / user.email is not set' };
+  const id = `${who.name ?? ''} <${who.email ?? ''}>${who.login ? ` @${who.login}` : ''}`;
+  if (!who.email && !who.name && !who.login) return { ok: false, reason: 'git user.name / user.email is not set' };
   if (AGENT_IDENTITY.test(id)) return { ok: false, reason: `${id} looks like an agent or bot; a person must approve` };
   const info = change.artifacts[artifact];
   if (!info) return { ok: false, reason: `${change.id}/${artifact}.md does not exist` };
@@ -39,7 +41,11 @@ export function canApprove(change: Change, artifact: Artifact, who: Approver, lo
   if (required.length === 0) return { ok: true };
   const members = required.flatMap((r) => loaded?.config.roles?.[r] ?? []);
   if (members.length === 0) return { ok: true }; // roles declared but nobody assigned: do not lock the team out
-  const match = members.some((m) => m.toLowerCase() === who.email?.toLowerCase() || m.toLowerCase() === who.name?.toLowerCase());
+  const match = members.some((m) => {
+    const x = m.toLowerCase();
+    if (x.startsWith('@')) return !!who.login && x.slice(1) === who.login.toLowerCase();
+    return x === who.email?.toLowerCase() || x === who.name?.toLowerCase();
+  });
   return match ? { ok: true } : { ok: false, reason: `${artifact} needs approval from: ${required.join(', ')}` };
 }
 
@@ -54,13 +60,13 @@ export function decideGate(
   const locale = localeOf(loaded);
   const change = getChange(root, changeId, { locale, defaultBranch: loaded?.config.vcs?.default_branch });
   if (!change) throw new Error(`change not found: ${changeId}`);
-  const who = opts.approver ?? gitUser(root);
+  const who: Approver = opts.approver ?? gitUser(root);
   const check = canApprove(change, artifact, who, loaded);
   if (!check.ok) throw new Error(check.reason);
   const info = change.artifacts[artifact]!;
   // intents are "accepted" in the playbook vocabulary; spec and plan are "approved"
   const status = decision === 'rejected' ? 'rejected' : artifact === 'intent' ? 'accepted' : 'approved';
-  const by = who.name ?? who.email!;
+  const by = who.name ?? who.email ?? `@${who.login}`;
   const fields: Record<string, string> = { status };
   if (decision === 'approved') {
     fields.approved_by = by;

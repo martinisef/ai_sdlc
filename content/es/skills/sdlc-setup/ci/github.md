@@ -5,6 +5,7 @@
 |---|---|---|
 | `github/ci.yml` | `.github/workflows/ci.yml` | build + lint + test; si falla en un PR, triage con Claude comentado en el PR |
 | `github/sdlc-review.yml` | `.github/workflows/sdlc-review.yml` | review con REVIEW.md en cada PR (`claude-code-action`) + `@claude` en comentarios |
+| `github/sdlc-gates.yml` | `.github/workflows/sdlc-gates.yml` | `/approve spec`, `/reject plan …` en comentarios del PR → commit del gate; commit status `sdlc/gates` (hacelo requerido) |
 | `github/sdlc-loop.yml` | `.github/workflows/sdlc-loop.yml` | intent aceptado → spec.md automática; PR mergeado → Jira a *merged* |
 | `github/sdlc-evals.yml` | `.github/workflows/sdlc-evals.yml` | evals de configuración en PRs que tocan la configuración del agente + nightly |
 | `github/sdlc-bands.yml` | `.github/workflows/sdlc-bands.yml` | solo Stage 6: `sdlc bands check` diario sobre `ops/bands.yaml` |

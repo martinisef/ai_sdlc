@@ -162,6 +162,32 @@ export async function prComment(ctx: VcsContext, n: number, body: string): Promi
   }
 }
 
+export type StatusState = 'success' | 'pending' | 'failure';
+
+/** Commit status (GitHub status, GitLab commit status, Bitbucket build status) — what branch protection can require. */
+export async function commitStatus(ctx: VcsContext, sha: string, s: { state: StatusState; context: string; description: string; url?: string }): Promise<string> {
+  const env = ctx.env ?? process.env;
+  const description = s.description.slice(0, 139);
+  switch (vcsProvider(ctx)) {
+    case 'github':
+      tool(ctx, 'gh', ['api', '-X', 'POST', `repos/{owner}/{repo}/statuses/${sha}`, '-f', `state=${s.state}`, '-f', `context=${s.context}`, '-f', `description=${description}`, ...(s.url ? ['-f', `target_url=${s.url}`] : [])]);
+      break;
+    case 'gitlab': {
+      if (!env.GITLAB_TOKEN || !env.CI_API_V4_URL || !env.CI_PROJECT_ID) throw new SdlcError('GITLAB_TOKEN, CI_API_V4_URL and CI_PROJECT_ID are required for commit statuses');
+      const state = s.state === 'failure' ? 'failed' : s.state;
+      await httpJson('POST', `${env.CI_API_V4_URL}/projects/${env.CI_PROJECT_ID}/statuses/${sha}`, { 'private-token': env.GITLAB_TOKEN }, { state, name: s.context, description, ...(s.url ? { target_url: s.url } : {}) });
+      break;
+    }
+    case 'bitbucket': {
+      const state = s.state === 'success' ? 'SUCCESSFUL' : s.state === 'failure' ? 'FAILED' : 'INPROGRESS';
+      const url = s.url ?? env.BITBUCKET_GIT_HTTP_ORIGIN ?? 'https://bitbucket.org';
+      await bitbucket(ctx)('POST', `/commit/${sha}/statuses/build`, { state, key: s.context, name: s.context, description, url });
+      break;
+    }
+  }
+  return `${s.context}: ${s.state} on ${sha.slice(0, 7)}`;
+}
+
 export async function prComments(ctx: VcsContext, n: number): Promise<PrComment[]> {
   switch (vcsProvider(ctx)) {
     case 'github':
