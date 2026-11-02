@@ -1,9 +1,9 @@
 // Local dashboard server: a thin HTTP layer over the core. Binds to 127.0.0.1 only; every API call needs
 // the per-run token injected into the page, and the Host header must be local (DNS-rebinding guard).
-import { randomBytes } from 'node:crypto';
+import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, watch, writeFileSync, type FSWatcher } from 'node:fs';
 import { homedir } from 'node:os';
-import { basename, dirname, extname, join, resolve } from 'node:path';
+import { basename, dirname, extname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFile } from 'node:child_process';
 import { serve } from '@hono/node-server';
@@ -103,8 +103,9 @@ export function createApp(opts: { root: string; token: string }) {
     const host = (c.req.header('host') ?? '').replace(/:\d+$/, '');
     if (!['127.0.0.1', 'localhost', '[::1]'].includes(host)) return c.text('forbidden host', 403);
     if (c.req.path.startsWith('/api/')) {
-      const token = c.req.header('x-sdlc-token') ?? c.req.query('token');
-      if (token !== opts.token) return c.json({ error: 'unauthorized' }, 401);
+      const token = Buffer.from(c.req.header('x-sdlc-token') ?? c.req.query('token') ?? '');
+      const expected = Buffer.from(opts.token);
+      if (token.length !== expected.length || !timingSafeEqual(token, expected)) return c.json({ error: 'unauthorized' }, 401);
     }
     await next();
   });
@@ -246,7 +247,7 @@ export function createApp(opts: { root: string; token: string }) {
     if (!dir) return c.html('<p>UI not built. Run <code>npm run build:ui</code>.</p>');
     const rel = c.req.path === '/' ? 'index.html' : c.req.path.slice(1);
     const file = resolve(dir, rel);
-    const target = file.startsWith(dir) && existsSync(file) && extname(file) ? file : join(dir, 'index.html');
+    const target = file.startsWith(dir + sep) && existsSync(file) && extname(file) ? file : join(dir, 'index.html');
     const types: Record<string, string> = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png' };
     let body: string | Buffer = readFileSync(target);
     if (target.endsWith('index.html')) body = body.toString().replace('__SDLC_TOKEN__', opts.token);
