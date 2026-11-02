@@ -89,6 +89,12 @@ function timeline(root: string, c: Change) {
   });
 }
 
+/** The file a request path maps to inside the UI directory; anything else (missing, outside, no extension) is index.html. */
+export function staticFile(dir: string, path: string): string {
+  const file = resolve(dir, path === '/' ? 'index.html' : path.slice(1));
+  return file.startsWith(dir + sep) && existsSync(file) && extname(file) ? file : join(dir, 'index.html');
+}
+
 export interface ServerOptions {
   root: string;
   port?: number;
@@ -245,9 +251,7 @@ export function createApp(opts: { root: string; token: string }) {
   const dir = uiDir();
   app.get('*', (c) => {
     if (!dir) return c.html('<p>UI not built. Run <code>npm run build:ui</code>.</p>');
-    const rel = c.req.path === '/' ? 'index.html' : c.req.path.slice(1);
-    const file = resolve(dir, rel);
-    const target = file.startsWith(dir + sep) && existsSync(file) && extname(file) ? file : join(dir, 'index.html');
+    const target = staticFile(dir, c.req.path);
     const types: Record<string, string> = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png' };
     let body: string | Buffer = readFileSync(target);
     if (target.endsWith('index.html')) body = body.toString().replace('__SDLC_TOKEN__', opts.token);
