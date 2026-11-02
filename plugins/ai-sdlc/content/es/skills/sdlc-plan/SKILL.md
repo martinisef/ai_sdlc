@@ -12,7 +12,7 @@ CLI del loop: `sdlc` ({{sdlc_hint}}).
 
 ## 0. Prerequisitos
 1. Cambio activo (rama `change/<slug>`) o `$ARGUMENTS`.
-2. `spec.md` con `status: approved`. Si no existe: para cambios chicos sin spec (bugfix, refactor acotado) se puede planificar desde `intent.md` aceptado; decilo explícitamente. Si la spec está en draft, frenar.
+2. `spec.md` con `status: approved`. Si no existe: para cambios chicos sin spec (bugfix, refactor acotado) se puede planificar desde `intent.md` aceptado; decilo explícitamente. Si la spec está en draft, frenar (solo cuenta `status`, no `approved_by`).
 3. **Plan mode**: si la sesión no está en plan mode, pedile al usuario que lo active (Shift+Tab hasta "plan mode") antes de seguir. En plan mode Claude puede leer el repo pero no cambiar nada hasta que el plan se acepte. Si no se puede (ej. headless), trabajá en solo lectura hasta el paso 4.
 
 ## 1. Armar el plan

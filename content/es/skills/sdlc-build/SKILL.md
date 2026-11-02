@@ -9,7 +9,7 @@ argument-hint: "[changes/<slug> | número de paso del plan]"
 CLI del loop: `sdlc` ({{sdlc_hint}}). Comandos del proyecto: `.sdlc/config.json → commands` (build, test, lint, run).
 
 ## 0. Prerequisitos
-- `plan.md` del cambio activo con `status: approved`. Si no hay plan aprobado: **no implementes**. Ofrecé `/sdlc-plan`. (Excepción: el usuario pide explícitamente un cambio trivial fuera del loop; en ese caso decí que queda sin trazabilidad.)
+- `plan.md` del cambio activo con `status: approved`. Si no hay plan aprobado (solo cuenta `status`, no `approved_by`): **no implementes**. Ofrecé `/sdlc-plan`. (Excepción: el usuario pide explícitamente un cambio trivial fuera del loop; en ese caso decí que queda sin trazabilidad.)
 - Árbol limpio o cambios entendidos.
 
 ## 1. Implementar
