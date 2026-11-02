@@ -11,6 +11,7 @@ import {
   isApproved,
   jira,
   loadConfig,
+  localeOf,
   parseFrontmatter,
   prComment,
   SdlcError,
@@ -18,11 +19,16 @@ import {
   trackerEnabled,
   type CiAgent,
   type LoadedConfig,
+  type Provider,
 } from '@ai-native-sdlc/core';
 import { AGENT_BIN, pickAgent, READ_TOOLS, runAgent, skillRef } from './agent.ts';
 import { runEvals } from './evals.ts';
+import { ciSecrets, installCi } from './install.ts';
+import { isPreset, PRESET_SPECS } from '../presets.ts';
 
-export const CI_HELP = `sdlc ci bootstrap              install the agent CLI (and the Claude plugin when plugin.marketplace_repo is set)
+export const CI_HELP = `sdlc ci install [--provider github|gitlab|bitbucket] [--preset solo|team-github|regulated]
+                               copy the pipeline templates (stack setup filled in; never overwrites)
+sdlc ci bootstrap              install the agent CLI (and the Claude plugin when plugin.marketplace_repo is set)
 sdlc ci review                 review the PR/MR with REVIEW.md and post the result as a comment
 sdlc ci intent-to-spec         for accepted intents without spec.md: write the spec headless, commit, push
 sdlc ci triage <log>           summarize a failed build and comment on the PR/MR
@@ -100,10 +106,28 @@ export async function ciCommand(root: string, args: string[]): Promise<number> {
       return mention(c);
     case 'evals':
       return runEvals(c, rest[0], typeof flags.out === 'string' ? flags.out : undefined);
+    case 'install':
+      return install(c, flags);
     default:
       process.stderr.write(CI_HELP);
       return 1;
   }
+}
+
+function install(c: CiEnv, flags: Record<string, string | true>): number {
+  if (!c.loaded) throw new SdlcError('no .sdlc/config.json — run `sdlc init`');
+  const provider = (typeof flags.provider === 'string' ? flags.provider : c.loaded.config.vcs?.provider) ?? 'github';
+  if (!['github', 'gitlab', 'bitbucket'].includes(provider)) throw new SdlcError(`unknown provider ${provider} (github|gitlab|bitbucket)`);
+  const preset = isPreset(flags.preset) ? flags.preset : undefined;
+  const r = installCi(c.root, c.loaded.config, {
+    provider: provider as Provider,
+    locale: localeOf(c.loaded),
+    files: preset ? PRESET_SPECS[preset].github : undefined,
+  });
+  for (const p of r.written) console.log(`  wrote     ${p}`);
+  for (const p of r.conflicts) console.log(`  conflict  ${p} (exists; kept)`);
+  if (r.written.length) console.log(`  secrets   ${ciSecrets(c.loaded.config).join(', ')} (repository settings → secrets)`);
+  return 0;
 }
 
 const INSTALL: Record<CiAgent, [string, string[]]> = {

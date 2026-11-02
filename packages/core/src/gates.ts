@@ -30,7 +30,7 @@ export function canApprove(change: Change, artifact: Artifact, who: Approver, lo
   const info = change.artifacts[artifact];
   if (!info) return { ok: false, reason: `${change.id}/${artifact}.md does not exist` };
   const author = info.data.author;
-  if (author && who.name && author.toLowerCase().startsWith(who.name.toLowerCase()) && artifact !== 'intent') {
+  if (author && who.name && !loaded?.config.gates_self_approval && author.toLowerCase().startsWith(who.name.toLowerCase()) && artifact !== 'intent') {
     return { ok: false, reason: `${who.name} authored ${artifact}.md; another person must approve it` };
   }
   const roles = loaded?.config.gates?.[artifact] ?? [];

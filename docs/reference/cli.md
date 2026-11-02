@@ -12,7 +12,7 @@ Every command works from any directory inside the repository. The project root i
 
 | Command | What it does |
 |---|---|
-| `sdlc init [--yes] [--locale en\|es]` | Detects the stack, VCS and agents; writes `.sdlc/config.json`; scaffolds `changes/`, `lessons/`, `evals/`, `ops/`, `CLAUDE.md`, `REVIEW.md` and `SETUP.md`; runs `sync`. `--yes` accepts what was detected. |
+| `sdlc init [--preset solo\|team-github\|regulated] [--yes] [--no-ci] [--first-change "title"] [--locale en\|es] [--verbose]` | Detects the stack, VCS and agents; applies the preset; writes `.sdlc/config.json`; scaffolds `changes/`, `lessons/`, `evals/`, `ops/`, `CLAUDE.md`, `REVIEW.md` and `SETUP.md`; runs `sync`; installs the CI templates for the detected provider (`sdlc ci install`). Asks three questions (preset, PO, tech lead); `--yes` accepts the defaults. `--first-change` also runs `sdlc new` with that title. |
 | `sdlc sync [--force] [--dry-run]` | Regenerates the agent files for `agents` (Claude Code, Cursor, AGENTS.md), the `.sdlc/bin/sdlc` shim and the git hooks. Files edited by hand are kept and reported as drift. |
 | `sdlc doctor [--json]` | Health checks (config, commands, git hooks, CLI, VCS tool, bands, drift) and the enforcement matrix per agent. Exits 1 on errors. |
 | `sdlc migrate` | Moves a legacy `.claude/sdlc.json` to `.sdlc/config.json`. |
