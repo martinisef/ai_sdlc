@@ -33,7 +33,8 @@ test('ci review: a finder per pass, the verifier drops what it does not support,
   assert.equal(calls.match(/^claude -p You are the review verifier/gm)?.length, 1);
   assert.match(calls, /--allowedTools Read,Grep,Glob,Bash\(git diff:\*\)/);
   assert.doesNotMatch(calls, /acceptEdits/);
-  assert.match(calls, /gh api -X POST repos\/\{owner\}\/\{repo\}\/pulls\/5\/comments -f body=\*\*Important\*\* · off-by-one\n\noff by one/);
+  assert.match(calls, /gh api -X POST repos\/\{owner\}\/\{repo\}\/pulls\/5\/comments -f body=\*\*Important\*\* · off-by-one · f1\n\noff by one/);
+  assert.match(calls, /statuses\/[0-9a-f]{40} -f state=failure -f context=sdlc\/review -f description=1 open: f1 Important src\/a.py:3/);
   assert.match(calls, new RegExp(`-f commit_id=${head(root)} -f path=src/a.py -F line=3 -f side=RIGHT`));
   assert.doesNotMatch(calls.slice(calls.indexOf('gh api -X POST')), /rename x to count/, 'the dropped nit is not posted anywhere');
   assert.match(calls, /gh pr comment 5 --body ## Automated review \(ai-sdlc\)\n\nImportant: 1 · Nit: 0 · Pre-existing: 0\n\nRound 1 of 3 · Quick review \(risk low\)/);
@@ -112,6 +113,43 @@ test('ci review: after the round cap no finder runs; the verifier only rechecks 
   assert.match(read(log), /review verifier/);
   assert.match(read(log), /Important: 1 · Nit: 0 · Pre-existing: 0\n\nRound 4 of 3/);
   assert.match(read(log), /Round cap reached \(3\)/);
+});
+
+test('ci security: security passes only, its own summary, and security findings block sdlc/review', async () => {
+  const root = reviewRepo({ ci: { review: { depth: 'standard' } } });
+  const log = stubLog();
+  const r = await sdlc(root, ['ci', 'security'], { STUB_LOG: log, PR_NUMBER: '5', BASE_REF: 'main', HEAD_REF: 'change/x' });
+  assert.equal(r.code, 0, r.err);
+  const calls = read(log);
+  assert.equal(calls.match(/^claude -p You are a security review finder/gm)?.length, 3);
+  for (const pass of ['Injection and unsafe input', 'Access control', 'Data exposure and secrets']) assert.match(calls, new RegExp(`Your pass: ${pass}:`));
+  assert.match(calls, /-f body=\*\*Nit\*\* · security · path traversal · s1/);
+  assert.match(calls, /gh pr comment 5 --body ## Security review \(ai-sdlc\)\n\nImportant: 0 · Nit: 1 · Pre-existing: 0/);
+  assert.match(calls, /-f state=failure -f context=sdlc\/review -f description=1 open: s1 security src\/a.py:4/);
+  assert.match(read(join(root, 'security-tally.txt')), /^Important: 0 · Nit: 1/);
+});
+
+test('ci review-status: a maintainer closes a finding with a reason; a contributor cannot; no review yet is pending', async () => {
+  const root = reviewRepo();
+  const dir = mkdtempSync(join(tmpdir(), 'sdlc-stub-'));
+  const log = join(dir, 'calls.log');
+  const env = { STUB_LOG: log, STUB_GH_DIR: dir, PR_NUMBER: '5' };
+  const f1 = { id: 'f1', severity: 'important', file: 'src/a.py', line: 3, title: 'off by one', evidence: '', bug_class: 'off-by-one', pass: 'bugs', status: 'open', round: 1 };
+  const status = async () => (await sdlc(root, ['ci', 'review-status', '--dry-run'], env)).out;
+  assert.equal(await status(), 'sdlc/review: pending — the automated review has not run yet');
+
+  writeFileSync(join(dir, 'issues_5_comments'), stateComment({ round: 1, sha: head(root), findings: [f1] }));
+  const inline = (id: string, author: string, association: string, body: string, replyTo?: string) =>
+    JSON.stringify({ id, author, association, body, createdAt: `2026-11-02T00:00:0${id.length}Z`, path: 'src/a.py', line: 3, replyTo }) + '\n';
+  writeFileSync(join(dir, 'pulls_5_comments'), inline('70', 'github-actions[bot]', 'NONE', '**Important** · off-by-one · f1\n<!-- sdlc:finding id=f1 -->') + inline('71', 'mallory', 'CONTRIBUTOR', 'resolved: trust me', '70'));
+  assert.match(await status(), /^sdlc\/review: failure — 1 open: f1 Important src\/a.py:3/);
+
+  writeFileSync(join(dir, 'pulls_5_comments'), inline('70', 'github-actions[bot]', 'NONE', '<!-- sdlc:finding id=f1 -->') + inline('72', 'ana', 'MEMBER', 'resolved: the extra index is a sentinel, see the docstring', '70'));
+  assert.equal(await status(), 'sdlc/review: success — no open Important or security findings (1 resolved with a reason)');
+
+  const r = await sdlc(root, ['ci', 'review-status'], env);
+  assert.equal(r.code, 0, r.err);
+  assert.match(read(log), new RegExp(`statuses/${head(root)} -f state=success -f context=sdlc/review`));
 });
 
 test('ci review with codex: sandboxed read-only, answer taken from the last message', async () => {

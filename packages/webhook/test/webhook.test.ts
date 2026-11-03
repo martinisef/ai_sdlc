@@ -3,7 +3,7 @@ import { createHmac } from 'node:crypto';
 import { createServer, type IncomingMessage } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { after, before, test } from 'node:test';
-import { createWebhookApp, mentions } from '@ai-native-sdlc/webhook';
+import { createWebhookApp, isResolution, mentions } from '@ai-native-sdlc/webhook';
 
 interface Call {
   method?: string;
@@ -139,4 +139,20 @@ test('gitlab and bitbucket: /approve <artifact> triggers the gate job with the c
 
 test('the secret is mandatory', () => {
   assert.throws(() => createWebhookApp({}), /SDLC_WEBHOOK_SECRET/);
+});
+
+test('gitlab: a "resolved: <reason>" reply triggers review-status, with no comment body in the variables', async () => {
+  calls.length = 0;
+  const r = await app().request('/gitlab', {
+    method: 'POST',
+    headers: { 'x-gitlab-token': SECRET, 'x-gitlab-event': 'Note Hook', 'content-type': 'application/json' },
+    body: JSON.stringify({ ...note('Resolved: the sentinel is intended'), user: { username: 'ana' } }),
+  });
+  assert.equal(r.status, 202);
+  const form = new URLSearchParams(calls[0].body);
+  assert.equal(form.get('variables[SDLC_JOB]'), 'review-status');
+  assert.equal(form.get('variables[SDLC_MENTION_BODY]'), null);
+  assert.ok(isResolution('resolved f2 s1: false positive'));
+  assert.ok(!isResolution('resolved:'), 'a reason is required');
+  assert.ok(!isResolution('I resolved it: see the commit'));
 });

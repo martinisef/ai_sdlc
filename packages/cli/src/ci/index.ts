@@ -28,7 +28,7 @@ import { matrixAgents, renderScorecard, updateScorecard, type EvalReport } from 
 import { ciSecrets, installCi } from './install.ts';
 import { gate, gateStatus } from './gates.ts';
 import { risk } from './risk.ts';
-import { review } from './review.ts';
+import { review, reviewStatus } from './review.ts';
 import { isPreset, PRESET_SPECS } from '../presets.ts';
 import { findChange } from '../notify.ts';
 
@@ -37,6 +37,9 @@ export const CI_HELP = `sdlc ci install [--provider github|gitlab|bitbucket] [--
 sdlc ci bootstrap              install the agent CLI (and the Claude plugin when plugin.marketplace_repo is set)
 sdlc ci review                 review the PR/MR with REVIEW.md: one finder per pass, a verifier that votes, inline comments
                                and a summary; depth by risk tier (ci.review.depth), at most ci.review.max_rounds (3) rounds
+sdlc ci security               the same, read-only, with security passes only (injection, access control, data and secrets)
+sdlc ci review-status          set the sdlc/review commit status: failure while an Important or security finding is open
+                               (closed when fixed, or by a maintainer's "resolved: <reason>" reply)
 sdlc ci intent-to-spec         for accepted intents without spec.md: write the spec headless, commit, push
 sdlc ci triage <log>           summarize a failed build and comment on the PR/MR
 sdlc ci tracker-merged         move the merged change's tickets to tracker.transitions.merged (alias: jira-merged)
@@ -110,6 +113,10 @@ export async function ciCommand(root: string, args: string[]): Promise<number> {
       return bootstrap(c);
     case 'review':
       return review(c);
+    case 'security':
+      return review(c, 'security');
+    case 'review-status':
+      return reviewStatus(c);
     case 'intent-to-spec':
       return intentToSpec(c);
     case 'triage':

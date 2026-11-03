@@ -1,7 +1,10 @@
 name: Claude review
-# Review automático de cada PR con REVIEW.md + respuesta a menciones @claude en comentarios.
-# Los findings informan; la aprobación sigue siendo de un code owner (branch protection).
-# ¿No usás Claude? Reemplazá la action del job review por: npx -y @morsadev/sdlc@0 ci review --agent codex|cursor
+# Review automático de cada PR con REVIEW.md (`sdlc ci review`: un finder por pass, un verificador que vota,
+# comentarios inline y un resumen que arranca con los conteos) + respuesta a menciones @claude en comentarios.
+# El commit status sdlc/review falla mientras haya un finding Important abierto (o uno de seguridad, con
+# sdlc-security.yml). Un finding se cierra cuando la ronda siguiente lo ve arreglado, o cuando alguien con permisos
+# responde "resolved: <razón>". Hacé de sdlc/review un check requerido; la aprobación sigue a sdlc/gates.
+# ¿No usás Claude? Agregá --agent codex|cursor a `ci review` y pasá OPENAI_API_KEY / CURSOR_API_KEY.
 on:
   pull_request:
     types: [opened, synchronize, ready_for_review]
@@ -14,33 +17,53 @@ jobs:
   review:
     if: github.event_name == 'pull_request' && !github.event.pull_request.draft
     runs-on: ubuntu-latest
+    concurrency:
+      group: sdlc-review-${{ github.event.pull_request.number }}
     permissions:
       contents: read
       pull-requests: write
-      id-token: write
+      statuses: write
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
-      - uses: anthropics/claude-code-action@v1
+      - uses: actions/setup-node@v4
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          prompt: |
-            REPO: ${{ github.repository }}
-            PR NUMBER: ${{ github.event.pull_request.number }}
-            Revisá este PR siguiendo REVIEW.md al pie de la letra (passes Bugs, Security, Compliance).
-            Para Compliance, leé changes/<slug>/spec.md y plan.md del cambio (rama ${{ github.head_ref }}).
-            Publicá los findings como comentarios inline y un comentario resumen con la tabla por severidad
-            y la línea final "Important: N · Nit: M". No apruebes ni bloquees el PR.
-          claude_args: >-
-            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Read,Grep,Glob"
-      - name: Avisar al equipo
-        if: success()
+          node-version: 22
+      - run: npx -y @morsadev/sdlc@0 ci bootstrap
+      - name: Review (finders, verificador, sdlc/review)
         env:
-          SDLC_NOTIFY_WEBHOOK: ${{ secrets.SDLC_NOTIFY_WEBHOOK }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          HEAD_REF: ${{ github.head_ref }}
-        run: npx -y @morsadev/sdlc@0 notify review.done
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          SDLC_NOTIFY_WEBHOOK: ${{ secrets.SDLC_NOTIFY_WEBHOOK }}
+        run: npx -y @morsadev/sdlc@0 ci review
+
+  resolve:
+    if: >-
+      ((github.event_name == 'issue_comment' && github.event.issue.pull_request) || github.event_name == 'pull_request_review_comment') &&
+      startsWith(github.event.comment.body, 'resolved')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      statuses: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Recalcular sdlc/review
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
+        run: |
+          export HEAD_SHA="$(gh pr view "$PR_NUMBER" --json headRefOid --jq .headRefOid)"
+          npx -y @morsadev/sdlc@0 ci review-status
 
   mention:
     if: >-

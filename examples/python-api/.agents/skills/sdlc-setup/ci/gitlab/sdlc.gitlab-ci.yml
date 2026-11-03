@@ -24,7 +24,18 @@ sdlc:review:
   script:
     - npx -y @morsadev/sdlc@0 ci review
   artifacts:
-    paths: [review-tally.txt]
+    paths: [review-tally.txt, review.json]
+    when: always
+
+sdlc:security:
+  extends: .sdlc-agent
+  stage: review
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_DRAFT != "true"
+  script:
+    - npx -y @morsadev/sdlc@0 ci security
+  artifacts:
+    paths: [security-tally.txt, security.json]
     when: always
 
 sdlc:intent-to-spec:
@@ -99,6 +110,16 @@ sdlc:gate:
     - git remote set-url origin "https://oauth2:${GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
     - git checkout -B "$CI_COMMIT_REF_NAME"
     - npx -y @morsadev/sdlc@0 ci gate
+
+# "resolved: <reason>" replies in MR comments: triggered by `sdlc webhook` (SDLC_JOB=review-status).
+# Recomputes the sdlc/review commit status; only maintainers (trusted authors) can resolve a finding.
+sdlc:review-status:
+  extends: .sdlc-base
+  stage: review
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "trigger" && $SDLC_JOB == "review-status"
+  script:
+    - HEAD_SHA="$CI_COMMIT_SHA" npx -y @morsadev/sdlc@0 ci review-status
 
 sdlc:gate-status:
   extends: .sdlc-base

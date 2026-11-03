@@ -23,7 +23,7 @@ export const PRESET_SPECS: Record<Preset, PresetSpec> = {
   'team-github': {
     description: 'team with a PO and a tech lead: gates by role, review + loop + gates workflows, GitHub Issues as tracker',
     roles: true,
-    github: ['ci.yml', 'sdlc-review.yml', 'sdlc-loop.yml', 'sdlc-gates.yml'],
+    github: ['ci.yml', 'sdlc-review.yml', 'sdlc-security.yml', 'sdlc-loop.yml', 'sdlc-gates.yml'],
     apply: (c) => ({
       ...c,
       gates: { intent: ['po'], spec: ['po'], plan: ['tech-lead'] },
@@ -33,7 +33,7 @@ export const PRESET_SPECS: Record<Preset, PresetSpec> = {
   regulated: {
     description: 'team preset plus high-risk paths, tech lead on every plan, nightly evals and control bands',
     roles: true,
-    github: ['ci.yml', 'sdlc-review.yml', 'sdlc-loop.yml', 'sdlc-gates.yml', 'sdlc-evals.yml', 'sdlc-bands.yml'],
+    github: ['ci.yml', 'sdlc-review.yml', 'sdlc-security.yml', 'sdlc-loop.yml', 'sdlc-gates.yml', 'sdlc-evals.yml', 'sdlc-bands.yml'],
     apply: (c) => ({
       ...c,
       gates: { intent: ['po'], spec: ['po', 'tech-lead'], plan: ['tech-lead'] },

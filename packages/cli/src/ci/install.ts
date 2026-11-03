@@ -9,6 +9,7 @@ const TARGETS: Record<Provider, Record<string, string>> = {
   github: {
     'ci.yml': '.github/workflows/ci.yml',
     'sdlc-review.yml': '.github/workflows/sdlc-review.yml',
+    'sdlc-security.yml': '.github/workflows/sdlc-security.yml',
     'sdlc-loop.yml': '.github/workflows/sdlc-loop.yml',
     'sdlc-gates.yml': '.github/workflows/sdlc-gates.yml',
     'sdlc-evals.yml': '.github/workflows/sdlc-evals.yml',

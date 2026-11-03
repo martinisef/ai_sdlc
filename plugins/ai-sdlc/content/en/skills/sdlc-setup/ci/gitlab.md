@@ -4,7 +4,7 @@
 | Template | Destination | What it does |
 |---|---|---|
 | `gitlab/gitlab-ci.yml` | `.gitlab-ci.yml` (only if it does not exist) | build + lint + test, triage if it fails on an MR |
-| `gitlab/sdlc.gitlab-ci.yml` | `ci/sdlc.gitlab-ci.yml` | review with REVIEW.md, intent → spec, Jira on merge, evals, control bands (Stage 6) |
+| `gitlab/sdlc.gitlab-ci.yml` | `ci/sdlc.gitlab-ci.yml` | review and security review with REVIEW.md (`sdlc/review` status), intent → spec, Jira on merge, evals, control bands (Stage 6) |
 
 Every job runs `npx -y @morsadev/sdlc@0 ci <cmd>` on `node:22`: there is no CI script to copy and no `jq` to install.
 
@@ -13,7 +13,7 @@ Fill in the `# >>> stack` block (image + setup) from `stacks/<lang>.md` → "CI 
 `sdlc:tracker-merged` moves the ticket and sends `change.merged`; without a tracker or notifications it does nothing. Without Stage 6: remove `sdlc:bands`.
 
 ## Differences from GitHub
-- **Review**: there is no equivalent of `claude-code-action`; the job runs the agent headless (`claude -p`, or `codex exec` / `cursor-agent` with `ci.agent`) and posts a comment on the MR via the API (`sdlc vcs` uses REST if `glab` is not available). Anthropic documents a Claude Code integration with GitLab CI/CD (beta): if the team adopts it, it can replace `sdlc:review`.
+- **Review**: `sdlc:review` and `sdlc:security` run the agent headless (`claude -p`, or `codex exec` / `cursor-agent` with `ci.agent`), post inline discussions and a summary on the MR via the API (`sdlc vcs` uses REST if `glab` is not available), and set the `sdlc/review` commit status. A `resolved: <reason>` reply reaches `sdlc:review-status` through `sdlc webhook`; without the service, the status is recomputed on the next pipeline. Anthropic documents a Claude Code integration with GitLab CI/CD (beta): if the team adopts it, it can replace `sdlc:review`.
 - **`@claude` in MR comments**: GitLab does not trigger pipelines from comments, so a small service does it: `sdlc webhook` (one per organization; see "@claude in comments" below) receives the "Comments" webhook and triggers the `sdlc:mention` job, which runs `sdlc ci mention`. Without the service, remove `sdlc:mention`.
 - **Required Code Owners and approval rules**: depend on the tier (Premium/Ultimate). On Free: protected branch + "Allowed to merge: Maintainers" and review by convention.
 
@@ -22,7 +22,7 @@ Fill in the `# >>> stack` block (image + setup) from `stacks/<lang>.md` → "CI 
 2. Default **protected branch**: no direct push, merge only via MR.
 3. **Approval rules / CODEOWNERS** (Premium+): `CLAUDE.md`, `REVIEW.md`, `.claude/`, `evals/` with owners.
 4. Nightly **pipeline schedule** (CI/CD → Schedules) for `sdlc:evals`; with Stage 6, a second daily schedule with the variable `SDLC_JOB=bands` for `sdlc:bands`.
-5. Merge request settings: "Pipelines must succeed".
+5. Merge request settings: "Pipelines must succeed" (`sdlc/review` and `sdlc/gates` are commit statuses of the pipeline's commit).
 
 ## @claude in comments
 1. Run the service where GitLab can reach it (HTTPS): `docker run -p 8787:8787 -e SDLC_WEBHOOK_SECRET=… -e GITLAB_TRIGGER_TOKEN=… ghcr.io/martinisef/sdlc-webhook`, or `npx -y @morsadev/sdlc@0 webhook` on any Node ≥ 22 host.

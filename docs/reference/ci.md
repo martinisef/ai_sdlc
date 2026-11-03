@@ -8,6 +8,9 @@ sdlc ci install [--provider github|gitlab|bitbucket] [--preset solo|team-github|
 sdlc ci bootstrap              install the agent CLI (and the Claude plugin when plugin.marketplace_repo is set)
 sdlc ci review                 review the PR/MR with REVIEW.md: one finder per pass, a verifier that votes, inline comments
                                and a summary; depth by risk tier (ci.review.depth), at most ci.review.max_rounds (3) rounds
+sdlc ci security               the same, read-only, with security passes only (injection, access control, data and secrets)
+sdlc ci review-status          set the sdlc/review commit status: failure while an Important or security finding is open
+                               (closed when fixed, or by a maintainer's "resolved: <reason>" reply)
 sdlc ci intent-to-spec         for accepted intents without spec.md: write the spec headless, commit, push
 sdlc ci triage <log>           summarize a failed build and comment on the PR/MR
 sdlc ci tracker-merged         move the merged change's tickets to tracker.transitions.merged (alias: jira-merged)
@@ -64,6 +67,21 @@ The repository root is a composite action:
 `ci.review.depth` fixes the depth instead (`quick`, `standard`, `deep`; `auto` is the default).
 
 **Convergence.** The summary keeps the state of the review (round, reviewed commit, findings). The next run reviews only the commits since then, tells the finders what was already reported so they do not repeat it, and asks the verifier whether the open findings were fixed. The same commit is never reviewed twice. After `ci.review.max_rounds` (3) rounds no finder runs; the verifier only rechecks the open findings. The state is read only from comments by a bot or a maintainer, so a contributor cannot fake it.
+
+## Blocking review
+
+`sdlc/review` is a commit status that both reviews set after each run, and `sdlc ci review-status` recomputes it:
+
+- **failure** while an Important finding from `sdlc ci review`, or a security finding from `sdlc ci security` (any severity except pre-existing), is open;
+- **pending** until the review of the latest commit has run;
+- **success** otherwise. Nits and pre-existing findings never block.
+
+A finding closes in one of two ways:
+
+1. **Fixed.** The next round's verifier sees it is gone from the code.
+2. **Resolved with a reason.** Someone replies `resolved: <reason>` to its inline comment, or writes `resolved f2 s1: <reason>` anywhere on the PR. On GitHub only owners, members and collaborators count; on GitLab and Bitbucket, the `risk.trusted_authors`. Agents and bots never count, and a reply without a reason is ignored.
+
+On GitHub the `resolve` job in `sdlc-review.yml` runs on those replies; on GitLab and Bitbucket `sdlc webhook` triggers `review-status` (`SDLC_JOB=review-status`). `sdlc ci security` runs from `sdlc-security.yml` (GitHub), `sdlc:security` (GitLab) or the security step (Bitbucket). Make `sdlc/review` a required check.
 
 ## Gates from the PR
 
