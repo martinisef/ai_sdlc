@@ -30,6 +30,7 @@ import { matrixAgents, renderScorecard, updateScorecard, type EvalReport } from 
 import { ciSecrets, installCi } from './install.ts';
 import { gate, gateStatus, mergeQueue } from './gates.ts';
 import { captureCommand } from './capture.ts';
+import { nightlyReview } from './nightly.ts';
 import { risk } from './risk.ts';
 import { review, reviewStatus } from './review.ts';
 import { isPreset, PRESET_SPECS } from '../presets.ts';
@@ -43,6 +44,8 @@ sdlc ci review                 review the PR/MR with REVIEW.md: one finder per p
 sdlc ci security               the same, read-only, with security passes only (injection, access control, data and secrets)
 sdlc ci review-status          set the sdlc/review commit status: failure while an Important or security finding is open
                                (closed when fixed, or by a maintainer's "resolved: <reason>" reply)
+sdlc ci nightly-review [--module M] [--pr]   review existing code, one module per night (ci.nightly.modules, else every
+                               code directory): Important findings become intents (origin: review) on change/review-*
 sdlc ci intent-to-spec         for accepted intents without spec.md: write the spec headless, commit, push
 sdlc ci triage <log>           summarize a failed build and comment on the PR/MR
 sdlc ci tracker-merged         move the merged change's tickets to tracker.transitions.merged (alias: jira-merged)
@@ -99,7 +102,7 @@ export async function ciCommand(root: string, args: string[]): Promise<number> {
   const flags: Record<string, string | true> = {};
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
-    if (a === '--dry-run' || a === '--escalate' || a === '--reverts') flags[a.slice(2)] = true;
+    if (a === '--dry-run' || a === '--escalate' || a === '--reverts' || a === '--pr') flags[a.slice(2)] = true;
     else if (a.startsWith('--')) flags[a.slice(2)] = args[++i] ?? '';
     else pos.push(a);
   }
@@ -140,6 +143,8 @@ export async function ciCommand(root: string, args: string[]): Promise<number> {
     case 'matrix':
       console.log(JSON.stringify(matrixAgents(c.env, typeof flags.only === 'string' ? flags.only : undefined)));
       return 0;
+    case 'nightly-review':
+      return nightlyReview(c, flags);
     case 'capture-eval':
       return captureCommand(c, rest[0], flags);
     case 'scorecard':

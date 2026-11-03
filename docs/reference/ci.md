@@ -11,10 +11,15 @@ sdlc ci review                 review the PR/MR with REVIEW.md: one finder per p
 sdlc ci security               the same, read-only, with security passes only (injection, access control, data and secrets)
 sdlc ci review-status          set the sdlc/review commit status: failure while an Important or security finding is open
                                (closed when fixed, or by a maintainer's "resolved: <reason>" reply)
+sdlc ci nightly-review [--module M] [--pr]   review existing code, one module per night (ci.nightly.modules, else every
+                               code directory): Important findings become intents (origin: review) on change/review-*
 sdlc ci intent-to-spec         for accepted intents without spec.md: write the spec headless, commit, push
 sdlc ci triage <log>           summarize a failed build and comment on the PR/MR
 sdlc ci tracker-merged         move the merged change's tickets to tracker.transitions.merged (alias: jira-merged)
 sdlc ci evals [pattern] [--out results.json]   run evals/*.json against the agent; fail below ci.min_pass_rate (0.8)
+sdlc ci capture-eval <commit> [--origin incident|revert] [--expect "<finding>"]   a reviewer eval from the commit that
+                               caused an incident: its patch, re-applied, must get an Important finding
+sdlc ci capture-eval --reverts [--since 30d]   the same for every reverted commit on the default branch (skips captured ones)
 sdlc ci gate                   /approve|/reject intent|spec|plan in a PR/MR comment → gate commit on the branch + reply
 sdlc ci gate-status            set the sdlc/gates commit status (success once the plan is approved or the change is quick,
                                and the PR description has ci.pr_sections: Testing, Risk, How to revert)
@@ -87,6 +92,18 @@ A finding closes in one of two ways:
 Start the reason with `wrong` or `false positive` when the finding was mistaken, and with `intentional` when it is right but the code stays. `sdlc metrics --prs` counts every finding as fixed, wrong, intentional, ignored (open when the PR merged) or open, and the [agent scorecard](./agent-scorecard) shows the totals. A reviewer miss that reaches production becomes an eval with `sdlc ci capture-eval` ([reviewer evals](./evals#reviewer-evals)).
 
 On GitHub the `resolve` job in `sdlc-review.yml` runs on those replies; on GitLab and Bitbucket `sdlc webhook` triggers `review-status` (`SDLC_JOB=review-status`). `sdlc ci security` runs from `sdlc-security.yml` (GitHub), `sdlc:security` (GitLab) or the security step (Bitbucket). Make `sdlc/review` a required check.
+
+## Nightly review
+
+The PR review only reads what changes. `sdlc ci nightly-review` reads what does not: one module per night, in rotation, with the review's Bugs, Security and Tests finders and a verifier. Nits only go to the report. Each Important finding becomes an intent:
+
+- `changes/<YYYY-MM>-review-<bug-class>-<date>-<n>/intent.md` with `origin: review` and the finding as evidence, committed on its own `change/review-*` branch and pushed;
+- with `--pr`, a draft PR, so the team sees it and decides: fix it (`/sdlc-fix` or the full loop), schedule it, or reject the intent with the reason;
+- never twice for the same file and bug class (the intent commit carries a `Nightly-Finding:` trailer), and at most `ci.nightly.max_intents` (3) a night.
+
+The modules are `ci.nightly.modules` or, by default, every top-level code directory and each child of `src/`, `packages/`, `lib/`, `app/` and similar. Tests, docs, examples and dot-directories are skipped. `--module <dir>` reviews one now. The run writes `nightly-review.json` and a summary (also to the GitHub job summary).
+
+The templates run it every night: `sdlc-nightly-review.yml` (GitHub), `sdlc:nightly-review` with `SDLC_JOB=nightly-review` on a schedule (GitLab), and the `nightly-review` custom pipeline (Bitbucket). The same job runs `sdlc ci capture-eval --reverts --since 7d` and pushes the new [reviewer evals](./evals#reviewer-evals) on an `evals/reviewer-*` branch (a PR on GitHub).
 
 ## Gates from the PR
 

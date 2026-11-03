@@ -21,7 +21,7 @@ Completá el bloque `# >>> stack` (imagen + setup) desde `stacks/<lang>.md` → 
 1. **Variables CI/CD**: `ANTHROPIC_API_KEY` (masked), `GITLAB_TOKEN` (project access token con scope `api` y rol Developer: comenta en MRs y pushea a `change/**`), `SDLC_PLUGIN_TOKEN` si el marketplace es privado, `JIRA_EMAIL` + `JIRA_API_TOKEN` si hay Jira, `LINEAR_API_KEY` con Linear, `SDLC_NOTIFY_WEBHOOK` para [avisos](https://martinisef.github.io/ai_sdlc/es/avisos).
 2. **Protected branch** default: sin push directo, merge solo vía MR.
 3. **Approval rules / CODEOWNERS** (Premium+): `CLAUDE.md`, `REVIEW.md`, `.claude/`, `evals/` con dueños.
-4. **Pipeline schedule** nocturno (CI/CD → Schedules) para `sdlc:evals`; con Stage 6, un segundo schedule diario con la variable `SDLC_JOB=bands` para `sdlc:bands`.
+4. **Pipeline schedule** nocturno (CI/CD → Schedules) para `sdlc:evals`; con Stage 6, un segundo schedule diario con la variable `SDLC_JOB=bands` para `sdlc:bands`, y otro con `SDLC_JOB=nightly-review` para `sdlc:nightly-review` (el review nocturno del código existente).
 5. Merge request settings: "Pipelines must succeed" (`sdlc/review` y `sdlc/gates` son commit statuses del commit del pipeline).
 
 ## @claude en comentarios

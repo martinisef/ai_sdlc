@@ -102,6 +102,27 @@ pipelines:
             - git config user.name "ai-sdlc-bot" && git config user.email "ai-sdlc-bot@noreply"
             - npx -y @morsadev/sdlc@0 ci bootstrap
             - npx -y @morsadev/sdlc@0 bands check
+    nightly-review:
+      # Nightly review of existing code, one module per night (ci.nightly.modules). Schedule it daily.
+      # Important findings → intents (origin: review) on change/review-* + draft PR; reverted commits → reviewer evals.
+      - step:
+          name: Nightly review
+          image: node:22
+          clone:
+            depth: full
+          script:
+            - export SDLC_PLUGIN_TOKEN_USER=x-token-auth
+            - git config user.name "ai-sdlc-bot" && git config user.email "ai-sdlc-bot@noreply"
+            - git fetch -q origin '+refs/heads/change/*:refs/remotes/origin/change/*'
+            - npx -y @morsadev/sdlc@0 ci bootstrap
+            - npx -y @morsadev/sdlc@0 ci nightly-review --pr
+            - npx -y @morsadev/sdlc@0 ci capture-eval --reverts --since 7d
+            - |
+              if [ -n "$(git status --porcelain -- evals)" ]; then
+                branch="evals/reviewer-$(date -u +%Y%m%d)"
+                git checkout -q -b "$branch" && git add evals && git commit -qm "test(evals): reviewer evals from reverted commits"
+                git push -q origin "$branch"
+              fi
     sdlc-mention:
       # @claude in PR comments: run by `sdlc webhook` through the API. Remove it if the workspace does not run the service.
       - variables:

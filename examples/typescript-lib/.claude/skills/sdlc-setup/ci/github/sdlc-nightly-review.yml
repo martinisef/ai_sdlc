@@ -1,0 +1,54 @@
+name: Nightly review
+# Reviews the code nobody is changing: one module per night, in rotation (ci.nightly.modules, else every code
+# directory), with the review's finders and a verifier. Each Important finding becomes an intent (origin: review) on
+# change/review-* with a draft PR, at most ci.nightly.max_intents (3) a night; people decide whether it enters the loop.
+# It never edits code. It also turns this week's reverted commits into reviewer evals and opens a PR with them.
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      module:
+        description: Module to review (empty = tonight's in the rotation)
+        default: ''
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Review tonight's module
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GH_TOKEN: ${{ github.token }}
+          SDLC_PLUGIN_TOKEN: ${{ secrets.SDLC_PLUGIN_TOKEN }}
+          MODULE: ${{ inputs.module }}
+        run: |
+          git config user.name "ai-sdlc[bot]"
+          git config user.email "ai-sdlc-bot@users.noreply.github.com"
+          # intents opened on earlier nights live on change/review-* branches: fetch them so none is opened twice
+          git fetch -q origin '+refs/heads/change/*:refs/remotes/origin/change/*'
+          npx -y @morsadev/sdlc@0 ci bootstrap
+          npx -y @morsadev/sdlc@0 ci nightly-review --pr ${MODULE:+--module "$MODULE"}
+      - name: Reviewer evals from this week's reverts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          npx -y @morsadev/sdlc@0 ci capture-eval --reverts --since 7d
+          if [ -z "$(git status --porcelain -- evals)" ]; then echo "no new reverted commits"; exit 0; fi
+          branch="evals/reviewer-$(date -u +%Y%m%d)"
+          git checkout -q -b "$branch"
+          git add evals
+          git commit -qm "test(evals): reviewer evals from reverted commits"
+          git push -q origin "$branch"
+          gh pr create --head "$branch" --title "Reviewer evals from reverted commits" \
+            --body "Each reverted commit becomes a reviewer eval: its patch is re-applied and the review must flag it as Important. Run them with \`sdlc ci evals 'review-*'\`."

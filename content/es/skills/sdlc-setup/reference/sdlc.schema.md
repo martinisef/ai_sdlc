@@ -90,4 +90,6 @@ Lo leen los guardrails (`sdlc hook`, para cualquier agente), las skills del loop
 | `ci.pr_sections` | `sdlc ci gate-status`, `/sdlc-ship` | Títulos que necesita toda descripción de PR/MR antes de que `sdlc/gates` quede en verde. Por defecto `["Testing", "Risk", "How to revert"]` (valen también Pruebas, Riesgo, Cómo revertir); Riesgo declara al menos el nivel calculado. `[]` apaga el control. |
 | `ci.review.depth` | `sdlc ci review` | `auto` (por defecto: low Quick, medium Standard, high Deep), o fija: `quick`, `standard`, `deep`. |
 | `ci.review.max_rounds` | `sdlc ci review` | Rondas de review por PR (por defecto 3). Después del tope el reviewer solo revisa si los findings abiertos se arreglaron. |
+| `ci.nightly.modules` | `sdlc ci nightly-review` | Carpetas que recorre el review nocturno, una por noche (por defecto: cada carpeta de código de primer nivel, y cada hija de `src/`, `packages/`, `lib/`…). |
+| `ci.nightly.max_intents` | `sdlc ci nightly-review` | Intents que puede abrir una noche para hallazgos Important (por defecto 3). |
 | `ci.mention_mode` | `sdlc ci mention` | `read` (default): el agente solo responde los comentarios con `@claude`. `edit`: además puede commitear cambios dentro del plan aprobado en la rama del PR/MR. |

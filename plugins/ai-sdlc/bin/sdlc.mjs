@@ -102,7 +102,7 @@ var require_visit = __commonJS({
     "use strict";
     var identity = require_identity();
     var BREAK = Symbol("break visit");
-    var SKIP = Symbol("skip children");
+    var SKIP2 = Symbol("skip children");
     var REMOVE = Symbol("remove node");
     function visit2(node2, visitor) {
       const visitor_ = initVisitor(visitor);
@@ -114,7 +114,7 @@ var require_visit = __commonJS({
         visit_(null, node2, visitor_, Object.freeze([]));
     }
     visit2.BREAK = BREAK;
-    visit2.SKIP = SKIP;
+    visit2.SKIP = SKIP2;
     visit2.REMOVE = REMOVE;
     function visit_(key, node2, visitor, path) {
       const ctrl = callVisitor(key, node2, visitor, path);
@@ -162,7 +162,7 @@ var require_visit = __commonJS({
         await visitAsync_(null, node2, visitor_, Object.freeze([]));
     }
     visitAsync.BREAK = BREAK;
-    visitAsync.SKIP = SKIP;
+    visitAsync.SKIP = SKIP2;
     visitAsync.REMOVE = REMOVE;
     async function visitAsync_(key, node2, visitor, path) {
       const ctrl = await callVisitor(key, node2, visitor, path);
@@ -1761,7 +1761,7 @@ var require_merge = __commonJS({
 var require_addPairToJSMap = __commonJS({
   "node_modules/yaml/dist/nodes/addPairToJSMap.js"(exports) {
     "use strict";
-    var log6 = require_log();
+    var log7 = require_log();
     var merge2 = require_merge();
     var stringify = require_stringify();
     var identity = require_identity();
@@ -1810,7 +1810,7 @@ var require_addPairToJSMap = __commonJS({
           let jsonStr = JSON.stringify(strKey);
           if (jsonStr.length > 40)
             jsonStr = jsonStr.substring(0, 36) + '..."';
-          log6.warn(ctx.doc.options.logLevel, `Keys with collection values will be stringified due to JS Object restrictions: ${jsonStr}. Set mapAsMap: true to use object keys.`);
+          log7.warn(ctx.doc.options.logLevel, `Keys with collection values will be stringified due to JS Object restrictions: ${jsonStr}. Set mapAsMap: true to use object keys.`);
           ctx.mapKeyWarned = true;
         }
         return strKey;
@@ -5567,7 +5567,7 @@ var require_cst_visit = __commonJS({
   "node_modules/yaml/dist/parse/cst-visit.js"(exports) {
     "use strict";
     var BREAK = Symbol("break visit");
-    var SKIP = Symbol("skip children");
+    var SKIP2 = Symbol("skip children");
     var REMOVE = Symbol("remove item");
     function visit2(cst, visitor) {
       if ("type" in cst && cst.type === "document")
@@ -5575,7 +5575,7 @@ var require_cst_visit = __commonJS({
       _visit(Object.freeze([]), cst, visitor);
     }
     visit2.BREAK = BREAK;
-    visit2.SKIP = SKIP;
+    visit2.SKIP = SKIP2;
     visit2.REMOVE = REMOVE;
     visit2.itemAtPath = (cst, path) => {
       let item = cst;
@@ -7227,7 +7227,7 @@ var require_public_api = __commonJS({
     var composer = require_composer();
     var Document = require_Document();
     var errors = require_errors();
-    var log6 = require_log();
+    var log7 = require_log();
     var identity = require_identity();
     var lineCounter = require_line_counter();
     var parser = require_parser();
@@ -7279,7 +7279,7 @@ var require_public_api = __commonJS({
       const doc = parseDocument(src, options);
       if (!doc)
         return null;
-      doc.warnings.forEach((warning) => log6.warn(doc.options.logLevel, warning));
+      doc.warnings.forEach((warning) => log7.warn(doc.options.logLevel, warning));
       if (doc.errors.length > 0) {
         if (doc.options.logLevel !== "silent")
           throw doc.errors[0];
@@ -28179,6 +28179,11 @@ var init_config = __esm({
         review: external_exports.looseObject({
           depth: external_exports.enum(["auto", "quick", "standard", "deep"]).optional(),
           max_rounds: external_exports.number().int().min(1).max(10).optional()
+        }).optional(),
+        /** `sdlc ci nightly-review`: the modules it rotates through (one per night) and how many intents a night may open. */
+        nightly: external_exports.looseObject({
+          modules: external_exports.array(external_exports.string()).optional(),
+          max_intents: external_exports.number().int().min(0).max(20).optional()
         }).optional()
       }).optional()
     });
@@ -29275,8 +29280,8 @@ function commitsAfter(root, path, epoch) {
   return lines(git(root, ["log", "--all", "--format=%ct", "--", path])).filter((t2) => Number(t2) > epoch).length;
 }
 function gateTime(root, path) {
-  const log6 = (git(root, ["log", "--all", "--format=%at%x00%ct%x00%s%x00%B%x1e", "--", path]) ?? "").split("");
-  const commits = log6.map((r) => r.replace(/^\n/, "").split("\0")).filter((f) => f.length >= 4).map(([at2, ct, subject, body]) => ({ at: at2, ct: Number(ct), subject, trailer: GATE_SUBJECT.test(subject) ? GATE_TRAILER.exec(body) : null })).sort((a, b) => a.ct - b.ct);
+  const log7 = (git(root, ["log", "--all", "--format=%at%x00%ct%x00%s%x00%B%x1e", "--", path]) ?? "").split("");
+  const commits = log7.map((r) => r.replace(/^\n/, "").split("\0")).filter((f) => f.length >= 4).map(([at2, ct, subject, body]) => ({ at: at2, ct: Number(ct), subject, trailer: GATE_SUBJECT.test(subject) ? GATE_TRAILER.exec(body) : null })).sort((a, b) => a.ct - b.ct);
   const seen = /* @__PURE__ */ new Set();
   let approvals = 0;
   let lastEdit;
@@ -34493,14 +34498,14 @@ __export(src_exports, {
   staticFile: () => staticFile
 });
 import { randomBytes, timingSafeEqual } from "node:crypto";
-import { existsSync as existsSync20, mkdirSync as mkdirSync9, readFileSync as readFileSync23, watch, writeFileSync as writeFileSync16 } from "node:fs";
+import { existsSync as existsSync20, mkdirSync as mkdirSync9, readFileSync as readFileSync23, watch, writeFileSync as writeFileSync17 } from "node:fs";
 import { homedir as homedir4 } from "node:os";
-import { basename as basename2, dirname as dirname7, extname, join as join24, resolve as resolve3, sep } from "node:path";
+import { basename as basename2, dirname as dirname7, extname, join as join25, resolve as resolve3, sep } from "node:path";
 import { fileURLToPath as fileURLToPath2 } from "node:url";
 import { execFile } from "node:child_process";
 function uiDir() {
-  const candidates = [process.env.SDLC_UI_DIR, join24(here2, "ui"), join24(here2, "..", "..", "ui", "dist")];
-  return candidates.find((c) => c && existsSync20(join24(c, "index.html")));
+  const candidates = [process.env.SDLC_UI_DIR, join25(here2, "ui"), join25(here2, "..", "..", "ui", "dist")];
+  return candidates.find((c) => c && existsSync20(join25(c, "index.html")));
 }
 function loadWorkspaces(current) {
   let list = [];
@@ -34512,7 +34517,7 @@ function loadWorkspaces(current) {
 }
 function saveWorkspaces(list) {
   mkdirSync9(dirname7(WORKSPACES_FILE), { recursive: true });
-  writeFileSync16(WORKSPACES_FILE, JSON.stringify([...new Set(list)], null, 2));
+  writeFileSync17(WORKSPACES_FILE, JSON.stringify([...new Set(list)], null, 2));
 }
 function cachedPr(root, branch, loaded) {
   const key = `${root}#${branch}`;
@@ -34541,7 +34546,7 @@ function timeline(root, c) {
 }
 function staticFile(dir, path) {
   const file2 = resolve3(dir, path === "/" ? "index.html" : path.slice(1));
-  return file2.startsWith(dir + sep) && existsSync20(file2) && extname(file2) ? file2 : join24(dir, "index.html");
+  return file2.startsWith(dir + sep) && existsSync20(file2) && extname(file2) ? file2 : join25(dir, "index.html");
 }
 function createApp(opts2) {
   const app = new Hono3();
@@ -34567,7 +34572,7 @@ function createApp(opts2) {
   app.post("/api/workspaces", async (c) => {
     const { path } = await c.req.json();
     const p = resolve3(path);
-    if (!existsSync20(join24(p, ".git"))) throw new Error(`${p} is not a git repository`);
+    if (!existsSync20(join25(p, ".git"))) throw new Error(`${p} is not a git repository`);
     workspaces = [...workspaces.filter((w) => w !== p), p];
     saveWorkspaces(workspaces.slice(1).concat(opts2.root));
     return c.json({ ok: true });
@@ -34660,7 +34665,7 @@ function createApp(opts2) {
         timer = setTimeout(() => void stream2.writeSSE({ event: "change", data: String(Date.now()) }), 300);
       };
       for (const p of ["changes", ".sdlc", ".git/refs", ".git/HEAD", CONFIG_PATH]) {
-        const full = join24(root, p);
+        const full = join25(root, p);
         if (!existsSync20(full)) continue;
         try {
           watchers.push(watch(full, { recursive: !extname(p) && p !== ".git/HEAD" }, ping));
@@ -34713,7 +34718,7 @@ var init_src3 = __esm({
     init_src2();
     init_src();
     here2 = dirname7(fileURLToPath2(import.meta.url));
-    WORKSPACES_FILE = join24(process.env.XDG_CONFIG_HOME ?? join24(homedir4(), ".config"), "sdlc", "workspaces.json");
+    WORKSPACES_FILE = join25(process.env.XDG_CONFIG_HOME ?? join25(homedir4(), ".config"), "sdlc", "workspaces.json");
     prCache = /* @__PURE__ */ new Map();
   }
 });
@@ -35131,16 +35136,16 @@ var init_src5 = __esm({
 // packages/cli/src/main.ts
 init_src2();
 init_src();
-import { existsSync as existsSync21, mkdirSync as mkdirSync10, readFileSync as readFileSync25, rmSync as rmSync7, writeFileSync as writeFileSync17 } from "node:fs";
-import { join as join25 } from "node:path";
+import { existsSync as existsSync21, mkdirSync as mkdirSync10, readFileSync as readFileSync25, rmSync as rmSync7, writeFileSync as writeFileSync18 } from "node:fs";
+import { join as join26 } from "node:path";
 
 // packages/cli/src/metrics.ts
 init_src();
 
 // packages/cli/src/ci/review.ts
 init_src();
-import { writeFileSync as writeFileSync14 } from "node:fs";
-import { join as join21 } from "node:path";
+import { writeFileSync as writeFileSync15 } from "node:fs";
+import { join as join23 } from "node:path";
 
 // packages/cli/src/ci/agent.ts
 init_src();
@@ -35233,9 +35238,9 @@ import { execFileSync as execFileSync8 } from "node:child_process";
 // packages/cli/src/ci/index.ts
 init_src();
 import { execFileSync as execFileSync7, spawnSync as spawnSync3 } from "node:child_process";
-import { appendFileSync as appendFileSync3, existsSync as existsSync16, readdirSync as readdirSync7, readFileSync as readFileSync19, rmSync as rmSync5 } from "node:fs";
+import { appendFileSync as appendFileSync4, existsSync as existsSync17, readdirSync as readdirSync8, readFileSync as readFileSync20, rmSync as rmSync5 } from "node:fs";
 import { homedir as homedir3 } from "node:os";
-import { dirname as dirname6, join as join20 } from "node:path";
+import { dirname as dirname6, join as join22 } from "node:path";
 
 // packages/cli/src/ci/evals.ts
 init_src();
@@ -35433,7 +35438,8 @@ var TARGETS = {
     "sdlc-loop.yml": ".github/workflows/sdlc-loop.yml",
     "sdlc-gates.yml": ".github/workflows/sdlc-gates.yml",
     "sdlc-evals.yml": ".github/workflows/sdlc-evals.yml",
-    "sdlc-bands.yml": ".github/workflows/sdlc-bands.yml"
+    "sdlc-bands.yml": ".github/workflows/sdlc-bands.yml",
+    "sdlc-nightly-review.yml": ".github/workflows/sdlc-nightly-review.yml"
   },
   gitlab: { "gitlab-ci.yml": ".gitlab-ci.yml", "sdlc.gitlab-ci.yml": "ci/sdlc.gitlab-ci.yml" },
   bitbucket: { "bitbucket-pipelines.yml": "bitbucket-pipelines.yml" }
@@ -35592,13 +35598,378 @@ function captureCommand(c, sha2, flags) {
   return 0;
 }
 
+// packages/cli/src/ci/nightly.ts
+init_src();
+import { appendFileSync as appendFileSync3, writeFileSync as writeFileSync13 } from "node:fs";
+import { join as join20 } from "node:path";
+
+// packages/cli/src/init.ts
+init_src2();
+init_src();
+import { copyFileSync, existsSync as existsSync16, mkdirSync as mkdirSync8, readdirSync as readdirSync7, readFileSync as readFileSync19, statSync as statSync3 } from "node:fs";
+import { join as join19, relative as relative3 } from "node:path";
+import { createInterface } from "node:readline/promises";
+
+// packages/cli/src/presets.ts
+var PRESETS = ["solo", "team-github", "regulated"];
+var PRESET_SPECS = {
+  solo: {
+    description: "one developer: any person (never an agent) approves gates; CI runs build + triage",
+    roles: false,
+    github: ["ci.yml"],
+    apply: (c) => ({ ...c, gates: {}, roles: {}, gates_self_approval: true })
+  },
+  "team-github": {
+    description: "team with a PO and a tech lead: gates by role, review + loop + gates workflows, GitHub Issues as tracker",
+    roles: true,
+    github: ["ci.yml", "sdlc-review.yml", "sdlc-security.yml", "sdlc-loop.yml", "sdlc-gates.yml"],
+    apply: (c) => ({
+      ...c,
+      gates: { intent: ["po"], spec: ["po"], plan: ["tech-lead"] },
+      ...c.vcs?.provider === "github" && (c.tracker?.provider ?? "none") === "none" ? { tracker: { provider: "github", mode: "linkage" } } : {}
+    })
+  },
+  regulated: {
+    description: "team preset plus high-risk paths, tech lead on every plan, nightly evals, nightly review and control bands",
+    roles: true,
+    github: ["ci.yml", "sdlc-review.yml", "sdlc-security.yml", "sdlc-loop.yml", "sdlc-gates.yml", "sdlc-evals.yml", "sdlc-nightly-review.yml", "sdlc-bands.yml"],
+    apply: (c) => ({
+      ...c,
+      gates: { intent: ["po"], spec: ["po", "tech-lead"], plan: ["tech-lead"] },
+      risk: { ...c.risk, high_risk_paths: c.risk?.high_risk_paths?.length ? c.risk.high_risk_paths : ["**/auth/**", "**/payments/**", "infra/**", "**/migrations/**"] }
+    })
+  }
+};
+function isPreset(p) {
+  return typeof p === "string" && PRESETS.includes(p);
+}
+function defaultPreset(config2) {
+  return config2.vcs?.provider === "github" ? "team-github" : "solo";
+}
+function parsePeople(s) {
+  return s.split(",").map((x) => x.trim()).filter(Boolean).map((x) => x.includes("@") || x.includes(" ") ? x : `@${x}`);
+}
+
+// packages/cli/src/init.ts
+var STACKS = {
+  python: {
+    language: "python",
+    package_manager: "uv",
+    commands: { build: "uv build", test: "uv run pytest", lint: "uv run ruff check .", format: "uv run ruff format ." },
+    format_on_edit: { "*.py": "uv run ruff format {file}" },
+    test_globs: ["tests/**", "**/test_*.py", "**/*_test.py", "**/conftest.py"],
+    protected_paths: ["migrations/versions/**", "**/*_pb2.py", "**/_generated/**"]
+  },
+  typescript: {
+    language: "typescript",
+    package_manager: "npm",
+    commands: { build: "npm run build", test: "npm test", lint: "npm run lint", format: "npm run format" },
+    format_on_edit: {},
+    test_globs: ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/__tests__/**", "e2e/**", "tests/**"],
+    protected_paths: ["prisma/migrations/**", "drizzle/**", "src/gen/**", "**/*.generated.ts"]
+  },
+  java: {
+    language: "java",
+    package_manager: "gradle",
+    commands: { build: "./gradlew build -x test", test: "./gradlew test", lint: "./gradlew check -x test", format: "./gradlew spotlessApply" },
+    format_on_edit: {},
+    test_globs: ["src/test/**", "src/integrationTest/**", "src/itest/**"],
+    protected_paths: ["src/main/resources/db/migration/**", "build/generated/**", "**/generated/**"]
+  },
+  go: {
+    language: "go",
+    package_manager: "go",
+    commands: { build: "go build ./...", test: "go test ./...", lint: "go vet ./...", format: "gofmt -w ." },
+    format_on_edit: { "*.go": "gofmt -w {file}" },
+    test_globs: ["**/*_test.go", "testdata/**"],
+    protected_paths: ["**/*.pb.go", "**/zz_generated*.go"]
+  },
+  dotnet: {
+    language: "dotnet",
+    package_manager: "dotnet",
+    commands: { build: "dotnet build", test: "dotnet test", lint: "dotnet format --verify-no-changes", format: "dotnet format" },
+    format_on_edit: {},
+    test_globs: ["tests/**", "test/**", "**/*.Tests/**", "**/*.Test/**", "**/*Tests.cs"],
+    protected_paths: ["**/*.g.cs"],
+    append_only_paths: ["**/Migrations/*.Designer.cs", "**/Migrations/2*.cs"]
+  },
+  ruby: {
+    language: "ruby",
+    package_manager: "bundler",
+    commands: { build: "bin/rails zeitwerk:check", test: "bin/rails test", lint: "bundle exec rubocop", format: "bundle exec rubocop -a" },
+    format_on_edit: { "*.rb": "bundle exec rubocop -a {file}" },
+    test_globs: ["test/**", "spec/**"],
+    protected_paths: ["db/schema.rb", "db/structure.sql"],
+    append_only_paths: ["db/migrate/**"]
+  }
+};
+function detectStack(root) {
+  const has2 = (f) => existsSync16(join19(root, f));
+  if (has2("Gemfile") && has2("config/application.rb")) return "ruby";
+  if (readdirSync7(root).some((f) => f.endsWith(".sln") || f.endsWith(".csproj"))) return "dotnet";
+  if (has2("pyproject.toml") || has2("requirements.txt")) return "python";
+  if (has2("package.json") || has2("tsconfig.json")) return "typescript";
+  if (has2("pom.xml") || has2("build.gradle") || has2("build.gradle.kts")) return "java";
+  if (has2("go.mod")) return "go";
+  return void 0;
+}
+function detectPackageManager(root, stack, fallback) {
+  if (stack !== "typescript") return stack === "java" && existsSync16(join19(root, "pom.xml")) ? "maven" : fallback;
+  if (existsSync16(join19(root, "pnpm-lock.yaml"))) return "pnpm";
+  if (existsSync16(join19(root, "yarn.lock"))) return "yarn";
+  if (existsSync16(join19(root, "bun.lock")) || existsSync16(join19(root, "bun.lockb"))) return "bun";
+  return "npm";
+}
+function detectAgents(root) {
+  const found = [];
+  if (existsSync16(join19(root, ".claude")) || existsSync16(join19(root, "CLAUDE.md"))) found.push("claude");
+  if (existsSync16(join19(root, ".cursor")) || existsSync16(join19(root, ".cursorrules"))) found.push("cursor");
+  if (existsSync16(join19(root, "AGENTS.md")) || existsSync16(join19(root, ".codex"))) found.push("agents-md");
+  return found.length ? found : ["claude"];
+}
+function detectConfig(root, locale) {
+  const stackId = detectStack(root);
+  const stack = stackId ? STACKS[stackId] : void 0;
+  const remote = git(root, ["remote", "get-url", "origin"]) ?? "";
+  const provider = remote.includes("github") ? "github" : remote.includes("gitlab") ? "gitlab" : remote.includes("bitbucket") ? "bitbucket" : void 0;
+  const head = git(root, ["symbolic-ref", "--short", "refs/remotes/origin/HEAD"])?.replace(/^origin\//, "");
+  const config2 = {
+    version: 1,
+    locale,
+    agents: detectAgents(root),
+    vcs: { ...provider ? { provider } : {}, default_branch: head ?? git(root, ["rev-parse", "--abbrev-ref", "HEAD"])?.replace(/^HEAD$/, "main") ?? "main" },
+    tracker: { provider: "none" }
+  };
+  if (stack) {
+    const pm = detectPackageManager(root, stackId, stack.package_manager);
+    const swap = (s) => stack.language === "typescript" ? s.replace(/^npm /, `${pm} `) : s;
+    config2.stack = { language: stack.language, package_manager: pm };
+    config2.commands = Object.fromEntries(Object.entries(stack.commands ?? {}).map(([k, v]) => [k, swap(v)]));
+    config2.format_on_edit = stack.format_on_edit;
+    config2.test_globs = stack.test_globs;
+    config2.protected_paths = stack.protected_paths;
+    if (stack.append_only_paths) config2.append_only_paths = stack.append_only_paths;
+    if (stackId === "ruby" && (existsSync16(join19(root, ".rspec")) || existsSync16(join19(root, "spec")))) config2.commands.test = "bundle exec rspec";
+  } else {
+    config2.commands = { build: "make build", test: "make test", lint: "make lint", format: "make format" };
+    config2.test_globs = ["tests/**", "test/**"];
+    config2.protected_paths = [];
+  }
+  config2.secret_patterns_extra = [];
+  config2.risk = { high_risk_paths: [] };
+  config2.production_gate = { patterns: ["deploy.*prod", "terraform apply", "kubectl .*--context[= ].*prod"], approval_env: "RELEASE_APPROVAL" };
+  config2.gates = { intent: ["po"], spec: ["po"], plan: ["tech-lead"] };
+  config2.roles = {};
+  return config2;
+}
+function presetConfig(config2, preset, people = {}) {
+  const out = PRESET_SPECS[preset].apply(structuredClone(config2));
+  if (PRESET_SPECS[preset].roles) {
+    const po = parsePeople(people.po ?? "");
+    const tl = parsePeople(people.techLead ?? "");
+    out.roles = { ...po.length ? { po } : {}, ...tl.length ? { "tech-lead": tl } : {} };
+  }
+  return out;
+}
+async function askConfig(config2, preset) {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    const ask = async (q, def) => (await rl.question(`${q} [${def}]: `)).trim() || def;
+    let chosen = preset;
+    while (!chosen) {
+      for (const p of PRESETS) console.log(`  ${p.padEnd(12)} ${PRESET_SPECS[p].description}`);
+      const a = await ask("Preset", defaultPreset(config2));
+      if (isPreset(a)) chosen = a;
+    }
+    const agents = await ask(`Agents (${AGENTS.join(", ")})`, (config2.agents ?? []).join(","));
+    config2.agents = agents.split(",").map((s) => s.trim()).filter((a) => AGENTS.includes(a));
+    if (!PRESET_SPECS[chosen].roles) return { preset: chosen, config: presetConfig(config2, chosen) };
+    const hint = "GitHub users and/or git emails, comma separated; empty = any person";
+    const po = await ask(`Product Owner for intent/spec gates (${hint})`, "");
+    const techLead = await ask(`Tech lead for plan gates (${hint})`, "");
+    return { preset: chosen, config: presetConfig(config2, chosen, { po, techLead }) };
+  } finally {
+    rl.close();
+  }
+}
+function scaffold(root, opts2) {
+  const src = join19(localeDir(opts2.locale), "skills", "sdlc-setup", "scaffold");
+  const created = [];
+  const walk2 = (dir) => {
+    for (const name of readdirSync7(dir)) {
+      const from = join19(dir, name);
+      const rel = relative3(src, from);
+      if (rel === "CLAUDE.md" && !opts2.claudeMd) continue;
+      const to = join19(root, rel);
+      if (statSync3(from).isDirectory()) {
+        mkdirSync8(to, { recursive: true });
+        walk2(from);
+      } else if (!existsSync16(to)) {
+        copyFileSync(from, to);
+        created.push(rel);
+      }
+    }
+  };
+  walk2(src);
+  return created;
+}
+function templateFor(root, artifact, locale) {
+  const local = join19(root, "changes", "_templates", `${artifact}.md`);
+  if (existsSync16(local)) return readFileSync19(local, "utf8");
+  return readFileSync19(join19(localeDir(locale), "skills", "sdlc-setup", "scaffold", "changes", "_templates", `${artifact}.md`), "utf8");
+}
+
+// packages/cli/src/ci/nightly.ts
+var NIGHTLY_PASSES = ["bugs", "security", "tests"];
+var DEFAULT_MAX_INTENTS = 3;
+var NIGHTLY_TRAILER = "Nightly-Finding";
+var CONTAINERS = ["src", "lib", "app", "packages", "services", "internal", "pkg", "cmd"];
+var SKIP = /^(\.|tests?$|__tests__$|docs$|examples$|evals$|fixtures$|vendor$|node_modules$|dist$|build$|ops$|scripts$)/;
+var log2 = (msg) => process.stderr.write(`[sdlc-ci] ${msg}
+`);
+function nightlyModules(root, loaded) {
+  const explicit = loaded?.config.ci?.nightly?.modules;
+  if (explicit?.length) return explicit;
+  const mods = /* @__PURE__ */ new Set();
+  for (const f of lines(git(root, ["ls-files"])).filter(isCodePath)) {
+    const p = f.split("/");
+    if (p.length < 2 || SKIP.test(p[0])) continue;
+    mods.add(CONTAINERS.includes(p[0]) && p.length > 2 ? `${p[0]}/${p[1]}` : p[0]);
+  }
+  return [...mods].sort();
+}
+function moduleFor(modules, date5) {
+  return modules.length ? modules[Math.floor(date5.getTime() / 864e5) % modules.length] : void 0;
+}
+var fingerprint = (f) => `${f.file}#${f.bug_class.toLowerCase()}`;
+function alreadyOpened(root) {
+  const out = git(root, ["log", "--all", `--grep=^${NIGHTLY_TRAILER}: `, "--format=%B"]) ?? "";
+  return new Set([...out.matchAll(new RegExp(`^${NIGHTLY_TRAILER}: (.+)$`, "gm"))].map((m) => m[1].trim()));
+}
+function finderPrompt(module, pass) {
+  return `You are a review finder for existing code: there is no diff, read the module ${module} (git ls-files ${module}) and what it calls.
+Your pass: ${PASS_FOCUS[pass]}. Follow REVIEW.md (what Important means, what not to report).
+Report only what you can prove: a file and line, and the code or the reasoning that shows the problem. severity: important (breaks behavior, leaks data, violates a policy) or nit (minor; never formatting or what lint checks). bug_class: a short name for the kind of bug (off-by-one, missing authorization check, unhandled error\u2026). At most ten findings, the most serious first.
+Do not modify any file. Answer only with a JSON array, [] if you found nothing:
+[{"severity": "important", "file": "src/a.ts", "line": 12, "title": "one line", "evidence": "why it is wrong", "bug_class": "off-by-one"}]`;
+}
+function verifierPrompt(module, candidates) {
+  const j = JSON.stringify(candidates.map(({ id, severity, file: file2, line, title, evidence: evidence2 }) => ({ id, severity, file: file2, line, title, evidence: evidence2 })));
+  return `You are the review verifier for a review of existing code in ${module}. Check each finding against the code at HEAD (read the files).
+Candidates: ${j}
+For each one vote keep (real, the evidence holds, and it matters) or drop (wrong, not supported by the code, a duplicate, or only style, naming or formatting). You may correct the severity (important, nit).
+Do not modify any file. Answer only with a JSON array: [{"id": "n1", "vote": "keep|drop", "severity": "important", "reason": "short"}]`;
+}
+var slugify2 = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "finding";
+function intentFor(root, loaded, module, f, slug, now) {
+  const title = `${f.bug_class} in ${f.file}`;
+  const detected = [
+    `> Found by the nightly review of \`${module}\` (\`sdlc ci nightly-review\`) on ${now.toISOString().slice(0, 10)}. Confirm it, then decide: fix (/sdlc-fix or the full loop), schedule, or reject this intent with the reason.`,
+    "",
+    "### Finding",
+    `- **Important** \xB7 ${f.bug_class} \xB7 \`${f.file}:${f.line}\` (pass: ${f.pass})`,
+    `- ${f.title}`,
+    ...f.evidence ? [`- Evidence: ${f.evidence}`] : [],
+    ""
+  ].join("\n");
+  const intent = setFrontmatter(templateFor(root, "intent", localeOf(loaded)), {
+    change: slug,
+    status: "draft",
+    origin: "review",
+    author: "sdlc nightly review",
+    created: now.toISOString().slice(0, 10)
+  });
+  return intent.replace(/^# (.*)$/m, (_m, h) => `# ${/<[^>]*>/.test(h) ? h.replace(/<[^>]*>/, title) : title}
+
+${detected}`);
+}
+async function nightlyReview(c, flags) {
+  const modules = nightlyModules(c.root, c.loaded);
+  const module = typeof flags.module === "string" ? flags.module : moduleFor(modules, /* @__PURE__ */ new Date());
+  const result = { module, findings: [], intents: [], skipped: [] };
+  if (!module) {
+    log2("no modules to review (set ci.nightly.modules)");
+    return 0;
+  }
+  log2(`nightly review of ${module} (${modules.length} module${modules.length === 1 ? "" : "s"} in rotation)`);
+  const run3 = (prompt) => runAgentAsync(c.agent, { mode: "read", allowedTools: READ_TOOLS, cwd: c.root, prompt }, c.model).catch((e) => (log2(e.message), ""));
+  const found = (await Promise.all(NIGHTLY_PASSES.map(async (p) => parseFindings(await run3(finderPrompt(module, p)), p)))).flat();
+  const candidates = [];
+  for (const f of found)
+    if (f.severity !== "pre_existing" && !candidates.some((k) => sameFinding(k, f))) candidates.push({ ...f, id: `n${candidates.length + 1}` });
+  const ballots = candidates.length ? [parseVotes(await run3(verifierPrompt(module, candidates)))].filter((b) => !!b) : [];
+  result.findings = candidates.flatMap((f) => {
+    const t2 = tally(ballots, f.id, "keep");
+    return t2.pass ? [{ ...f, severity: t2.severity ?? f.severity }] : [];
+  });
+  const max = c.loaded?.config.ci?.nightly?.max_intents ?? DEFAULT_MAX_INTENTS;
+  const opened = alreadyOpened(c.root);
+  const now = /* @__PURE__ */ new Date();
+  const def = c.loaded?.config.vcs?.default_branch ?? "main";
+  const from = git(c.root, ["rev-parse", "--verify", "-q", `origin/${def}`]) ? `origin/${def}` : git(c.root, ["rev-parse", "--verify", "-q", def]) ? def : "HEAD";
+  const remote = !!git(c.root, ["remote", "get-url", "origin"]);
+  for (const f of result.findings.filter((x) => x.severity === "important")) {
+    const fp = fingerprint(f);
+    if (opened.has(fp)) {
+      result.skipped.push(`${f.id} ${fp}: an intent already exists`);
+      continue;
+    }
+    if (result.intents.length >= max) {
+      result.skipped.push(`${f.id} ${fp}: ci.nightly.max_intents (${max}) reached`);
+      continue;
+    }
+    const slug = `review-${slugify2(f.bug_class)}-${now.toISOString().slice(0, 10).replaceAll("-", "")}-${result.intents.length + 1}`;
+    const dir = `changes/${now.toISOString().slice(0, 7)}-${slug}`;
+    const branch = `change/${slug}`;
+    if (c.dryRun) {
+      result.intents.push({ finding: f.id, change: dir, branch });
+      continue;
+    }
+    const intent = intentFor(c.root, c.loaded, module, f, slug, now);
+    commitFiles(c.root, branch, { [`${dir}/intent.md`]: intent }, `chore(${slug}): intent from the nightly review of ${module}
+
+${f.title}
+
+${NIGHTLY_TRAILER}: ${fp}`, from);
+    opened.add(fp);
+    const entry = { finding: f.id, change: dir, branch };
+    if (remote) {
+      git(c.root, ["push", "-q", "origin", `${branch}:${branch}`]);
+      if (flags.pr) {
+        try {
+          entry.pr = await prCreate({ root: c.root, loaded: c.loaded, env: c.env }, { title: `Intent: ${f.bug_class} in ${f.file}`, body: intent.replace(/^---[\s\S]*?---\n/, ""), base: def, head: branch, draft: true });
+        } catch (e) {
+          log2(`could not open the PR for ${branch}: ${e.message}`);
+        }
+      }
+    }
+    result.intents.push(entry);
+  }
+  writeFileSync13(join20(c.root, "nightly-review.json"), JSON.stringify(result, null, 2) + "\n");
+  const report = renderNightly(result, modules.length);
+  console.log(report);
+  if (c.env.GITHUB_STEP_SUMMARY) appendFileSync3(c.env.GITHUB_STEP_SUMMARY, report + "\n");
+  return 0;
+}
+function renderNightly(r, total) {
+  const important = r.findings.filter((f) => f.severity === "important");
+  const out = [`## Nightly review: ${r.module}`, "", `Important: ${important.length} \xB7 Nit: ${r.findings.length - important.length} \xB7 ${total} module${total === 1 ? "" : "s"} in rotation`];
+  if (r.findings.length) {
+    out.push("", "| Id | Severity | File:line | Finding | Bug class |", "|---|---|---|---|---|");
+    for (const f of r.findings) out.push(`| ${f.id} | ${f.severity === "important" ? "Important" : "Nit"} | \`${f.file}:${f.line}\` | ${f.title.replace(/\|/g, "\\|")} | ${f.bug_class} |`);
+  }
+  for (const i of r.intents) out.push("", `Intent for ${i.finding}: \`${i.change}/intent.md\` on \`${i.branch}\`${i.pr ? ` (${i.pr})` : ""}`);
+  for (const s of r.skipped) out.push("", `Skipped ${s}`);
+  return out.join("\n");
+}
+
 // packages/cli/src/ci/risk.ts
 init_src();
-import { writeFileSync as writeFileSync13 } from "node:fs";
-import { join as join19 } from "node:path";
+import { writeFileSync as writeFileSync14 } from "node:fs";
+import { join as join21 } from "node:path";
 var RISK_HEADER = "## Risk (ai-sdlc)";
 var RISK_SUMMARY = "<!-- sdlc:risk-summary -->";
-var log2 = (msg) => process.stderr.write(`[sdlc-ci] ${msg}
+var log3 = (msg) => process.stderr.write(`[sdlc-ci] ${msg}
 `);
 function baseCommit(root, base) {
   return git(root, ["rev-parse", "--verify", "--quiet", `origin/${base}^{commit}`]) ? `origin/${base}` : base;
@@ -35624,7 +35995,7 @@ async function prRisk(c, change, n) {
     try {
       esc3 = escalationFrom((await prThread({ root: c.root, loaded: c.loaded, env: c.env }, n)).map((x) => x.body));
     } catch (e) {
-      log2(`could not read the PR comments: ${e.message}`);
+      log3(`could not read the PR comments: ${e.message}`);
     }
   }
   return changeRisk(c.root, c.loaded, change, { base, escalated: esc3.tier, escalatedReason: esc3.reason && `second classifier: ${esc3.reason}` });
@@ -35644,54 +36015,14 @@ async function risk(c, escalate) {
     r = changeRisk(c.root, c.loaded, change, { base, escalated: e.tier, escalatedReason: e.reason && `second classifier: ${e.reason}` });
     if (r.escalated && r.tier === r.escalated) marker = riskMarker(r.escalated, e.reason ?? "");
   }
-  writeFileSync13(join19(c.root, "risk.json"), JSON.stringify(r, null, 2) + "\n");
+  writeFileSync14(join21(c.root, "risk.json"), JSON.stringify(r, null, 2) + "\n");
   const need = approvalsFor(c.loaded, r.tier);
   const extra = isGraded(c.loaded) ? [`Human approvals for the code: ${need === 0 ? "none once the automated checks are green" : need} (risk.profile graded)`] : [];
   const body = renderRisk(r, extra) + (marker ? `
 ${marker}` : "");
   if (n === void 0 || c.dryRun) console.log(body);
-  else log2(await prUpsertComment({ root: c.root, loaded: c.loaded, env: c.env }, n, RISK_SUMMARY, body));
+  else log3(await prUpsertComment({ root: c.root, loaded: c.loaded, env: c.env }, n, RISK_SUMMARY, body));
   return 0;
-}
-
-// packages/cli/src/presets.ts
-var PRESETS = ["solo", "team-github", "regulated"];
-var PRESET_SPECS = {
-  solo: {
-    description: "one developer: any person (never an agent) approves gates; CI runs build + triage",
-    roles: false,
-    github: ["ci.yml"],
-    apply: (c) => ({ ...c, gates: {}, roles: {}, gates_self_approval: true })
-  },
-  "team-github": {
-    description: "team with a PO and a tech lead: gates by role, review + loop + gates workflows, GitHub Issues as tracker",
-    roles: true,
-    github: ["ci.yml", "sdlc-review.yml", "sdlc-security.yml", "sdlc-loop.yml", "sdlc-gates.yml"],
-    apply: (c) => ({
-      ...c,
-      gates: { intent: ["po"], spec: ["po"], plan: ["tech-lead"] },
-      ...c.vcs?.provider === "github" && (c.tracker?.provider ?? "none") === "none" ? { tracker: { provider: "github", mode: "linkage" } } : {}
-    })
-  },
-  regulated: {
-    description: "team preset plus high-risk paths, tech lead on every plan, nightly evals and control bands",
-    roles: true,
-    github: ["ci.yml", "sdlc-review.yml", "sdlc-security.yml", "sdlc-loop.yml", "sdlc-gates.yml", "sdlc-evals.yml", "sdlc-bands.yml"],
-    apply: (c) => ({
-      ...c,
-      gates: { intent: ["po"], spec: ["po", "tech-lead"], plan: ["tech-lead"] },
-      risk: { ...c.risk, high_risk_paths: c.risk?.high_risk_paths?.length ? c.risk.high_risk_paths : ["**/auth/**", "**/payments/**", "infra/**", "**/migrations/**"] }
-    })
-  }
-};
-function isPreset(p) {
-  return typeof p === "string" && PRESETS.includes(p);
-}
-function defaultPreset(config2) {
-  return config2.vcs?.provider === "github" ? "team-github" : "solo";
-}
-function parsePeople(s) {
-  return s.split(",").map((x) => x.trim()).filter(Boolean).map((x) => x.includes("@") || x.includes(" ") ? x : `@${x}`);
 }
 
 // packages/cli/src/notify.ts
@@ -35757,6 +36088,8 @@ sdlc ci review                 review the PR/MR with REVIEW.md: one finder per p
 sdlc ci security               the same, read-only, with security passes only (injection, access control, data and secrets)
 sdlc ci review-status          set the sdlc/review commit status: failure while an Important or security finding is open
                                (closed when fixed, or by a maintainer's "resolved: <reason>" reply)
+sdlc ci nightly-review [--module M] [--pr]   review existing code, one module per night (ci.nightly.modules, else every
+                               code directory): Important findings become intents (origin: review) on change/review-*
 sdlc ci intent-to-spec         for accepted intents without spec.md: write the spec headless, commit, push
 sdlc ci triage <log>           summarize a failed build and comment on the PR/MR
 sdlc ci tracker-merged         move the merged change's tickets to tracker.transitions.merged (alias: jira-merged)
@@ -35780,7 +36113,7 @@ Env: ANTHROPIC_API_KEY | OPENAI_API_KEY | CURSOR_API_KEY \xB7 GH_TOKEN | GITLAB_
      JIRA_EMAIL + JIRA_API_TOKEN (or JIRA_PAT) \xB7 LINEAR_API_KEY \xB7 SDLC_PLUGIN_REPO_URL / SDLC_PLUGIN_TOKEN (private marketplace)
      SDLC_NOTIFY_WEBHOOK (Slack or generic webhook: gate.pending, gate.decided, spec.ready, review.done, change.merged, risk.raised)
 `;
-var log3 = (msg) => process.stderr.write(`[sdlc-ci] ${msg}
+var log4 = (msg) => process.stderr.write(`[sdlc-ci] ${msg}
 `);
 function prNumber(env) {
   const n = env.PR_NUMBER || env.CI_MERGE_REQUEST_IID || env.BITBUCKET_PR_ID;
@@ -35799,7 +36132,7 @@ async function ciCommand(root, args) {
   const flags = {};
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
-    if (a === "--dry-run" || a === "--escalate" || a === "--reverts") flags[a.slice(2)] = true;
+    if (a === "--dry-run" || a === "--escalate" || a === "--reverts" || a === "--pr") flags[a.slice(2)] = true;
     else if (a.startsWith("--")) flags[a.slice(2)] = args[++i] ?? "";
     else pos.push(a);
   }
@@ -35840,6 +36173,8 @@ async function ciCommand(root, args) {
     case "matrix":
       console.log(JSON.stringify(matrixAgents(c.env, typeof flags.only === "string" ? flags.only : void 0)));
       return 0;
+    case "nightly-review":
+      return nightlyReview(c, flags);
     case "capture-eval":
       return captureCommand(c, rest[0], flags);
     case "scorecard":
@@ -35881,33 +36216,33 @@ var INSTALL = {
 };
 function bootstrap(c) {
   let bin = agentBin(c.agent, c.env);
-  if (hasTool(bin, c.env)) log3(`${bin} already installed`);
+  if (hasTool(bin, c.env)) log4(`${bin} already installed`);
   else {
     const [cmd, args] = INSTALL[c.agent];
-    log3(`installing ${bin}: ${cmd} ${args.join(" ")}`);
+    log4(`installing ${bin}: ${cmd} ${args.join(" ")}`);
     const r = spawnSync3(cmd, args, { stdio: ["ignore", "ignore", "inherit"] });
     if (r.status !== 0) throw new SdlcError(`could not install ${bin}`);
     bin = agentBin(c.agent, c.env);
     const dir = dirname6(bin);
-    if (dir !== "." && c.env.GITHUB_PATH) appendFileSync3(c.env.GITHUB_PATH, `${dir}
+    if (dir !== "." && c.env.GITHUB_PATH) appendFileSync4(c.env.GITHUB_PATH, `${dir}
 `);
   }
   if (c.agent !== "claude") {
-    log3(`${bin} reads the rendered skills in .agents/skills (commit the output of sdlc sync)`);
+    log4(`${bin} reads the rendered skills in .agents/skills (commit the output of sdlc sync)`);
     return 0;
   }
   let url2 = c.env.SDLC_PLUGIN_REPO_URL || c.loaded?.config.plugin?.marketplace_repo;
   if (!url2) {
-    log3("no plugin.marketplace_repo: Claude uses the project skills in .claude/skills (commit the output of sdlc sync)");
+    log4("no plugin.marketplace_repo: Claude uses the project skills in .claude/skills (commit the output of sdlc sync)");
     return 0;
   }
   if (c.env.SDLC_PLUGIN_TOKEN) url2 = url2.replace("https://", `https://${c.env.SDLC_PLUGIN_TOKEN_USER || "x-access-token"}:${c.env.SDLC_PLUGIN_TOKEN}@`);
-  const home = c.env.SDLC_HOME || join20(homedir3(), ".ai-sdlc");
+  const home = c.env.SDLC_HOME || join22(homedir3(), ".ai-sdlc");
   rmSync5(home, { recursive: true, force: true });
   execFileSync7("git", ["clone", "-q", "--depth", "1", url2, home], { stdio: ["ignore", "ignore", "inherit"] });
   execFileSync7("claude", ["plugin", "marketplace", "add", home], { stdio: ["ignore", "ignore", "inherit"] });
   execFileSync7("claude", ["plugin", "install", "ai-sdlc@ai-native-sdlc"], { stdio: ["ignore", "ignore", "inherit"] });
-  log3("ai-sdlc plugin installed");
+  log4("ai-sdlc plugin installed");
   return 0;
 }
 async function post(c, n, body) {
@@ -35915,22 +36250,22 @@ async function post(c, n, body) {
     console.log(body);
     return;
   }
-  log3(await prComment({ root: c.root, loaded: c.loaded, env: c.env }, n, body));
+  log4(await prComment({ root: c.root, loaded: c.loaded, env: c.env }, n, body));
 }
 function pendingIntents(root) {
-  const dir = join20(root, "changes");
-  if (!existsSync16(dir)) return [];
-  return readdirSync7(dir, { withFileTypes: true }).filter((d) => d.isDirectory() && !d.name.startsWith("_")).map((d) => `changes/${d.name}`).filter((d) => existsSync16(join20(root, d, "intent.md")) && !existsSync16(join20(root, d, "spec.md"))).filter((d) => isApproved(parseFrontmatter(readFileSync19(join20(root, d, "intent.md"), "utf8")).data.status)).sort();
+  const dir = join22(root, "changes");
+  if (!existsSync17(dir)) return [];
+  return readdirSync8(dir, { withFileTypes: true }).filter((d) => d.isDirectory() && !d.name.startsWith("_")).map((d) => `changes/${d.name}`).filter((d) => existsSync17(join22(root, d, "intent.md")) && !existsSync17(join22(root, d, "spec.md"))).filter((d) => isApproved(parseFrontmatter(readFileSync20(join22(root, d, "intent.md"), "utf8")).data.status)).sort();
 }
 async function intentToSpec(c) {
   const pending = pendingIntents(c.root);
   if (!pending.length) {
-    log3("no accepted intents without a spec");
+    log4("no accepted intents without a spec");
     return 0;
   }
   const before = git(c.root, ["rev-parse", "HEAD"]);
   for (const d of pending) {
-    log3(`generating spec for ${d} with ${c.agent}`);
+    log4(`generating spec for ${d} with ${c.agent}`);
     runAgent(
       c.agent,
       {
@@ -35943,21 +36278,21 @@ async function intentToSpec(c) {
     );
   }
   if (git(c.root, ["rev-parse", "HEAD"]) === before) {
-    log3("the agent made no commits; nothing to push");
+    log4("the agent made no commits; nothing to push");
     return 1;
   }
   if (c.dryRun) {
-    log3(`dry run: not pushing HEAD:${headRef(c)}`);
+    log4(`dry run: not pushing HEAD:${headRef(c)}`);
     return 0;
   }
   execFileSync7("git", ["push", "origin", `HEAD:${headRef(c)}`], { cwd: c.root, stdio: ["ignore", "inherit", "inherit"] });
-  for (const d of pending.filter((x) => existsSync16(join20(c.root, x, "spec.md")))) {
-    log3(await notify({ event: "spec.ready", change: findChange(c.root, c.loaded, { id: d }), artifact: "spec" }, c.loaded, c.env));
+  for (const d of pending.filter((x) => existsSync17(join22(c.root, x, "spec.md")))) {
+    log4(await notify({ event: "spec.ready", change: findChange(c.root, c.loaded, { id: d }), artifact: "spec" }, c.loaded, c.env));
   }
   return 0;
 }
 function scorecard(c, files, out) {
-  const reports = files.filter((f) => existsSync16(f)).map((f) => JSON.parse(readFileSync19(f, "utf8")));
+  const reports = files.filter((f) => existsSync17(f)).map((f) => JSON.parse(readFileSync20(f, "utf8")));
   if (!reports.length) throw new SdlcError("usage: sdlc ci scorecard <report.json\u2026> (no reports found)");
   const prs = Object.values(readPrStats(c.root)).filter((p) => p.outcomes);
   const outcomes = prs.length ? { prs: prs.length, totals: sumOutcomes(prs.map((p) => p.outcomes)) } : void 0;
@@ -35966,11 +36301,11 @@ function scorecard(c, files, out) {
     console.log(block2);
     return 0;
   }
-  console.log(updateScorecard(join20(c.root, out), block2) ? `updated ${out}` : `${out}: no result changed`);
+  console.log(updateScorecard(join22(c.root, out), block2) ? `updated ${out}` : `${out}: no result changed`);
   return 0;
 }
 async function triage(c, logFile) {
-  if (!logFile || !existsSync16(logFile)) throw new SdlcError("usage: sdlc ci triage <log-file>");
+  if (!logFile || !existsSync17(logFile)) throw new SdlcError("usage: sdlc ci triage <log-file>");
   const out = runAgent(
     c.agent,
     {
@@ -35993,23 +36328,23 @@ async function trackerMerged(c) {
   const message = git(c.root, ["log", "-1", "--format=%B"]) ?? "";
   const branch = c.env.MERGED_BRANCH || mergedBranch(message);
   const merged = branch ? findChange(c.root, c.loaded, { branch, active: false }) : void 0;
-  if (merged && !c.dryRun) log3(await notify({ event: "change.merged", change: merged }, c.loaded, c.env));
+  if (merged && !c.dryRun) log4(await notify({ event: "change.merged", change: merged }, c.loaded, c.env));
   if (!trackerEnabled(c.loaded)) {
-    log3("tracker not configured");
+    log4("tracker not configured");
     return 0;
   }
   const text = [message, headRef(c), branch ?? ""].join("\n");
   const keys = trackerKeys(c.loaded, [text, merged?.ticket ?? ""].join("\n"));
   if (!keys.length) {
-    log3("the merge does not reference any tickets");
+    log4("the merge does not reference any tickets");
     return 0;
   }
   const j = tracker(c.loaded, c.env, c.root);
   for (const k of keys) {
     try {
-      log3(await j.transition(k, "merged"));
+      log4(await j.transition(k, "merged"));
     } catch (e) {
-      log3(`could not transition ${k}: ${e.message} (continuing; the tracker does not block)`);
+      log4(`could not transition ${k}: ${e.message} (continuing; the tracker does not block)`);
     }
   }
   return 0;
@@ -36048,7 +36383,7 @@ ${quoted}
 
 ${out.trim()}`;
   if (edit && git(c.root, ["rev-parse", "HEAD"]) !== before) {
-    if (c.dryRun) log3(`dry run: not pushing HEAD:${headRef(c)}`);
+    if (c.dryRun) log4(`dry run: not pushing HEAD:${headRef(c)}`);
     else execFileSync7("git", ["push", "origin", `HEAD:${headRef(c)}`], { cwd: c.root, stdio: ["ignore", "inherit", "inherit"] });
     body += `
 
@@ -36068,7 +36403,7 @@ function parseGateCommand(body) {
   if (!m) return void 0;
   return { decision: m[1] === "approve" ? "approved" : "rejected", artifact: m[2], comment: m[3]?.trim() || void 0 };
 }
-var log4 = (msg) => process.stderr.write(`[sdlc-ci] ${msg}
+var log5 = (msg) => process.stderr.write(`[sdlc-ci] ${msg}
 `);
 function changeForBranch(c, branch) {
   const slug = branch.replace(/^change\//, "");
@@ -36110,7 +36445,7 @@ function directorOf(c, change) {
 }
 async function reply(c, n, body) {
   if (c.dryRun) return void console.log(body);
-  log4(await prComment({ root: c.root, loaded: c.loaded, env: c.env }, n, `${GATE_HEADER}
+  log5(await prComment({ root: c.root, loaded: c.loaded, env: c.env }, n, `${GATE_HEADER}
 
 ${body}`));
 }
@@ -36134,7 +36469,7 @@ async function descriptionProblem(c, change, n, tier) {
     try {
       body = await prBody({ root: c.root, loaded: c.loaded, env: c.env }, n);
     } catch (e) {
-      log4(`could not read the PR description: ${e.message}`);
+      log5(`could not read the PR description: ${e.message}`);
       return void 0;
     }
   }
@@ -36166,8 +36501,8 @@ async function gateStatus(c, announce = false) {
     if (pending) console.log(`notify gate.pending: ${change.slug}/${waiting}`);
     return 0;
   }
-  log4(await commitStatus({ root: c.root, loaded: c.loaded, env: c.env }, sha2, { context: GATES_CONTEXT, ...g }));
-  if (pending) log4(await notify({ event: "gate.pending", change, artifact: waiting }, c.loaded, c.env));
+  log5(await commitStatus({ root: c.root, loaded: c.loaded, env: c.env }, sha2, { context: GATES_CONTEXT, ...g }));
+  if (pending) log5(await notify({ event: "gate.pending", change, artifact: waiting }, c.loaded, c.env));
   return 0;
 }
 async function gate(c) {
@@ -36176,7 +36511,7 @@ async function gate(c) {
   const login = c.env.COMMENT_AUTHOR ?? c.env.SDLC_MENTION_AUTHOR ?? "";
   const cmd = parseGateCommand(body);
   if (n === void 0 || !cmd) {
-    log4("no /approve or /reject command in the comment");
+    log5("no /approve or /reject command in the comment");
     return 0;
   }
   const association = c.env.AUTHOR_ASSOCIATION;
@@ -36216,7 +36551,7 @@ async function gate(c) {
 
 > ${cmd.comment}` : ""}`);
   const decided = changeForBranch(c, branch) ?? change;
-  if (!c.dryRun) log4(await notify({ event: "gate.decided", change: decided, artifact: cmd.artifact, decision: cmd.decision, by: `@${login}`, note: cmd.comment }, c.loaded, c.env));
+  if (!c.dryRun) log5(await notify({ event: "gate.decided", change: decided, artifact: cmd.artifact, decision: cmd.decision, by: `@${login}`, note: cmd.comment }, c.loaded, c.env));
   return gateStatus({ ...c, env: { ...c.env, HEAD_SHA: "" } }, cmd.decision === "approved");
 }
 var QUEUE_CONTEXTS = [GATES_CONTEXT, "sdlc/review"];
@@ -36230,7 +36565,7 @@ async function mergeQueue(c) {
     const failing = c.dryRun ? [] : prs.filter((p) => commitStatuses(ctx, p.sha).some((s2) => s2.context === context && s2.state !== "success"));
     const s = failing.length ? { state: "failure", description: `not green on #${failing.map((p) => p.n).join(", #")}` } : { state: "success", description: `green on #${prs.map((p) => p.n).join(", #")} before the merge queue` };
     if (c.dryRun) console.log(`${context}: ${s.state} \u2014 ${s.description}`);
-    else log4(await commitStatus(ctx, sha2, { context, ...s }));
+    else log5(await commitStatus(ctx, sha2, { context, ...s }));
   }
   return 0;
 }
@@ -36282,7 +36617,7 @@ var PASS_FOCUS = {
 };
 var MAX_NITS = 5;
 var DEFAULT_MAX_ROUNDS = 3;
-var log5 = (msg) => process.stderr.write(`[sdlc-ci] ${msg}
+var log6 = (msg) => process.stderr.write(`[sdlc-ci] ${msg}
 `);
 function parseJsonArray(out) {
   const fenced = /```(?:json)?\s*\n([\s\S]*?)```/.exec(out)?.[1];
@@ -36370,7 +36705,7 @@ function applyResolutions(findings, res) {
 function blocking(kind, findings) {
   return findings.filter((f) => f.status === "open" && (f.severity === "important" || kind === "security" && f.severity !== "pre_existing"));
 }
-function finderPrompt(kind, pass, range, full, branch, known) {
+function finderPrompt2(kind, pass, range, full, branch, known) {
   return `You are ${KINDS[kind].role} for this PR/MR. Your pass: ${PASS_FOCUS[pass]}. Follow REVIEW.md (what Important means, what not to report).
 Diff to review: git diff ${range}.${range === full ? "" : ` These are only the commits since the last review round; git diff ${full} is the whole PR, for context only.`}
 Read changes/<slug>/spec.md and plan.md for the change on the branch ${branch}.
@@ -36380,7 +36715,7 @@ ${known.map((f) => `- ${f.file}:${f.line} [${f.bug_class}] ${f.title}`).join("\n
 Do not modify any file. Answer only with a JSON array, [] if you found nothing:
 [{"severity": "important", "file": "src/a.ts", "line": 12, "title": "one line", "evidence": "why it is wrong", "bug_class": "off-by-one"${pass === "all" ? ', "pass": "bugs|security|compliance"' : ""}}]`;
 }
-function verifierPrompt(full, candidates, open2) {
+function verifierPrompt2(full, candidates, open2) {
   const j = (fs) => JSON.stringify(fs.map(({ id, severity, file: file2, line, title, evidence: evidence2 }) => ({ id, severity, file: file2, line, title, evidence: evidence2 })));
   return `You are the review verifier for this PR/MR. Check each finding against the code at HEAD (git diff ${full}, and read the files).
 ${candidates.length ? `New candidates: ${j(candidates)}
@@ -36450,7 +36785,7 @@ var headSha = (c) => c.env.HEAD_SHA || git(c.root, ["rev-parse", "HEAD"]) || "HE
 async function review(c, kind = "review") {
   const n = prNumber(c.env);
   if (n === void 0) {
-    log5("not a PR/MR, nothing to review");
+    log6("not a PR/MR, nothing to review");
     return 0;
   }
   const spec = KINDS[kind];
@@ -36470,12 +36805,12 @@ async function review(c, kind = "review") {
     try {
       thread = await prThread(ctx, n);
     } catch (e) {
-      log5(`could not read the PR comments: ${e.message}`);
+      log6(`could not read the PR comments: ${e.message}`);
     }
   }
   const prev = stateFrom(thread, kind);
   if (prev?.sha === head) {
-    log5(`${head.slice(0, 7)} was already reviewed (round ${prev.round})`);
+    log6(`${head.slice(0, 7)} was already reviewed (round ${prev.round})`);
     if (!c.dryRun) await reviewStatus(c, thread);
     return 0;
   }
@@ -36485,15 +36820,15 @@ async function review(c, kind = "review") {
   const full = `${base}...HEAD`;
   const range = since ? `${since}..HEAD` : full;
   const known = applyResolutions(prev?.findings ?? [], resolutions(thread, c.loaded));
-  const run3 = (prompt) => runAgentAsync(c.agent, { mode: "read", allowedTools: READ_TOOLS, cwd: c.root, prompt }, c.model).catch((e) => (log5(e.message), ""));
+  const run3 = (prompt) => runAgentAsync(c.agent, { mode: "read", allowedTools: READ_TOOLS, cwd: c.root, prompt }, c.model).catch((e) => (log6(e.message), ""));
   const passes = spec.passes[depth];
   const votes = spec.votes[depth];
-  const found = capped ? [] : (await Promise.all(passes.map(async (p) => parseFindings(await run3(finderPrompt(kind, p, range, full, branch, known)), p)))).flat();
+  const found = capped ? [] : (await Promise.all(passes.map(async (p) => parseFindings(await run3(finderPrompt2(kind, p, range, full, branch, known)), p)))).flat();
   let next = known.reduce((m, f) => Math.max(m, Number(f.id.slice(1)) || 0), 0);
   const candidates = [];
   for (const f of found) if (![...known, ...candidates].some((k) => sameFinding(k, f))) candidates.push({ ...f, id: `${spec.idPrefix}${++next}` });
   const open2 = known.filter((f) => f.status === "open");
-  const ballots = candidates.length || open2.length ? (await Promise.all(Array.from({ length: votes }, () => run3(verifierPrompt(full, candidates, open2))))).map(parseVotes).filter((b) => !!b) : [];
+  const ballots = candidates.length || open2.length ? (await Promise.all(Array.from({ length: votes }, () => run3(verifierPrompt2(full, candidates, open2))))).map(parseVotes).filter((b) => !!b) : [];
   const kept = candidates.flatMap((f) => {
     const t2 = tally(ballots, f.id, "keep");
     return t2.pass ? [{ ...f, severity: t2.severity ?? f.severity, status: "open", round }] : [];
@@ -36516,8 +36851,8 @@ async function review(c, kind = "review") {
   const nitIds = new Set(inline.filter((f) => f.severity === "nit").slice(MAX_NITS).map((f) => f.id));
   const body = renderReview(state, { kind, depth, tier: risk2.tier, since, capped, maxRounds, fixed, dropped: candidates.length - kept.length, outside });
   const prefix = kind === "review" ? "review" : "security";
-  writeFileSync14(join21(c.root, `${prefix}.json`), JSON.stringify({ ...state, depth, tier: risk2.tier }, null, 2) + "\n");
-  writeFileSync14(join21(c.root, `${prefix}-tally.txt`), counts(state.findings) + "\n");
+  writeFileSync15(join23(c.root, `${prefix}.json`), JSON.stringify({ ...state, depth, tier: risk2.tier }, null, 2) + "\n");
+  writeFileSync15(join23(c.root, `${prefix}-tally.txt`), counts(state.findings) + "\n");
   if (c.dryRun) {
     console.log(body);
     return 0;
@@ -36535,12 +36870,12 @@ ${f.evidence}` : ""}
   }));
   if (comments.length) {
     const r = await prInlineComments(ctx, n, head, comments);
-    log5(`${r.posted} inline comment${r.posted === 1 ? "" : "s"} posted`);
-    for (const f of r.failed) log5(`inline comment skipped: ${f}`);
+    log6(`${r.posted} inline comment${r.posted === 1 ? "" : "s"} posted`);
+    for (const f of r.failed) log6(`inline comment skipped: ${f}`);
   }
-  log5(await prUpsertComment(ctx, n, spec.marker, body, ours));
+  log6(await prUpsertComment(ctx, n, spec.marker, body, ours));
   await reviewStatus(c, thread, { [kind]: state });
-  if (kind === "review") log5(await notify({ event: "review.done", change: findChange(c.root, c.loaded, { branch, active: false }), note: counts(state.findings) }, c.loaded, c.env));
+  if (kind === "review") log6(await notify({ event: "review.done", change: findChange(c.root, c.loaded, { branch, active: false }), note: counts(state.findings) }, c.loaded, c.env));
   return 0;
 }
 function reviewVerdict(states, res, head) {
@@ -36571,7 +36906,7 @@ async function reviewStatus(c, thread, fresh = {}) {
     console.log(`${REVIEW_STATUS}: ${v.state} \u2014 ${v.description}`);
     return 0;
   }
-  log5(await commitStatus(ctx, head, { state: v.state, context: REVIEW_STATUS, description: v.description }));
+  log6(await commitStatus(ctx, head, { state: v.state, context: REVIEW_STATUS, description: v.description }));
   return 0;
 }
 
@@ -36610,195 +36945,21 @@ async function refreshPrStats(root, loaded) {
   return { changes, failed };
 }
 
-// packages/cli/src/init.ts
-init_src2();
-init_src();
-import { copyFileSync, existsSync as existsSync17, mkdirSync as mkdirSync8, readdirSync as readdirSync8, readFileSync as readFileSync20, statSync as statSync3 } from "node:fs";
-import { join as join22, relative as relative3 } from "node:path";
-import { createInterface } from "node:readline/promises";
-var STACKS = {
-  python: {
-    language: "python",
-    package_manager: "uv",
-    commands: { build: "uv build", test: "uv run pytest", lint: "uv run ruff check .", format: "uv run ruff format ." },
-    format_on_edit: { "*.py": "uv run ruff format {file}" },
-    test_globs: ["tests/**", "**/test_*.py", "**/*_test.py", "**/conftest.py"],
-    protected_paths: ["migrations/versions/**", "**/*_pb2.py", "**/_generated/**"]
-  },
-  typescript: {
-    language: "typescript",
-    package_manager: "npm",
-    commands: { build: "npm run build", test: "npm test", lint: "npm run lint", format: "npm run format" },
-    format_on_edit: {},
-    test_globs: ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/__tests__/**", "e2e/**", "tests/**"],
-    protected_paths: ["prisma/migrations/**", "drizzle/**", "src/gen/**", "**/*.generated.ts"]
-  },
-  java: {
-    language: "java",
-    package_manager: "gradle",
-    commands: { build: "./gradlew build -x test", test: "./gradlew test", lint: "./gradlew check -x test", format: "./gradlew spotlessApply" },
-    format_on_edit: {},
-    test_globs: ["src/test/**", "src/integrationTest/**", "src/itest/**"],
-    protected_paths: ["src/main/resources/db/migration/**", "build/generated/**", "**/generated/**"]
-  },
-  go: {
-    language: "go",
-    package_manager: "go",
-    commands: { build: "go build ./...", test: "go test ./...", lint: "go vet ./...", format: "gofmt -w ." },
-    format_on_edit: { "*.go": "gofmt -w {file}" },
-    test_globs: ["**/*_test.go", "testdata/**"],
-    protected_paths: ["**/*.pb.go", "**/zz_generated*.go"]
-  },
-  dotnet: {
-    language: "dotnet",
-    package_manager: "dotnet",
-    commands: { build: "dotnet build", test: "dotnet test", lint: "dotnet format --verify-no-changes", format: "dotnet format" },
-    format_on_edit: {},
-    test_globs: ["tests/**", "test/**", "**/*.Tests/**", "**/*.Test/**", "**/*Tests.cs"],
-    protected_paths: ["**/*.g.cs"],
-    append_only_paths: ["**/Migrations/*.Designer.cs", "**/Migrations/2*.cs"]
-  },
-  ruby: {
-    language: "ruby",
-    package_manager: "bundler",
-    commands: { build: "bin/rails zeitwerk:check", test: "bin/rails test", lint: "bundle exec rubocop", format: "bundle exec rubocop -a" },
-    format_on_edit: { "*.rb": "bundle exec rubocop -a {file}" },
-    test_globs: ["test/**", "spec/**"],
-    protected_paths: ["db/schema.rb", "db/structure.sql"],
-    append_only_paths: ["db/migrate/**"]
-  }
-};
-function detectStack(root) {
-  const has2 = (f) => existsSync17(join22(root, f));
-  if (has2("Gemfile") && has2("config/application.rb")) return "ruby";
-  if (readdirSync8(root).some((f) => f.endsWith(".sln") || f.endsWith(".csproj"))) return "dotnet";
-  if (has2("pyproject.toml") || has2("requirements.txt")) return "python";
-  if (has2("package.json") || has2("tsconfig.json")) return "typescript";
-  if (has2("pom.xml") || has2("build.gradle") || has2("build.gradle.kts")) return "java";
-  if (has2("go.mod")) return "go";
-  return void 0;
-}
-function detectPackageManager(root, stack, fallback) {
-  if (stack !== "typescript") return stack === "java" && existsSync17(join22(root, "pom.xml")) ? "maven" : fallback;
-  if (existsSync17(join22(root, "pnpm-lock.yaml"))) return "pnpm";
-  if (existsSync17(join22(root, "yarn.lock"))) return "yarn";
-  if (existsSync17(join22(root, "bun.lock")) || existsSync17(join22(root, "bun.lockb"))) return "bun";
-  return "npm";
-}
-function detectAgents(root) {
-  const found = [];
-  if (existsSync17(join22(root, ".claude")) || existsSync17(join22(root, "CLAUDE.md"))) found.push("claude");
-  if (existsSync17(join22(root, ".cursor")) || existsSync17(join22(root, ".cursorrules"))) found.push("cursor");
-  if (existsSync17(join22(root, "AGENTS.md")) || existsSync17(join22(root, ".codex"))) found.push("agents-md");
-  return found.length ? found : ["claude"];
-}
-function detectConfig(root, locale) {
-  const stackId = detectStack(root);
-  const stack = stackId ? STACKS[stackId] : void 0;
-  const remote = git(root, ["remote", "get-url", "origin"]) ?? "";
-  const provider = remote.includes("github") ? "github" : remote.includes("gitlab") ? "gitlab" : remote.includes("bitbucket") ? "bitbucket" : void 0;
-  const head = git(root, ["symbolic-ref", "--short", "refs/remotes/origin/HEAD"])?.replace(/^origin\//, "");
-  const config2 = {
-    version: 1,
-    locale,
-    agents: detectAgents(root),
-    vcs: { ...provider ? { provider } : {}, default_branch: head ?? git(root, ["rev-parse", "--abbrev-ref", "HEAD"])?.replace(/^HEAD$/, "main") ?? "main" },
-    tracker: { provider: "none" }
-  };
-  if (stack) {
-    const pm = detectPackageManager(root, stackId, stack.package_manager);
-    const swap = (s) => stack.language === "typescript" ? s.replace(/^npm /, `${pm} `) : s;
-    config2.stack = { language: stack.language, package_manager: pm };
-    config2.commands = Object.fromEntries(Object.entries(stack.commands ?? {}).map(([k, v]) => [k, swap(v)]));
-    config2.format_on_edit = stack.format_on_edit;
-    config2.test_globs = stack.test_globs;
-    config2.protected_paths = stack.protected_paths;
-    if (stack.append_only_paths) config2.append_only_paths = stack.append_only_paths;
-    if (stackId === "ruby" && (existsSync17(join22(root, ".rspec")) || existsSync17(join22(root, "spec")))) config2.commands.test = "bundle exec rspec";
-  } else {
-    config2.commands = { build: "make build", test: "make test", lint: "make lint", format: "make format" };
-    config2.test_globs = ["tests/**", "test/**"];
-    config2.protected_paths = [];
-  }
-  config2.secret_patterns_extra = [];
-  config2.risk = { high_risk_paths: [] };
-  config2.production_gate = { patterns: ["deploy.*prod", "terraform apply", "kubectl .*--context[= ].*prod"], approval_env: "RELEASE_APPROVAL" };
-  config2.gates = { intent: ["po"], spec: ["po"], plan: ["tech-lead"] };
-  config2.roles = {};
-  return config2;
-}
-function presetConfig(config2, preset, people = {}) {
-  const out = PRESET_SPECS[preset].apply(structuredClone(config2));
-  if (PRESET_SPECS[preset].roles) {
-    const po = parsePeople(people.po ?? "");
-    const tl = parsePeople(people.techLead ?? "");
-    out.roles = { ...po.length ? { po } : {}, ...tl.length ? { "tech-lead": tl } : {} };
-  }
-  return out;
-}
-async function askConfig(config2, preset) {
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-  try {
-    const ask = async (q, def) => (await rl.question(`${q} [${def}]: `)).trim() || def;
-    let chosen = preset;
-    while (!chosen) {
-      for (const p of PRESETS) console.log(`  ${p.padEnd(12)} ${PRESET_SPECS[p].description}`);
-      const a = await ask("Preset", defaultPreset(config2));
-      if (isPreset(a)) chosen = a;
-    }
-    const agents = await ask(`Agents (${AGENTS.join(", ")})`, (config2.agents ?? []).join(","));
-    config2.agents = agents.split(",").map((s) => s.trim()).filter((a) => AGENTS.includes(a));
-    if (!PRESET_SPECS[chosen].roles) return { preset: chosen, config: presetConfig(config2, chosen) };
-    const hint = "GitHub users and/or git emails, comma separated; empty = any person";
-    const po = await ask(`Product Owner for intent/spec gates (${hint})`, "");
-    const techLead = await ask(`Tech lead for plan gates (${hint})`, "");
-    return { preset: chosen, config: presetConfig(config2, chosen, { po, techLead }) };
-  } finally {
-    rl.close();
-  }
-}
-function scaffold(root, opts2) {
-  const src = join22(localeDir(opts2.locale), "skills", "sdlc-setup", "scaffold");
-  const created = [];
-  const walk2 = (dir) => {
-    for (const name of readdirSync8(dir)) {
-      const from = join22(dir, name);
-      const rel = relative3(src, from);
-      if (rel === "CLAUDE.md" && !opts2.claudeMd) continue;
-      const to = join22(root, rel);
-      if (statSync3(from).isDirectory()) {
-        mkdirSync8(to, { recursive: true });
-        walk2(from);
-      } else if (!existsSync17(to)) {
-        copyFileSync(from, to);
-        created.push(rel);
-      }
-    }
-  };
-  walk2(src);
-  return created;
-}
-function templateFor(root, artifact, locale) {
-  const local = join22(root, "changes", "_templates", `${artifact}.md`);
-  if (existsSync17(local)) return readFileSync20(local, "utf8");
-  return readFileSync20(join22(localeDir(locale), "skills", "sdlc-setup", "scaffold", "changes", "_templates", `${artifact}.md`), "utf8");
-}
-
 // packages/cli/src/doctor-fix.ts
 init_src2();
 init_src();
-import { existsSync as existsSync18, readFileSync as readFileSync21, rmSync as rmSync6, writeFileSync as writeFileSync15 } from "node:fs";
-import { join as join23 } from "node:path";
+import { existsSync as existsSync18, readFileSync as readFileSync21, rmSync as rmSync6, writeFileSync as writeFileSync16 } from "node:fs";
+import { join as join24 } from "node:path";
 function migrateLegacy(root) {
-  const config2 = JSON.parse(readFileSync21(join23(root, LEGACY_CONFIG_PATH), "utf8"));
+  const config2 = JSON.parse(readFileSync21(join24(root, LEGACY_CONFIG_PATH), "utf8"));
   config2.locale ??= "es";
   config2.agents ??= ["claude"];
   writeConfig(root, config2);
-  rmSync6(join23(root, LEGACY_CONFIG_PATH));
-  if (existsSync18(join23(root, ".claude/.sdlc-fix-lock"))) {
+  rmSync6(join24(root, LEGACY_CONFIG_PATH));
+  if (existsSync18(join24(root, ".claude/.sdlc-fix-lock"))) {
     ensureSdlcDir(root);
-    writeFileSync15(join23(root, ".sdlc/fix-lock"), "");
-    rmSync6(join23(root, ".claude/.sdlc-fix-lock"));
+    writeFileSync16(join24(root, ".sdlc/fix-lock"), "");
+    rmSync6(join24(root, ".claude/.sdlc-fix-lock"));
   }
 }
 var SYNC_FIXES = /* @__PURE__ */ new Set(["git-hooks", "shim", "cursor", "agents-md"]);
@@ -36836,7 +36997,7 @@ function fixDoctor(root, checks = doctor(root).checks) {
     if (c.id.startsWith("command.")) {
       const k = c.id.slice("command.".length);
       const detected = detectConfig(root, localeOf(loaded)).commands?.[k];
-      if (detected && (!/^make /.test(detected) || existsSync18(join23(root, "Makefile")))) {
+      if (detected && (!/^make /.test(detected) || existsSync18(join24(root, "Makefile")))) {
         writeConfig(root, { ...loaded.config, commands: { ...loaded.config.commands, [k]: detected } });
         out.push({ id: c.id, fixed: true, message: `commands.${k} = ${detected} (detected from the stack)` });
       } else out.push({ id: c.id, fixed: false, message: `set commands.${k} in .sdlc/config.json (no stack detected to infer it)` });
@@ -37210,13 +37371,13 @@ function printSync(r) {
   console.log(`  ${r.unchanged.length} unchanged`);
   if (r.hooksPath) console.log(r.hooksPath.set ? "  git hooks: core.hooksPath=.sdlc/git-hooks" : `  git hooks: not installed (${r.hooksPath.note})`);
 }
-function slugify2(title) {
+function slugify3(title) {
   return title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40).replace(/-$/, "") || "change";
 }
 function newChange(root, slug, opts2) {
   const loaded = loadConfig(root);
   const dir = `changes/${(/* @__PURE__ */ new Date()).toISOString().slice(0, 7)}-${slug}`;
-  if (existsSync21(join25(root, dir))) fail3(`${dir} already exists`);
+  if (existsSync21(join26(root, dir))) fail3(`${dir} already exists`);
   if (opts2.branch) gitOrThrow(root, ["checkout", "-b", `change/${slug}`]);
   const who = gitUser(root);
   const fields = { change: slug, created: (/* @__PURE__ */ new Date()).toISOString().slice(0, 10), author: who.name ?? who.email ?? "" };
@@ -37233,8 +37394,8 @@ ${opts2.title}
     body = setFrontmatter(templateFor(root, "intent", localeOf(loaded)), fields);
     if (opts2.title) body = body.replace(/^# (Intent: )?.*$/m, (_m, p) => `# ${p ?? ""}${opts2.title}`);
   }
-  mkdirSync10(join25(root, dir), { recursive: true });
-  writeFileSync17(join25(root, dir, "intent.md"), body);
+  mkdirSync10(join26(root, dir), { recursive: true });
+  writeFileSync18(join26(root, dir, "intent.md"), body);
   recordEvent(root, { type: opts2.quick ? "change.quick" : "change.new", change: slug, by: who.name });
   console.log(`created ${dir}/intent.md${opts2.branch ? ` on branch change/${slug}` : ""}${opts2.quick ? " (quick lane: no spec, no plan)" : ""}`);
   if (!loaded) console.log("Note: project not configured (sdlc init).");
@@ -37301,7 +37462,7 @@ async function main() {
       );
       if (typeof flags["first-change"] === "string") {
         const title = flags["first-change"];
-        const slug = slugify2(title);
+        const slug = slugify3(title);
         newChange(root, slug, { title, branch: true });
       } else console.log("Next: sdlc next (it always tells you what to do), or sdlc new <slug> to start a change.");
       return;
@@ -37333,9 +37494,9 @@ async function main() {
       return;
     }
     case "migrate": {
-      const legacy = join25(root, LEGACY_CONFIG_PATH);
+      const legacy = join26(root, LEGACY_CONFIG_PATH);
       if (!existsSync21(legacy)) fail3(`no ${LEGACY_CONFIG_PATH} to migrate`);
-      if (existsSync21(join25(root, CONFIG_PATH))) fail3(`${CONFIG_PATH} already exists`);
+      if (existsSync21(join26(root, CONFIG_PATH))) fail3(`${CONFIG_PATH} already exists`);
       migrateLegacy(root);
       console.log(`moved ${LEGACY_CONFIG_PATH} \u2192 ${CONFIG_PATH}`);
       printSync(sync(root, requireConfig(root)));
@@ -37435,7 +37596,7 @@ async function main() {
       if (!quickLimits(loaded).enabled) fail3(t(localeOf(loaded), "quick.disabled"));
       const title = pos.join(" ").trim();
       if (!title) fail3('usage: sdlc quick "<what to change>" [--ticket KEY] [--no-branch] \xB7 sdlc quick --check');
-      const slug = slugify2(title);
+      const slug = slugify3(title);
       newChange(root, slug, { title, ticket: typeof flags.ticket === "string" ? flags.ticket : void 0, branch: !flags["no-branch"], quick: true });
       return;
     }
@@ -37486,16 +37647,16 @@ async function main() {
       process.exitCode = await notifyCommand(root, loadConfig(root), pos, flags);
       return;
     case "lock": {
-      const lock = join25(root, FIX_LOCKS[0]);
+      const lock = join26(root, FIX_LOCKS[0]);
       if (pos[0] === "on") {
         ensureSdlcDir(root);
-        writeFileSync17(lock, (/* @__PURE__ */ new Date()).toISOString() + "\n");
+        writeFileSync18(lock, (/* @__PURE__ */ new Date()).toISOString() + "\n");
         console.log("test-lock ON: test files cannot be edited until `sdlc lock off`");
       } else if (pos[0] === "off") {
-        for (const p of FIX_LOCKS) rmSync7(join25(root, p), { force: true });
+        for (const p of FIX_LOCKS) rmSync7(join26(root, p), { force: true });
         console.log("test-lock OFF");
       } else {
-        console.log(FIX_LOCKS.some((p) => existsSync21(join25(root, p))) ? "on" : "off");
+        console.log(FIX_LOCKS.some((p) => existsSync21(join26(root, p))) ? "on" : "off");
       }
       return;
     }

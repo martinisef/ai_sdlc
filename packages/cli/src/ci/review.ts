@@ -79,7 +79,7 @@ export const DEPTHS = Object.fromEntries((['quick', 'standard', 'deep'] as const
   { label: string; passes: string[]; votes: number }
 >;
 const TIER_DEPTH: Record<RiskTier, Depth> = { low: 'quick', medium: 'standard', high: 'deep' };
-const PASS_FOCUS: Record<string, string> = {
+export const PASS_FOCUS: Record<string, string> = {
   all: 'every pass in REVIEW.md (Bugs, Security, Compliance)',
   bugs: 'Bugs: logic errors, broken edge cases, subtle regressions',
   security: 'Security: injection, authentication or authorization gaps, PII in logs or errors, secrets',
@@ -258,13 +258,13 @@ For each one vote open (the problem is still in the code) or fixed (it is gone).
   }Do not modify any file. Answer only with a JSON array: [{"id": "f1", "vote": "keep|drop|open|fixed", "severity": "important", "reason": "short"}]`;
 }
 
-interface Vote {
+export interface Vote {
   id: string;
   vote: string;
   severity?: Severity;
 }
 
-function parseVotes(out: string): Vote[] | undefined {
+export function parseVotes(out: string): Vote[] | undefined {
   const arr = parseJsonArray(out);
   if (!arr) return undefined;
   return arr.flatMap((x) => {
