@@ -65,6 +65,9 @@ jobs:
       - name: examples/typescript-lib
         working-directory: examples/typescript-lib
         run: npm ci && make test lint build
+      - name: examples/starter-todo
+        working-directory: examples/starter-todo
+        run: npm test && npm run lint
 
   docs:
     runs-on: ubuntu-latest

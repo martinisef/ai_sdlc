@@ -39,3 +39,10 @@ test('sdlc quick refuses when the quick lane is disabled', async () => {
   assert.equal(r.code, 1);
   assert.match(r.err, /quick lane is disabled/);
 });
+
+test('sdlc quick drops accents from the slug instead of breaking the word', async () => {
+  const root = project({ locale: 'es' });
+  const r = await sdlc(root, ['quick', 'La lista muestra cuántas tareas hay']);
+  assert.equal(r.code, 0, r.err);
+  assert.ok(readdirSync(join(root, 'changes')).some((d) => d.endsWith('-la-lista-muestra-cuantas-tareas-hay')));
+});

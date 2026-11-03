@@ -2,6 +2,10 @@
 
 From an existing repository to a merged change, with the agent doing the writing and you making the decisions. You need Node ≥ 22.18, git, and one agent (Claude Code, Cursor, or Codex or another agent that reads AGENTS.md).
 
+::: tip New to all this?
+This page is the short version. [Start here](../start/what-is-it) explains every step, uses a tiny example app and has a four-minute video.
+:::
+
 ## 1. Set up (1 minute)
 
 ```bash

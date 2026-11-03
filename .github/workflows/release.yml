@@ -15,6 +15,7 @@ permissions:
   pull-requests: write
   id-token: write
   packages: write
+  actions: write
 
 concurrency: release
 
@@ -49,6 +50,11 @@ jobs:
           v=$(node -p 'require("./packages/cli/package.json").version')
           npm run package:vscode
           gh release upload "@morsadev/sdlc@$v" "packages/vscode/ai-sdlc-$v.vsix" --clobber
+      # Tutorial media (docs/public/media) for the new version; a release made with GITHUB_TOKEN does not trigger it.
+      - if: steps.changesets.outputs.published == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run docs-media.yml --ref main
       # Webhook image (sdlc webhook) for GitLab/Bitbucket @claude, built from the version just published.
       - if: steps.changesets.outputs.published == 'true' || github.event_name == 'workflow_dispatch'
         id: version

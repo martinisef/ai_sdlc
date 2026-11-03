@@ -152,7 +152,7 @@ function printSync(r: SyncReport) {
 }
 
 function slugify(title: string): string {
-  return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40).replace(/-$/, '') || 'change';
+  return title.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40).replace(/-$/, '') || 'change';
 }
 
 function newChange(root: string, slug: string, opts: { ticket?: string; title?: string; branch: boolean; quick?: boolean }) {

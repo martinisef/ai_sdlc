@@ -12,7 +12,7 @@
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --conditions=source --test 'packages/*/test/*.test.ts'",
-    "test:bash": "bash tests/hooks/run.sh",
+    "test:bash": "bash tests/hooks/run.sh && bash tests/docs/tutorial.sh",
     "build:ui": "npm run build -w @ai-native-sdlc/ui",
     "build:cli": "node scripts/build-cli.mjs",
     "build:plugin": "node --conditions=source scripts/build-plugin.ts",
@@ -30,7 +30,8 @@
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs",
     "check:placeholders": "! git grep -n 'CHANGE[-]ME' -- . \":(exclude)packages/adapters/src/render.ts\" \":(exclude)**/sdlc-setup/SKILL.md\" \":(exclude)plugins/ai-sdlc/bin/**\"",
-    "test:ui": "playwright test"
+    "test:ui": "playwright test",
+    "docs:media": "bash scripts/media/build.sh"
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.1",

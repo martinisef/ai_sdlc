@@ -63,6 +63,8 @@ Do not modify any file. Answer only with a JSON array: [{"id": "n1", "vote": "ke
 
 const slugify = (s: string) =>
   s
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')

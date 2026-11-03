@@ -35697,7 +35697,7 @@ var STACKS = {
     package_manager: "npm",
     commands: { build: "npm run build", test: "npm test", lint: "npm run lint", format: "npm run format" },
     format_on_edit: {},
-    test_globs: ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/__tests__/**", "e2e/**", "tests/**"],
+    test_globs: ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/*.test.js", "**/*.test.mjs", "**/*.spec.js", "**/__tests__/**", "e2e/**", "tests/**", "test/**"],
     protected_paths: ["prisma/migrations/**", "drizzle/**", "src/gen/**", "**/*.generated.ts"]
   },
   java: {
@@ -35892,7 +35892,7 @@ Candidates: ${j}
 For each one vote keep (real, the evidence holds, and it matters) or drop (wrong, not supported by the code, a duplicate, or only style, naming or formatting). You may correct the severity (important, nit).
 Do not modify any file. Answer only with a JSON array: [{"id": "n1", "vote": "keep|drop", "severity": "important", "reason": "short"}]`;
 }
-var slugify2 = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "finding";
+var slugify2 = (s) => s.normalize("NFD").replace(new RegExp("\\p{M}", "gu"), "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "finding";
 function intentFor(root, loaded, module, f, slug, now) {
   const title = `${f.bug_class} in ${f.file}`;
   const detected = [
@@ -37405,7 +37405,7 @@ function printSync(r) {
   if (r.hooksPath) console.log(r.hooksPath.set ? "  git hooks: core.hooksPath=.sdlc/git-hooks" : `  git hooks: not installed (${r.hooksPath.note})`);
 }
 function slugify3(title) {
-  return title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40).replace(/-$/, "") || "change";
+  return title.normalize("NFD").replace(new RegExp("\\p{M}", "gu"), "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40).replace(/-$/, "") || "change";
 }
 function newChange(root, slug, opts2) {
   const loaded = loadConfig(root);

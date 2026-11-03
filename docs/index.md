@@ -6,6 +6,9 @@ hero:
   tagline: One command sets up your repo. Agents write the intent, spec, plan and code; you approve each gate with one command; guardrails stop what should never happen. Claude Code, Cursor, Codex and any agent that reads AGENTS.md.
   actions:
     - theme: brand
+      text: Start here
+      link: /start/what-is-it
+    - theme: alt
       text: Your first change in 10 minutes
       link: /guide/first-change
     - theme: alt
