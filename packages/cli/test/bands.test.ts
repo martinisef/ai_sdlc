@@ -173,3 +173,49 @@ test('bands: single readings build a local history; http-json and prometheus sou
     server.close();
   }
 });
+
+test('bands: raise_risk is a circuit breaker: a minimum tier in refs/sdlc/risk-floor, pushed and announced', async () => {
+  const posts: string[] = [];
+  const server = createServer((req, res) => {
+    let body = '';
+    req.on('data', (d) => (body += d));
+    req.on('end', () => {
+      posts.push(body);
+      res.end('ok');
+    });
+  });
+  await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
+  try {
+    const root = project({ notify: { format: 'generic' } });
+    bands(
+      root,
+      `bands:
+  - metric: revert_rate
+    source: { command: "${series(30)}" }
+    direction: up
+    tiers:
+      1sigma: { action: log, raise_risk: { tier: medium, hours: 24 } }
+      3sigma: { action: log, raise_risk: { tier: high } }
+`,
+    );
+    const remote = withRemote(root);
+    assert.match((await sdlc(root, ['bands', 'check', '--dry-run'])).out, /BROKEN 3σ/);
+    assert.ok(!existsSync(join(root, '.sdlc/risk-floor.json')), 'a dry run sets no floor');
+
+    const r = await sdlc(root, ['bands', 'check'], { SDLC_NOTIFY_WEBHOOK: `http://127.0.0.1:${(server.address() as AddressInfo).port}/hook` });
+    assert.equal(r.code, 0, r.err);
+    assert.match(r.out, /circuit breaker: minimum tier high until \S+ \(pushed to refs\/sdlc\/risk-floor\)/);
+    const floor = JSON.parse(execFileSync('git', ['cat-file', '-p', 'refs/sdlc/risk-floor:floor.json'], { cwd: remote, encoding: 'utf8' }));
+    assert.equal(floor.tier, 'high');
+    assert.ok(Date.parse(floor.until) - Date.now() > 71 * 3600_000, 'default 72 h');
+    assert.match(floor.reason, /revert_rate out of its band/);
+    assert.equal(JSON.parse(posts[0]).event, 'risk.raised');
+    assert.match(JSON.parse(posts[0]).text, /Circuit breaker: the minimum risk tier goes up\nEvery change is at least high risk/);
+    assert.match(readFileSync(join(root, '.sdlc/events.jsonl'), 'utf8'), /"type":"risk.raised"/);
+
+    const m = await sdlc(root, ['metrics']);
+    assert.match(m.out, /Circuit breaker: minimum tier high/);
+  } finally {
+    server.close();
+  }
+});

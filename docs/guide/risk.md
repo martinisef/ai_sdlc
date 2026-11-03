@@ -45,3 +45,5 @@ The rules that keep this safe:
 ## Start strict
 
 `risk.profile` defaults to `strict`: every gate still needs a person, and the tier only informs (the PR comment, review depth). Switch to `graded` when you have the numbers to back it: `sdlc metrics` shows human time per PR next to revert and incident rates.
+
+If those rates go up, a [control band with `raise_risk`](../reference/bands#circuit-breaker) acts as a circuit breaker: every change is at least `medium` (or `high`) for a while, and the team is notified.

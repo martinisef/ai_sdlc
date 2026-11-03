@@ -82,7 +82,7 @@ Lo leen los guardrails (`sdlc hook`, para cualquier agente), las skills del loop
 | `gates_self_approval` | `sdlc approve` | `true` (preset `solo`): el autor puede aprobar su propia spec y plan. Los agentes y bots siguen sin poder. |
 | `roles` | `sdlc approve`, dashboard | Rol → emails/nombres git, o `@login` en la forja (comentarios en el PR). |
 | `quick_lane` | `sdlc quick`, hook pre-push | `enabled` (por defecto `true`), `max_files` (archivos de código, por defecto 10), `forbid_paths` (globs, se suman a `risk.high_risk_paths`). Si se superan, el push se bloquea hasta `sdlc promote`. |
-| `notify` | `sdlc notify`, `sdlc ci` | Eventos del loop a Slack o a un webhook. `webhook_env` (por defecto `SDLC_NOTIFY_WEBHOOK`; sin valor → apagado), `format` `slack`\|`generic`, `events` (por defecto todos: `gate.pending`, `gate.decided`, `spec.ready`, `review.done`, `change.merged`), `people` (`@login`/email/nombre → member ID de Slack, para mencionar). Fail-open. |
+| `notify` | `sdlc notify`, `sdlc ci` | Eventos del loop a Slack o a un webhook. `webhook_env` (por defecto `SDLC_NOTIFY_WEBHOOK`; sin valor → apagado), `format` `slack`\|`generic`, `events` (por defecto todos: `gate.pending`, `gate.decided`, `spec.ready`, `review.done`, `change.merged`, `risk.raised`), `people` (`@login`/email/nombre → member ID de Slack, para mencionar). Fail-open. |
 | `plugin.marketplace_repo` | `sdlc ci bootstrap` | De dónde clonar el plugin de Claude en CI. Sin esto, el CI usa las skills commiteadas por `sdlc sync`. |
 | `ci.agent` | `sdlc ci`, `sdlc bands check` | Agente headless en CI: `claude` (default), `codex` (`codex exec`) o `cursor` (`cursor-agent`). Lo pisan `--agent` o `SDLC_CI_AGENT`. |
 | `ci.model` | `sdlc ci` | Modelo que se le pasa a la CLI del agente. |

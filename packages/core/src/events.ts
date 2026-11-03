@@ -14,6 +14,7 @@ export interface SdlcEvent {
     | 'gate.reject'
     | 'sync'
     | 'band.break'
+    | 'risk.raised'
     | 'change.new'
     | 'change.quick'
     | 'change.promote'
@@ -29,7 +30,7 @@ export interface SdlcEvent {
 }
 
 export const EVENTS_PATH = '.sdlc/events.jsonl';
-const LOCAL_FILES = ['events.jsonl', 'fix-lock', 'ui-token', 'bands/'];
+const LOCAL_FILES = ['events.jsonl', 'fix-lock', 'ui-token', 'bands/', 'risk-floor.json', 'pr-stats.json'];
 
 /** `.sdlc/` holds committed config next to local-only state; keep the latter out of git. */
 export function ensureSdlcDir(root: string): string {

@@ -12,7 +12,7 @@ A local web app over the same core as the CLI. Nothing leaves your machine.
 | **Inbox** | Artifacts whose pending gate your git identity may decide, based on `gates` and `roles`. |
 | **Board** | Every change, by column: intent, spec, plan, build, review (open PR), merged, rejected. It reads both the working tree and the `change/*` branches. |
 | **Change** | The intent, spec and plan rendered side by side, the gate history, and approve/reject with a comment. |
-| **Metrics** | Lead times and spec rework. See [The loop](./concepts#metrics). |
+| **Metrics** | Lead times, spec rework, human time per change, revert and incident rates, and the circuit breaker when it is on. See [The loop](./concepts#metrics). |
 | **Activity** | Guardrail blocks and overrides, gate decisions and band breaks, from `.sdlc/events.jsonl`. |
 | **Health** | `sdlc doctor` and the enforcement matrix, with a button to run `sync`. |
 | **Settings** | A form over `.sdlc/config.json`, validated against the schema. |

@@ -18,6 +18,25 @@ From sdlc init (this machine): first change 6 min · first quick change - · fir
 
 A change counts for every step it reached. Quick-lane changes are counted apart; a promoted change (`lane: full`) counts in both. The "from `sdlc init`" line reads the local activity log (`.sdlc/events.jsonl`, not committed), so it only covers what happened on this machine.
 
+## Human time and guardrails
+
+`sdlc metrics` (and the dashboard's Metrics view) measures what review costs people, next to the signals that say whether spending less of it is safe. Everything comes from git except review rounds and comments, which only the forge knows.
+
+| Metric | Source |
+|---|---|
+| Human approvals per change | Gate commits (`Gate: … by <person>`) on intent, spec and plan; automatic approvals (`by sdlc (risk low)`) do not count. Squash and merge commits that repeat the trailer are not counted twice. |
+| Waiting for a person | Hours from the last edit of an artifact to its first human decision, summed per change. |
+| Review rounds | The round recorded by `sdlc ci review` and `sdlc ci security` in their summary comment. |
+| Human comments | Comments on the PR by people: not agents or bots, and not the loop's own comments. |
+| Revert rate | Commits on the default branch (first parent) whose subject starts with `Revert "` or whose body says `This reverts commit`, per other commit. |
+| Incidents per change | Changes with `origin: incident` per other change. |
+
+The summary shows the median and p95 of each human-time metric. `--since 30d` limits the guardrails and the per-change spreads to recent changes.
+
+Review rounds and comments are read from `.sdlc/pr-stats.json`, which `sdlc metrics --prs` refreshes with `gh` or `glab`. Run it on a schedule or before a retro; without it those two columns stay empty.
+
+Pair them with a [control band](./bands#circuit-breaker): when reverts or incidents leave their band, the circuit breaker raises the minimum risk tier for a while.
+
 ## Telemetry (opt-in)
 
 Telemetry is **off** by default and nothing leaves your machine until you turn it on:

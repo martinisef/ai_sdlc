@@ -14,5 +14,6 @@ case "$1 $2" in
   "pr create") echo "https://github.com/acme/app/pull/12" ;;
   "pr view")   echo '{"number":12,"url":"https://github.com/acme/app/pull/12","state":"OPEN"}' ;;
   "pr checks") echo '[{"name":"test","state":"SUCCESS"}]' ;;
+  "pr list")   [ -n "$STUB_PR_LIST" ] && echo "$STUB_PR_LIST" ;;
 esac
 exit 0

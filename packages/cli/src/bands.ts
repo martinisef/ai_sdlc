@@ -2,6 +2,7 @@
 //   1σ log       → activity event
 //   2σ diagnose  → read-only agent run (sdlc-incident, diagnosis only)
 //   3σ propose   → incident intent (origin: incident) committed on change/<slug>, pushed; draft PR when routed
+//   raise_risk   → circuit breaker: a minimum risk tier for a while (refs/sdlc/risk-floor), announced by notify
 // Nothing here runs a runbook or touches production: those stay behind a human (/sdlc-incident step 2).
 import { execFileSync } from 'node:child_process';
 import {
@@ -13,12 +14,15 @@ import {
   loadBands,
   loadConfig,
   localeOf,
+  notify,
   prCreate,
+  pushRiskFloor,
   recordEvent,
   RULE_TEXT,
   SdlcError,
   setFrontmatter,
   tierFor,
+  writeRiskFloor,
   type BandConfig,
   type BandResult,
   type BandTier,
@@ -36,6 +40,8 @@ export interface BandAction {
   branch?: string;
   pr?: string;
   skipped?: string;
+  /** Minimum tier set by the circuit breaker, and until when. */
+  riskFloor?: { tier: string; until: string; pushed: boolean };
 }
 
 const fmt = (n: number) => (Number.isFinite(n) ? String(Math.round(n * 1000) / 1000) : n === Infinity ? '+∞' : n === -Infinity ? '-∞' : '–');
@@ -147,6 +153,16 @@ export async function bandsCommand(root: string, args: string[]): Promise<number
     } catch (e) {
       a.skipped = (e as Error).message;
     }
+    const raise = picked.tier.raise_risk;
+    if (raise && !dryRun) {
+      const reason = `${r.metric} out of its band (${RULE_TEXT[r.rule!]}, value ${fmt(r.value)}, mean ${fmt(r.mean)})`;
+      const floor = writeRiskFloor(root, { tier: raise.tier, until: new Date(Date.now() + raise.hours * 3600_000).toISOString(), reason });
+      a.riskFloor = { tier: floor.tier, until: floor.until, pushed: pushRiskFloor(root) };
+      recordEvent(root, { type: 'risk.raised', metric: r.metric, detail: `minimum tier ${floor.tier} until ${floor.until}` });
+      process.stderr.write(
+        (await notify({ event: 'risk.raised', note: `Every change is at least ${floor.tier} risk until ${floor.until}: ${floor.reason}.` }, loaded)) + '\n',
+      );
+    }
     if (!dryRun)
       recordEvent(root, {
         type: 'band.break',
@@ -167,6 +183,7 @@ export async function bandsCommand(root: string, args: string[]): Promise<number
       console.log(`\n→ ${a.metric}: ${a.sigma}σ ${a.action}${a.skipped ? ` — ${a.skipped}` : ''}`);
       if (a.change) console.log(`  intent: ${a.change}/intent.md on ${a.branch}`);
       if (a.pr) console.log(`  draft PR: ${a.pr}`);
+      if (a.riskFloor) console.log(`  circuit breaker: minimum tier ${a.riskFloor.tier} until ${a.riskFloor.until}${a.riskFloor.pushed ? ' (pushed to refs/sdlc/risk-floor)' : ''}`);
       if (a.diagnosis) console.log(a.diagnosis.replace(/^/gm, '  '));
     }
   }

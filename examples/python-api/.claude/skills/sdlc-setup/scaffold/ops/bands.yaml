@@ -7,6 +7,8 @@
 #   diagnose → read-only diagnosis with the agent (sdlc-incident, step 1)
 #   propose  → changes/<YYYY-MM>-incident-<metric>-<date>/intent.md (origin: incident) on its own branch,
 #              pushed; draft PR with `pull_request`; `runbook:<name>` is listed for a human to run.
+# Any tier can add `raise_risk: { tier: medium|high, hours: 72 }`: a circuit breaker that makes every change at
+# least that tier for a while (refs/sdlc/risk-floor) and announces it (notify event risk.raised).
 # Leave it commented out until the service has metrics with a stable baseline.
 #
 # window: 30                     # baseline size in points (days for a daily metric)
@@ -28,3 +30,10 @@
 #       2sigma: { action: diagnose, tools: "Read,Grep,Glob,Bash(gh run view:*),Bash(git log:*)" }
 #       3sigma: { action: propose, tools: "Read,Grep,Glob,Bash(gh run view:*),Bash(git log:*)",
 #                 routes: [pull_request, "runbook:rollback-deploy"] }
+#   # Guardrail for graded risk: reverts on main; when it leaves its band, every change is at least medium.
+#   - metric: revert_rate
+#     direction: up
+#     source: { command: "sdlc metrics --value revert_rate --since 7d" }
+#     tiers:
+#       2sigma: { action: log, raise_risk: { tier: medium, hours: 72 } }
+#       3sigma: { action: diagnose, raise_risk: { tier: high, hours: 72 } }
