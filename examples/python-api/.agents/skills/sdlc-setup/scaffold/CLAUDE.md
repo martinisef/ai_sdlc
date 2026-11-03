@@ -15,7 +15,7 @@
 ## How we work (AI-native loop)
 - Every change lives in `changes/<slug>/` (intent.md → spec.md → plan.md) on the `change/<slug>` branch.
 - Nothing gets implemented without an approved `plan.md`. If the implementation deviates, update `plan.md` in the same commit.
-- Commands: /sdlc-intent · /sdlc-spec · /sdlc-plan · /sdlc-build · /sdlc-fix · /sdlc-ship · /sdlc-status · /sdlc-incident
+- Commands: /sdlc-intent · /sdlc-spec · /sdlc-plan · /sdlc-build · /sdlc-fix · /sdlc-ship · /sdlc-status · /sdlc-incident · /sdlc-explain
 
 ## Conventions
 <!-- /sdlc-setup fills this in based on the stack and the team's answers -->

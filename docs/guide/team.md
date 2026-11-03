@@ -21,6 +21,7 @@ changes/2026-10-claims-status/    branch: change/claims-status
 | 5 | `/sdlc-ship [--babysit]` | the agent opens the PR/MR and looks after it | **code owner** approves the PR |
 | 6 | `/sdlc-incident` | on-call + agent | **on-call** triages: fix now, schedule or dismiss |
 | — | `/sdlc-status [--metrics]`, `sdlc ui` | anyone | — |
+| — | `/sdlc-explain <module>` | anyone, before changing code they do not know | — (documentation; `/sdlc-plan` cites it) |
 
 ## Rules that make the loop work
 

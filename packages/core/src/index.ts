@@ -2,6 +2,7 @@ export * from './bands.ts';
 export * from './changes.ts';
 export * from './config.ts';
 export * from './events.ts';
+export * from './explainers.ts';
 export * from './frontmatter.ts';
 export * from './funnel.ts';
 export * from './gates.ts';

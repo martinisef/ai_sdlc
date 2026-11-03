@@ -23,6 +23,8 @@ Read intent.md, spec.md, CLAUDE.md and the relevant code. The plan must name:
 - **Verification**: the tests and checks that prove it works, with commands from `.sdlc/config.json → commands`.
 - **Discarded alternatives** and why.
 
+Explainers: once you know which files change, run `sdlc explainers <those paths>`. Read every explainer it lists before designing, cite them in the plan (**Explainers** section) and check the plan against their invariants: an invariant the change touches is a risk, and one with no test needs a test in the plan. If one is stale, say so and suggest `/sdlc-explain <module> --refresh`. If a module the plan changes heavily has none and nobody on the team knows it well, suggest `/sdlc-explain <module>` before accepting the plan.
+
 ## 2. Interrogate it
 Before presenting it, answer for yourself and show:
 - What can this change break? Which is the riskiest step?

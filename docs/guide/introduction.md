@@ -14,7 +14,7 @@ idea / ticket / incident
 
 ## What you get
 
-- **Loop skills** for every stage: `sdlc-intent`, `sdlc-spec`, `sdlc-plan`, `sdlc-build`, `sdlc-fix`, `sdlc-ship`, `sdlc-status`, `sdlc-incident`, plus `sdlc-setup` and an example policy skill (`policy-secure-api`).
+- **Loop skills** for every stage: `sdlc-intent`, `sdlc-spec`, `sdlc-plan`, `sdlc-build`, `sdlc-fix`, `sdlc-ship`, `sdlc-status`, `sdlc-incident`, `sdlc-explain` (module explainers that plans cite), plus `sdlc-setup` and an example policy skill (`policy-secure-api`).
 - **Subagents** for clean-context work: `verifier`, `spec-reviewer`, `researcher`, `simplifier`.
 - **Guardrails**: protected paths, secret detection, a test-lock during fixes, a production gate, format-on-edit and a `plan.md` sync check. Agent hooks block actions before they happen, and git hooks back them up for every agent. See [Guardrails](./guardrails).
 - **The `sdlc` CLI**: `init`, `sync`, `doctor`, `status`, `new`, `approve`/`reject`, `lock`, and helpers for PRs/MRs (`sdlc vcs`) and Jira (`sdlc tracker`).

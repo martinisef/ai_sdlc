@@ -21,5 +21,6 @@ alwaysApply: true
 - `/sdlc-ship` — Stage 5 (Deploy) of the AI-native loop.
 - `/sdlc-status` — Shows which stage of the AI-native loop each change (changes/*) is at, the state of its PR/MR and its Jira ticket, flags inconsistencies and suggests the next command.
 - `/sdlc-incident` — Stage 6 (Maintain) of the AI-native loop.
+- `/sdlc-explain` — Writes or refreshes the explainer of one module in docs/explainers/ — what it does, its architecture, the invariants the code relies on and the risks of changing it, each with file:line evidence.
 - `/sdlc-setup` — Walkthrough that gets a project ready to work in the AI-native loop.
 - `/policy-secure-api` — Applies the organization's API security standard.

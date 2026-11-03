@@ -1,0 +1,38 @@
+{
+  "name": "py-explain-module",
+  "cwd": "examples/python-api",
+  "tags": [
+    "explain"
+  ],
+  "description": "/sdlc-explain writes the module explainer with evidence for its invariants and does not touch code.",
+  "prompt": "/sdlc-explain src/claims. Headless run: do not ask questions; record anything uncertain under Open questions. Do not commit.",
+  "allowed_tools": "Read,Write,Edit,Grep,Glob,Bash(git ls-files:*),Bash(git log:*),Bash(.sdlc/bin/sdlc:*)",
+  "checks": [
+    {
+      "type": "file_matches",
+      "glob": "docs/explainers/src-claims.md",
+      "pattern": "^module: src/claims"
+    },
+    {
+      "type": "file_matches",
+      "glob": "docs/explainers/src-claims.md",
+      "pattern": "^## Invariants"
+    },
+    {
+      "type": "file_matches",
+      "glob": "docs/explainers/src-claims.md",
+      "pattern": "^## Risks"
+    },
+    {
+      "type": "file_matches",
+      "glob": "docs/explainers/src-claims.md",
+      "pattern": "store\\.py:\\d+",
+      "why": "invariants carry file:line evidence"
+    },
+    {
+      "type": "diff_excludes",
+      "glob": "src/**",
+      "why": "explaining does not change code"
+    }
+  ]
+}
