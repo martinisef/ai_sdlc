@@ -23,6 +23,8 @@ Leé intent.md, spec.md, CLAUDE.md y el código relevante. El plan tiene que nom
 - **Prueba**: los tests y checks que demuestran que funciona, con comandos de `.sdlc/config.json → commands`.
 - **Alternativas descartadas** y por qué.
 
+Explainers: cuando sepas qué archivos cambian, corré `sdlc explainers <esas rutas>`. Leé cada explainer que liste antes de diseñar, citalos en el plan (sección **Explainers**) y contrastá el plan con sus invariantes: un invariante que el cambio toca es un riesgo, y uno sin test necesita un test en el plan. Si alguno está desactualizado, decilo y sugerí `/sdlc-explain <módulo> --refresh`. Si un módulo que el plan cambia mucho no tiene explainer y nadie del equipo lo conoce bien, sugerí `/sdlc-explain <módulo>` antes de aceptar el plan.
+
 ## 2. Interrogarlo
 Antes de presentarlo, respondete y mostrá:
 - ¿Qué puede romper este cambio? ¿Cuál es el paso más riesgoso?

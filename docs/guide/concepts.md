@@ -48,6 +48,13 @@ Who may approve is set by `gates` (role names per artifact) and `roles` (role �
 | 5 | `/sdlc-ship [--babysit]` | the agent opens the PR/MR and looks after it | code owner approves |
 | 6 | `/sdlc-incident` | on-call + agent | on-call triages: fix now, schedule or dismiss |
 | — | `/sdlc-status [--metrics]`, `sdlc next` | anyone | — |
+| — | `/sdlc-explain <module>` | anyone, before changing code they do not know | — |
+
+## Module explainers
+
+A reviewer can only judge a diff if they know what the surrounding code promises. `/sdlc-explain src/billing` writes that down in `docs/explainers/src-billing.md`: what the module does, its architecture, the invariants the code relies on and the risks of changing it, each with `file:line` evidence and a note when no test guards an invariant. Explainers are written on demand, not on every change.
+
+`/sdlc-plan` runs `sdlc explainers <paths that change>`, cites the explainers it finds in the plan's **Explainers** section and checks the plan against their invariants. An explainer is stale once the module gets commits after its `source_sha`; `sdlc explainers` marks it, and `/sdlc-explain <module> --refresh` updates it.
 
 ## Closing the loop
 

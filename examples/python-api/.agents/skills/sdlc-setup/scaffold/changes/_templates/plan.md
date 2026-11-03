@@ -15,6 +15,10 @@ approved_by:
 1. <small, verifiable step>
 2.
 
+## Explainers
+<!-- `sdlc explainers <paths>`: the module explainers this plan relies on, and the invariants it touches. -->
+- `docs/explainers/<module>.md`: <invariant the change touches> (or: none)
+
 ## Risks
 - <what can break and how it is mitigated>
 

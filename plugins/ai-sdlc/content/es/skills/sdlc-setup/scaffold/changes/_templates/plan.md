@@ -15,6 +15,10 @@ approved_by:
 1. <paso chico y verificable>
 2.
 
+## Explainers
+<!-- `sdlc explainers <rutas>`: los explainers de módulo en los que se apoya este plan, y los invariantes que toca. -->
+- `docs/explainers/<módulo>.md`: <invariante que el cambio toca> (o: ninguno)
+
 ## Riesgos
 - <qué puede romper y cómo se mitiga>
 

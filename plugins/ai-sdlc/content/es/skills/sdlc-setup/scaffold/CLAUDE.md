@@ -15,7 +15,7 @@
 ## Cómo trabajamos (loop AI-native)
 - Cada cambio vive en `changes/<slug>/` (intent.md → spec.md → plan.md) en la rama `change/<slug>`.
 - Nada se implementa sin un `plan.md` aprobado. Si la implementación se desvía, actualizá `plan.md` en el mismo commit.
-- Comandos: /sdlc-intent · /sdlc-spec · /sdlc-plan · /sdlc-build · /sdlc-fix · /sdlc-ship · /sdlc-status · /sdlc-incident
+- Comandos: /sdlc-intent · /sdlc-spec · /sdlc-plan · /sdlc-build · /sdlc-fix · /sdlc-ship · /sdlc-status · /sdlc-incident · /sdlc-explain
 
 ## Convenciones
 <!-- /sdlc-setup completa según el stack y las respuestas del equipo -->

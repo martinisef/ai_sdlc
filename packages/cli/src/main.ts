@@ -11,6 +11,8 @@ import {
   configJsonSchema,
   branchFiles,
   changeRisk,
+  explainersFor,
+  listExplainers,
   checkQuick,
   decideGate,
   ensureSdlcDir,
@@ -86,6 +88,7 @@ Loop
   quick --check [--json]             is the active quick change still within quick_lane limits?
   promote [<change>]                 quick lane → full loop (intent back to draft for the PO)
   risk [<change>] [--base B] [--json]   risk tier set by the change: diff against the base, paths the spec/plan name, declared risk
+  explainers [<path>…] [--json]      module explainers (docs/explainers, written by /sdlc-explain); with paths: the ones covering them
   approve <change> <intent|spec|plan> [-m comment] [--auto]
                                      --auto: record the approval when the risk tier needs no person (risk.profile graded)
   reject  <change> <intent|spec|plan> [-m comment]
@@ -433,6 +436,14 @@ async function main() {
       if (flags.json) return void console.log(JSON.stringify({ change: change?.id, ...r }, null, 2));
       console.log(`${change ? `${change.id}: ` : ''}${r.tier} risk (${r.files} files against ${base}, ${r.weight} weighted lines of code)`);
       for (const x of r.reasons) console.log(`  ${x.tier.padEnd(6)} ${x.reason}`);
+      return;
+    }
+
+    case 'explainers': {
+      const list = pos.length ? explainersFor(root, pos) : listExplainers(root);
+      if (flags.json) return void console.log(JSON.stringify(list, null, 2));
+      if (!list.length) return void console.log(pos.length ? 'No explainer covers these paths (/sdlc-explain <module> writes one).' : 'No explainers yet (/sdlc-explain <module> writes one).');
+      for (const e of list) console.log(`${e.path}  ${e.module}${e.stale ? '  (stale: the module changed after it was written; /sdlc-explain to refresh)' : ''}`);
       return;
     }
 

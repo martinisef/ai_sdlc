@@ -1,0 +1,31 @@
+{
+  "name": "py-plan-cites-explainer",
+  "cwd": "examples/python-api",
+  "tags": [
+    "loop",
+    "plan",
+    "explain"
+  ],
+  "description": "/sdlc-plan finds the explainer of the module it touches, cites it and carries its invariant into the risks.",
+  "setup": "mkdir -p docs/explainers && printf '%s\\n' '---' 'module: src/claims' \"source_sha: $(git log -1 --format=%h -- src/claims)\" 'updated: 2026-11-01' '---' '# src/claims: claim store and status machine' '' '## Invariants' '- Status only moves along TRANSITIONS; every write goes through the transition check in store.py. Guarded by tests/test_store.py.' '' '## Risks' '- Any new write path that sets status directly bypasses the state machine.' > docs/explainers/src-claims.md && \"$EVAL_DIR/fixtures/commit.sh\" 'docs(explain): src/claims' && \"$EVAL_DIR/fixtures/stage.sh\" 2026-10-claim-notes claim-notes intent spec",
+  "prompt": "/sdlc-plan for changes/2026-10-claim-notes. Headless run: do not ask questions; record anything uncertain as an open question or concern. Write plan.md; do not implement.",
+  "allowed_tools": "Read,Write,Edit,Grep,Glob,Task,Bash(git log:*),Bash(.sdlc/bin/sdlc:*)",
+  "checks": [
+    {
+      "type": "file_matches",
+      "glob": "changes/2026-10-claim-notes/plan.md",
+      "pattern": "docs/explainers/src-claims\\.md",
+      "why": "the plan cites the explainer of the module it touches"
+    },
+    {
+      "type": "file_matches",
+      "glob": "changes/2026-10-claim-notes/plan.md",
+      "pattern": "[Tt]ransition"
+    },
+    {
+      "type": "diff_excludes",
+      "glob": "src/**",
+      "why": "planning does not implement"
+    }
+  ]
+}

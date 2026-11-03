@@ -33,6 +33,7 @@ Every command works from any directory inside the repository. The project root i
 | `sdlc quick "<what>" [--ticket KEY] [--no-branch]` | Quick lane: `intent.md` with `lane: quick` on branch `change/<slug>`, no spec or plan. The pre-push hook checks `quick_lane` limits (default 10 code files; nothing under `risk.high_risk_paths` or `quick_lane.forbid_paths`). |
 | `sdlc quick --check [--json]` | Whether the active quick change is still within the limits (exit 1 if not). |
 | `sdlc promote [<change>]` | Quick lane → full loop: `lane: full`, intent back to `draft` for the PO. |
+| `sdlc explainers [<path>…] [--json]` | Module explainers in `docs/explainers/` (written by `/sdlc-explain`). With paths, only the ones covering them; each is marked stale when the module changed after its `source_sha`. See [Module explainers](../guide/concepts#module-explainers). |
 | `sdlc risk [<change>] [--base B] [--json]` | Risk tier set by the change, not the author: the diff against the base (paths, weighted size, dependencies, deletions), the paths the spec and plan name, and the declared `risk:`. See [Risk tiers](../guide/risk). |
 | `sdlc approve <change> <intent\|spec\|plan> [-m comment] [--auto]` | Gate decision as a commit. See [Gates](../guide/concepts#gates). `--auto` (with `risk.profile: graded`) records the approval when the risk tier needs nobody; see [Risk tiers](../guide/risk#approvals-per-tier). |
 | `sdlc reject <change> <intent\|spec\|plan> [-m comment]` | The same, setting `status: rejected`. |

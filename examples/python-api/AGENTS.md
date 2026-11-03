@@ -20,6 +20,7 @@
 - **sdlc-ship** — Stage 5 (Deploy) of the AI-native loop. → `.agents/skills/sdlc-ship/SKILL.md`
 - **sdlc-status** — Shows which stage of the AI-native loop each change (changes/*) is at, the state of its PR/MR and its Jira ticket, flags inconsistencies and suggests the next command. → `.agents/skills/sdlc-status/SKILL.md`
 - **sdlc-incident** — Stage 6 (Maintain) of the AI-native loop. → `.agents/skills/sdlc-incident/SKILL.md`
+- **sdlc-explain** — Writes or refreshes the explainer of one module in docs/explainers/ — what it does, its architecture, the invariants the code relies on and the risks of changing it, each with file:line evidence. → `.agents/skills/sdlc-explain/SKILL.md`
 - **sdlc-setup** — Walkthrough that gets a project ready to work in the AI-native loop. → `.agents/skills/sdlc-setup/SKILL.md`
 - **policy-secure-api** — Applies the organization's API security standard. → `.agents/skills/policy-secure-api/SKILL.md`
 

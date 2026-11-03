@@ -21,6 +21,9 @@ changes/2026-10-claims-status/    rama: change/claims-status
 | 5 | `/sdlc-ship [--babysit]` | el agente abre el PR/MR y lo cuida | el **code owner** aprueba el PR |
 | 6 | `/sdlc-incident` | on-call + agente | el **on-call** triagea: fix now / schedule / dismiss |
 | — | `/sdlc-status [--metrics]`, `sdlc ui` | cualquiera | — |
+| — | `/sdlc-explain <módulo>` | cualquiera, antes de cambiar código que no conoce | — (documentación; `/sdlc-plan` lo cita) |
+
+**Explainers de módulo.** `/sdlc-explain src/billing` escribe `docs/explainers/src-billing.md`: qué hace el módulo, su arquitectura, los invariantes de los que depende el código y los riesgos de tocarlo, cada uno con `archivo:línea`. Se genera bajo demanda, no en cada cambio. `/sdlc-plan` corre `sdlc explainers <rutas que cambian>`, cita los que encuentra y contrasta el plan con sus invariantes; un explainer queda desactualizado cuando el módulo recibe commits después de su `source_sha`, y `sdlc explainers` lo marca.
 
 Los gates son commits: `sdlc approve` / `sdlc reject` (o los botones del dashboard, `sdlc ui`) dejan `status`, `approved_by` y una línea `Gate: …` con tu identidad de git. Un agente o bot nunca puede aprobar, y el autor de un spec o plan tampoco puede aprobar el suyo.
 
