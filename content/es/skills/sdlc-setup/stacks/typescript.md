@@ -26,7 +26,7 @@ Si el proyecto está vacío: `pnpm init`, `pnpm add -D typescript vitest @biomej
 ```json
 "stack": { "language": "typescript", "package_manager": "pnpm", "project_type": "<frontend|api|library|cli>" },
 "format_on_edit": { "*.ts": "pnpm exec biome format --write {file}", "*.tsx": "pnpm exec biome format --write {file}" },
-"test_globs": ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/__tests__/**", "e2e/**", "tests/**"],
+"test_globs": ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/*.test.js", "**/*.test.mjs", "**/*.spec.js", "**/__tests__/**", "e2e/**", "tests/**", "test/**"],
 "protected_paths": ["prisma/migrations/**", "drizzle/**", "src/gen/**", "**/*.generated.ts"]
 ```
 Con ESLint + Prettier: `"*.ts": "pnpm exec prettier --write {file}"`.

@@ -31,7 +31,7 @@ const STACKS: Record<string, StackDefaults> = {
     package_manager: 'npm',
     commands: { build: 'npm run build', test: 'npm test', lint: 'npm run lint', format: 'npm run format' },
     format_on_edit: {},
-    test_globs: ['**/*.test.ts', '**/*.test.tsx', '**/*.spec.ts', '**/__tests__/**', 'e2e/**', 'tests/**'],
+    test_globs: ['**/*.test.ts', '**/*.test.tsx', '**/*.spec.ts', '**/*.test.js', '**/*.test.mjs', '**/*.spec.js', '**/__tests__/**', 'e2e/**', 'tests/**', 'test/**'],
     protected_paths: ['prisma/migrations/**', 'drizzle/**', 'src/gen/**', '**/*.generated.ts'],
   },
   java: {

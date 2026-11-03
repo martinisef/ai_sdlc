@@ -18,10 +18,21 @@ export default defineConfig({
       lang: 'en',
       themeConfig: {
         nav: [
+          { text: 'Start here', link: '/start/what-is-it' },
           { text: 'Guide', link: '/guide/introduction' },
           { text: 'Reference', link: '/reference/cli' },
         ],
         sidebar: [
+          {
+            text: 'Start here',
+            items: [
+              { text: 'What it is, in 2 minutes', link: '/start/what-is-it' },
+              { text: 'Install', link: '/start/install' },
+              { text: 'Tutorial: your first change', link: '/start/tutorial' },
+              { text: 'Everyday use', link: '/start/daily' },
+              { text: 'Troubleshooting', link: '/start/troubleshooting' },
+            ],
+          },
           {
             text: 'Getting started',
             items: [
@@ -78,10 +89,21 @@ export default defineConfig({
       lang: 'es',
       themeConfig: {
         nav: [
+          { text: 'Empezá acá', link: '/es/empezar/que-es' },
           { text: 'Guías', link: '/es/guia-equipo' },
           { text: 'Referencia (en)', link: '/reference/cli' },
         ],
         sidebar: [
+          {
+            text: 'Empezá acá',
+            items: [
+              { text: 'Qué es, en 2 minutos', link: '/es/empezar/que-es' },
+              { text: 'Instalar', link: '/es/empezar/instalar' },
+              { text: 'Tutorial: tu primer cambio', link: '/es/empezar/tutorial' },
+              { text: 'Uso diario', link: '/es/empezar/dia-a-dia' },
+              { text: 'Problemas frecuentes', link: '/es/empezar/problemas' },
+            ],
+          },
           {
             text: 'Guías',
             items: [

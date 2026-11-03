@@ -10,7 +10,10 @@ npx sdlc next                                     # lo único que hay que hacer 
 
 ¿Cambio chico? `npx sdlc quick "<qué>"` y `/sdlc-quick` en tu agente. ¿Algo no anda? `npx sdlc doctor --fix`.
 
+**¿Primera vez?** [Empezá acá](./empezar/que-es): qué es, cómo instalarlo paso a paso, un tutorial con una app de ejemplo y un video de cuatro minutos.
+
 ## Guías en español
+- [Empezá acá](./empezar/que-es)
 - [Tu primer cambio en 10 minutos](./primer-cambio)
 - [El loop en una página (equipos)](./guia-equipo)
 - [Guía de plataforma](./guia-plataforma)

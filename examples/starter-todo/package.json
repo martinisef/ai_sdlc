@@ -1,0 +1,16 @@
+{
+  "name": "starter-todo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A tiny to-do list app to practise the ai-native-sdlc loop on.",
+  "type": "module",
+  "bin": { "todo": "src/cli.js" },
+  "scripts": {
+    "build": "node --check src/cli.js",
+    "test": "node --test",
+    "lint": "node --check src/todos.js && node --check src/cli.js",
+    "format": "echo 'no formatter in this example'",
+    "start": "node src/cli.js"
+  },
+  "engines": { "node": ">=22.18" }
+}
