@@ -32,4 +32,4 @@ These agents have no hook API that `sdlc` can use, so enforcement moves to git a
 
 ## 3. Codex in CI
 
-`sdlc ci` drives `codex exec`. It runs with `--sandbox read-only` for reviews and with `workspace-write` when it has to edit. Set `ci.agent: "codex"` and the `OPENAI_API_KEY` secret. See [CI](../reference/ci).
+`sdlc ci` drives `codex exec`. It runs with `--sandbox read-only` for reviews and with `workspace-write` when it has to edit. Set `ci.agent: "codex"` and the `OPENAI_API_KEY` secret. See [CI](../reference/ci.md).

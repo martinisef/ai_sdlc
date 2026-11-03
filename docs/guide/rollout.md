@@ -19,7 +19,7 @@ Spanish headings (`## Pruebas`, `## Riesgo`, `## Cómo revertir`) also count. `c
 Merging is not releasing. For anything above low risk, separate the two:
 
 - **Feature flags.** Put new behavior behind a flag that is off by default, merge, then turn it on for a few users, then everyone. "How to revert" becomes "turn the flag off", which takes seconds and needs no deploy. Remove the flag in a later change once it is fully on.
-- **Staged release.** Deploy to a canary or a small percentage first, compare its error rate and latency with the rest, then widen. The [control bands](../reference/bands) (`sdlc bands check`) watch the same metrics after the merge.
+- **Staged release.** Deploy to a canary or a small percentage first, compare its error rate and latency with the rest, then widen. The [control bands](../reference/bands.md) (`sdlc bands check`) watch the same metrics after the merge.
 - **Irreversible steps.** Data migrations, external calls and published contracts cannot be reverted with the PR. Split them out: an additive migration first, the code that uses it next, the cleanup last.
 
 ## Merge queue
@@ -36,4 +36,4 @@ GitLab has merge trains and Bitbucket has merge checks; both run the pipeline on
 
 - Watch the rollout until the change is fully on. If it misbehaves, follow "How to revert" first and investigate after.
 - An incident goes through `/sdlc-incident`: it opens a change with the timeline, and the fix comes with a test that reproduces it.
-- A revert is a signal, not a failure. The [metrics](../reference/telemetry) count reverts per change; frequent ones mean the tier or the review missed something.
+- A revert is a signal, not a failure. The [metrics](../reference/telemetry.md) count reverts per change; frequent ones mean the tier or the review missed something.

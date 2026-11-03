@@ -39,7 +39,7 @@ Los releases usan [changesets](https://github.com/changesets/changesets):
 
 ## 4. Managed settings
 
-Ver [Managed settings](./managed-settings). Se despliegan con la consola de admin o MDM.
+Ver [Managed settings](./managed-settings.md). Se despliegan con la consola de admin o MDM.
 
 ## 5. Mantener el catálogo
 

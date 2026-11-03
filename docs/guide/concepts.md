@@ -64,7 +64,7 @@ An incident produces three things:
 - a **lesson** in `lessons/`;
 - a **proposed eval** in `evals/`, so that the agent configuration learns from it.
 
-[Control bands](../reference/bands) (`sdlc bands check`) start that path automatically when a metric leaves its band.
+[Control bands](../reference/bands.md) (`sdlc bands check`) start that path automatically when a metric leaves its band.
 
 ## Metrics
 
@@ -75,4 +75,4 @@ An incident produces three things:
 - guardrail blocks per policy;
 - gate decisions;
 - human time per change: approvals, hours waiting for a person, review rounds and human comments (median and p95);
-- the guardrails for spending less of it: revert rate and incidents per change ([details](../reference/telemetry#human-time-and-guardrails)).
+- the guardrails for spending less of it: revert rate and incidents per change ([details](../reference/telemetry.md#human-time-and-guardrails)).

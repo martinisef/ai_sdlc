@@ -3,7 +3,7 @@
 From an existing repository to a merged change, with the agent doing the writing and you making the decisions. You need Node ≥ 22.18, git, and one agent (Claude Code, Cursor, or Codex or another agent that reads AGENTS.md).
 
 ::: tip New to all this?
-This page is the short version. [Start here](../start/what-is-it) explains every step, uses a tiny example app and has a three-minute video.
+This page is the short version. [Start here](../start/what-is-it.md) explains every step, uses a tiny example app and has a three-minute video.
 :::
 
 ## 1. Set up (1 minute)
@@ -64,4 +64,4 @@ Approvals are commits with your identity: agents and bots cannot approve, and in
 - Guardrails that held while the agent worked: protected paths, secrets, the production gate, plan before code.
 - `npx sdlc metrics --funnel`: how far changes get through the loop.
 
-Next: [the loop in depth](./concepts), [guardrails](./guardrails), or [running a pilot with a team](./pilot).
+Next: [the loop in depth](./concepts.md), [guardrails](./guardrails.md), or [running a pilot with a team](./pilot.md).

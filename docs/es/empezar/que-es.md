@@ -55,6 +55,6 @@ Cada cambio pasa por el mismo camino corto. El agente escribe cada documento; vo
 
 ## Qué necesitás
 
-Una computadora con Node.js 22.18 o más nuevo, git y un agente de IA. [Instalar](./instalar) te guía con cada uno.
+Una computadora con Node.js 22.18 o más nuevo, git y un agente de IA. [Instalar](./instalar.md) te guía con cada uno.
 
-Siguiente: [Instalar](./instalar).
+Siguiente: [Instalar](./instalar.md).

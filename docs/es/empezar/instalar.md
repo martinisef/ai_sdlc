@@ -82,6 +82,6 @@ git add -A && git commit -m "chore: ai-sdlc"
 npx sdlc doctor
 ```
 
-Cada línea debería empezar con `✓`. Un `!` es una advertencia, no un error; por ejemplo `! VCS provider unknown` solo significa que todavía no hay un remoto de GitHub o GitLab. `npx sdlc doctor --fix` arregla lo que puede. Si algo sigue mal, mirá [Problemas frecuentes](./problemas).
+Cada línea debería empezar con `✓`. Un `!` es una advertencia, no un error; por ejemplo `! VCS provider unknown` solo significa que todavía no hay un remoto de GitHub o GitLab. `npx sdlc doctor --fix` arregla lo que puede. Si algo sigue mal, mirá [Problemas frecuentes](./problemas.md).
 
-Siguiente: [Tutorial: tu primer cambio](./tutorial).
+Siguiente: [Tutorial: tu primer cambio](./tutorial.md).

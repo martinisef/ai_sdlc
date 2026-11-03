@@ -12,7 +12,7 @@ npx sdlc init --preset team-github     # or solo, or regulated
 
 `sdlc init` detects the stack, the VCS provider and the agents in use, asks three questions (preset, Product Owner, tech lead), and then:
 
-1. Writes `.sdlc/config.json`, the [configuration](../reference/config).
+1. Writes `.sdlc/config.json`, the [configuration](../reference/config.md).
 2. Scaffolds `changes/`, `lessons/`, `evals/`, `ops/bands.yaml`, `CLAUDE.md`, `REVIEW.md` and `SETUP.md`.
 3. Runs `sdlc sync`, which generates the agent files and installs the git hooks (`core.hooksPath=.sdlc/git-hooks`).
 4. Installs the CI templates for your provider (`--no-ci` skips it).
@@ -34,7 +34,7 @@ For Claude Code, the sync step writes:
 Commit all of it; it is shared by the team. The `.sdlc/bin/sdlc` shim looks for the CLI in `SDLC_BIN`, then `node_modules/.bin`, then your `PATH`. If none of them has it, the hooks **fail open**, and `sdlc doctor` reports that.
 
 ::: tip Plugin instead of project files
-If your organization publishes the marketplace ([platform guide](./platform)), set `plugin.marketplace_repo` in `.sdlc/config.json`. `sdlc sync` then writes `extraKnownMarketplaces` and `enabledPlugins` to `.claude/settings.json` instead of copying the skills into the repo. The `ai-sdlc` plugin brings its own hooks and a bundled CLI.
+If your organization publishes the marketplace ([platform guide](./platform.md)), set `plugin.marketplace_repo` in `.sdlc/config.json`. `sdlc sync` then writes `extraKnownMarketplaces` and `enabledPlugins` to `.claude/settings.json` instead of copying the skills into the repo. The `ai-sdlc` plugin brings its own hooks and a bundled CLI.
 
 ```text
 /plugin marketplace add martinisef/ai_sdlc
@@ -80,7 +80,7 @@ Then continue the loop:
 > /sdlc-ship
 ```
 
-Gate decisions are commits made with the approver's git identity. Identities that look like agents or bots (Claude, Cursor, Codex, `[bot]`…) are refused. See [The loop](./concepts#gates).
+Gate decisions are commits made with the approver's git identity. Identities that look like agents or bots (Claude, Cursor, Codex, `[bot]`…) are refused. See [The loop](./concepts.md#gates).
 
 ## Headless
 

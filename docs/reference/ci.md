@@ -89,7 +89,7 @@ A finding closes in one of two ways:
 1. **Fixed.** The next round's verifier sees it is gone from the code.
 2. **Resolved with a reason.** Someone replies `resolved: <reason>` to its inline comment, or writes `resolved f2 s1: <reason>` anywhere on the PR. On GitHub only owners, members and collaborators count; on GitLab and Bitbucket, the `risk.trusted_authors`. Agents and bots never count, and a reply without a reason is ignored.
 
-Start the reason with `wrong` or `false positive` when the finding was mistaken, and with `intentional` when it is right but the code stays. `sdlc metrics --prs` counts every finding as fixed, wrong, intentional, ignored (open when the PR merged) or open, and the [agent scorecard](./agent-scorecard) shows the totals. A reviewer miss that reaches production becomes an eval with `sdlc ci capture-eval` ([reviewer evals](./evals#reviewer-evals)).
+Start the reason with `wrong` or `false positive` when the finding was mistaken, and with `intentional` when it is right but the code stays. `sdlc metrics --prs` counts every finding as fixed, wrong, intentional, ignored (open when the PR merged) or open, and the [agent scorecard](./agent-scorecard.md) shows the totals. A reviewer miss that reaches production becomes an eval with `sdlc ci capture-eval` ([reviewer evals](./evals.md#reviewer-evals)).
 
 On GitHub the `resolve` job in `sdlc-review.yml` runs on those replies; on GitLab and Bitbucket `sdlc webhook` triggers `review-status` (`SDLC_JOB=review-status`). `sdlc ci security` runs from `sdlc-security.yml` (GitHub), `sdlc:security` (GitLab) or the security step (Bitbucket). Make `sdlc/review` a required check.
 
@@ -103,7 +103,7 @@ The PR review only reads what changes. `sdlc ci nightly-review` reads what does 
 
 The modules are `ci.nightly.modules` or, by default, every top-level code directory and each child of `src/`, `packages/`, `lib/`, `app/` and similar. Tests, docs, examples and dot-directories are skipped. `--module <dir>` reviews one now. The run writes `nightly-review.json` and a summary (also to the GitHub job summary).
 
-The templates run it every night: `sdlc-nightly-review.yml` (GitHub), `sdlc:nightly-review` with `SDLC_JOB=nightly-review` on a schedule (GitLab), and the `nightly-review` custom pipeline (Bitbucket). The same job runs `sdlc ci capture-eval --reverts --since 7d` and pushes the new [reviewer evals](./evals#reviewer-evals) on an `evals/reviewer-*` branch (a PR on GitHub).
+The templates run it every night: `sdlc-nightly-review.yml` (GitHub), `sdlc:nightly-review` with `SDLC_JOB=nightly-review` on a schedule (GitLab), and the `nightly-review` custom pipeline (Bitbucket). The same job runs `sdlc ci capture-eval --reverts --since 7d` and pushes the new [reviewer evals](./evals.md#reviewer-evals) on an `evals/reviewer-*` branch (a PR on GitHub).
 
 ## Gates from the PR
 
@@ -114,11 +114,11 @@ A comment whose line starts with `/approve <intent|spec|plan>` or `/reject <inte
 
 `sdlc ci gate-status` sets the **`sdlc/gates`** commit status: pending while intent, spec or plan wait, success once the plan is approved, for quick-lane changes, and for branches without a change folder; failure if the change was rejected. Make it a required check in branch protection so code cannot merge before its gates. The gate job refreshes it after each decision.
 
-With `risk.profile: graded`, `sdlc/gates` also counts the PR's approvals against the tier of its diff (low 0, medium 1, high 2), drops approvals given before a commit nobody can vouch for, and counts the person directing the agent as one reviewer. The GitHub template re-runs it on `pull_request_review`. See [Risk tiers](../guide/risk#approvals-per-tier).
+With `risk.profile: graded`, `sdlc/gates` also counts the PR's approvals against the tier of its diff (low 0, medium 1, high 2), drops approvals given before a commit nobody can vouch for, and counts the person directing the agent as one reviewer. The GitHub template re-runs it on `pull_request_review`. See [Risk tiers](../guide/risk.md#approvals-per-tier).
 
 ## Risk tier of the PR
 
-`sdlc ci risk` classifies the PR/MR from its diff against the base (see [Risk tiers](../guide/risk)) and keeps one sticky comment, `## Risk (ai-sdlc)`, up to date with the tier and the reasons. It also writes `risk.json`. With `--escalate` or `risk.agent_escalation: true`, a second, read-only agent run answers "does this change need another person anyway?". It can raise the tier, never lower it; the escalation is recorded in the comment and the gates read it from there.
+`sdlc ci risk` classifies the PR/MR from its diff against the base (see [Risk tiers](../guide/risk.md)) and keeps one sticky comment, `## Risk (ai-sdlc)`, up to date with the tier and the reasons. It also writes `risk.json`. With `--escalate` or `risk.agent_escalation: true`, a second, read-only agent run answers "does this change need another person anyway?". It can raise the tier, never lower it; the escalation is recorded in the comment and the gates read it from there.
 
 ## `@claude` on GitLab and Bitbucket
 
@@ -144,12 +144,12 @@ docker run -p 8787:8787 -e SDLC_WEBHOOK_SECRET=… -e GITLAB_TRIGGER_TOKEN=… g
 | `BITBUCKET_ACCESS_TOKEN`, `BITBUCKET_API` | Bitbucket: token with Pipelines write |
 | `SDLC_ALLOWED_AUTHORS`, `SDLC_MENTION` | who may trigger (default anyone who can comment); the mention (default `@claude`) |
 
-The comment is untrusted input: by default the agent only answers (`ci.mention_mode: read`). With `edit` it may commit within the approved plan, and the guardrails still apply. Setup per provider: [GitLab](./ci-gitlab#claude-in-comments), [Bitbucket](./ci-bitbucket#claude-in-comments).
+The comment is untrusted input: by default the agent only answers (`ci.mention_mode: read`). With `edit` it may commit within the approved plan, and the guardrails still apply. Setup per provider: [GitLab](./ci-gitlab.md#claude-in-comments), [Bitbucket](./ci-bitbucket.md#claude-in-comments).
 
 ## Providers
 
 What each template does and the manual setup it needs (secrets, permissions, branch protection):
 
-- [GitHub](./ci-github)
-- [GitLab](./ci-gitlab)
-- [Bitbucket](./ci-bitbucket)
+- [GitHub](./ci-github.md)
+- [GitLab](./ci-gitlab.md)
+- [Bitbucket](./ci-bitbucket.md)

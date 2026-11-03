@@ -7,7 +7,7 @@ A 2–4 week pilot with one team, on one real repository, tells you whether the 
 - [ ] Pick a team of 3–8 people, with a PO who will own the intent and spec gates, and a repository with CI.
 - [ ] `npx -y @morsadev/sdlc@0 init` in the repository, then review `.sdlc/config.json`. Fill in `roles` with real usernames, set `gates`, and keep the default `bands`.
 - [ ] `sdlc sync`, then commit the generated files in a PR the team reviews.
-- [ ] Set up CI with the per-provider guide ([GitHub](../reference/ci-github), [GitLab](../reference/ci-gitlab), [Bitbucket](../reference/ci-bitbucket)).
+- [ ] Set up CI with the per-provider guide ([GitHub](../reference/ci-github.md), [GitLab](../reference/ci-gitlab.md), [Bitbucket](../reference/ci-bitbucket.md)).
 - [ ] Record a baseline from the last 4–8 weeks of history: lead time from ticket to merge, the share of PRs reopened or reverted, and review rounds per PR.
 
 ## During the pilot
@@ -16,7 +16,7 @@ A 2–4 week pilot with one team, on one real repository, tells you whether the 
 - In a weekly 15-minute check, run `sdlc metrics` and look at the gates inbox in `sdlc ui`:
   - Is anything waiting on a gate for more than a day?
   - Which specs were rejected, and why?
-- Every incident or rework becomes a lesson (`lessons/`) and, when it can be checked mechanically, an eval (`evals/`). See [Evals](../reference/evals).
+- Every incident or rework becomes a lesson (`lessons/`) and, when it can be checked mechanically, an eval (`evals/`). See [Evals](../reference/evals.md).
 
 ## Retro (end of the pilot)
 

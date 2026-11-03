@@ -47,8 +47,8 @@ It looks at where every change is and tells you the one thing to do now: approve
 - **No secrets in code.** Writing something that looks like a password or API key is blocked.
 - **During a bug fix, tests are locked.** The fix has to make the existing test pass, not change it.
 
-When something is blocked, the message says why and what to do. See [Troubleshooting](./troubleshooting).
+When something is blocked, the message says why and what to do. See [Troubleshooting](./troubleshooting.md).
 
 ## Working in a team
 
-Run `npx sdlc init --preset team-github` instead of `solo`. It asks who the Product Owner is (approves intent and spec) and who the tech lead is (approves the plan). Everything else stays the same. More in the [guide for teams](../guide/team).
+Run `npx sdlc init --preset team-github` instead of `solo`. It asks who the Product Owner is (approves intent and spec) and who the tech lead is (approves the plan). Everything else stays the same. More in the [guide for teams](../guide/team.md).
