@@ -8,7 +8,7 @@ import { withBase } from 'vitepress'
   <track kind="subtitles" srclang="en" label="English" :src="withBase('/media/tutorial-en.vtt')" default />
 </video>
 
-*The whole tutorial in under four minutes. The agent's steps are sped up; everything else is the real tool.*
+*The whole tutorial in under three minutes ([open the video](https://martinisef.github.io/ai_sdlc/media/tutorial-en.mp4)). The agent's steps are sped up; everything else is the real tool.*
 
 ## The problem
 

@@ -6,12 +6,13 @@ set -euo pipefail
 MEDIA="$(cd "$(dirname "$0")" && pwd)"
 REPO="$(cd "$MEDIA/../.." && pwd)"
 OUT="${MEDIA_OUT:-$(mktemp -d)/sdlc-media}"  # outside the checkout: the tutorial repos are git repos of their own
-DEST="$REPO/docs/public/media"
+DEST="$REPO/docs/public/media"   # video and subtitles: played by URL, so they stay in public/
+IMG="$REPO/docs/media"            # GIFs and screenshots: relative links, which also work on GitHub
 LOCALES="${MEDIA_LOCALES:-en es}"
 TERMINAL_PARTS="install quick loop guardrail"
 for tool in vhs ffmpeg ffprobe; do command -v "$tool" >/dev/null || { echo "missing: $tool (brew install vhs ffmpeg)" >&2; exit 1; }; done
 
-rm -rf "$OUT" && mkdir -p "$OUT/parts" "$DEST"
+rm -rf "$OUT" && mkdir -p "$OUT/parts" "$DEST" "$IMG"
 export MEDIA_OUT="$OUT"
 
 echo "▶ build and pack this checkout"
@@ -32,7 +33,7 @@ grep="dashboard-($(echo $LOCALES | tr ' ' '|'))"
 for loc in $LOCALES; do
   webm="$(ls "$OUT"/pw/*dashboard-$loc*/video.webm | head -1)"
   cp "$webm" "$OUT/parts/dashboard-$loc.webm"
-  cp "$OUT/dashboard-board-$loc.png" "$OUT/dashboard-inbox-$loc.png" "$DEST/"
+  cp "$OUT/dashboard-board-$loc.png" "$OUT/dashboard-inbox-$loc.png" "$IMG/"
 done
 
 # Same size, frame rate and codec for every part, so the concat demuxer can join them without re-timing.
@@ -67,14 +68,14 @@ for loc in $LOCALES; do
     end="$(awk -v a="$t" -v b="$d" 'BEGIN { print a + b }')"
     printf '%s --> %s\n%s\n\n' "$(ts "$t")" "$(ts "$end")" "$(caption "$part" "$loc")" >> "$vtt"
     t="$end"
-    [ "$part" = dashboard ] || gif "$OUT/parts/$part-$loc.norm.mp4" "$DEST/$part-$loc.gif"
+    [ "$part" = dashboard ] || gif "$OUT/parts/$part-$loc.norm.mp4" "$IMG/$part-$loc.gif"
   done
   ffmpeg -loglevel error -y -f concat -safe 0 -i "$list" -c copy -movflags +faststart "$DEST/tutorial-$loc.mp4"
 done
 
 echo "▶ sizes"
 fail=0
-for f in "$DEST"/*; do
+for f in "$DEST"/* "$IMG"/*; do
   kb=$(( $(wc -c < "$f") / 1024 ))
   case "$f" in *.gif) max=2048 ;; *.mp4) max=10240 ;; *) max=1024 ;; esac
   printf '  %6s KB  %s\n' "$kb" "${f#"$REPO"/}"

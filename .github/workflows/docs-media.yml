@@ -1,6 +1,6 @@
 name: docs-media
 
-# Regenerates the tutorial video, GIFs and dashboard screenshots (docs/public/media) from this checkout with
+# Regenerates the tutorial video (docs/public/media), GIFs and dashboard screenshots (docs/media) from this checkout with
 # scripts/media/build.sh, and opens a PR when they changed. release.yml dispatches it after every publish;
 # run it by hand after changing the CLI output, the dashboard or the tutorial.
 # The PR is opened with GITHUB_TOKEN, so its checks do not start on their own: close and reopen it to run them.
@@ -38,7 +38,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          git add docs/public/media
+          git add docs/public/media docs/media
           if git diff --cached --quiet; then echo "media unchanged"; exit 0; fi
           branch="docs/media-$(date +%Y%m%d-%H%M)"
           git config user.name "github-actions[bot]"

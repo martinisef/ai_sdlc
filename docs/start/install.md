@@ -2,7 +2,7 @@
 
 About 10 minutes the first time. You type the commands in a **terminal**: Terminal on macOS, your terminal app on Linux, or Ubuntu (WSL) on Windows.
 
-![Installing and checking the setup](/media/install-en.gif)
+![Installing and checking the setup](../media/install-en.gif)
 
 ## 1. Check what you already have
 

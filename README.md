@@ -14,7 +14,7 @@ idea / ticket / incident
 
 ## New here?
 
-**[Start here](docs/start/what-is-it.md)** · **[Empezá acá](docs/es/empezar/que-es.md)**: what it is in plain words, installing step by step, a tutorial on a tiny example app ([`examples/starter-todo`](examples/starter-todo)) and a four-minute video.
+**[Start here](docs/start/what-is-it.md)** · **[Empezá acá](docs/es/empezar/que-es.md)**: what it is in plain words, installing step by step, a tutorial on a tiny example app ([`examples/starter-todo`](examples/starter-todo)) and a three-minute video.
 
 ## Quickstart
 

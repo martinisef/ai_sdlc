@@ -13,7 +13,7 @@ Cada paso dice qué escribís, qué deberías ver y qué hacer si ves otra cosa.
 
 ## Parte 1: un cambio chico (carril rápido)
 
-![El carril rápido](/media/quick-es.gif)
+![El carril rápido](../../media/quick-es.gif)
 
 ### Paso 1. Decí qué querés
 
@@ -64,7 +64,7 @@ git merge change/la-lista-muestra-cuantas-tareas-hay
 
 ## Parte 2: una funcionalidad de verdad (el loop completo)
 
-![El loop completo](/media/loop-es.gif)
+![El loop completo](../../media/loop-es.gif)
 
 ### Paso 4. Empezá el cambio
 
@@ -140,7 +140,7 @@ Bloqueado por ai-sdlc: la rama change/marcar-hecha tiene cambios de código pero
 
 Es el guardrail haciendo su trabajo. Aprobá el plan primero.
 
-![Un push antes de aprobar el plan, bloqueado](/media/guardrail-es.gif)
+![Un push antes de aprobar el plan, bloqueado](../../media/guardrail-es.gif)
 :::
 
 ### Paso 8. Construilo
@@ -174,13 +174,13 @@ npx sdlc ui
 
 Abre `http://127.0.0.1:4319` en tu navegador. No sale nada de tu máquina.
 
-![Aprobaciones: lo que espera tu decisión](/media/dashboard-inbox-es.png)
+![Aprobaciones: lo que espera tu decisión](../../media/dashboard-inbox-es.png)
 
 - **Aprobaciones**: lo que espera tu decisión. Los botones de aprobar y rechazar hacen lo mismo que `npx sdlc approve`.
 - **Tablero**: todos los cambios y en qué etapa está cada uno.
 - **Cambio** (al abrir uno): intent, spec y plan uno al lado del otro, con su historial.
 
-![Tablero: todos los cambios por etapa](/media/dashboard-board-es.png)
+![Tablero: todos los cambios por etapa](../../media/dashboard-board-es.png)
 
 ## Lo que acabás de hacer
 
