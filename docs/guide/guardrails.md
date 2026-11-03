@@ -45,4 +45,4 @@ Each block and each override is written to `.sdlc/events.jsonl` and shown in the
 
 ## Fail open
 
-If the CLI cannot be found, the hooks let the action through and `sdlc doctor` warns about it. The guardrails assist people and agents. The controls that must never fail belong in [managed settings](./managed-settings) and in branch protection.
+If the CLI cannot be found, the hooks let the action through and `sdlc doctor` warns about it. The guardrails assist people and agents. The controls that must never fail belong in [managed settings](./managed-settings.md) and in branch protection.

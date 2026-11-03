@@ -55,6 +55,6 @@ Every change goes through the same short path. The agent writes each document; y
 
 ## What you need
 
-A computer with Node.js 22.18 or newer, git, and one AI agent. [Install](./install) walks you through each one.
+A computer with Node.js 22.18 or newer, git, and one AI agent. [Install](./install.md) walks you through each one.
 
-Next: [Install](./install).
+Next: [Install](./install.md).

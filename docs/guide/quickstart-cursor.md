@@ -55,4 +55,4 @@ The git hooks repeat the path, secret and test-lock checks at commit time. Run `
 
 ## Cursor in CI
 
-`sdlc ci` can drive `cursor-agent` headless. Set `ci.agent: "cursor"` in `.sdlc/config.json` (or `SDLC_CI_AGENT=cursor`) and the `CURSOR_API_KEY` secret. See [CI](../reference/ci).
+`sdlc ci` can drive `cursor-agent` headless. Set `ci.agent: "cursor"` in `.sdlc/config.json` (or `SDLC_CI_AGENT=cursor`) and the `CURSOR_API_KEY` secret. See [CI](../reference/ci.md).

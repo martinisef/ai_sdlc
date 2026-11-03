@@ -55,7 +55,7 @@ Each eval runs in a throwaway, detached git worktree of `HEAD`, so commit what y
 
 The automated review is tested the same way: the setup commits a change and the prompt asks for a review of `HEAD` that ends with `IMPORTANT_FINDINGS: <n>`.
 
-- **Misses become evals.** `sdlc ci capture-eval <commit> --origin incident --expect "<finding>"` stores the commit that caused an incident as `evals/fixtures/review/<name>.patch` and writes `evals/review-incident-<sha>.json`. The eval applies the patch on a fresh checkout and expects at least one Important finding in the file it changed. `/sdlc-incident` runs it when a merged commit is the cause. `sdlc ci capture-eval --reverts [--since 30d]` does the same for every commit the default branch reverted (`This reverts commit …`), skipping the ones already captured. The [nightly review](./ci#nightly-review) templates run it every night and open a PR with the new evals.
+- **Misses become evals.** `sdlc ci capture-eval <commit> --origin incident --expect "<finding>"` stores the commit that caused an incident as `evals/fixtures/review/<name>.patch` and writes `evals/review-incident-<sha>.json`. The eval applies the patch on a fresh checkout and expects at least one Important finding in the file it changed. `/sdlc-incident` runs it when a merged commit is the cause. `sdlc ci capture-eval --reverts [--since 30d]` does the same for every commit the default branch reverted (`This reverts commit …`), skipping the ones already captured. The [nightly review](./ci.md#nightly-review) templates run it every night and open a PR with the new evals.
 - **Clean PRs measure false positives.** Evals tagged `clean` apply a correct change (a tested function, tests only, docstrings) and expect `IMPORTANT_FINDINGS: 0`. A reviewer that flags them is noisy, and people learn to ignore it.
 
 ```json
@@ -72,7 +72,7 @@ The automated review is tested the same way: the setup commits a change and the 
 }
 ```
 
-The [agent scorecard](./agent-scorecard) shows both apart, next to what happened to the reviewer's comments on real PRs.
+The [agent scorecard](./agent-scorecard.md) shows both apart, next to what happened to the reviewer's comments on real PRs.
 
 ## Good evals
 
@@ -86,5 +86,5 @@ The [agent scorecard](./agent-scorecard) shows both apart, next to what happened
 
 `.github/workflows/evals.yml` runs them:
 
-- **Weekly and on demand, per agent.** A `plan` job builds the matrix from the API keys the repository has (`ANTHROPIC_API_KEY` → Claude Code, `OPENAI_API_KEY` → Codex, `CURSOR_API_KEY` → Cursor; `sdlc ci matrix`), and each agent runs in parallel. A full run (`pattern: '*'`) then updates the [agent scorecard](./agent-scorecard) through an automatic PR, only when a result changed (`sdlc ci scorecard`).
+- **Weekly and on demand, per agent.** A `plan` job builds the matrix from the API keys the repository has (`ANTHROPIC_API_KEY` → Claude Code, `OPENAI_API_KEY` → Codex, `CURSOR_API_KEY` → Cursor; `sdlc ci matrix`), and each agent runs in parallel. A full run (`pattern: '*'`) then updates the [agent scorecard](./agent-scorecard.md) through an automatic PR, only when a result changed (`sdlc ci scorecard`).
 - **As the release gate.** On the "Version packages" PR (`changeset-release/main`), the evals tagged `guardrail` or `gates` run with every available agent and must pass at 90% or more. The `release gate` job reports on every PR (it passes when the evals did not run), so require it in branch protection for `main` and a failing gate blocks the release.

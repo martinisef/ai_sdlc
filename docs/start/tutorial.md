@@ -1,6 +1,6 @@
 # Tutorial: your first change
 
-About 20 minutes. You will make two changes to the example to-do app from [Install](./install):
+About 20 minutes. You will make two changes to the example to-do app from [Install](./install.md):
 
 1. A **small change** through the quick lane: the list shows how many to-dos there are.
 2. A **real feature** through the full loop: mark a to-do as done.
@@ -188,4 +188,4 @@ It opens `http://127.0.0.1:4319` in your browser. Nothing leaves your machine.
 - No code was written before you agreed with the plan.
 - The agent could not approve anything for you.
 
-Next: [Everyday use](./daily), a cheat sheet for your own project.
+Next: [Everyday use](./daily.md), a cheat sheet for your own project.

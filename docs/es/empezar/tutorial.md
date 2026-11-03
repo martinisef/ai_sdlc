@@ -1,6 +1,6 @@
 # Tutorial: tu primer cambio
 
-Unos 20 minutos. Vas a hacer dos cambios en la app de tareas de ejemplo de [Instalar](./instalar):
+Unos 20 minutos. Vas a hacer dos cambios en la app de tareas de ejemplo de [Instalar](./instalar.md):
 
 1. Un **cambio chico** por el carril rápido: la lista muestra cuántas tareas hay.
 2. Una **funcionalidad de verdad** por el loop completo: marcar una tarea como hecha.
@@ -188,4 +188,4 @@ Abre `http://127.0.0.1:4319` en tu navegador. No sale nada de tu máquina.
 - No se escribió código antes de que estuvieras de acuerdo con el plan.
 - El agente no pudo aprobar nada por vos.
 
-Siguiente: [Uso diario](./dia-a-dia), un machete para tu propio proyecto.
+Siguiente: [Uso diario](./dia-a-dia.md), un machete para tu propio proyecto.

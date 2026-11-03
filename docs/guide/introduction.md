@@ -16,7 +16,7 @@ idea / ticket / incident
 
 - **Loop skills** for every stage: `sdlc-intent`, `sdlc-spec`, `sdlc-plan`, `sdlc-build`, `sdlc-fix`, `sdlc-ship`, `sdlc-status`, `sdlc-incident`, `sdlc-explain` (module explainers that plans cite), plus `sdlc-setup` and an example policy skill (`policy-secure-api`).
 - **Subagents** for clean-context work: `verifier`, `spec-reviewer`, `researcher`, `simplifier`.
-- **Guardrails**: protected paths, secret detection, a test-lock during fixes, a production gate, format-on-edit and a `plan.md` sync check. Agent hooks block actions before they happen, and git hooks back them up for every agent. See [Guardrails](./guardrails).
+- **Guardrails**: protected paths, secret detection, a test-lock during fixes, a production gate, format-on-edit and a `plan.md` sync check. Agent hooks block actions before they happen, and git hooks back them up for every agent. See [Guardrails](./guardrails.md).
 - **The `sdlc` CLI**: `init`, `sync`, `doctor`, `status`, `new`, `approve`/`reject`, `lock`, and helpers for PRs/MRs (`sdlc vcs`) and Jira (`sdlc tracker`).
 - **A local dashboard** (`sdlc ui`): the board of changes, artifact review, gate decisions and settings.
 - **CI** for GitHub, GitLab and Bitbucket. The YAML is thin and every job calls `sdlc ci <cmd>`: review with `REVIEW.md`, triage of failed builds, automatic spec from an accepted intent, Jira on merge, and configuration evals. The headless agent can be Claude Code, Codex or Cursor.
@@ -36,12 +36,12 @@ idea / ticket / incident
 
 | Layer | What | Where |
 |---|---|---|
-| 1 · Managed settings | What is non-negotiable: secrets, sandbox, approved marketplace | admin console / MDM ([Managed settings](./managed-settings)) |
+| 1 · Managed settings | What is non-negotiable: secrets, sandbox, approved marketplace | admin console / MDM ([Managed settings](./managed-settings.md)) |
 | 2 · `sdlc` + content | Loop skills, subagents, guardrails, CI logic | this repo, published as `@morsadev/sdlc` and the `ai-sdlc` Claude Code plugin |
 | 3 · Project | What is specific: `.sdlc/config.json`, `CLAUDE.md`, `REVIEW.md`, CI | each repository |
 
 ## Next
 
-- [Quickstart: Claude Code](./quickstart-claude) · [Cursor](./quickstart-cursor) · [AGENTS.md agents](./quickstart-agents-md)
-- [The loop](./concepts): changes, artifacts, statuses and gates
+- [Quickstart: Claude Code](./quickstart-claude.md) · [Cursor](./quickstart-cursor.md) · [AGENTS.md agents](./quickstart-agents-md.md)
+- [The loop](./concepts.md): changes, artifacts, statuses and gates
 - Try it on a real project: [`examples/python-api`](https://github.com/martinisef/ai_sdlc/tree/main/examples/python-api) and [`examples/typescript-lib`](https://github.com/martinisef/ai_sdlc/tree/main/examples/typescript-lib)

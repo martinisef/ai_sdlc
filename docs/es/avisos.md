@@ -9,7 +9,7 @@ El loop espera a personas: el PO acepta el intent, alguien aprueba la spec y el 
 | `gate.decided` | `sdlc ci gate`, después de un `/approve` o `/reject` en un comentario | la decisión, quién la tomó y el motivo |
 | `review.done` | `sdlc ci review`, y `sdlc-review.yml` en GitHub | terminó la revisión; el conteo `Important: N · Nit: M` |
 | `change.merged` | `sdlc ci tracker-merged` (el job del PR mergeado) | el cambio está mergeado |
-| `risk.raised` | `sdlc bands check`, cuando un tier con `raise_risk` dispara el [circuit breaker](../reference/bands#circuit-breaker) | el nuevo nivel mínimo, hasta cuándo, y qué métrica salió de su banda |
+| `risk.raised` | `sdlc bands check`, cuando un tier con `raise_risk` dispara el [circuit breaker](../reference/bands.md#circuit-breaker) | el nuevo nivel mínimo, hasta cuándo, y qué métrica salió de su banda |
 
 Cada mensaje incluye el cambio, su etapa, a quién le toca (según `gates` y `roles`) y links al PR y al artefacto en la rama.
 

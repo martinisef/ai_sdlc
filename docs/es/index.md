@@ -10,13 +10,13 @@ npx sdlc next                                     # lo único que hay que hacer 
 
 ¿Cambio chico? `npx sdlc quick "<qué>"` y `/sdlc-quick` en tu agente. ¿Algo no anda? `npx sdlc doctor --fix`.
 
-**¿Primera vez?** [Empezá acá](./empezar/que-es): qué es, cómo instalarlo paso a paso, un tutorial con una app de ejemplo y un video de tres minutos.
+**¿Primera vez?** [Empezá acá](./empezar/que-es.md): qué es, cómo instalarlo paso a paso, un tutorial con una app de ejemplo y un video de tres minutos.
 
 ## Guías en español
-- [Empezá acá](./empezar/que-es)
-- [Tu primer cambio en 10 minutos](./primer-cambio)
-- [El loop en una página (equipos)](./guia-equipo)
-- [Guía de plataforma](./guia-plataforma)
-- [Managed settings](./managed-settings)
+- [Empezá acá](./empezar/que-es.md)
+- [Tu primer cambio en 10 minutos](./primer-cambio.md)
+- [El loop en una página (equipos)](./guia-equipo.md)
+- [Guía de plataforma](./guia-plataforma.md)
+- [Managed settings](./managed-settings.md)
 
-La referencia (CLI, configuración, CI, bandas de control, evals) está en inglés: [Reference](/reference/cli). Con `locale: "es"` en `.sdlc/config.json`, `sdlc sync` genera las skills, los subagents y los mensajes de los hooks en español.
+La referencia (CLI, configuración, CI, bandas de control, evals) está en inglés: [Reference](../reference/cli.md). Con `locale: "es"` en `.sdlc/config.json`, `sdlc sync` genera las skills, los subagents y los mensajes de los hooks en español.

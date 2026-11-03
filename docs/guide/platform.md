@@ -41,7 +41,7 @@ The CLI is the only published package. The other workspaces are bundled into it.
 
 ## 4. Managed settings
 
-See [Managed settings](./managed-settings). Deploy them with the admin console or MDM.
+See [Managed settings](./managed-settings.md). Deploy them with the admin console or MDM.
 
 ## 5. Maintain the catalog
 
@@ -68,4 +68,4 @@ npm run e2e                 # lifecycle + hooks + git hooks on a copy of example
 npm run check:pack          # npm pack + install + init + doctor in a scratch project
 ```
 
-The product evals in `evals/` run weekly (`.github/workflows/evals.yml`). They give the agent real tasks on `examples/` and check the result. See [Evals](../reference/evals).
+The product evals in `evals/` run weekly (`.github/workflows/evals.yml`). They give the agent real tasks on `examples/` and check the result. See [Evals](../reference/evals.md).

@@ -102,6 +102,21 @@ for link in /start/what-is-it /start/install /start/tutorial /start/daily /start
   grep -q "link: '$link'" "$REPO/docs/.vitepress/config.mts" && ok "sidebar: $link" || ko "sidebar: $link" ""
 done
 
+# GitHub renders docs/ too: internal links must be relative paths to real files (`./install.md`, not `/start/install`)
+unresolved_links() {
+  find docs -name '*.md' -not -path '*/node_modules/*' -not -path '*/.vitepress/*' | while read -r f; do
+    grep -o '](\([^)[:space:]]*\))' "$f" | sed -E 's/^\]\((.*)\)$/\1/' | while read -r t; do
+      case "$t" in
+        http:*|https:*|mailto:*|'#'*) ;;
+        /*) echo "    $f: $t" ;;
+        *) [ -f "$(dirname "$f")/${t%%#*}" ] || echo "    $f: $t" ;;
+      esac
+    done
+  done
+}
+bad=$(cd "$REPO" && unresolved_links)
+[ -z "$bad" ] && ok "docs links resolve as files (GitHub)" || ko "docs links resolve as files (GitHub)" "$bad"
+
 echo
 echo "passed: $PASS  failed: $FAIL"
 [ "$FAIL" = 0 ]
