@@ -27,6 +27,7 @@ Choose the path based on the size of the fix:
 In both cases:
 1. `lessons/<YYYY-MM-DD>-<slug>.md` in the format of `lessons/README.md`.
 2. Eval proposal in `evals/<slug>.json` (prompt + checks) so this class of incident does not go unnoticed again.
+   If a merged commit caused it, the review missed it too: capture a reviewer eval with `sdlc ci capture-eval <commit> --origin incident --expect "<what the review should have flagged>"`. It stores the commit as a patch and expects an Important finding when the review reads it again.
 3. Tracker: create a ticket of type `tracker.incident_issue_type` linked to the intent and the lesson (`sdlc tracker create --type <type> ...`). If it fails, warn and continue.
 
 ## 4. Triage

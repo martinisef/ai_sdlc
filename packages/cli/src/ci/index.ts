@@ -14,7 +14,9 @@ import {
   notify,
   parseFrontmatter,
   prComment,
+  readPrStats,
   SdlcError,
+  sumOutcomes,
   tracker,
   trackerEnabled,
   trackerKeys,
@@ -27,6 +29,7 @@ import { loadEvals, runEvals } from './evals.ts';
 import { matrixAgents, renderScorecard, updateScorecard, type EvalReport } from './scorecard.ts';
 import { ciSecrets, installCi } from './install.ts';
 import { gate, gateStatus, mergeQueue } from './gates.ts';
+import { captureCommand } from './capture.ts';
 import { risk } from './risk.ts';
 import { review, reviewStatus } from './review.ts';
 import { isPreset, PRESET_SPECS } from '../presets.ts';
@@ -44,6 +47,9 @@ sdlc ci intent-to-spec         for accepted intents without spec.md: write the s
 sdlc ci triage <log>           summarize a failed build and comment on the PR/MR
 sdlc ci tracker-merged         move the merged change's tickets to tracker.transitions.merged (alias: jira-merged)
 sdlc ci evals [pattern] [--tags a,b] [--out results.json]   run evals/*.json against the agent; fail below ci.min_pass_rate (0.8)
+sdlc ci capture-eval <commit> [--origin incident|revert] [--expect "<finding>"]   a reviewer eval from the commit that
+                               caused an incident: its patch, re-applied, must get an Important finding
+sdlc ci capture-eval --reverts [--since 30d]   the same for every reverted commit on the default branch (skips captured ones)
 sdlc ci matrix [--only agent]  agents with credentials here, as JSON (the evals workflow's matrix)
 sdlc ci scorecard <report.json…> [--out docs/reference/agent-scorecard.md]   eval × agent table; rewritten only when a result changed
 sdlc ci gate                   /approve|/reject intent|spec|plan in a PR/MR comment → gate commit on the branch + reply
@@ -58,7 +64,7 @@ sdlc ci mention                answer an @claude comment on the PR/MR (triggered
 Options: --agent claude|codex|cursor (or SDLC_CI_AGENT, or ci.agent) · --model M · --dry-run (print, do not post/push)
 Env: ANTHROPIC_API_KEY | OPENAI_API_KEY | CURSOR_API_KEY · GH_TOKEN | GITLAB_TOKEN | BITBUCKET_ACCESS_TOKEN
      JIRA_EMAIL + JIRA_API_TOKEN (or JIRA_PAT) · LINEAR_API_KEY · SDLC_PLUGIN_REPO_URL / SDLC_PLUGIN_TOKEN (private marketplace)
-     SDLC_NOTIFY_WEBHOOK (Slack or generic webhook: gate.pending, gate.decided, spec.ready, review.done, change.merged)
+     SDLC_NOTIFY_WEBHOOK (Slack or generic webhook: gate.pending, gate.decided, spec.ready, review.done, change.merged, risk.raised)
 `;
 
 const log = (msg: string) => process.stderr.write(`[sdlc-ci] ${msg}\n`);
@@ -93,7 +99,7 @@ export async function ciCommand(root: string, args: string[]): Promise<number> {
   const flags: Record<string, string | true> = {};
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
-    if (a === '--dry-run' || a === '--escalate') flags[a.slice(2)] = true;
+    if (a === '--dry-run' || a === '--escalate' || a === '--reverts') flags[a.slice(2)] = true;
     else if (a.startsWith('--')) flags[a.slice(2)] = args[++i] ?? '';
     else pos.push(a);
   }
@@ -134,6 +140,8 @@ export async function ciCommand(root: string, args: string[]): Promise<number> {
     case 'matrix':
       console.log(JSON.stringify(matrixAgents(c.env, typeof flags.only === 'string' ? flags.only : undefined)));
       return 0;
+    case 'capture-eval':
+      return captureCommand(c, rest[0], flags);
     case 'scorecard':
       return scorecard(c, rest, typeof flags.out === 'string' ? flags.out : 'docs/reference/agent-scorecard.md');
     case 'install':
@@ -263,7 +271,9 @@ async function intentToSpec(c: CiEnv): Promise<number> {
 function scorecard(c: CiEnv, files: string[], out: string): number {
   const reports = files.filter((f) => existsSync(f)).map((f) => JSON.parse(readFileSync(f, 'utf8')) as EvalReport);
   if (!reports.length) throw new SdlcError('usage: sdlc ci scorecard <report.json…> (no reports found)');
-  const block = renderScorecard(reports, loadEvals(c.root), new Date().toISOString().slice(0, 10));
+  const prs = Object.values(readPrStats(c.root)).filter((p) => p.outcomes);
+  const outcomes = prs.length ? { prs: prs.length, totals: sumOutcomes(prs.map((p) => p.outcomes)) } : undefined;
+  const block = renderScorecard(reports, loadEvals(c.root), new Date().toISOString().slice(0, 10), outcomes);
   if (c.dryRun) {
     console.log(block);
     return 0;

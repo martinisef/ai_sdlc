@@ -27,6 +27,7 @@ export interface ChangeMetrics {
   pr?: number;
   reviewRounds?: number;
   humanComments?: number;
+  reviewOutcomes?: Outcomes;
 }
 
 export interface Spread {
@@ -55,6 +56,8 @@ export interface Summary {
   /** Incident-origin changes per other change. */
   incidentRate?: number;
   riskFloor?: RiskFloor;
+  /** Automated review findings by outcome, from the PR cache. */
+  reviewOutcomes: Outcomes;
 }
 
 /** What `sdlc metrics --prs` stores per change; the forge is the only place rounds and comments live. */
@@ -62,6 +65,30 @@ export interface PrStats {
   pr: number;
   rounds: number;
   humanComments: number;
+  outcomes?: Outcomes;
+}
+
+/**
+ * What happened to each automated review finding: fixed in the diff, resolved as wrong (a false positive),
+ * resolved as intentional, left open when the PR merged or closed (ignored), or still open.
+ */
+export interface Outcomes {
+  fixed: number;
+  wrong: number;
+  intentional: number;
+  ignored: number;
+  open: number;
+}
+
+export const OUTCOMES = ['fixed', 'wrong', 'intentional', 'ignored', 'open'] as const;
+
+/** A `resolved: <reason>` that says the finding was mistaken, in English or Spanish. */
+export const WRONG_REASON = /^(wrong|false[ -]positive|not a bug|incorrect|invalid|mistaken|falso positivo|incorrecto|equivocad[oa]|no es un bug|no aplica)\b/i;
+
+export function sumOutcomes(xs: (Outcomes | undefined)[]): Outcomes {
+  const t: Outcomes = { fixed: 0, wrong: 0, intentional: 0, ignored: 0, open: 0 };
+  for (const x of xs) if (x) for (const k of OUTCOMES) t[k] += x[k] ?? 0;
+  return t;
 }
 
 export const PR_STATS_PATH = '.sdlc/pr-stats.json';
@@ -148,6 +175,7 @@ export function changeMetrics(root: string, c: Change, prs: Record<string, PrSta
     pr: pr?.pr,
     reviewRounds: pr?.rounds,
     humanComments: pr?.humanComments,
+    reviewOutcomes: pr?.outcomes,
   };
 }
 
@@ -223,6 +251,7 @@ export function metrics(
       incidents,
       incidentRate: recent.length > incidents ? Math.round((incidents / (recent.length - incidents)) * 1000) / 1000 : undefined,
       riskFloor: readRiskFloor(root),
+      reviewOutcomes: sumOutcomes(recent.map((m) => m.reviewOutcomes)),
     },
   };
 }
@@ -241,4 +270,10 @@ export const METRIC_VALUES: Record<string, (s: Summary) => number | undefined> =
   review_rounds_p95: (s) => s.reviewRounds.p95,
   human_comments_median: (s) => s.humanComments.median,
   spec_rework_rate: (s) => s.specReworkRate,
+  /** Share of decided findings that were mistaken: the reviewer's false-positive rate on real PRs. */
+  review_wrong_rate: (s) => {
+    const o = s.reviewOutcomes;
+    const decided = o.fixed + o.wrong + o.intentional + o.ignored;
+    return decided ? Math.round((o.wrong / decided) * 1000) / 1000 : undefined;
+  },
 };

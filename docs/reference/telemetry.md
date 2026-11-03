@@ -30,6 +30,7 @@ A change counts for every step it reached. Quick-lane changes are counted apart;
 | Human comments | Comments on the PR by people: not agents or bots, and not the loop's own comments. |
 | Revert rate | Commits on the default branch (first parent) whose subject starts with `Revert "` or whose body says `This reverts commit`, per other commit. |
 | Incidents per change | Changes with `origin: incident` per other change. |
+| Review comment outcomes | Each automated review finding as fixed, wrong, intentional, ignored or open, from the review state and the `resolved:` replies ([details](./agent-scorecard)). `--value review_wrong_rate` is the share that was wrong. |
 
 The summary shows the median and p95 of each human-time metric. `--since 30d` limits the guardrails and the per-change spreads to recent changes.
 

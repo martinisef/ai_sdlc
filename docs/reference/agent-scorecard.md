@@ -4,6 +4,14 @@ How each agent does on the [product evals](./evals): the same tasks and checks, 
 
 ✅ passed · ❌ failed · — not run for that agent.
 
+The reviewer has its own table: clean PRs it left without an Important finding (false positives) and real problems it caught, including the ones captured from reverts and incidents ([reviewer evals](./evals#reviewer-evals)). Below it, what happened to its comments on real PRs (`sdlc metrics --prs`):
+
+- **fixed**: the finding went away in a later commit;
+- **intentional**: resolved with a reason (the finding is right, the code stays);
+- **wrong**: resolved with a reason that starts with `wrong`, `false positive`, `falso positivo` or `incorrecto`;
+- **ignored**: still open when the PR merged or closed;
+- **open**: the PR is still open.
+
 <!-- scorecard:start -->
 | Agent | Passed | Model | Date |
 |---|---|---|---|

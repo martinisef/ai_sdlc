@@ -3,7 +3,7 @@ name: Agent evals
 # Agente: ci.agent en .sdlc/config.json (claude por defecto; codex y cursor necesitan OPENAI_API_KEY / CURSOR_API_KEY).
 on:
   pull_request:
-    paths: ['CLAUDE.md', 'AGENTS.md', '.claude/**', '.cursor/**', '.agents/**', '.sdlc/config.json', 'evals/**']
+    paths: ['CLAUDE.md', 'AGENTS.md', 'REVIEW.md', '.claude/**', '.cursor/**', '.agents/**', '.sdlc/config.json', 'evals/**']
   schedule:
     - cron: '0 2 * * *'
   workflow_dispatch:

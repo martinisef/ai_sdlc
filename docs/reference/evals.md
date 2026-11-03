@@ -47,8 +47,32 @@ Each eval runs in a throwaway, detached git worktree of `HEAD`, so commit what y
 | `diff_includes` / `diff_excludes` | The agent's changes (modified, added, deleted or untracked files, relative to `cwd`) do or do not touch `glob`. |
 | `file_matches` | A file the agent touched that matches `glob` contains `pattern` (a JavaScript regex with the `m` flag; `ignore_case: true` adds `i`). |
 | `output_contains` | The agent's final output contains `text` (case-insensitive). |
+| `output_matches` | The agent's final output matches `pattern` (a JavaScript regex with the `m` and `i` flags). |
 
 `setup` and `command` checks receive `EVAL_DIR` (the `evals/` folder, for fixtures) and `EVAL_ROOT` (the worktree).
+
+## Reviewer evals
+
+The automated review is tested the same way: the setup commits a change and the prompt asks for a review of `HEAD` that ends with `IMPORTANT_FINDINGS: <n>`.
+
+- **Misses become evals.** `sdlc ci capture-eval <commit> --origin incident --expect "<finding>"` stores the commit that caused an incident as `evals/fixtures/review/<name>.patch` and writes `evals/review-incident-<sha>.json`. The eval applies the patch on a fresh checkout and expects at least one Important finding in the file it changed. `/sdlc-incident` runs it when a merged commit is the cause. `sdlc ci capture-eval --reverts [--since 30d]` does the same for every commit the default branch reverted (`This reverts commit …`), skipping the ones already captured.
+- **Clean PRs measure false positives.** Evals tagged `clean` apply a correct change (a tested function, tests only, docstrings) and expect `IMPORTANT_FINDINGS: 0`. A reviewer that flags them is noisy, and people learn to ignore it.
+
+```json
+{
+  "name": "ts-review-clean-negate",
+  "cwd": "examples/typescript-lib",
+  "tags": ["review", "clean"],
+  "setup": "cd \"$EVAL_ROOT\" && git apply \"$EVAL_DIR/fixtures/review/ts-clean-negate.patch\" && \"$EVAL_DIR/fixtures/commit.sh\" 'feat: negate(m) for refunds'",
+  "prompt": "Review the last commit (git show HEAD) following REVIEW.md and print the findings table. Then end with exactly one line: IMPORTANT_FINDINGS: <number of Important findings>. Do not modify files.",
+  "checks": [
+    { "type": "output_matches", "pattern": "^\\W*IMPORTANT_FINDINGS:\\W*0\\b" },
+    { "type": "diff_excludes", "glob": "**" }
+  ]
+}
+```
+
+The [agent scorecard](./agent-scorecard) shows both apart, next to what happened to the reviewer's comments on real PRs.
 
 ## Good evals
 

@@ -1,0 +1,34 @@
+{
+  "name": "py-incident-captures-reviewer-eval",
+  "cwd": "examples/python-api",
+  "tags": [
+    "loop",
+    "incident",
+    "review"
+  ],
+  "setup": "sed -i.bak 's/        if new_status not in TRANSITIONS\\[claim.status\\]:/        if False and new_status not in TRANSITIONS[claim.status]:/' src/claims/store.py && rm src/claims/store.py.bak && \"$EVAL_DIR/fixtures/commit.sh\" 'perf: skip transition lookup'",
+  "prompt": "/sdlc-incident Since the last deploy, paid claims are being moved back to in_review (the audit found 12). Headless mode: diagnose read-only, then close the loop. The culprit is a merged commit, so also capture a reviewer eval for it. Do not fix the code.",
+  "allowed_tools": "Read,Write,Edit,Grep,Glob,Bash(git log:*),Bash(git show:*),Bash(ls:*),Bash(sdlc ci capture-eval:*),Bash(.sdlc/bin/sdlc ci capture-eval:*)",
+  "checks": [
+    {
+      "type": "file_matches",
+      "glob": "evals/*.json",
+      "pattern": "\"from-incident\"",
+      "why": "the commit that caused it becomes a reviewer eval"
+    },
+    {
+      "type": "diff_includes",
+      "glob": "evals/fixtures/review/*.patch"
+    },
+    {
+      "type": "file_matches",
+      "glob": "changes/*/intent.md",
+      "pattern": "^origin: incident"
+    },
+    {
+      "type": "diff_excludes",
+      "glob": "src/**",
+      "why": "incident diagnosis is read-only"
+    }
+  ]
+}

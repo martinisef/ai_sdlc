@@ -1,0 +1,19 @@
+diff --git a/examples/python-api/src/claims/store.py b/examples/python-api/src/claims/store.py
+index f9f08cf..3aedb14 100644
+--- a/examples/python-api/src/claims/store.py
++++ b/examples/python-api/src/claims/store.py
+@@ -56,12 +56,14 @@ class ClaimStore:
+         return claim
+ 
+     def get(self, claim_id: int) -> Claim:
++        """The claim with this id; 404 when there is none."""
+         claim = self._claims.get(claim_id)
+         if claim is None:
+             raise ClaimError(f"claim {claim_id} not found", status=404)
+         return claim
+ 
+     def list(self, status: str | None = None) -> list[Claim]:
++        """Claims in creation order, optionally only those in `status`."""
+         if status is not None and status not in STATUSES:
+             raise ClaimError(f"unknown status {status!r}")
+         return [c for c in self._claims.values() if status is None or c.status == status]

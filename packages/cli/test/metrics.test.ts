@@ -8,8 +8,9 @@ import { test } from 'node:test';
 import { commitAll, project, sdlc } from './helpers.ts';
 
 const comment = (o: object) => JSON.stringify({ createdAt: '2026-11-01T00:00:00Z', ...o }) + '\n';
-const state = (kind: string, round: number) =>
-  `<!-- sdlc:${kind}-summary -->\n<!-- sdlc:${kind}-state ${Buffer.from(JSON.stringify({ round, sha: 'a', findings: [] })).toString('base64')} -->`;
+const finding = (id: string, status: string, reason?: string) => ({ id, severity: 'important', file: 'src/a.py', line: 3, title: 'x', status, round: 1, ...(reason ? { reason } : {}) });
+const state = (kind: string, round: number, findings: object[] = []) =>
+  `<!-- sdlc:${kind}-summary -->\n<!-- sdlc:${kind}-state ${Buffer.from(JSON.stringify({ round, sha: 'a', findings })).toString('base64')} -->`;
 
 function withPr() {
   const root = project({ vcs: { provider: 'github', default_branch: 'main' } });
@@ -21,9 +22,9 @@ function withPr() {
   const dir = mkdtempSync(join(tmpdir(), 'sdlc-gh-'));
   writeFileSync(
     join(dir, 'issues_7_comments'),
-    comment({ id: '1', author: 'github-actions[bot]', association: 'NONE', body: `## Automated review (ai-sdlc)\n${state('review', 2)}` }) +
-      comment({ id: '2', author: 'github-actions[bot]', association: 'NONE', body: `## Security review (ai-sdlc)\n${state('security', 3)}` }) +
-      comment({ id: '3', author: 'ana', association: 'MEMBER', body: 'resolved f1: intentional' }) +
+    comment({ id: '1', author: 'github-actions[bot]', association: 'NONE', body: `## Automated review (ai-sdlc)\n${state('review', 2, [finding('f1', 'fixed'), finding('f2', 'open'), finding('f3', 'open')])}` }) +
+      comment({ id: '2', author: 'github-actions[bot]', association: 'NONE', body: `## Security review (ai-sdlc)\n${state('security', 3, [finding('s1', 'resolved', 'intentional: a test key')])}` }) +
+      comment({ id: '3', author: 'ana', association: 'MEMBER', body: 'resolved f2: false positive, the caller holds the lock' }) +
       comment({ id: '4', author: 'claude[bot]', association: 'NONE', body: 'on it' }),
   );
   writeFileSync(join(dir, 'pulls_7_comments'), comment({ id: '5', author: 'bob', association: 'MEMBER', body: 'why not reuse parse()?', path: 'src/a.py', line: 3 }));
@@ -36,10 +37,12 @@ test('metrics --prs: review rounds from the review and security state, comments 
   assert.equal(r.code, 0, r.err);
   assert.match(r.err, /pr-stats.json: 1 PR/);
   const cache = JSON.parse(readFileSync(join(root, '.sdlc/pr-stats.json'), 'utf8'));
-  assert.deepEqual(cache.changes['changes/2026-11-x'], { pr: 7, rounds: 3, humanComments: 2 });
+  assert.deepEqual(cache.changes['changes/2026-11-x'], { pr: 7, rounds: 3, humanComments: 2, outcomes: { fixed: 1, wrong: 1, intentional: 1, ignored: 0, open: 1 } });
   const m = JSON.parse(r.out);
   assert.equal(m.changes[0].reviewRounds, 3);
   assert.deepEqual(m.summary.humanComments, { median: 2, p95: 2 });
+  assert.deepEqual(m.summary.reviewOutcomes, { fixed: 1, wrong: 1, intentional: 1, ignored: 0, open: 1 });
+  assert.equal((await sdlc(root, ['metrics', '--value', 'review_wrong_rate'])).out, '0.333');
 
   const v = await sdlc(root, ['metrics', '--value', 'review_rounds_median']);
   assert.equal(v.out, '3', 'read from the cache, no forge call');
@@ -57,4 +60,11 @@ test('metrics --value: a number per line for a band; unknown names and empty dat
   assert.match(bad.err, /unknown metric nope \(revert_rate, /);
   assert.match((await sdlc(root, ['metrics', '--value', 'waiting_hours_p95'])).err, /no data yet/);
   assert.match((await sdlc(root, ['metrics', '--since', 'soon'])).err, /invalid duration/);
+});
+
+test('metrics --prs: open findings on a merged PR were ignored', async () => {
+  const { root, env } = withPr();
+  const r = await sdlc(root, ['metrics', '--prs', '--json'], { ...env, STUB_PR_LIST: env.STUB_PR_LIST.replace('"OPEN"', '"MERGED"') });
+  assert.equal(r.code, 0, r.err);
+  assert.deepEqual(JSON.parse(r.out).summary.reviewOutcomes, { fixed: 1, wrong: 1, intentional: 1, ignored: 1, open: 0 });
 });

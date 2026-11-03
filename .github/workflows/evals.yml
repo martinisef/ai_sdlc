@@ -130,6 +130,11 @@ jobs:
           pattern: evals-*
           merge-multiple: true
           path: reports
+      - name: comment outcomes on real PRs (for the reviewer section)
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node --conditions=source packages/cli/src/main.ts metrics --prs > /dev/null
       - run: node --conditions=source packages/cli/src/main.ts ci scorecard reports/*.json
       - name: open or update the scorecard PR
         env:
