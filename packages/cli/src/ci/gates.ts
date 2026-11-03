@@ -2,23 +2,32 @@
 // recorded as a commit on the change branch; `sdlc/gates` is the commit status branch protection requires.
 import { execFileSync } from 'node:child_process';
 import {
+  artifactGate,
   ARTIFACTS,
+  codeGate,
   commitStatus,
   decideGate,
   git,
+  isAgent,
   isApproved,
+  isGraded,
   isQuick,
   listChanges,
   localeOf,
   notify,
+  prApprovals,
   prComment,
   SdlcError,
   type Approver,
   type Artifact,
   type Change,
+  type CodeGate,
+  type LoadedConfig,
+  type RiskTier,
   type StatusState,
 } from '@ai-native-sdlc/core';
 import { headRef, prNumber, type CiEnv } from './index.ts';
+import { prRisk } from './risk.ts';
 
 export const GATE_COMMAND = /^\/(approve|reject) (intent|spec|plan)(?:[ \t]+(.*))?$/m;
 export const GATES_CONTEXT = 'sdlc/gates';
@@ -48,14 +57,42 @@ export function changeForBranch(c: Pick<CiEnv, 'root' | 'loaded'>, branch: strin
 }
 
 /** What `sdlc/gates` reports for a change: success once code may merge. */
-export function gateState(change: Change | undefined): { state: StatusState; description: string } {
+export function gateState(
+  change: Change | undefined,
+  opts: { loaded?: LoadedConfig; tier?: RiskTier; code?: CodeGate } = {},
+): { state: StatusState; description: string } {
   if (!change) return { state: 'success', description: 'no change folder on this branch: not gated' };
   if (change.stage === 'rejected') return { state: 'failure', description: `${change.slug}: rejected` };
-  if (isQuick(change)) return { state: 'success', description: `${change.slug}: quick lane (limits checked on push)` };
-  if (isApproved(change.artifacts.plan?.status)) return { state: 'success', description: `${change.slug}: intent, spec and plan approved` };
-  const pending = ARTIFACTS.find((a) => !isApproved(change.artifacts[a]?.status)) ?? 'plan';
-  const missing = !change.artifacts[pending];
-  return { state: 'pending', description: `${change.slug}: ${pending} ${missing ? 'not written yet' : 'waiting for approval'} (/approve ${pending})` };
+  if (!isGraded(opts.loaded) || !opts.tier) {
+    if (isQuick(change)) return { state: 'success', description: `${change.slug}: quick lane (limits checked on push)` };
+    if (isApproved(change.artifacts.plan?.status)) return { state: 'success', description: `${change.slug}: intent, spec and plan approved` };
+    const pending = ARTIFACTS.find((a) => !isApproved(change.artifacts[a]?.status)) ?? 'plan';
+    const missing = !change.artifacts[pending];
+    return { state: 'pending', description: `${change.slug}: ${pending} ${missing ? 'not written yet' : 'waiting for approval'} (/approve ${pending})` };
+  }
+  const tier = opts.tier;
+  for (const a of isQuick(change) ? (['intent'] as const) : ARTIFACTS) {
+    const g = artifactGate(change, a, opts.loaded, tier);
+    if (g.ok) continue;
+    if (!change.artifacts[a]) return { state: 'pending', description: `${change.slug}: ${a} not written yet` };
+    if (g.stale) return { state: 'pending', description: `${change.slug}: ${tier} risk now needs ${g.need} approvals of the ${a}, it has ${g.have} (/approve ${a})` };
+    return { state: 'pending', description: `${change.slug}: ${a} waiting for approval, ${g.have}/${g.need} at ${tier} risk (/approve ${a})` };
+  }
+  const code = opts.code;
+  if (code && !code.ok) {
+    const more = Math.max(code.need - code.have, 1);
+    const why = code.stale.length ? `; new commits invalidated ${code.stale.map((x) => `@${x}`).join(', ')}` : '';
+    return { state: 'pending', description: `${change.slug}: code needs ${more} more approval${more > 1 ? 's' : ''} at ${tier} risk (${code.have}/${code.need}${why})` };
+  }
+  const who = code ? `; code ${code.have}/${code.need}${code.directorCounts ? `, ${code.director} counts as reviewer` : ''}` : '';
+  return { state: 'success', description: `${change.slug}: gates hold at ${tier} risk${who}` };
+}
+
+/** Who directed the change: the PR author when it is a person, otherwise the intent's author. */
+export function directorOf(c: CiEnv, change: Change): Approver | undefined {
+  const login = c.env.PR_AUTHOR;
+  if (login && !isAgent({ login })) return { login };
+  return change.author ? { name: change.author } : undefined;
 }
 
 async function reply(c: CiEnv, n: number, body: string) {
@@ -73,6 +110,7 @@ function waitingArtifact(change: Change | undefined): Artifact | undefined {
 /** Did this push touch `path`? PR_ACTION=opened|reopened counts as new for everything on the branch. */
 function touched(c: CiEnv, path: string): boolean {
   if (c.env.PR_ACTION === 'opened' || c.env.PR_ACTION === 'reopened') return true;
+  if (c.env.PR_ACTION === 'submitted' || c.env.PR_ACTION === 'dismissed') return false;
   const before = c.env.BEFORE_SHA && !/^0+$/.test(c.env.BEFORE_SHA) ? c.env.BEFORE_SHA : 'HEAD~1';
   return (git(c.root, ['diff', '--name-only', before, 'HEAD']) ?? '').split('\n').includes(path);
 }
@@ -81,9 +119,17 @@ function touched(c: CiEnv, path: string): boolean {
 export async function gateStatus(c: CiEnv, announce = false): Promise<number> {
   const branch = headRef(c);
   const change = changeForBranch(c, branch);
-  const g = gateState(change);
   const sha = c.env.HEAD_SHA || git(c.root, ['rev-parse', 'HEAD']);
   if (!sha) throw new SdlcError('no HEAD_SHA and no git HEAD');
+  const n = prNumber(c.env);
+  let opts: Parameters<typeof gateState>[1] = {};
+  if (change && isGraded(c.loaded)) {
+    const tier = (await prRisk(c, change, n)).tier;
+    let approvals: { login: string; sha?: string }[] = [];
+    if (n !== undefined && !c.dryRun) approvals = await prApprovals({ root: c.root, loaded: c.loaded, env: c.env }, n);
+    opts = { loaded: c.loaded, tier, code: codeGate(c.root, c.loaded, { tier, head: sha, approvals, director: directorOf(c, change) }) };
+  }
+  const g = gateState(change, opts);
   const waiting = waitingArtifact(change);
   const pending = waiting && (announce || touched(c, change!.artifacts[waiting]!.path));
   if (c.dryRun) {
@@ -129,14 +175,16 @@ export async function gate(c: CiEnv): Promise<number> {
   Object.assign(process.env, authorEnv);
   let result;
   try {
-    result = decideGate(c.root, c.loaded, change.id, cmd.artifact, cmd.decision, { approver, comment: cmd.comment });
+    const tier = isGraded(c.loaded) ? (await prRisk(c, change, n)).tier : undefined;
+    result = decideGate(c.root, c.loaded, change.id, cmd.artifact, cmd.decision, { approver, comment: cmd.comment, tier });
   } catch (e) {
     await reply(c, n, `Not recorded: ${(e as Error).message}.`);
     return 0;
   }
   if (!c.dryRun) execFileSync('git', ['push', 'origin', `HEAD:${branch}`], { cwd: c.root, stdio: ['ignore', 'inherit', 'inherit'] });
   const verb = cmd.decision === 'approved' ? 'approved' : 'rejected';
-  await reply(c, n, `**${cmd.artifact}** of \`${change.slug}\` ${verb} by @${login} (${result.commit}).${cmd.comment ? `\n\n> ${cmd.comment}` : ''}`);
+  const partial = result.approvals && result.approvals.have < result.approvals.need ? ` (${result.approvals.have} of ${result.approvals.need} approvals; still waiting)` : '';
+  await reply(c, n, `**${cmd.artifact}** of \`${change.slug}\` ${verb} by @${login} (${result.commit})${partial}.${cmd.comment ? `\n\n> ${cmd.comment}` : ''}`);
   const decided = changeForBranch(c, branch) ?? change;
   if (!c.dryRun) log(await notify({ event: 'gate.decided', change: decided, artifact: cmd.artifact, decision: cmd.decision, by: `@${login}`, note: cmd.comment }, c.loaded, c.env));
   return gateStatus({ ...c, env: { ...c.env, HEAD_SHA: '' } }, cmd.decision === 'approved');

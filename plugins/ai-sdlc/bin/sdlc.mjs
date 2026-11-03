@@ -398,7 +398,7 @@ var require_directives = __commonJS({
         return tag[0] === "!" ? tag : `!<${tag}>`;
       }
       toString(doc) {
-        const lines3 = this.yaml.explicit ? [`%YAML ${this.yaml.version || "1.2"}`] : [];
+        const lines2 = this.yaml.explicit ? [`%YAML ${this.yaml.version || "1.2"}`] : [];
         const tagEntries = Object.entries(this.tags);
         let tagNames;
         if (doc && tagEntries.length > 0 && identity.isNode(doc.contents)) {
@@ -414,9 +414,9 @@ var require_directives = __commonJS({
           if (handle === "!!" && prefix === "tag:yaml.org,2002:")
             continue;
           if (!doc || tagNames.some((tn) => tn.startsWith(prefix)))
-            lines3.push(`%TAG ${handle} ${prefix}`);
+            lines2.push(`%TAG ${handle} ${prefix}`);
         }
-        return lines3.join("\n");
+        return lines2.join("\n");
       }
     };
     Directives.defaultYaml = { explicit: false, version: "1.2" };
@@ -1877,22 +1877,22 @@ var require_stringifyCollection = __commonJS({
       const { indent, options: { commentString } } = ctx;
       const itemCtx = Object.assign({}, ctx, { indent: itemIndent, type: null });
       let chompKeep = false;
-      const lines3 = [];
+      const lines2 = [];
       for (let i = 0; i < items.length; ++i) {
         const item = items[i];
         let comment2 = null;
         if (identity.isNode(item)) {
           if (!chompKeep && item.spaceBefore)
-            lines3.push("");
-          addCommentBefore(ctx, lines3, item.commentBefore, chompKeep);
+            lines2.push("");
+          addCommentBefore(ctx, lines2, item.commentBefore, chompKeep);
           if (item.comment)
             comment2 = item.comment;
         } else if (identity.isPair(item)) {
           const ik = identity.isNode(item.key) ? item.key : null;
           if (ik) {
             if (!chompKeep && ik.spaceBefore)
-              lines3.push("");
-            addCommentBefore(ctx, lines3, ik.commentBefore, chompKeep);
+              lines2.push("");
+            addCommentBefore(ctx, lines2, ik.commentBefore, chompKeep);
           }
         }
         chompKeep = false;
@@ -1901,15 +1901,15 @@ var require_stringifyCollection = __commonJS({
           str2 += stringifyComment.lineComment(str2, itemIndent, commentString(comment2));
         if (chompKeep && comment2)
           chompKeep = false;
-        lines3.push(blockItemPrefix + str2);
+        lines2.push(blockItemPrefix + str2);
       }
       let str;
-      if (lines3.length === 0) {
+      if (lines2.length === 0) {
         str = flowChars.start + flowChars.end;
       } else {
-        str = lines3[0];
-        for (let i = 1; i < lines3.length; ++i) {
-          const line = lines3[i];
+        str = lines2[0];
+        for (let i = 1; i < lines2.length; ++i) {
+          const line = lines2[i];
           str += line ? `
 ${indent}${line}` : "\n";
         }
@@ -1932,22 +1932,22 @@ ${indent}${line}` : "\n";
       });
       let reqNewline = false;
       let linesAtValue = 0;
-      const lines3 = [];
+      const lines2 = [];
       for (let i = 0; i < items.length; ++i) {
         const item = items[i];
         let comment = null;
         if (identity.isNode(item)) {
           if (item.spaceBefore)
-            lines3.push("");
-          addCommentBefore(ctx, lines3, item.commentBefore, false);
+            lines2.push("");
+          addCommentBefore(ctx, lines2, item.commentBefore, false);
           if (item.comment)
             comment = item.comment;
         } else if (identity.isPair(item)) {
           const ik = identity.isNode(item.key) ? item.key : null;
           if (ik) {
             if (ik.spaceBefore)
-              lines3.push("");
-            addCommentBefore(ctx, lines3, ik.commentBefore, false);
+              lines2.push("");
+            addCommentBefore(ctx, lines2, ik.commentBefore, false);
             if (ik.comment)
               reqNewline = true;
           }
@@ -1964,12 +1964,12 @@ ${indent}${line}` : "\n";
         if (comment)
           reqNewline = true;
         let str = stringify.stringify(item, itemCtx, () => comment = null);
-        reqNewline || (reqNewline = lines3.length > linesAtValue || str.includes("\n"));
+        reqNewline || (reqNewline = lines2.length > linesAtValue || str.includes("\n"));
         if (i < items.length - 1) {
           str += ",";
         } else if (ctx.options.trailingComma) {
           if (ctx.options.lineWidth > 0) {
-            reqNewline || (reqNewline = lines3.reduce((sum, line) => sum + line.length + 2, 2) + (str.length + 2) > ctx.options.lineWidth);
+            reqNewline || (reqNewline = lines2.reduce((sum, line) => sum + line.length + 2, 2) + (str.length + 2) > ctx.options.lineWidth);
           }
           if (reqNewline) {
             str += ",";
@@ -1977,35 +1977,35 @@ ${indent}${line}` : "\n";
         }
         if (comment)
           str += stringifyComment.lineComment(str, itemIndent, commentString(comment));
-        lines3.push(str);
-        linesAtValue = lines3.length;
+        lines2.push(str);
+        linesAtValue = lines2.length;
       }
       const { start, end } = flowChars;
-      if (lines3.length === 0) {
+      if (lines2.length === 0) {
         return start + end;
       } else {
         if (!reqNewline) {
-          const len = lines3.reduce((sum, line) => sum + line.length + 2, 2);
+          const len = lines2.reduce((sum, line) => sum + line.length + 2, 2);
           reqNewline = ctx.options.lineWidth > 0 && len > ctx.options.lineWidth;
         }
         if (reqNewline) {
           let str = start;
-          for (const line of lines3)
+          for (const line of lines2)
             str += line ? `
 ${indentStep}${indent}${line}` : "\n";
           return `${str}
 ${indent}${end}`;
         } else {
-          return `${start}${fcPadding}${lines3.join(" ")}${fcPadding}${end}`;
+          return `${start}${fcPadding}${lines2.join(" ")}${fcPadding}${end}`;
         }
       }
     }
-    function addCommentBefore({ indent, options: { commentString } }, lines3, comment, chompKeep) {
+    function addCommentBefore({ indent, options: { commentString } }, lines2, comment, chompKeep) {
       if (comment && chompKeep)
         comment = comment.replace(/^\n+/, "");
       if (comment) {
         const ic = stringifyComment.indentComment(commentString(comment), indent);
-        lines3.push(ic.trimStart());
+        lines2.push(ic.trimStart());
       }
     }
     exports.stringifyCollection = stringifyCollection;
@@ -2643,11 +2643,11 @@ var require_binary = __commonJS({
         if (type !== Scalar.Scalar.QUOTE_DOUBLE) {
           const lineWidth = Math.max(ctx.options.lineWidth - ctx.indent.length, ctx.options.minContentWidth);
           const n = Math.ceil(str.length / lineWidth);
-          const lines3 = new Array(n);
+          const lines2 = new Array(n);
           for (let i = 0, o = 0; i < n; ++i, o += lineWidth) {
-            lines3[i] = str.substr(o, lineWidth);
+            lines2[i] = str.substr(o, lineWidth);
           }
-          str = lines3.join(type === Scalar.Scalar.BLOCK_LITERAL ? "\n" : " ");
+          str = lines2.join(type === Scalar.Scalar.BLOCK_LITERAL ? "\n" : " ");
         }
         return stringifyString.stringifyString({ comment, type, value: str }, ctx, onComment, onChompKeep);
       }
@@ -3327,35 +3327,35 @@ var require_stringifyDocument = __commonJS({
     var stringify = require_stringify();
     var stringifyComment = require_stringifyComment();
     function stringifyDocument(doc, options) {
-      const lines3 = [];
+      const lines2 = [];
       let hasDirectives = options.directives === true;
       if (options.directives !== false && doc.directives) {
         const dir = doc.directives.toString(doc);
         if (dir) {
-          lines3.push(dir);
+          lines2.push(dir);
           hasDirectives = true;
         } else if (doc.directives.docStart)
           hasDirectives = true;
       }
       if (hasDirectives)
-        lines3.push("---");
+        lines2.push("---");
       const ctx = stringify.createStringifyContext(doc, options);
       const { commentString } = ctx.options;
       if (doc.commentBefore) {
-        if (lines3.length !== 1)
-          lines3.unshift("");
+        if (lines2.length !== 1)
+          lines2.unshift("");
         const cs = commentString(doc.commentBefore);
-        lines3.unshift(stringifyComment.indentComment(cs, ""));
+        lines2.unshift(stringifyComment.indentComment(cs, ""));
       }
       let chompKeep = false;
       let contentComment = null;
       if (doc.contents) {
         if (identity.isNode(doc.contents)) {
           if (doc.contents.spaceBefore && hasDirectives)
-            lines3.push("");
+            lines2.push("");
           if (doc.contents.commentBefore) {
             const cs = commentString(doc.contents.commentBefore);
-            lines3.push(stringifyComment.indentComment(cs, ""));
+            lines2.push(stringifyComment.indentComment(cs, ""));
           }
           ctx.forceBlockIndent = !!doc.comment;
           contentComment = doc.contents.comment;
@@ -3364,36 +3364,36 @@ var require_stringifyDocument = __commonJS({
         let body = stringify.stringify(doc.contents, ctx, () => contentComment = null, onChompKeep);
         if (contentComment)
           body += stringifyComment.lineComment(body, "", commentString(contentComment));
-        if ((body[0] === "|" || body[0] === ">") && lines3[lines3.length - 1] === "---") {
-          lines3[lines3.length - 1] = `--- ${body}`;
+        if ((body[0] === "|" || body[0] === ">") && lines2[lines2.length - 1] === "---") {
+          lines2[lines2.length - 1] = `--- ${body}`;
         } else
-          lines3.push(body);
+          lines2.push(body);
       } else {
-        lines3.push(stringify.stringify(doc.contents, ctx));
+        lines2.push(stringify.stringify(doc.contents, ctx));
       }
       if (doc.directives?.docEnd) {
         if (doc.comment) {
           const cs = commentString(doc.comment);
           if (cs.includes("\n")) {
-            lines3.push("...");
-            lines3.push(stringifyComment.indentComment(cs, ""));
+            lines2.push("...");
+            lines2.push(stringifyComment.indentComment(cs, ""));
           } else {
-            lines3.push(`... ${cs}`);
+            lines2.push(`... ${cs}`);
           }
         } else {
-          lines3.push("...");
+          lines2.push("...");
         }
       } else {
         let dc = doc.comment;
         if (dc && chompKeep)
           dc = dc.replace(/^\n+/, "");
         if (dc) {
-          if ((!chompKeep || contentComment) && lines3[lines3.length - 1] !== "")
-            lines3.push("");
-          lines3.push(stringifyComment.indentComment(commentString(dc), ""));
+          if ((!chompKeep || contentComment) && lines2[lines2.length - 1] !== "")
+            lines2.push("");
+          lines2.push(stringifyComment.indentComment(commentString(dc), ""));
         }
       }
-      return lines3.join("\n") + "\n";
+      return lines2.join("\n") + "\n";
     }
     exports.stringifyDocument = stringifyDocument;
   }
@@ -4455,17 +4455,17 @@ var require_resolve_block_scalar = __commonJS({
       if (!header)
         return { value: "", type: null, comment: "", range: [start, start, start] };
       const type = header.mode === ">" ? Scalar.Scalar.BLOCK_FOLDED : Scalar.Scalar.BLOCK_LITERAL;
-      const lines3 = scalar.source ? splitLines(scalar.source) : [];
-      let chompStart = lines3.length;
-      for (let i = lines3.length - 1; i >= 0; --i) {
-        const content = lines3[i][1];
+      const lines2 = scalar.source ? splitLines(scalar.source) : [];
+      let chompStart = lines2.length;
+      for (let i = lines2.length - 1; i >= 0; --i) {
+        const content = lines2[i][1];
         if (content === "" || content === "\r")
           chompStart = i;
         else
           break;
       }
       if (chompStart === 0) {
-        const value2 = header.chomp === "+" && lines3.length > 0 ? "\n".repeat(Math.max(1, lines3.length - 1)) : "";
+        const value2 = header.chomp === "+" && lines2.length > 0 ? "\n".repeat(Math.max(1, lines2.length - 1)) : "";
         let end2 = start + header.length;
         if (scalar.source)
           end2 += scalar.source.length;
@@ -4475,7 +4475,7 @@ var require_resolve_block_scalar = __commonJS({
       let offset = scalar.offset + header.length;
       let contentStart = 0;
       for (let i = 0; i < chompStart; ++i) {
-        const [indent, content] = lines3[i];
+        const [indent, content] = lines2[i];
         if (content === "" || content === "\r") {
           if (header.indent === 0 && indent.length > trimIndent)
             trimIndent = indent.length;
@@ -4495,17 +4495,17 @@ var require_resolve_block_scalar = __commonJS({
         }
         offset += indent.length + content.length + 1;
       }
-      for (let i = lines3.length - 1; i >= chompStart; --i) {
-        if (lines3[i][0].length > trimIndent)
+      for (let i = lines2.length - 1; i >= chompStart; --i) {
+        if (lines2[i][0].length > trimIndent)
           chompStart = i + 1;
       }
       let value = "";
       let sep2 = "";
       let prevMoreIndented = false;
       for (let i = 0; i < contentStart; ++i)
-        value += lines3[i][0].slice(trimIndent) + "\n";
+        value += lines2[i][0].slice(trimIndent) + "\n";
       for (let i = contentStart; i < chompStart; ++i) {
-        let [indent, content] = lines3[i];
+        let [indent, content] = lines2[i];
         offset += indent.length + content.length + 1;
         const crlf = content[content.length - 1] === "\r";
         if (crlf)
@@ -4542,8 +4542,8 @@ var require_resolve_block_scalar = __commonJS({
         case "-":
           break;
         case "+":
-          for (let i = chompStart; i < lines3.length; ++i)
-            value += "\n" + lines3[i][0].slice(trimIndent);
+          for (let i = chompStart; i < lines2.length; ++i)
+            value += "\n" + lines2[i][0].slice(trimIndent);
           if (value[value.length - 1] !== "\n")
             value += "\n";
           break;
@@ -4618,10 +4618,10 @@ var require_resolve_block_scalar = __commonJS({
       const first = split[0];
       const m = first.match(/^( *)/);
       const line0 = m?.[1] ? [m[1], first.slice(m[1].length)] : ["", first];
-      const lines3 = [line0];
+      const lines2 = [line0];
       for (let i = 1; i < split.length; i += 2)
-        lines3.push([split[i], split[i + 1]]);
-      return lines3;
+        lines2.push([split[i], split[i + 1]]);
+      return lines2;
     }
     exports.resolveBlockScalar = resolveBlockScalar;
   }
@@ -8504,14 +8504,14 @@ function toDotPath(_path) {
   return segs.join("");
 }
 function prettifyError(error62) {
-  const lines3 = [];
+  const lines2 = [];
   const issues = [...error62.issues].sort((a, b) => (a.path ?? []).length - (b.path ?? []).length);
   for (const issue2 of issues) {
-    lines3.push(`\u2716 ${issue2.message}`);
+    lines2.push(`\u2716 ${issue2.message}`);
     if (issue2.path?.length)
-      lines3.push(`  \u2192 at ${toDotPath(issue2.path)}`);
+      lines2.push(`  \u2192 at ${toDotPath(issue2.path)}`);
   }
-  return lines3.join("\n");
+  return lines2.join("\n");
 }
 var _messageDesc, _issuesDesc, _installedToString, initializer, $ZodError, $ZodRealError;
 var init_errors = __esm({
@@ -9413,9 +9413,9 @@ var init_doc = __esm({
           return;
         }
         const content = arg;
-        const lines3 = content.split("\n").filter((x) => x);
-        const minIndent = Math.min(...lines3.map((x) => x.length - x.trimStart().length));
-        const dedented = lines3.map((x) => x.slice(minIndent)).map((x) => " ".repeat(this.indent * 2) + x);
+        const lines2 = content.split("\n").filter((x) => x);
+        const minIndent = Math.min(...lines2.map((x) => x.length - x.trimStart().length));
+        const dedented = lines2.map((x) => x.slice(minIndent)).map((x) => " ".repeat(this.indent * 2) + x);
         for (const line of dedented) {
           this.content.push(line);
         }
@@ -28183,46 +28183,46 @@ function stripComment(v) {
   return v.replace(/\s+#.*$/, "").trim();
 }
 function parseFrontmatter(text) {
-  const lines3 = text.split("\n");
-  if (lines3[0]?.trimEnd() !== "---") return { data: {}, body: text, hasFrontmatter: false };
+  const lines2 = text.split("\n");
+  if (lines2[0]?.trimEnd() !== "---") return { data: {}, body: text, hasFrontmatter: false };
   const data = {};
   let i = 1;
-  for (; i < lines3.length; i++) {
-    const line = lines3[i];
+  for (; i < lines2.length; i++) {
+    const line = lines2[i];
     if (line.trimEnd() === "---") break;
     const idx = line.indexOf(":");
     if (idx <= 0) continue;
     const key = line.slice(0, idx).trim();
     if (!(key in data)) data[key] = stripComment(line.slice(idx + 1));
   }
-  return { data, body: lines3.slice(i + 1).join("\n"), hasFrontmatter: true };
+  return { data, body: lines2.slice(i + 1).join("\n"), hasFrontmatter: true };
 }
 function setFrontmatter(text, fields) {
-  const lines3 = text.split("\n");
-  if (lines3[0]?.trimEnd() !== "---") {
+  const lines2 = text.split("\n");
+  if (lines2[0]?.trimEnd() !== "---") {
     const head = Object.entries(fields).map(([k, v]) => `${k}: ${v}`);
     return ["---", ...head, "---", text].join("\n");
   }
-  let end = lines3.findIndex((l, i) => i > 0 && l.trimEnd() === "---");
-  if (end === -1) end = lines3.length;
+  let end = lines2.findIndex((l, i) => i > 0 && l.trimEnd() === "---");
+  if (end === -1) end = lines2.length;
   const pending = new Map(Object.entries(fields));
   for (let i = 1; i < end; i++) {
-    const m = /^([^:#]+):(\s*)(.*?)(\s+#.*)?$/.exec(lines3[i]);
+    const m = /^([^:#]+):(\s*)(.*?)(\s+#.*)?$/.exec(lines2[i]);
     if (!m) continue;
     const key = m[1].trim();
     if (!pending.has(key)) continue;
     const prefix = `${key}: ${pending.get(key)}`;
     if (m[4]) {
-      const col = lines3[i].length - m[4].trimStart().length;
-      lines3[i] = prefix.padEnd(Math.max(prefix.length + 1, col)) + m[4].trimStart();
+      const col = lines2[i].length - m[4].trimStart().length;
+      lines2[i] = prefix.padEnd(Math.max(prefix.length + 1, col)) + m[4].trimStart();
     } else {
-      lines3[i] = prefix;
+      lines2[i] = prefix;
     }
     pending.delete(key);
   }
   const added = [...pending].map(([k, v]) => `${k}: ${v}`);
-  lines3.splice(end, 0, ...added);
-  return lines3.join("\n");
+  lines2.splice(end, 0, ...added);
+  return lines2.join("\n");
 }
 var init_frontmatter = __esm({
   "packages/core/src/frontmatter.ts"() {
@@ -28639,79 +28639,6 @@ var init_funnel = __esm({
   }
 });
 
-// packages/core/src/gates.ts
-import { readFileSync as readFileSync5, writeFileSync as writeFileSync3 } from "node:fs";
-import { join as join6 } from "node:path";
-function requiredApprovers(change, artifact, loaded) {
-  let roles = loaded?.config.gates?.[artifact] ?? [];
-  if (artifact === "plan" && change.risk === "high" && !roles.includes("tech-lead")) roles = [...roles, "tech-lead"];
-  return { roles, people: [...new Set(roles.flatMap((r) => loaded?.config.roles?.[r] ?? []))] };
-}
-function canApprove(change, artifact, who, loaded) {
-  const id = `${who.name ?? ""} <${who.email ?? ""}>${who.login ? ` @${who.login}` : ""}`;
-  if (!who.email && !who.name && !who.login) return { ok: false, reason: "git user.name / user.email is not set" };
-  if (AGENT_IDENTITY.test(id)) return { ok: false, reason: `${id} looks like an agent or bot; a person must approve` };
-  const info = change.artifacts[artifact];
-  if (!info) return { ok: false, reason: `${change.id}/${artifact}.md does not exist` };
-  const author = info.data.author;
-  if (author && who.name && !loaded?.config.gates_self_approval && author.toLowerCase().startsWith(who.name.toLowerCase()) && artifact !== "intent") {
-    return { ok: false, reason: `${who.name} authored ${artifact}.md; another person must approve it` };
-  }
-  const { roles: required2, people: members2 } = requiredApprovers(change, artifact, loaded);
-  if (required2.length === 0) return { ok: true };
-  if (members2.length === 0) return { ok: true };
-  const match2 = members2.some((m) => {
-    const x = m.toLowerCase();
-    if (x.startsWith("@")) return !!who.login && x.slice(1) === who.login.toLowerCase();
-    return x === who.email?.toLowerCase() || x === who.name?.toLowerCase();
-  });
-  return match2 ? { ok: true } : { ok: false, reason: `${artifact} needs approval from: ${required2.join(", ")}` };
-}
-function decideGate(root, loaded, changeId, artifact, decision, opts2 = {}) {
-  const locale = localeOf(loaded);
-  const change = getChange(root, changeId, { locale, defaultBranch: loaded?.config.vcs?.default_branch });
-  if (!change) throw new Error(`change not found: ${changeId}`);
-  const who = opts2.approver ?? gitUser(root);
-  const check2 = canApprove(change, artifact, who, loaded);
-  if (!check2.ok) throw new Error(check2.reason);
-  const info = change.artifacts[artifact];
-  const status = decision === "rejected" ? "rejected" : artifact === "intent" ? "accepted" : "approved";
-  const by = who.name ?? who.email ?? `@${who.login}`;
-  const fields = { status };
-  if (decision === "approved") {
-    fields.approved_by = by;
-    fields.approved_at = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
-  }
-  const verb = decision === "approved" ? "approve" : "reject";
-  const msg = [`chore(${change.slug}): ${verb} ${artifact}`, "", opts2.comment ?? "", `Gate: ${artifact} ${status} by ${by}${who.email ? ` <${who.email}>` : ""}`].filter((l, i) => i !== 2 || l).join("\n");
-  const commit = change.source === "worktree" ? commitInWorktree(root, info.path, fields, msg) : commitOnBranch(root, change.source.branch, info.path, fields, msg);
-  recordEvent(root, { type: decision === "approved" ? "gate.approve" : "gate.reject", change: change.id, artifact, by, detail: opts2.comment });
-  return { change: change.id, artifact, decision, commit, by };
-}
-function commitInWorktree(root, path, fields, msg) {
-  const full = join6(root, path);
-  writeFileSync3(full, setFrontmatter(readFileSync5(full, "utf8"), fields));
-  gitOrThrow(root, ["add", "--", path]);
-  gitOrThrow(root, ["commit", "-m", msg, "--", path]);
-  return gitOrThrow(root, ["rev-parse", "--short", "HEAD"]);
-}
-function commitOnBranch(root, branch, path, fields, msg) {
-  const current = gitOrThrow(root, ["show", `refs/heads/${branch}:${path}`]);
-  return commitFiles(root, branch, { [path]: setFrontmatter(current + "\n", fields) }, msg);
-}
-var AGENT_IDENTITY;
-var init_gates = __esm({
-  "packages/core/src/gates.ts"() {
-    "use strict";
-    init_changes();
-    init_config();
-    init_events();
-    init_frontmatter();
-    init_git();
-    AGENT_IDENTITY = /(\[bot\]|\bbot\b|claude|anthropic|cursor|codex|copilot|noreply@github)/i;
-  }
-});
-
 // packages/core/src/glob.ts
 function toRegExp(glob) {
   let re = "";
@@ -28758,6 +28685,301 @@ var init_glob = __esm({
   "packages/core/src/glob.ts"() {
     "use strict";
     cache = /* @__PURE__ */ new Map();
+  }
+});
+
+// packages/core/src/risk.ts
+function parseTier(v) {
+  const s = v?.trim().toLowerCase() ?? "";
+  if (/^(high|alto|alta)\b/.test(s)) return "high";
+  if (/^(medium|medio|media)\b/.test(s)) return "medium";
+  if (/^(low|bajo|baja|routine|rutina)\b/.test(s)) return "low";
+  return void 0;
+}
+function riskSettings(loaded) {
+  const r = loaded?.config.risk ?? {};
+  return {
+    highRisk: r.high_risk_paths ?? [],
+    alwaysHuman: r.always_human_paths ?? ALWAYS_HUMAN_DEFAULTS,
+    lowMaxLines: r.size?.low_max_lines ?? RISK_SIZE_DEFAULTS.low_max_lines,
+    highMinLines: r.size?.high_min_lines ?? RISK_SIZE_DEFAULTS.high_min_lines,
+    tests: loaded?.config.test_globs ?? [],
+    sensitive: [...loaded?.config.protected_paths ?? [], ...loaded?.config.append_only_paths ?? []]
+  };
+}
+function classifyRisk(loaded, files) {
+  const s = riskSettings(loaded);
+  const reasons = [];
+  const first = (tier, pick2, why) => {
+    for (const f of files) {
+      const m = pick2(f);
+      if (m) return void reasons.push({ tier, reason: why(f, m) });
+    }
+  };
+  first("high", (f) => matchAny(f.path, s.highRisk), (f, m) => `${f.path} is a high-risk path (${m})`);
+  first("medium", (f) => matchAny(f.path, s.alwaysHuman), (f, m) => `${f.path} always needs a person (${m})`);
+  first("medium", (f) => matchAny(f.path, DEPENDENCY_MANIFESTS), (f) => `${f.path} changes dependencies`);
+  first("medium", (f) => matchAny(f.path, s.sensitive), (f, m) => `${f.path} is protected or append-only (${m})`);
+  const code2 = files.filter((f) => isCodePath(f.path) && !matchAny(f.path, s.tests));
+  first("medium", (f) => code2.includes(f) && f.status === "D" ? "deleted" : void 0, (f) => `${f.path} is deleted`);
+  const weight = Math.round(code2.reduce((n, f) => n + (f.status === "A" ? f.added / 2 : f.added + f.deleted), 0));
+  if (weight >= s.highMinLines) reasons.push({ tier: "high", reason: `${weight} weighted lines of code changed (risk.size.high_min_lines: ${s.highMinLines})` });
+  else if (weight > s.lowMaxLines) reasons.push({ tier: "medium", reason: `${weight} weighted lines of code changed (risk.size.low_max_lines: ${s.lowMaxLines})` });
+  reasons.sort((a, b) => tierRank(b.tier) - tierRank(a.tier));
+  return { tier: maxTier(...reasons.map((r) => r.tier)), reasons, weight, files: files.length };
+}
+function diffFiles(root, base, head = "HEAD") {
+  if (git(root, ["rev-parse", "--verify", "--quiet", `${base}^{commit}`]) === void 0) return [];
+  const range = `${base}...${head}`;
+  const counts = /* @__PURE__ */ new Map();
+  for (const l of lines(git(root, ["diff", "--numstat", "-M", range]))) {
+    const [a, d, ...p] = l.split("	");
+    const path = p.join("	").replace(/^.*=> /, "").replace(/[{}]/g, "");
+    counts.set(path, [Number(a) || 0, Number(d) || 0]);
+  }
+  return lines(git(root, ["diff", "--name-status", "-M", range])).map((l) => {
+    const [st, ...paths] = l.split("	");
+    const path = paths.at(-1);
+    const [added, deleted] = counts.get(path) ?? [0, 0];
+    return { path, status: st[0] === "R" ? "R" : st[0] === "A" ? "A" : st[0] === "D" ? "D" : "M", added, deleted };
+  });
+}
+function plannedFiles(change) {
+  const text = [change.artifacts.spec?.body, change.artifacts.plan?.body].filter(Boolean).join("\n");
+  const found = /* @__PURE__ */ new Set();
+  for (const m of text.matchAll(/`([^`\s]+)`/g)) {
+    const p = m[1].replace(/^\.\//, "");
+    if (/^[\w.*-]+(\/[\w.*@-]+)*\/$|^[\w.*-]+(\/[\w.*@-]+)+$|^[\w-]+\.[a-z]{1,5}$/i.test(p) && !/^https?:/.test(p)) found.add(p.replace(/\/$/, "/**"));
+  }
+  return [...found];
+}
+function changeRisk(root, loaded, change, opts2 = {}) {
+  const diff = opts2.base ? diffFiles(root, opts2.base, opts2.head) : [];
+  const planned = change ? plannedFiles(change).map((path) => ({ path, status: "M", added: 0, deleted: 0 })) : [];
+  const seen = new Set(diff.map((f) => f.path));
+  const a = classifyRisk(loaded, [...diff, ...planned.filter((f) => !seen.has(f.path))]);
+  const declared = parseTier(change?.risk);
+  const reasons = [...a.reasons];
+  if (declared && tierRank(declared) > tierRank(a.tier)) reasons.unshift({ tier: declared, reason: `the spec declares risk: ${declared}` });
+  if (opts2.escalated && tierRank(opts2.escalated) > tierRank(maxTier(a.tier, declared)))
+    reasons.unshift({ tier: opts2.escalated, reason: opts2.escalatedReason ?? `escalated to ${opts2.escalated}` });
+  return { ...a, reasons, declared, escalated: opts2.escalated, computed: a.tier, tier: maxTier(a.tier, declared, opts2.escalated) };
+}
+function riskMarker(tier, reason) {
+  return `<!-- sdlc:risk tier=${tier} reason="${reason.replace(/"|-->/g, "'")}" -->`;
+}
+function escalationFrom(bodies) {
+  let best = {};
+  for (const b of bodies) {
+    const m = RISK_MARKER.exec(b);
+    if (m && (!best.tier || tierRank(m[1]) > tierRank(best.tier))) best = { tier: m[1], reason: m[2] };
+  }
+  return best;
+}
+function parseEscalation(out) {
+  const m = [...out.matchAll(/^\s*\**ESCALATE:?\**\s*:?\s*(none|low|medium|high)\b[\s:—–-]*(.*)$/gim)].at(-1);
+  if (!m || m[1].toLowerCase() === "none") return {};
+  return { tier: m[1].toLowerCase(), reason: m[2].trim() || void 0 };
+}
+var RISK_TIERS, ALWAYS_HUMAN_DEFAULTS, DEPENDENCY_MANIFESTS, RISK_SIZE_DEFAULTS, tierRank, maxTier, RISK_MARKER;
+var init_risk = __esm({
+  "packages/core/src/risk.ts"() {
+    "use strict";
+    init_changes();
+    init_git();
+    init_glob();
+    RISK_TIERS = ["low", "medium", "high"];
+    ALWAYS_HUMAN_DEFAULTS = [".github/workflows/**", ".gitlab-ci.yml", "ci/*.gitlab-ci.yml", "bitbucket-pipelines.yml", ".sdlc/**", "REVIEW.md"];
+    DEPENDENCY_MANIFESTS = [
+      "**/package.json",
+      "**/package-lock.json",
+      "**/pnpm-lock.yaml",
+      "**/yarn.lock",
+      "**/pyproject.toml",
+      "**/uv.lock",
+      "**/poetry.lock",
+      "**/requirements*.txt",
+      "**/go.mod",
+      "**/go.sum",
+      "**/Gemfile",
+      "**/Gemfile.lock",
+      "**/*.csproj",
+      "**/Cargo.toml",
+      "**/Cargo.lock",
+      "**/pom.xml",
+      "**/build.gradle*"
+    ];
+    RISK_SIZE_DEFAULTS = { low_max_lines: 50, high_min_lines: 800 };
+    tierRank = (t2) => RISK_TIERS.indexOf(t2);
+    maxTier = (...ts) => ts.reduce((a, b) => b && tierRank(b) > tierRank(a) ? b : a, "low");
+    RISK_MARKER = /<!-- sdlc:risk tier=(low|medium|high)(?: reason="([^"]*)")? -->/;
+  }
+});
+
+// packages/core/src/gates.ts
+import { readFileSync as readFileSync5, writeFileSync as writeFileSync3 } from "node:fs";
+import { join as join6 } from "node:path";
+function approvalsFor(loaded, tier, artifact = "code") {
+  const profile = isGraded(loaded) ? "graded" : "strict";
+  const n = loaded?.config.risk?.tiers?.[tier]?.approvals ?? TIER_APPROVALS[profile][tier];
+  return artifact === "intent" ? Math.max(1, n) : n;
+}
+function personMatches(entries, who) {
+  return entries.some((m) => {
+    const x = m.toLowerCase();
+    if (x.startsWith("@")) return !!who.login && x.slice(1) === who.login.toLowerCase();
+    return x === who.email?.toLowerCase() || x === who.name?.toLowerCase();
+  });
+}
+function isTrustedAuthor(loaded, who) {
+  if (isAgent(who) || !who.name && !who.email && !who.login) return false;
+  const list = loaded?.config.risk?.trusted_authors ?? [...new Set(Object.values(loaded?.config.roles ?? {}).flat())];
+  if (!loaded?.config.risk?.trusted_authors && !list.length) return true;
+  return personMatches(list, who);
+}
+function requiredApprovers(change, artifact, loaded) {
+  let roles = loaded?.config.gates?.[artifact] ?? [];
+  if (artifact === "plan" && change.risk === "high" && !roles.includes("tech-lead")) roles = [...roles, "tech-lead"];
+  return { roles, people: [...new Set(roles.flatMap((r) => loaded?.config.roles?.[r] ?? []))] };
+}
+function humanApprovers(approvedBy) {
+  return (approvedBy ?? "").split(",").map((s) => s.trim()).filter((s) => s && !s.startsWith(AUTO_APPROVER + " ") && s !== AUTO_APPROVER);
+}
+function canApprove(change, artifact, who, loaded) {
+  const id = `${who.name ?? ""} <${who.email ?? ""}>${who.login ? ` @${who.login}` : ""}`;
+  if (!who.email && !who.name && !who.login) return { ok: false, reason: "git user.name / user.email is not set" };
+  if (isAgent(who)) return { ok: false, reason: `${id} looks like an agent or bot; a person must approve` };
+  const info = change.artifacts[artifact];
+  if (!info) return { ok: false, reason: `${change.id}/${artifact}.md does not exist` };
+  const author = info.data.author;
+  if (author && who.name && !loaded?.config.gates_self_approval && author.toLowerCase().startsWith(who.name.toLowerCase()) && artifact !== "intent") {
+    return { ok: false, reason: `${who.name} authored ${artifact}.md; another person must approve it` };
+  }
+  const by = who.name ?? who.email ?? `@${who.login}`;
+  if (isGraded(loaded) && humanApprovers(info.data.approved_by).some((x) => x.toLowerCase() === by.toLowerCase()))
+    return { ok: false, reason: `${by} already approved ${artifact}.md; another person must add the next approval` };
+  const { roles: required2, people: members2 } = requiredApprovers(change, artifact, loaded);
+  if (required2.length === 0) return { ok: true };
+  if (members2.length === 0) return { ok: true };
+  return personMatches(members2, who) ? { ok: true } : { ok: false, reason: `${artifact} needs approval from: ${required2.join(", ")}` };
+}
+function gateTier(root, loaded, change) {
+  const base = loaded?.config.vcs?.default_branch ?? "main";
+  return changeRisk(root, loaded, change, { base: change.branch && git(root, ["rev-parse", "--verify", "--quiet", change.branch]) ? base : void 0, head: change.branch }).tier;
+}
+function artifactGate(change, artifact, loaded, tier) {
+  const info = change.artifacts[artifact];
+  const approved = !!info && ["approved", "accepted"].includes(info.status ?? "");
+  if (!isGraded(loaded)) return { need: 1, have: approved ? 1 : 0, ok: approved };
+  const need = approvalsFor(loaded, tier, artifact);
+  const have = humanApprovers(info?.data.approved_by).length;
+  return { need, have, ok: approved && have >= need, stale: approved && have < need };
+}
+function vouched(root, loaded, from, to) {
+  if (git(root, ["merge-base", "--is-ancestor", from, to]) === void 0) return false;
+  for (const sha2 of (git(root, ["rev-list", `${from}..${to}`]) ?? "").split("\n").filter(Boolean)) {
+    const [name, email3, parents, tree, body] = (git(root, ["log", "-1", "--format=%an%x00%ae%x00%P%x00%T%x00%B", sha2]) ?? "").split("\0");
+    const ps = parents?.split(" ").filter(Boolean) ?? [];
+    if (ps.length > 1) {
+      if (git(root, ["merge-tree", "--write-tree", ps[0], ps[1]]) !== tree) return false;
+      continue;
+    }
+    const files = (git(root, ["diff-tree", "--no-commit-id", "--name-only", "-r", sha2]) ?? "").split("\n").filter(Boolean);
+    if (/^Gate: /m.test(body ?? "") && files.every((f) => f.startsWith("changes/"))) continue;
+    if (!isTrustedAuthor(loaded, { name, email: email3 })) return false;
+  }
+  return true;
+}
+function codeGate(root, loaded, o) {
+  const directorTrusted = !!o.director && isTrustedAuthor(loaded, o.director);
+  let need = approvalsFor(loaded, o.tier, "code");
+  if (!directorTrusted) need = Math.max(need, 1);
+  const counted = [];
+  const stale = [];
+  for (const a of o.approvals) {
+    if (!a.login || isAgent({ login: a.login }) || counted.includes(a.login) || a.login.toLowerCase() === o.director?.login?.toLowerCase()) continue;
+    const current = !a.sha || o.head.startsWith(a.sha) || a.sha.startsWith(o.head) || vouched(root, loaded, a.sha, o.head);
+    (current ? counted : stale).push(a.login);
+  }
+  const have = counted.length + (directorTrusted ? 1 : 0);
+  const others = o.tier === "high" && need > 0 ? 1 : 0;
+  const director = o.director ? o.director.login ? `@${o.director.login}` : o.director.name : void 0;
+  return { tier: o.tier, need, have, ok: have >= need && counted.length >= others, counted, stale, director, directorCounts: directorTrusted };
+}
+function decideGate(root, loaded, changeId, artifact, decision, opts2 = {}) {
+  const locale = localeOf(loaded);
+  const change = getChange(root, changeId, { locale, defaultBranch: loaded?.config.vcs?.default_branch });
+  if (!change) throw new Error(`change not found: ${changeId}`);
+  const info = change.artifacts[artifact];
+  const graded = isGraded(loaded);
+  const tier = opts2.tier ?? (graded ? gateTier(root, loaded, change) : "low");
+  const need = graded ? approvalsFor(loaded, tier, artifact) : 1;
+  let who;
+  let by;
+  let approvers = [];
+  if (opts2.auto) {
+    if (decision !== "approved") throw new Error("only approvals can be automatic");
+    if (!info) throw new Error(`${change.id}/${artifact}.md does not exist`);
+    if (!graded) throw new Error(`risk.profile is strict: ${artifact} needs a person (sdlc approve ${change.slug} ${artifact})`);
+    if (need > 0) throw new Error(`${artifact} needs ${need} human approval${need > 1 ? "s" : ""} at ${tier} risk`);
+    const author = change.author ?? info.data.author;
+    if (!author || !isTrustedAuthor(loaded, { name: author })) throw new Error(`${author ?? "the author"} is not in risk.trusted_authors: another person must approve ${artifact}`);
+    who = { name: `${AUTO_APPROVER} (risk ${tier})` };
+    by = who.name;
+  } else {
+    who = opts2.approver ?? gitUser(root);
+    const check2 = canApprove(change, artifact, who, loaded);
+    if (!check2.ok) throw new Error(check2.reason);
+    by = who.name ?? who.email ?? `@${who.login}`;
+    if (graded && decision === "approved") approvers = [...humanApprovers(info.data.approved_by), by];
+  }
+  const enough = !graded || opts2.auto || approvers.length >= need;
+  const done = artifact === "intent" ? "accepted" : "approved";
+  const status = decision === "rejected" ? "rejected" : enough ? done : info.status ?? "draft";
+  const fields = { status };
+  if (decision === "approved") {
+    fields.approved_by = graded && !opts2.auto ? approvers.join(", ") : by;
+    fields.approved_at = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+    const sha2 = git(root, ["rev-parse", "--short", change.source === "worktree" ? "HEAD" : change.source.branch]);
+    if (sha2) fields.approved_sha = sha2;
+    if (graded) fields.approved_tier = tier;
+  } else if (graded && info?.data.approved_by) fields.approved_by = "";
+  const verb = decision === "approved" ? "approve" : "reject";
+  const count = graded && decision === "approved" && !opts2.auto ? ` (${approvers.length}/${need}, ${tier} risk)` : "";
+  const msg = [`chore(${change.slug}): ${verb} ${artifact}`, "", opts2.comment ?? "", `Gate: ${artifact} ${enough || decision === "rejected" ? status : "approval"} by ${by}${who.email ? ` <${who.email}>` : ""}${count}`].filter((l, i) => i !== 2 || l).join("\n");
+  const commit = change.source === "worktree" ? commitInWorktree(root, info.path, fields, msg) : commitOnBranch(root, change.source.branch, info.path, fields, msg);
+  recordEvent(root, { type: decision === "approved" ? "gate.approve" : "gate.reject", change: change.id, artifact, by, detail: opts2.comment ?? (opts2.auto ? `automatic at ${tier} risk` : void 0) });
+  return { change: change.id, artifact, decision, commit, by, ...graded && decision === "approved" ? { approvals: { have: opts2.auto ? 0 : approvers.length, need } } : {} };
+}
+function commitInWorktree(root, path, fields, msg) {
+  const full = join6(root, path);
+  writeFileSync3(full, setFrontmatter(readFileSync5(full, "utf8"), fields));
+  gitOrThrow(root, ["add", "--", path]);
+  gitOrThrow(root, ["commit", "-m", msg, "--", path]);
+  return gitOrThrow(root, ["rev-parse", "--short", "HEAD"]);
+}
+function commitOnBranch(root, branch, path, fields, msg) {
+  const current = gitOrThrow(root, ["show", `refs/heads/${branch}:${path}`]);
+  return commitFiles(root, branch, { [path]: setFrontmatter(current + "\n", fields) }, msg);
+}
+var AGENT_IDENTITY, isAgent, AUTO_APPROVER, TIER_APPROVALS, isGraded;
+var init_gates = __esm({
+  "packages/core/src/gates.ts"() {
+    "use strict";
+    init_changes();
+    init_config();
+    init_events();
+    init_frontmatter();
+    init_git();
+    init_risk();
+    AGENT_IDENTITY = /(\[bot\]|\bbot\b|claude|anthropic|cursor|codex|copilot|noreply@github)/i;
+    isAgent = (who) => AGENT_IDENTITY.test(`${who.name ?? ""} <${who.email ?? ""}> ${who.login ?? ""}`);
+    AUTO_APPROVER = "sdlc";
+    TIER_APPROVALS = {
+      strict: { low: 1, medium: 1, high: 1 },
+      graded: { low: 0, medium: 1, high: 2 }
+    };
+    isGraded = (loaded) => loaded?.config.risk?.profile === "graded";
   }
 });
 
@@ -29129,10 +29351,10 @@ function noticeMessage(n, loaded, env = process.env) {
     const r = requiredApprovers(n.change, artifact, loaded);
     people = r.people.length ? r.people : r.roles;
   }
-  const lines3 = [];
-  if (n.change) lines3.push(t(locale, "nt.stage", { stage: n.change.stage }));
-  if (people?.length) lines3.push(t(locale, "nt.who", { who: people.map((p) => mention(p, loaded)).join(", ") }));
-  if (n.note) lines3.push(n.note);
+  const lines2 = [];
+  if (n.change) lines2.push(t(locale, "nt.stage", { stage: n.change.stage }));
+  if (people?.length) lines2.push(t(locale, "nt.who", { who: people.map((p) => mention(p, loaded)).join(", ") }));
+  if (n.note) lines2.push(n.note);
   const links = [];
   const pr = n.prUrl ?? prUrlFromEnv(env);
   if (pr) links.push({ label: "PR", url: pr });
@@ -29140,7 +29362,7 @@ function noticeMessage(n, loaded, env = process.env) {
   const path = artifact && n.change?.artifacts[artifact]?.path;
   const url2 = path && ref && n.event !== "change.merged" ? fileUrl(env, ref, path) : void 0;
   if (url2) links.push({ label: `${artifact}.md`, url: url2 });
-  return { title, lines: lines3, people: people ?? [], links };
+  return { title, lines: lines2, people: people ?? [], links };
 }
 function mention(person, loaded) {
   const people = loaded?.config.notify?.people ?? {};
@@ -29464,125 +29686,6 @@ var init_quick = __esm({
   }
 });
 
-// packages/core/src/risk.ts
-function parseTier(v) {
-  const s = v?.trim().toLowerCase() ?? "";
-  if (/^(high|alto|alta)\b/.test(s)) return "high";
-  if (/^(medium|medio|media)\b/.test(s)) return "medium";
-  if (/^(low|bajo|baja|routine|rutina)\b/.test(s)) return "low";
-  return void 0;
-}
-function riskSettings(loaded) {
-  const r = loaded?.config.risk ?? {};
-  return {
-    highRisk: r.high_risk_paths ?? [],
-    alwaysHuman: r.always_human_paths ?? ALWAYS_HUMAN_DEFAULTS,
-    lowMaxLines: r.size?.low_max_lines ?? RISK_SIZE_DEFAULTS.low_max_lines,
-    highMinLines: r.size?.high_min_lines ?? RISK_SIZE_DEFAULTS.high_min_lines,
-    tests: loaded?.config.test_globs ?? [],
-    sensitive: [...loaded?.config.protected_paths ?? [], ...loaded?.config.append_only_paths ?? []]
-  };
-}
-function classifyRisk(loaded, files) {
-  const s = riskSettings(loaded);
-  const reasons = [];
-  const first = (tier, pick2, why) => {
-    for (const f of files) {
-      const m = pick2(f);
-      if (m) return void reasons.push({ tier, reason: why(f, m) });
-    }
-  };
-  first("high", (f) => matchAny(f.path, s.highRisk), (f, m) => `${f.path} is a high-risk path (${m})`);
-  first("medium", (f) => matchAny(f.path, s.alwaysHuman), (f, m) => `${f.path} always needs a person (${m})`);
-  first("medium", (f) => matchAny(f.path, DEPENDENCY_MANIFESTS), (f) => `${f.path} changes dependencies`);
-  first("medium", (f) => matchAny(f.path, s.sensitive), (f, m) => `${f.path} is protected or append-only (${m})`);
-  const code2 = files.filter((f) => isCodePath(f.path) && !matchAny(f.path, s.tests));
-  first("medium", (f) => code2.includes(f) && f.status === "D" ? "deleted" : void 0, (f) => `${f.path} is deleted`);
-  const weight = Math.round(code2.reduce((n, f) => n + (f.status === "A" ? f.added / 2 : f.added + f.deleted), 0));
-  if (weight >= s.highMinLines) reasons.push({ tier: "high", reason: `${weight} weighted lines of code changed (risk.size.high_min_lines: ${s.highMinLines})` });
-  else if (weight > s.lowMaxLines) reasons.push({ tier: "medium", reason: `${weight} weighted lines of code changed (risk.size.low_max_lines: ${s.lowMaxLines})` });
-  reasons.sort((a, b) => tierRank(b.tier) - tierRank(a.tier));
-  return { tier: maxTier(...reasons.map((r) => r.tier)), reasons, weight, files: files.length };
-}
-function diffFiles(root, base, head = "HEAD") {
-  if (git(root, ["rev-parse", "--verify", "--quiet", `${base}^{commit}`]) === void 0) return [];
-  const range = `${base}...${head}`;
-  const counts = /* @__PURE__ */ new Map();
-  for (const l of lines(git(root, ["diff", "--numstat", "-M", range]))) {
-    const [a, d, ...p] = l.split("	");
-    const path = p.join("	").replace(/^.*=> /, "").replace(/[{}]/g, "");
-    counts.set(path, [Number(a) || 0, Number(d) || 0]);
-  }
-  return lines(git(root, ["diff", "--name-status", "-M", range])).map((l) => {
-    const [st, ...paths] = l.split("	");
-    const path = paths.at(-1);
-    const [added, deleted] = counts.get(path) ?? [0, 0];
-    return { path, status: st[0] === "R" ? "R" : st[0] === "A" ? "A" : st[0] === "D" ? "D" : "M", added, deleted };
-  });
-}
-function plannedFiles(change) {
-  const text = [change.artifacts.spec?.body, change.artifacts.plan?.body].filter(Boolean).join("\n");
-  const found = /* @__PURE__ */ new Set();
-  for (const m of text.matchAll(/`([^`\s]+)`/g)) {
-    const p = m[1].replace(/^\.\//, "");
-    if (/^[\w.*-]+(\/[\w.*@-]+)*\/$|^[\w.*-]+(\/[\w.*@-]+)+$|^[\w-]+\.[a-z]{1,5}$/i.test(p) && !/^https?:/.test(p)) found.add(p.replace(/\/$/, "/**"));
-  }
-  return [...found];
-}
-function changeRisk(root, loaded, change, opts2 = {}) {
-  const diff = opts2.base ? diffFiles(root, opts2.base, opts2.head) : [];
-  const planned = change ? plannedFiles(change).map((path) => ({ path, status: "M", added: 0, deleted: 0 })) : [];
-  const seen = new Set(diff.map((f) => f.path));
-  const a = classifyRisk(loaded, [...diff, ...planned.filter((f) => !seen.has(f.path))]);
-  const declared = parseTier(change?.risk);
-  const reasons = [...a.reasons];
-  if (declared && tierRank(declared) > tierRank(a.tier)) reasons.unshift({ tier: declared, reason: `the spec declares risk: ${declared}` });
-  if (opts2.escalated && tierRank(opts2.escalated) > tierRank(maxTier(a.tier, declared)))
-    reasons.unshift({ tier: opts2.escalated, reason: opts2.escalatedReason ?? `escalated to ${opts2.escalated}` });
-  return { ...a, reasons, declared, escalated: opts2.escalated, computed: a.tier, tier: maxTier(a.tier, declared, opts2.escalated) };
-}
-function riskMarker(tier, reason) {
-  return `<!-- sdlc:risk tier=${tier} reason="${reason.replace(/"|-->/g, "'")}" -->`;
-}
-function parseEscalation(out) {
-  const m = [...out.matchAll(/^\s*\**ESCALATE:?\**\s*:?\s*(none|low|medium|high)\b[\s:—–-]*(.*)$/gim)].at(-1);
-  if (!m || m[1].toLowerCase() === "none") return {};
-  return { tier: m[1].toLowerCase(), reason: m[2].trim() || void 0 };
-}
-var RISK_TIERS, ALWAYS_HUMAN_DEFAULTS, DEPENDENCY_MANIFESTS, RISK_SIZE_DEFAULTS, tierRank, maxTier;
-var init_risk = __esm({
-  "packages/core/src/risk.ts"() {
-    "use strict";
-    init_changes();
-    init_git();
-    init_glob();
-    RISK_TIERS = ["low", "medium", "high"];
-    ALWAYS_HUMAN_DEFAULTS = [".github/workflows/**", ".gitlab-ci.yml", "ci/*.gitlab-ci.yml", "bitbucket-pipelines.yml", ".sdlc/**", "REVIEW.md"];
-    DEPENDENCY_MANIFESTS = [
-      "**/package.json",
-      "**/package-lock.json",
-      "**/pnpm-lock.yaml",
-      "**/yarn.lock",
-      "**/pyproject.toml",
-      "**/uv.lock",
-      "**/poetry.lock",
-      "**/requirements*.txt",
-      "**/go.mod",
-      "**/go.sum",
-      "**/Gemfile",
-      "**/Gemfile.lock",
-      "**/*.csproj",
-      "**/Cargo.toml",
-      "**/Cargo.lock",
-      "**/pom.xml",
-      "**/build.gradle*"
-    ];
-    RISK_SIZE_DEFAULTS = { low_max_lines: 50, high_min_lines: 800 };
-    tierRank = (t2) => RISK_TIERS.indexOf(t2);
-    maxTier = (...ts) => ts.reduce((a, b) => b && tierRank(b) > tierRank(a) ? b : a, "low");
-  }
-});
-
 // packages/core/src/telemetry.ts
 import { randomUUID } from "node:crypto";
 import { existsSync as existsSync6, mkdirSync as mkdirSync4, readFileSync as readFileSync8, writeFileSync as writeFileSync5 } from "node:fs";
@@ -29865,6 +29968,24 @@ async function prThread(ctx, n) {
   }
   return all.map((c) => Object.fromEntries(Object.entries(c).filter(([, v]) => v !== null && v !== void 0))).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 }
+async function prApprovals(ctx, n) {
+  switch (vcsProvider(ctx)) {
+    case "github": {
+      const reviews = tool(ctx, "gh", ["api", `repos/{owner}/{repo}/pulls/${n}/reviews`, "--paginate", "--jq", ".[] | {login: .user.login, state, sha: .commit_id}"]).split("\n").filter(Boolean).map((l) => JSON.parse(l));
+      const latest = /* @__PURE__ */ new Map();
+      for (const r of reviews) if (r.state !== "COMMENTED" && r.state !== "PENDING") latest.set(r.login, r);
+      return [...latest].filter(([, r]) => r.state === "APPROVED").map(([login, r]) => ({ login, sha: r.sha }));
+    }
+    case "gitlab": {
+      const a = await gitlab(ctx, "GET", `/merge_requests/${n}/approvals`);
+      return (a?.approved_by ?? []).map((x) => ({ login: x.user?.username ?? "" })).filter((x) => x.login);
+    }
+    case "bitbucket": {
+      const pr = await bitbucket(ctx)("GET", `/pullrequests/${n}`);
+      return (pr?.participants ?? []).filter((p) => p.approved).map((p) => ({ login: p.user?.nickname ?? p.user?.display_name ?? "" }));
+    }
+  }
+}
 async function prUpsertComment(ctx, n, marker, body, isOurs2 = () => true) {
   const mine = (await prThread(ctx, n)).filter((c) => !c.path && c.body.includes(marker) && isOurs2(c)).at(-1);
   if (!mine) return prComment(ctx, n, body);
@@ -30084,7 +30205,7 @@ function guardrails(loaded, locale) {
   const c = loaded.config;
   const env = c.production_gate?.approval_env || "RELEASE_APPROVAL";
   const es2 = locale === "es";
-  const lines3 = [
+  const lines2 = [
     es2 ? "### Guardrails (ac\xE1 no hay hooks que frenen: los respet\xE1s vos)" : "### Guardrails (no hooks stop you here: you enforce them)",
     c.protected_paths?.length && (es2 ? `- Rutas protegidas, nunca se editan a mano: ${code(c.protected_paths)}. Si algo tiene que cambiar: un archivo generado se regenera desde su fuente (edit\xE1 el generador y correlo); una migraci\xF3n aplicada se corrige con una migraci\xF3n nueva.` : `- Protected paths, never edited by hand: ${code(c.protected_paths)}. If one has to change: a generated file is regenerated from its source (edit the generator and run it); an applied migration is corrected with a new migration.`),
     c.append_only_paths?.length && (es2 ? `- Solo agregar: en ${code(c.append_only_paths)} pod\xE9s crear archivos nuevos, pero nunca editar ni borrar los existentes (una migraci\xF3n aplicada se corrige con una nueva).` : `- Append-only: in ${code(c.append_only_paths)} you can create new files, but never edit or delete existing ones (an applied migration is corrected with a new one).`),
@@ -30093,7 +30214,7 @@ function guardrails(loaded, locale) {
     c.test_globs?.length && (es2 ? `- Test-lock: con \`sdlc lock status\` en ON, no edites ${code(c.test_globs)}.` : `- Test-lock: while \`sdlc lock status\` is ON, do not edit ${code(c.test_globs)}.`),
     es2 ? "- Los git hooks (pre-commit) revisan lo mismo al commitear: si bloquean, correg\xED el cambio, no uses `--no-verify`." : "- Git hooks (pre-commit) check the same on commit: if they block, fix the change; never use `--no-verify`."
   ];
-  return lines3.filter(Boolean).join("\n");
+  return lines2.filter(Boolean).join("\n");
 }
 function renderAgentsMd(root, loaded, locale) {
   const skills = sortSkills(loadSkills(locale));
@@ -30255,7 +30376,7 @@ exit 0
     LOOP = {
       es: (cmds) => `## C\xF3mo trabajamos (loop AI-native)
 - Cada cambio vive en \`changes/<slug>/\` (intent.md \u2192 spec.md \u2192 plan.md) en la rama \`change/<slug>\`. Cada etapa termina commiteando su artefacto; la siguiente lo lee.
-- Los gates son humanos: intent lo acepta el Product Owner, spec el PO + policy owners, plan el engineer/tech lead. El agente nunca aprueba (\`sdlc approve\` o el dashboard \`sdlc ui\`).
+- Los gates son humanos: intent lo acepta el Product Owner, spec el PO + policy owners, plan el engineer/tech lead. El agente nunca aprueba por una persona (\`sdlc approve\` o el dashboard \`sdlc ui\`). Con \`risk.profile: graded\`, \`sdlc approve <cambio> <spec|plan> --auto\` registra la aprobaci\xF3n solo cuando el nivel de riesgo no pide a nadie.
 - Nada se implementa sin un \`plan.md\` aprobado. Si la implementaci\xF3n se desv\xEDa, actualiz\xE1 \`plan.md\` en el mismo commit. Excepci\xF3n: la persona pide expl\xEDcitamente un cambio chico fuera del loop; hacelo y avis\xE1 que queda sin trazabilidad.
 - Cambios chicos y de bajo riesgo: carril r\xE1pido (\`sdlc quick "<qu\xE9>"\`, despu\xE9s /sdlc-quick), sin spec ni plan; los l\xEDmites (\`quick_lane\`, rutas de alto riesgo) se chequean en cada push. Si los supera: \`sdlc promote\`.
 - Durante un fix (\`sdlc lock on\`) no se editan tests: primero el test que falla, despu\xE9s el c\xF3digo.
@@ -30266,7 +30387,7 @@ exit 0
 ${cmds}`,
       en: (cmds) => `## How we work (AI-native loop)
 - Each change lives in \`changes/<slug>/\` (intent.md \u2192 spec.md \u2192 plan.md) on branch \`change/<slug>\`. Each stage ends by committing its artifact; the next one reads it.
-- Gates are human: the Product Owner accepts the intent, PO + policy owners approve the spec, the engineer/tech lead approves the plan. The agent never approves (\`sdlc approve\` or the \`sdlc ui\` dashboard).
+- Gates are human: the Product Owner accepts the intent, PO + policy owners approve the spec, the engineer/tech lead approves the plan. The agent never approves for a person (\`sdlc approve\` or the \`sdlc ui\` dashboard). With \`risk.profile: graded\`, \`sdlc approve <change> <spec|plan> --auto\` records the approval only when the risk tier needs nobody.
 - Nothing is implemented without an approved \`plan.md\`. If the implementation deviates, update \`plan.md\` in the same commit. Exception: the person explicitly asks for a small change outside the loop; do it and say it has no traceability.
 - Small, low-risk changes: quick lane (\`sdlc quick "<what>"\`, then /sdlc-quick), no spec or plan; the limits (\`quick_lane\`, high-risk paths) are checked on every push. Beyond them: \`sdlc promote\`.
 - During a fix (\`sdlc lock on\`) tests are not edited: failing test first, then the code.
@@ -35613,6 +35734,68 @@ function updateScorecard(file2, block2) {
 // packages/cli/src/ci/gates.ts
 init_src();
 import { execFileSync as execFileSync8 } from "node:child_process";
+
+// packages/cli/src/ci/risk.ts
+init_src();
+import { writeFileSync as writeFileSync11 } from "node:fs";
+import { join as join18 } from "node:path";
+var RISK_HEADER = "## Risk (ai-sdlc)";
+var RISK_SUMMARY = "<!-- sdlc:risk-summary -->";
+var log = (msg) => process.stderr.write(`[sdlc-ci] ${msg}
+`);
+function baseCommit(root, base) {
+  return git(root, ["rev-parse", "--verify", "--quiet", `origin/${base}^{commit}`]) ? `origin/${base}` : base;
+}
+function renderRisk(r, extra = []) {
+  const why = r.reasons.length ? r.reasons.map((x) => `- **${x.tier}**: ${x.reason}`) : ["- small change, no sensitive paths, no dependency changes"];
+  return [RISK_HEADER, "", `**Tier: ${r.tier}** (${r.files} files, ${r.weight} weighted lines of code)`, ...extra, "", ...why, "", RISK_SUMMARY].join("\n");
+}
+function escalationPrompt(base, branch, r) {
+  return `You are the second risk classifier for this PR/MR. A deterministic classifier set the tier to ${r.tier}${r.reasons.length ? ` because: ${r.reasons.map((x) => x.reason).join("; ")}` : ""}.
+Read the diff (git diff ${base}...HEAD) and changes/<slug>/spec.md and plan.md for the branch ${branch}.
+Question: does this particular change need another person even though its tier says it does not?
+Escalate for: authentication or authorization, money or billing, data loss or irreversible migrations, public contracts,
+concurrency, security boundaries, CI or release workflows, or an architecture pattern others will copy. Size alone is not a reason.
+Do not modify any file. Answer in at most five lines, and end with exactly one line:
+ESCALATE: none   or   ESCALATE: medium \u2014 <reason>   or   ESCALATE: high \u2014 <reason>`;
+}
+async function prRisk(c, change, n) {
+  const base = baseCommit(c.root, baseRef(c));
+  let esc3 = {};
+  if (n !== void 0 && !c.dryRun) {
+    try {
+      esc3 = escalationFrom((await prThread({ root: c.root, loaded: c.loaded, env: c.env }, n)).map((x) => x.body));
+    } catch (e) {
+      log(`could not read the PR comments: ${e.message}`);
+    }
+  }
+  return changeRisk(c.root, c.loaded, change, { base, escalated: esc3.tier, escalatedReason: esc3.reason && `second classifier: ${esc3.reason}` });
+}
+async function risk(c, escalate) {
+  const n = prNumber(c.env);
+  const baseName = baseRef(c);
+  git(c.root, ["fetch", "-q", "origin", baseName]);
+  const base = baseCommit(c.root, baseName);
+  const change = changeForBranch(c, headRef(c));
+  let r = changeRisk(c.root, c.loaded, change, { base });
+  let marker = "";
+  if ((escalate || c.loaded?.config.risk?.agent_escalation) && r.tier !== "high") {
+    const out = runAgent(c.agent, { mode: "read", cwd: c.root, allowedTools: READ_TOOLS, prompt: escalationPrompt(base, headRef(c), r) }, c.model);
+    const e = parseEscalation(out);
+    r = changeRisk(c.root, c.loaded, change, { base, escalated: e.tier, escalatedReason: e.reason && `second classifier: ${e.reason}` });
+    if (r.escalated && r.tier === r.escalated) marker = riskMarker(r.escalated, e.reason ?? "");
+  }
+  writeFileSync11(join18(c.root, "risk.json"), JSON.stringify(r, null, 2) + "\n");
+  const need = approvalsFor(c.loaded, r.tier);
+  const extra = isGraded(c.loaded) ? [`Human approvals for the code: ${need === 0 ? "none once the automated checks are green" : need} (risk.profile graded)`] : [];
+  const body = renderRisk(r, extra) + (marker ? `
+${marker}` : "");
+  if (n === void 0 || c.dryRun) console.log(body);
+  else log(await prUpsertComment({ root: c.root, loaded: c.loaded, env: c.env }, n, RISK_SUMMARY, body));
+  return 0;
+}
+
+// packages/cli/src/ci/gates.ts
 var GATE_COMMAND = /^\/(approve|reject) (intent|spec|plan)(?:[ \t]+(.*))?$/m;
 var GATES_CONTEXT = "sdlc/gates";
 var GATE_HEADER = "## Gate (ai-sdlc)";
@@ -35622,7 +35805,7 @@ function parseGateCommand(body) {
   if (!m) return void 0;
   return { decision: m[1] === "approve" ? "approved" : "rejected", artifact: m[2], comment: m[3]?.trim() || void 0 };
 }
-var log = (msg) => process.stderr.write(`[sdlc-ci] ${msg}
+var log2 = (msg) => process.stderr.write(`[sdlc-ci] ${msg}
 `);
 function changeForBranch(c, branch) {
   const slug = branch.replace(/^change\//, "");
@@ -35630,18 +35813,41 @@ function changeForBranch(c, branch) {
     (x) => x.branch === branch || x.slug === slug || x.dir === slug
   );
 }
-function gateState(change) {
+function gateState(change, opts2 = {}) {
   if (!change) return { state: "success", description: "no change folder on this branch: not gated" };
   if (change.stage === "rejected") return { state: "failure", description: `${change.slug}: rejected` };
-  if (isQuick(change)) return { state: "success", description: `${change.slug}: quick lane (limits checked on push)` };
-  if (isApproved(change.artifacts.plan?.status)) return { state: "success", description: `${change.slug}: intent, spec and plan approved` };
-  const pending = ARTIFACTS.find((a) => !isApproved(change.artifacts[a]?.status)) ?? "plan";
-  const missing = !change.artifacts[pending];
-  return { state: "pending", description: `${change.slug}: ${pending} ${missing ? "not written yet" : "waiting for approval"} (/approve ${pending})` };
+  if (!isGraded(opts2.loaded) || !opts2.tier) {
+    if (isQuick(change)) return { state: "success", description: `${change.slug}: quick lane (limits checked on push)` };
+    if (isApproved(change.artifacts.plan?.status)) return { state: "success", description: `${change.slug}: intent, spec and plan approved` };
+    const pending = ARTIFACTS.find((a) => !isApproved(change.artifacts[a]?.status)) ?? "plan";
+    const missing = !change.artifacts[pending];
+    return { state: "pending", description: `${change.slug}: ${pending} ${missing ? "not written yet" : "waiting for approval"} (/approve ${pending})` };
+  }
+  const tier = opts2.tier;
+  for (const a of isQuick(change) ? ["intent"] : ARTIFACTS) {
+    const g = artifactGate(change, a, opts2.loaded, tier);
+    if (g.ok) continue;
+    if (!change.artifacts[a]) return { state: "pending", description: `${change.slug}: ${a} not written yet` };
+    if (g.stale) return { state: "pending", description: `${change.slug}: ${tier} risk now needs ${g.need} approvals of the ${a}, it has ${g.have} (/approve ${a})` };
+    return { state: "pending", description: `${change.slug}: ${a} waiting for approval, ${g.have}/${g.need} at ${tier} risk (/approve ${a})` };
+  }
+  const code2 = opts2.code;
+  if (code2 && !code2.ok) {
+    const more = Math.max(code2.need - code2.have, 1);
+    const why = code2.stale.length ? `; new commits invalidated ${code2.stale.map((x) => `@${x}`).join(", ")}` : "";
+    return { state: "pending", description: `${change.slug}: code needs ${more} more approval${more > 1 ? "s" : ""} at ${tier} risk (${code2.have}/${code2.need}${why})` };
+  }
+  const who = code2 ? `; code ${code2.have}/${code2.need}${code2.directorCounts ? `, ${code2.director} counts as reviewer` : ""}` : "";
+  return { state: "success", description: `${change.slug}: gates hold at ${tier} risk${who}` };
+}
+function directorOf(c, change) {
+  const login = c.env.PR_AUTHOR;
+  if (login && !isAgent({ login })) return { login };
+  return change.author ? { name: change.author } : void 0;
 }
 async function reply(c, n, body) {
   if (c.dryRun) return void console.log(body);
-  log(await prComment({ root: c.root, loaded: c.loaded, env: c.env }, n, `${GATE_HEADER}
+  log2(await prComment({ root: c.root, loaded: c.loaded, env: c.env }, n, `${GATE_HEADER}
 
 ${body}`));
 }
@@ -35652,15 +35858,24 @@ function waitingArtifact(change) {
 }
 function touched2(c, path) {
   if (c.env.PR_ACTION === "opened" || c.env.PR_ACTION === "reopened") return true;
+  if (c.env.PR_ACTION === "submitted" || c.env.PR_ACTION === "dismissed") return false;
   const before = c.env.BEFORE_SHA && !/^0+$/.test(c.env.BEFORE_SHA) ? c.env.BEFORE_SHA : "HEAD~1";
   return (git(c.root, ["diff", "--name-only", before, "HEAD"]) ?? "").split("\n").includes(path);
 }
 async function gateStatus(c, announce = false) {
   const branch = headRef(c);
   const change = changeForBranch(c, branch);
-  const g = gateState(change);
   const sha2 = c.env.HEAD_SHA || git(c.root, ["rev-parse", "HEAD"]);
   if (!sha2) throw new SdlcError("no HEAD_SHA and no git HEAD");
+  const n = prNumber(c.env);
+  let opts2 = {};
+  if (change && isGraded(c.loaded)) {
+    const tier = (await prRisk(c, change, n)).tier;
+    let approvals = [];
+    if (n !== void 0 && !c.dryRun) approvals = await prApprovals({ root: c.root, loaded: c.loaded, env: c.env }, n);
+    opts2 = { loaded: c.loaded, tier, code: codeGate(c.root, c.loaded, { tier, head: sha2, approvals, director: directorOf(c, change) }) };
+  }
+  const g = gateState(change, opts2);
   const waiting = waitingArtifact(change);
   const pending = waiting && (announce || touched2(c, change.artifacts[waiting].path));
   if (c.dryRun) {
@@ -35668,8 +35883,8 @@ async function gateStatus(c, announce = false) {
     if (pending) console.log(`notify gate.pending: ${change.slug}/${waiting}`);
     return 0;
   }
-  log(await commitStatus({ root: c.root, loaded: c.loaded, env: c.env }, sha2, { context: GATES_CONTEXT, ...g }));
-  if (pending) log(await notify({ event: "gate.pending", change, artifact: waiting }, c.loaded, c.env));
+  log2(await commitStatus({ root: c.root, loaded: c.loaded, env: c.env }, sha2, { context: GATES_CONTEXT, ...g }));
+  if (pending) log2(await notify({ event: "gate.pending", change, artifact: waiting }, c.loaded, c.env));
   return 0;
 }
 async function gate(c) {
@@ -35678,7 +35893,7 @@ async function gate(c) {
   const login = c.env.COMMENT_AUTHOR ?? c.env.SDLC_MENTION_AUTHOR ?? "";
   const cmd = parseGateCommand(body);
   if (n === void 0 || !cmd) {
-    log("no /approve or /reject command in the comment");
+    log2("no /approve or /reject command in the comment");
     return 0;
   }
   const association = c.env.AUTHOR_ASSOCIATION;
@@ -35705,65 +35920,21 @@ async function gate(c) {
   Object.assign(process.env, authorEnv);
   let result;
   try {
-    result = decideGate(c.root, c.loaded, change.id, cmd.artifact, cmd.decision, { approver, comment: cmd.comment });
+    const tier = isGraded(c.loaded) ? (await prRisk(c, change, n)).tier : void 0;
+    result = decideGate(c.root, c.loaded, change.id, cmd.artifact, cmd.decision, { approver, comment: cmd.comment, tier });
   } catch (e) {
     await reply(c, n, `Not recorded: ${e.message}.`);
     return 0;
   }
   if (!c.dryRun) execFileSync8("git", ["push", "origin", `HEAD:${branch}`], { cwd: c.root, stdio: ["ignore", "inherit", "inherit"] });
   const verb = cmd.decision === "approved" ? "approved" : "rejected";
-  await reply(c, n, `**${cmd.artifact}** of \`${change.slug}\` ${verb} by @${login} (${result.commit}).${cmd.comment ? `
+  const partial2 = result.approvals && result.approvals.have < result.approvals.need ? ` (${result.approvals.have} of ${result.approvals.need} approvals; still waiting)` : "";
+  await reply(c, n, `**${cmd.artifact}** of \`${change.slug}\` ${verb} by @${login} (${result.commit})${partial2}.${cmd.comment ? `
 
 > ${cmd.comment}` : ""}`);
   const decided = changeForBranch(c, branch) ?? change;
-  if (!c.dryRun) log(await notify({ event: "gate.decided", change: decided, artifact: cmd.artifact, decision: cmd.decision, by: `@${login}`, note: cmd.comment }, c.loaded, c.env));
+  if (!c.dryRun) log2(await notify({ event: "gate.decided", change: decided, artifact: cmd.artifact, decision: cmd.decision, by: `@${login}`, note: cmd.comment }, c.loaded, c.env));
   return gateStatus({ ...c, env: { ...c.env, HEAD_SHA: "" } }, cmd.decision === "approved");
-}
-
-// packages/cli/src/ci/risk.ts
-init_src();
-import { writeFileSync as writeFileSync11 } from "node:fs";
-import { join as join18 } from "node:path";
-var RISK_HEADER = "## Risk (ai-sdlc)";
-var RISK_SUMMARY = "<!-- sdlc:risk-summary -->";
-var log2 = (msg) => process.stderr.write(`[sdlc-ci] ${msg}
-`);
-function baseCommit(root, base) {
-  return git(root, ["rev-parse", "--verify", "--quiet", `origin/${base}^{commit}`]) ? `origin/${base}` : base;
-}
-function renderRisk(r, extra = []) {
-  const why = r.reasons.length ? r.reasons.map((x) => `- **${x.tier}**: ${x.reason}`) : ["- small change, no sensitive paths, no dependency changes"];
-  return [RISK_HEADER, "", `**Tier: ${r.tier}** (${r.files} files, ${r.weight} weighted lines of code)`, ...extra, "", ...why, "", RISK_SUMMARY].join("\n");
-}
-function escalationPrompt(base, branch, r) {
-  return `You are the second risk classifier for this PR/MR. A deterministic classifier set the tier to ${r.tier}${r.reasons.length ? ` because: ${r.reasons.map((x) => x.reason).join("; ")}` : ""}.
-Read the diff (git diff ${base}...HEAD) and changes/<slug>/spec.md and plan.md for the branch ${branch}.
-Question: does this particular change need another person even though its tier says it does not?
-Escalate for: authentication or authorization, money or billing, data loss or irreversible migrations, public contracts,
-concurrency, security boundaries, CI or release workflows, or an architecture pattern others will copy. Size alone is not a reason.
-Do not modify any file. Answer in at most five lines, and end with exactly one line:
-ESCALATE: none   or   ESCALATE: medium \u2014 <reason>   or   ESCALATE: high \u2014 <reason>`;
-}
-async function risk(c, escalate, extra = () => []) {
-  const n = prNumber(c.env);
-  const baseName = baseRef(c);
-  git(c.root, ["fetch", "-q", "origin", baseName]);
-  const base = baseCommit(c.root, baseName);
-  const change = changeForBranch(c, headRef(c));
-  let r = changeRisk(c.root, c.loaded, change, { base });
-  let marker = "";
-  if ((escalate || c.loaded?.config.risk?.agent_escalation) && r.tier !== "high") {
-    const out = runAgent(c.agent, { mode: "read", cwd: c.root, allowedTools: READ_TOOLS, prompt: escalationPrompt(base, headRef(c), r) }, c.model);
-    const e = parseEscalation(out);
-    r = changeRisk(c.root, c.loaded, change, { base, escalated: e.tier, escalatedReason: e.reason && `second classifier: ${e.reason}` });
-    if (r.escalated && r.tier === r.escalated) marker = riskMarker(r.escalated, e.reason ?? "");
-  }
-  writeFileSync11(join18(c.root, "risk.json"), JSON.stringify(r, null, 2) + "\n");
-  const body = renderRisk(r, extra(r, c.loaded)) + (marker ? `
-${marker}` : "");
-  if (n === void 0 || c.dryRun) console.log(body);
-  else log2(await prUpsertComment({ root: c.root, loaded: c.loaded, env: c.env }, n, RISK_SUMMARY, body));
-  return 0;
 }
 
 // packages/cli/src/notify.ts
@@ -36162,7 +36333,8 @@ Loop
   quick --check [--json]             is the active quick change still within quick_lane limits?
   promote [<change>]                 quick lane \u2192 full loop (intent back to draft for the PO)
   risk [<change>] [--base B] [--json]   risk tier set by the change: diff against the base, paths the spec/plan name, declared risk
-  approve <change> <intent|spec|plan> [-m comment]
+  approve <change> <intent|spec|plan> [-m comment] [--auto]
+                                     --auto: record the approval when the risk tier needs no person (risk.profile graded)
   reject  <change> <intent|spec|plan> [-m comment]
   lock on|off|status                 test-lock during a fix
   ui [--port N] [--no-open]          local dashboard
@@ -36443,12 +36615,15 @@ async function main() {
     case "approve":
     case "reject": {
       const [change, artifact] = pos;
-      if (!change || !ARTIFACTS.includes(artifact)) fail3(`usage: sdlc ${cmd} <change> <${ARTIFACTS.join("|")}> [-m comment]`);
+      if (!change || !ARTIFACTS.includes(artifact)) fail3(`usage: sdlc ${cmd} <change> <${ARTIFACTS.join("|")}> [-m comment]${cmd === "approve" ? " [--auto]" : ""}`);
       try {
+        if (flags.auto && cmd !== "approve") fail3("--auto only applies to sdlc approve");
         const r = decideGate(root, loadConfig(root), change, artifact, cmd === "approve" ? "approved" : "rejected", {
-          comment: typeof flags.m === "string" ? flags.m : void 0
+          comment: typeof flags.m === "string" ? flags.m : void 0,
+          auto: !!flags.auto
         });
-        console.log(`${r.change}/${r.artifact}.md ${r.decision} by ${r.by} (${r.commit})`);
+        const partial2 = r.approvals && r.approvals.have < r.approvals.need ? `; ${r.approvals.have} of ${r.approvals.need} approvals, still waiting for another person` : "";
+        console.log(`${r.change}/${r.artifact}.md ${r.decision} by ${r.by} (${r.commit})${partial2}`);
       } catch (e) {
         fail3(e.message);
       }

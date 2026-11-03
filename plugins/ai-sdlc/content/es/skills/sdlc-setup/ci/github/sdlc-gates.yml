@@ -4,9 +4,14 @@ name: sdlc gates
 # los roles en .sdlc/config.json aceptan usuarios de GitHub como "@login".
 # El commit status sdlc/gates se pone verde cuando el plan está aprobado (o el cambio va por el carril rápido):
 # hacelo check requerido en la branch protection para que el código no se mergee antes de sus gates.
+# Con risk.profile graded, sdlc/gates además cuenta las aprobaciones de la PR contra el nivel de riesgo (low 0,
+# medium 1, high 2): cada aprobación queda atada al commit en que se dio, y la persona que dirige al agente cuenta como una.
+# En ese caso poné en 0 las "required approvals" de la branch protection y dejá que decida sdlc/gates.
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+  pull_request_review:
+    types: [submitted, dismissed]
   issue_comment:
     types: [created]
 
@@ -15,7 +20,7 @@ concurrency:
 
 jobs:
   status:
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' || github.event_name == 'pull_request_review'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -33,18 +38,21 @@ jobs:
         # Con risk.agent_escalation: true, corré antes `npx -y @morsadev/sdlc@0 ci bootstrap` y pasá la clave del agente.
         env:
           GH_TOKEN: ${{ github.token }}
-          HEAD_REF: ${{ github.head_ref }}
-          BASE_REF: ${{ github.base_ref }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+        if: github.event_name == 'pull_request'
         run: npx -y @morsadev/sdlc@0 ci risk
       - name: sdlc/gates status
         env:
           GH_TOKEN: ${{ github.token }}
-          HEAD_REF: ${{ github.head_ref }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           BEFORE_SHA: ${{ github.event.before }}
           PR_ACTION: ${{ github.event.action }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
           SDLC_NOTIFY_WEBHOOK: ${{ secrets.SDLC_NOTIFY_WEBHOOK }}
         run: npx -y @morsadev/sdlc@0 ci gate-status
 

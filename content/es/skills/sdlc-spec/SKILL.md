@@ -42,6 +42,8 @@ Indicá al PO qué revisar, en este orden:
 2. ¿La spec resuelve el problema del intent? ¿Las preguntas abiertas están respondidas o arrastradas?
 Aprobación: `status: approved` + `approved_by`. Si es `risk: high`, también un tech lead.
 
+Cuántas personas depende de `risk.profile` en `.sdlc/config.json`. Con `strict` (por defecto), siempre una. Con `graded`, decide el nivel (`sdlc risk <slug>`): low no necesita a nadie, así que corré `sdlc approve <slug> spec --auto` (se niega cuando el nivel o el autor piden una persona); medium necesita una persona y high dos. Decile al PO cuántas aprobaciones hacen falta y por qué (los motivos que imprime `sdlc risk`).
+
 ## Modo headless (CI)
 Si corrés con `claude -p` (sin usuario): no hagas preguntas; escribí la spec, dejá todo lo dudoso como concern, commiteá y terminá. El pipeline abre/actualiza el PR.
 
