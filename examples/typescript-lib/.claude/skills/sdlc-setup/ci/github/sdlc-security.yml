@@ -1,0 +1,38 @@
+name: sdlc security
+# Read-only security review of every PR (`sdlc ci security`): finders for injection and unsafe input, access control,
+# and data exposure and secrets, plus a verifier that votes. Depth follows the risk tier. Open security findings
+# (other than pre-existing ones) keep the sdlc/review commit status red until they are fixed or a maintainer replies
+# "resolved: <reason>" (the resolve job in sdlc-review.yml recomputes it).
+# Not on Claude? Add --agent codex|cursor and pass OPENAI_API_KEY / CURSOR_API_KEY instead.
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+
+jobs:
+  security:
+    if: ${{ !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    concurrency:
+      group: sdlc-security-${{ github.event.pull_request.number }}
+    permissions:
+      contents: read
+      pull-requests: write
+      statuses: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npx -y @morsadev/sdlc@0 ci bootstrap
+      - name: Security review
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: npx -y @morsadev/sdlc@0 ci security

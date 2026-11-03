@@ -4,8 +4,13 @@ printf 'claude %s\n' "$*" >> "$STUB_LOG"
 prompt="$2"
 case "$prompt" in
   *"review finder"*)
-    # $STUB_FINDINGS (a file) replaces the answer of the Bugs pass (or the single Quick pass); other passes find nothing
+    # $STUB_FINDINGS / $STUB_SECURITY (files) replace the answer of the Bugs / Injection pass (or the single Quick pass);
+    # other passes find nothing
     case "$prompt" in
+      *"pass: Injection"*|*"pass: every security"*)
+        if [ -n "$STUB_SECURITY" ]; then cat "$STUB_SECURITY"
+        else printf '[{"severity":"nit","file":"src/a.py","line":4,"title":"index from the request is not bounded","evidence":"xs[i] with i from input","bug_class":"path traversal"}]\n'
+        fi ;;
       *"pass: Bugs"*|*"pass: every pass"*)
         if [ -n "$STUB_FINDINGS" ]; then cat "$STUB_FINDINGS"
         else printf '[{"severity":"important","file":"src/a.py","line":3,"title":"off by one","evidence":"range(len(xs) + 1) reads past the end","bug_class":"off-by-one"},{"severity":"nit","file":"src/a.py","line":5,"title":"rename x to count","evidence":"","bug_class":"naming"}]\n'

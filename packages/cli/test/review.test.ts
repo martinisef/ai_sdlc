@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { changedLines, ours, parseFindings, parseJsonArray, sameFinding, stateFrom, encodeState, tally } from '../src/ci/review.ts';
+import { blocking, changedLines, encodeState, ours, parseFindings, parseJsonArray, resolutions, reviewVerdict, sameFinding, stateFrom, tally, type StoredFinding } from '../src/ci/review.ts';
 
 test('parseJsonArray: fenced block, bare array, or nothing', () => {
   assert.deepEqual(parseJsonArray('Here:\n```json\n[{"a":1}]\n```\nbye'), [{ a: 1 }]);
@@ -51,4 +51,32 @@ test('stateFrom: the last state from a bot or maintainer', () => {
   const c = (author: string, association: string | undefined, round: number) => ({ id: String(round), author, association, body: st(round), createdAt: `2026-11-0${round}` });
   assert.equal(stateFrom([c('github-actions[bot]', 'NONE', 1), c('ana', 'MEMBER', 2), c('mallory', 'CONTRIBUTOR', 3)])?.round, 2);
   assert.ok(ours({ id: '1', author: 'gitlab-user', body: '', createdAt: '' }), 'GitLab and Bitbucket have no association');
+});
+
+const finding = (id: string, severity: StoredFinding['severity'], status: StoredFinding['status'] = 'open'): StoredFinding => ({ id, severity, file: 'src/a.ts', line: 1, title: id, evidence: '', bug_class: 'x', pass: 'bugs', status, round: 1 });
+
+test('resolutions: a reason is required; inline replies point at the finding; agents, bots and contributors cannot resolve', () => {
+  const c = (id: string, author: string, body: string, extra: object = {}) => ({ id, author, body, createdAt: id, association: 'MEMBER', ...extra });
+  const thread = [
+    c('1', 'github-actions[bot]', '<!-- sdlc:finding id=f1 -->', { association: 'NONE', path: 'src/a.ts', line: 1 }),
+    c('2', 'ana', 'Resolved: intended, documented in the spec', { replyTo: '1' }),
+    c('3', 'ana', 'resolved f2, s1: false positive'),
+    c('4', 'ana', 'resolved:'),
+    c('5', 'mallory', 'resolved f3: nope', { association: 'CONTRIBUTOR' }),
+    c('6', 'claude[bot]', 'resolved f4: done'),
+  ];
+  const r = resolutions(thread, undefined);
+  assert.deepEqual([...r.keys()].sort(), ['f1', 'f2', 's1']);
+  assert.deepEqual(r.get('f1'), { id: 'f1', by: 'ana', reason: 'intended, documented in the spec' });
+  const gl = [{ id: '9', author: 'bob', body: 'resolved f5: fine', createdAt: '9' }];
+  assert.equal(resolutions(gl, { config: { version: 1, roles: { 'tech-lead': ['@ana'] } } } as never).size, 0, 'without an association: trusted authors only');
+});
+
+test('blocking and reviewVerdict: Important blocks, security blocks unless pre-existing; stale reviews are pending', () => {
+  assert.deepEqual(blocking('review', [finding('f1', 'important'), finding('f2', 'nit'), finding('f3', 'important', 'fixed')]).map((f) => f.id), ['f1']);
+  assert.deepEqual(blocking('security', [finding('s1', 'nit'), finding('s2', 'pre_existing')]).map((f) => f.id), ['s1']);
+  const review = { round: 1, sha: 'aaa', findings: [finding('f1', 'important')] };
+  assert.equal(reviewVerdict({ review }, new Map(), 'aaa').state, 'failure');
+  assert.equal(reviewVerdict({ review }, new Map([['f1', { id: 'f1', by: 'ana', reason: 'ok' }]]), 'aaa').state, 'success');
+  assert.deepEqual(reviewVerdict({ review: { ...review, findings: [] } }, new Map(), 'bbb'), { state: 'pending', description: 'waiting for the review of bbb' });
 });

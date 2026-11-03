@@ -29,9 +29,20 @@ definitions:
         script:
           - export SDLC_PLUGIN_TOKEN_USER=x-token-auth
           - npx -y @morsadev/sdlc@0 ci bootstrap
-          - npx -y @morsadev/sdlc@0 ci review
+          - HEAD_SHA="$BITBUCKET_COMMIT" npx -y @morsadev/sdlc@0 ci review
         artifacts:
           - review-tally.txt
+          - review.json
+    - step: &security
+        name: Security review
+        image: node:22
+        script:
+          - export SDLC_PLUGIN_TOKEN_USER=x-token-auth
+          - npx -y @morsadev/sdlc@0 ci bootstrap
+          - HEAD_SHA="$BITBUCKET_COMMIT" npx -y @morsadev/sdlc@0 ci security
+        artifacts:
+          - security-tally.txt
+          - security.json
 
 pipelines:
   pull-requests:
@@ -39,6 +50,7 @@ pipelines:
       - parallel:
           - step: *build
           - step: *review
+          - step: *security
           - step:
               name: sdlc/gates
               image: node:22
@@ -123,3 +135,12 @@ pipelines:
             - git config user.name "ai-sdlc-bot" && git config user.email "ai-sdlc-bot@noreply"
             - git checkout -B "$HEAD_REF"
             - npx -y @morsadev/sdlc@0 ci gate
+    sdlc-review-status:
+      # Respuestas "resolved: <razón>" en comentarios del PR: lo corre `sdlc webhook` (SDLC_JOB=review-status). Recalcula sdlc/review.
+      - variables:
+          - name: PR_NUMBER
+      - step:
+          name: Recalcular sdlc/review
+          image: node:22
+          script:
+            - HEAD_SHA="$BITBUCKET_COMMIT" npx -y @morsadev/sdlc@0 ci review-status

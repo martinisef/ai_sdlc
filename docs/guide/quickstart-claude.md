@@ -20,7 +20,7 @@ npx sdlc init --preset team-github     # or solo, or regulated
 | Preset | Gates | CI (GitHub) |
 |---|---|---|
 | `solo` | any person, including the author (never an agent) | `ci.yml` |
-| `team-github` | intent and spec by the PO, plan by the tech lead | `ci.yml`, `sdlc-review.yml`, `sdlc-loop.yml`, `sdlc-gates.yml` |
+| `team-github` | intent and spec by the PO, plan by the tech lead | `ci.yml`, `sdlc-review.yml`, `sdlc-security.yml`, `sdlc-loop.yml`, `sdlc-gates.yml` |
 | `regulated` | as team, plus the tech lead on the spec and default high-risk paths | team plus `sdlc-evals.yml` and `sdlc-bands.yml` |
 
 People are GitHub users (`@ana`) or git emails. `--first-change "Add a health endpoint"` also creates the first intent on its branch.

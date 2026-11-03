@@ -34503,6 +34503,7 @@ __export(src_exports2, {
   createWebhookApp: () => createWebhookApp,
   gitlabMention: () => gitlabMention,
   isGateCommand: () => isGateCommand,
+  isResolution: () => isResolution,
   mentions: () => mentions,
   pipelineVariables: () => pipelineVariables,
   startWebhook: () => startWebhook,
@@ -34535,6 +34536,7 @@ function pipelineVariables(m) {
       ...m.prAuthor ? { PR_AUTHOR: m.prAuthor } : {}
     };
   }
+  if (m.job === "review-status") return base;
   return { ...base, SDLC_MENTION_AUTHOR: m.author, SDLC_MENTION_BODY: m.body.slice(0, 4e3) };
 }
 async function post2(url2, init) {
@@ -34563,7 +34565,8 @@ function gitlabMention(p, mention3) {
   const note = p?.object_attributes;
   const mr = p?.merge_request;
   if (p?.object_kind !== "note" || note?.noteable_type !== "MergeRequest" || !mr) return "not a merge request comment";
-  const job = isGateCommand(note.note ?? "") ? "gate" : mentions(note.note ?? "", mention3) ? "mention" : void 0;
+  const text = note.note ?? "";
+  const job = isGateCommand(text) ? "gate" : isResolution(text) ? "review-status" : mentions(text, mention3) ? "mention" : void 0;
   if (!job) return "no mention";
   return {
     provider: "gitlab",
@@ -34581,7 +34584,7 @@ function bitbucketMention(p, mention3) {
   const pr = p?.pullrequest;
   const body = p?.comment?.content?.raw ?? "";
   if (!pr || !p?.comment) return "not a pull request comment";
-  const job = isGateCommand(body) ? "gate" : mentions(body, mention3) ? "mention" : void 0;
+  const job = isGateCommand(body) ? "gate" : isResolution(body) ? "review-status" : mentions(body, mention3) ? "mention" : void 0;
   if (!job) return "no mention";
   return {
     provider: "bitbucket",
@@ -34641,13 +34644,14 @@ async function startWebhook(opts2 = {}) {
     console.log(`sdlc webhook: listening on :${info.port} (POST /gitlab, POST /bitbucket, GET /health)`);
   });
 }
-var GATE_COMMAND2, isGateCommand, REPLY_MARKER, BOT;
+var GATE_COMMAND2, isGateCommand, isResolution, REPLY_MARKER, BOT;
 var init_src4 = __esm({
   "packages/webhook/src/index.ts"() {
     "use strict";
     init_dist2();
     GATE_COMMAND2 = /^\/(approve|reject) (intent|spec|plan)(?:[ \t]+.*)?$/m;
     isGateCommand = (body) => GATE_COMMAND2.test(body.replace(/\r/g, "")) && !body.includes(REPLY_MARKER);
+    isResolution = (body) => /^resolved(?:[\s,]+[fs]\d+)*\s*:\s*\S/i.test(body.trim()) && !body.includes(REPLY_MARKER);
     REPLY_MARKER = "(ai-sdlc)";
     BOT = /(\[bot\]|\bbot\b|ai-sdlc)/i;
   }
@@ -34925,7 +34929,7 @@ var PRESET_SPECS = {
   "team-github": {
     description: "team with a PO and a tech lead: gates by role, review + loop + gates workflows, GitHub Issues as tracker",
     roles: true,
-    github: ["ci.yml", "sdlc-review.yml", "sdlc-loop.yml", "sdlc-gates.yml"],
+    github: ["ci.yml", "sdlc-review.yml", "sdlc-security.yml", "sdlc-loop.yml", "sdlc-gates.yml"],
     apply: (c) => ({
       ...c,
       gates: { intent: ["po"], spec: ["po"], plan: ["tech-lead"] },
@@ -34935,7 +34939,7 @@ var PRESET_SPECS = {
   regulated: {
     description: "team preset plus high-risk paths, tech lead on every plan, nightly evals and control bands",
     roles: true,
-    github: ["ci.yml", "sdlc-review.yml", "sdlc-loop.yml", "sdlc-gates.yml", "sdlc-evals.yml", "sdlc-bands.yml"],
+    github: ["ci.yml", "sdlc-review.yml", "sdlc-security.yml", "sdlc-loop.yml", "sdlc-gates.yml", "sdlc-evals.yml", "sdlc-bands.yml"],
     apply: (c) => ({
       ...c,
       gates: { intent: ["po"], spec: ["po", "tech-lead"], plan: ["tech-lead"] },
@@ -35130,6 +35134,7 @@ var TARGETS = {
   github: {
     "ci.yml": ".github/workflows/ci.yml",
     "sdlc-review.yml": ".github/workflows/sdlc-review.yml",
+    "sdlc-security.yml": ".github/workflows/sdlc-security.yml",
     "sdlc-loop.yml": ".github/workflows/sdlc-loop.yml",
     "sdlc-gates.yml": ".github/workflows/sdlc-gates.yml",
     "sdlc-evals.yml": ".github/workflows/sdlc-evals.yml",
@@ -36053,14 +36058,35 @@ async function notifyCommand(root, loaded, pos, flags) {
 // packages/cli/src/ci/review.ts
 var REVIEW_HEADER = "## Automated review (ai-sdlc)";
 var REVIEW_MARKER = "<!-- sdlc:review-summary -->";
-var STATE2 = /<!-- sdlc:review-state ([A-Za-z0-9+/=]+) -->/;
+var SECURITY_HEADER = "## Security review (ai-sdlc)";
+var SECURITY_MARKER = "<!-- sdlc:security-summary -->";
+var REVIEW_STATUS = "sdlc/review";
 var SEVERITIES = ["important", "nit", "pre_existing"];
 var LABEL = { important: "Important", nit: "Nit", pre_existing: "Pre-existing" };
-var DEPTHS = {
-  quick: { label: "Quick", passes: ["all"], votes: 1 },
-  standard: { label: "Standard", passes: ["bugs", "security", "compliance"], votes: 1 },
-  deep: { label: "Deep", passes: ["bugs", "security", "compliance", "tests", "regressions"], votes: 3 }
+var DEPTH_LABEL = { quick: "Quick", standard: "Standard", deep: "Deep" };
+var KINDS = {
+  review: {
+    header: REVIEW_HEADER,
+    marker: REVIEW_MARKER,
+    state: /<!-- sdlc:review-state ([A-Za-z0-9+/=]+) -->/,
+    stateTag: "review-state",
+    idPrefix: "f",
+    role: "a review finder",
+    passes: { quick: ["all"], standard: ["bugs", "security", "compliance"], deep: ["bugs", "security", "compliance", "tests", "regressions"] },
+    votes: { quick: 1, standard: 1, deep: 3 }
+  },
+  security: {
+    header: SECURITY_HEADER,
+    marker: SECURITY_MARKER,
+    state: /<!-- sdlc:security-state ([A-Za-z0-9+/=]+) -->/,
+    stateTag: "security-state",
+    idPrefix: "s",
+    role: "a security review finder",
+    passes: { quick: ["security_all"], standard: ["injection", "access", "data"], deep: ["injection", "access", "data"] },
+    votes: { quick: 1, standard: 1, deep: 3 }
+  }
 };
+var DEPTHS = Object.fromEntries(["quick", "standard", "deep"].map((d) => [d, { label: DEPTH_LABEL[d], passes: KINDS.review.passes[d], votes: KINDS.review.votes[d] }]));
 var TIER_DEPTH = { low: "quick", medium: "standard", high: "deep" };
 var PASS_FOCUS = {
   all: "every pass in REVIEW.md (Bugs, Security, Compliance)",
@@ -36068,7 +36094,11 @@ var PASS_FOCUS = {
   security: "Security: injection, authentication or authorization gaps, PII in logs or errors, secrets",
   compliance: "Compliance: the diff against changes/<slug>/spec.md and plan.md and the principles in CLAUDE.md; a deviation from the plan that plan.md does not record is a finding",
   tests: "Tests: behavior the spec requires that no test covers, tests that cannot fail, a reproduction test changed after its commit",
-  regressions: "Regressions: callers and modules outside the diff that this change breaks (read them)"
+  regressions: "Regressions: callers and modules outside the diff that this change breaks (read them)",
+  security_all: "every security check: injection and unsafe input, access control, data exposure and secrets",
+  injection: "Injection and unsafe input: SQL, command or template injection, path traversal, SSRF, unsafe deserialization, XSS",
+  access: "Access control: missing authentication or authorization checks, privilege escalation, objects reachable by id without an ownership check, session and token handling",
+  data: "Data exposure and secrets: secrets in code or config, PII in logs or errors, weak cryptography, risky dependencies, CI workflows with more permissions than they need"
 };
 var MAX_NITS = 5;
 var DEFAULT_MAX_ROUNDS = 3;
@@ -36090,7 +36120,8 @@ function parseFindings(out, pass) {
     const severity = String(f.severity ?? "").toLowerCase().replace(/[- ]/g, "_");
     const line = Number(f.line);
     if (!SEVERITIES.includes(severity) || typeof f.file !== "string" || !f.file || !Number.isInteger(line) || line < 1 || typeof f.title !== "string") return [];
-    return [{ severity, file: f.file.replace(/^\.?\//, ""), line, title: f.title.trim(), evidence: String(f.evidence ?? "").trim(), bug_class: String(f.bug_class ?? "unclassified").trim().toLowerCase(), pass: pass === "all" ? String(f.pass ?? "bugs").toLowerCase() : pass }];
+    const p = pass === "all" ? String(f.pass ?? "bugs").toLowerCase() : pass === "security_all" ? "security" : pass;
+    return [{ severity, file: f.file.replace(/^\.?\//, ""), line, title: f.title.trim(), evidence: String(f.evidence ?? "").trim(), bug_class: String(f.bug_class ?? "unclassified").trim().toLowerCase(), pass: p }];
   });
 }
 var norm = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
@@ -36117,9 +36148,10 @@ function changedLines(diff) {
   }
   return lines2;
 }
-var encodeState = (s) => `<!-- sdlc:review-state ${Buffer.from(JSON.stringify(s)).toString("base64")} -->`;
-function stateFrom(thread) {
-  const raw2 = thread.filter((c) => !c.path && ours(c)).map((c) => STATE2.exec(c.body)?.[1]).filter(Boolean).at(-1);
+var encodeState = (s, kind = "review") => `<!-- sdlc:${KINDS[kind].stateTag} ${Buffer.from(JSON.stringify(s)).toString("base64")} -->`;
+var ours = (c) => !c.association || c.author.endsWith("[bot]") || ["OWNER", "MEMBER", "COLLABORATOR"].includes(c.association);
+function stateFrom(thread, kind = "review") {
+  const raw2 = thread.filter((c) => !c.path && ours(c)).map((c) => KINDS[kind].state.exec(c.body)?.[1]).filter(Boolean).at(-1);
   if (!raw2) return void 0;
   try {
     return JSON.parse(Buffer.from(raw2, "base64").toString("utf8"));
@@ -36127,9 +36159,39 @@ function stateFrom(thread) {
     return void 0;
   }
 }
-var ours = (c) => !c.association || c.author.endsWith("[bot]") || ["OWNER", "MEMBER", "COLLABORATOR"].includes(c.association);
-function finderPrompt(pass, range, full, branch, known) {
-  return `You are a review finder for this PR/MR. Your pass: ${PASS_FOCUS[pass]}. Follow REVIEW.md (what Important means, what not to report).
+function canResolve(c, loaded) {
+  if (isAgent({ login: c.author, name: c.author }) || c.author.endsWith("[bot]")) return false;
+  if (c.association) return ["OWNER", "MEMBER", "COLLABORATOR"].includes(c.association);
+  return isTrustedAuthor(loaded, { login: c.author });
+}
+var FINDING_ID = /<!-- sdlc:finding id=([fs]\d+) -->/;
+var RESOLVED = /^resolved((?:[\s,]+[fs]\d+)*)\s*:\s*(\S[\s\S]*)$/i;
+function resolutions(thread, loaded) {
+  const byId = new Map(thread.map((c) => [c.id, c]));
+  const out = /* @__PURE__ */ new Map();
+  for (const c of thread) {
+    const m = RESOLVED.exec(c.body.trim());
+    if (!m || !canResolve(c, loaded)) continue;
+    let ids = m[1].split(/[\s,]+/).filter(Boolean);
+    if (!ids.length && c.replyTo) {
+      const id = FINDING_ID.exec(byId.get(c.replyTo)?.body ?? "")?.[1];
+      if (id) ids = [id];
+    }
+    for (const id of ids) out.set(id, { id, by: c.author, reason: m[2].trim().split("\n")[0] });
+  }
+  return out;
+}
+function applyResolutions(findings, res) {
+  return findings.map((f) => {
+    const r = res.get(f.id);
+    return f.status === "open" && r ? { ...f, status: "resolved", resolved_by: r.by, reason: r.reason } : f;
+  });
+}
+function blocking(kind, findings) {
+  return findings.filter((f) => f.status === "open" && (f.severity === "important" || kind === "security" && f.severity !== "pre_existing"));
+}
+function finderPrompt(kind, pass, range, full, branch, known) {
+  return `You are ${KINDS[kind].role} for this PR/MR. Your pass: ${PASS_FOCUS[pass]}. Follow REVIEW.md (what Important means, what not to report).
 Diff to review: git diff ${range}.${range === full ? "" : ` These are only the commits since the last review round; git diff ${full} is the whole PR, for context only.`}
 Read changes/<slug>/spec.md and plan.md for the change on the branch ${branch}.
 ${known.length ? `Already reported (do not report them again, even reworded):
@@ -36171,57 +36233,70 @@ function counts(findings) {
   return SEVERITIES.map((s) => `${LABEL[s]}: ${open2.filter((f) => f.severity === s).length}`).join(" \xB7 ");
 }
 function renderReview(state, o) {
+  const kind = o.kind ?? "review";
   const open2 = state.findings.filter((f) => f.status === "open");
   const order2 = (f) => SEVERITIES.indexOf(f.severity);
   const nits = open2.filter((f) => f.severity === "nit");
   const shown = [...open2.filter((f) => f.severity !== "nit"), ...nits.slice(0, MAX_NITS)].sort((a, b) => order2(a) - order2(b) || a.file.localeCompare(b.file) || a.line - b.line);
   const scope = o.since ? `only the commits since ${o.since.slice(0, 7)}` : "the whole PR";
   const lines2 = [
-    REVIEW_HEADER,
+    KINDS[kind].header,
     "",
     counts(state.findings),
     "",
-    `Round ${state.round} of ${o.maxRounds} \xB7 ${DEPTHS[o.depth].label} review (risk ${o.tier}) \xB7 ${state.sha.slice(0, 7)}, ${scope}`
+    `Round ${state.round} of ${o.maxRounds} \xB7 ${DEPTH_LABEL[o.depth]} review (risk ${o.tier}) \xB7 ${state.sha.slice(0, 7)}, ${scope}`
   ];
   if (shown.length) {
-    lines2.push("", "| Severity | File:line | Finding | Bug class | Pass |", "|---|---|---|---|---|");
-    for (const f of shown) lines2.push(`| ${LABEL[f.severity]} | \`${f.file}:${f.line}\` | ${cell(f.title)}${f.evidence ? ` \u2014 ${cell(f.evidence)}` : ""} | ${cell(f.bug_class)} | ${f.pass} |`);
+    lines2.push("", "| Id | Severity | File:line | Finding | Bug class | Pass |", "|---|---|---|---|---|---|");
+    for (const f of shown) lines2.push(`| ${f.id} | ${LABEL[f.severity]} | \`${f.file}:${f.line}\` | ${cell(f.title)}${f.evidence ? ` \u2014 ${cell(f.evidence)}` : ""} | ${cell(f.bug_class)} | ${f.pass} |`);
     if (nits.length > MAX_NITS) lines2.push("", `${nits.length - MAX_NITS} more nits not shown.`);
   } else lines2.push("", "No open findings.");
   if (o.fixed.length) lines2.push("", `Fixed since the last round: ${o.fixed.map((f) => `\`${f.file}:${f.line}\` ${cell(f.title)}`).join("; ")}`);
+  const resolved = state.findings.filter((f) => f.status === "resolved");
+  if (resolved.length) lines2.push("", `Resolved with a reason: ${resolved.map((f) => `${f.id} by @${f.resolved_by} (${cell(f.reason ?? "")})`).join("; ")}`);
   if (o.dropped) lines2.push("", `The verifier dropped ${o.dropped} candidate${o.dropped === 1 ? "" : "s"} (not supported by the code, or only style).`);
   if (o.outside.length) lines2.push("", `Not on lines of this diff, so only listed here: ${o.outside.map((f) => `\`${f.file}:${f.line}\``).join(", ")}.`);
   if (o.capped) lines2.push("", `Round cap reached (${o.maxRounds}): no new findings are looked for; the verifier only checks whether the open ones were fixed. A person reviews the rest.`);
-  lines2.push("", "The findings inform the code owner; they do not approve or block by themselves.", "", REVIEW_MARKER, encodeState(state));
+  lines2.push(
+    "",
+    `\`${REVIEW_STATUS}\` stays red while an Important${kind === "security" ? " or security" : ""} finding is open. Fix it, or reply \`resolved: <reason>\` to its comment (or \`resolved <id>: <reason>\` here); only maintainers can resolve.`,
+    "",
+    KINDS[kind].marker,
+    encodeState(state, kind)
+  );
   return lines2.join("\n");
 }
-async function review(c) {
+var headSha = (c) => c.env.HEAD_SHA || git(c.root, ["rev-parse", "HEAD"]) || "HEAD";
+async function review(c, kind = "review") {
   const n = prNumber(c.env);
   if (n === void 0) {
     log3("not a PR/MR, nothing to review");
     return 0;
   }
+  const spec = KINDS[kind];
   const ctx = { root: c.root, loaded: c.loaded, env: c.env };
   const baseName = baseRef(c);
   git(c.root, ["fetch", "-q", "origin", baseName]);
   const base = baseCommit(c.root, baseName);
   const branch = headRef(c);
-  const head = git(c.root, ["rev-parse", "HEAD"]) ?? "HEAD";
+  const head = headSha(c);
   const change = changeForBranch(c, branch);
   const risk2 = await prRisk(c, change, n);
   const setting = c.loaded?.config.ci?.review;
   const depth = setting?.depth && setting.depth !== "auto" ? setting.depth : TIER_DEPTH[risk2.tier];
   const maxRounds = setting?.max_rounds ?? DEFAULT_MAX_ROUNDS;
-  let prev;
+  let thread = [];
   if (!c.dryRun) {
     try {
-      prev = stateFrom(await prThread(ctx, n));
+      thread = await prThread(ctx, n);
     } catch (e) {
       log3(`could not read the PR comments: ${e.message}`);
     }
   }
+  const prev = stateFrom(thread, kind);
   if (prev?.sha === head) {
     log3(`${head.slice(0, 7)} was already reviewed (round ${prev.round})`);
+    if (!c.dryRun) await reviewStatus(c, thread);
     return 0;
   }
   const round = (prev?.round ?? 0) + 1;
@@ -36229,13 +36304,14 @@ async function review(c) {
   const since = prev && git(c.root, ["merge-base", "--is-ancestor", prev.sha, head]) !== void 0 ? prev.sha : void 0;
   const full = `${base}...HEAD`;
   const range = since ? `${since}..HEAD` : full;
-  const known = prev?.findings ?? [];
+  const known = applyResolutions(prev?.findings ?? [], resolutions(thread, c.loaded));
   const run3 = (prompt) => runAgentAsync(c.agent, { mode: "read", allowedTools: READ_TOOLS, cwd: c.root, prompt }, c.model).catch((e) => (log3(e.message), ""));
-  const { passes, votes } = DEPTHS[depth];
-  const found = capped ? [] : (await Promise.all(passes.map(async (p) => parseFindings(await run3(finderPrompt(p, range, full, branch, known)), p)))).flat();
+  const passes = spec.passes[depth];
+  const votes = spec.votes[depth];
+  const found = capped ? [] : (await Promise.all(passes.map(async (p) => parseFindings(await run3(finderPrompt(kind, p, range, full, branch, known)), p)))).flat();
   let next = known.reduce((m, f) => Math.max(m, Number(f.id.slice(1)) || 0), 0);
   const candidates = [];
-  for (const f of found) if (![...known, ...candidates].some((k) => sameFinding(k, f))) candidates.push({ ...f, id: `f${++next}` });
+  for (const f of found) if (![...known, ...candidates].some((k) => sameFinding(k, f))) candidates.push({ ...f, id: `${spec.idPrefix}${++next}` });
   const open2 = known.filter((f) => f.status === "open");
   const ballots = candidates.length || open2.length ? (await Promise.all(Array.from({ length: votes }, () => run3(verifierPrompt(full, candidates, open2))))).map(parseVotes).filter((b) => !!b) : [];
   const kept = candidates.flatMap((f) => {
@@ -36258,27 +36334,64 @@ async function review(c) {
   const inline = kept.filter((f) => f.severity !== "pre_existing" && inDiff.get(f.file)?.has(f.line));
   const outside = kept.filter((f) => !inline.includes(f));
   const nitIds = new Set(inline.filter((f) => f.severity === "nit").slice(MAX_NITS).map((f) => f.id));
-  const body = renderReview(state, { depth, tier: risk2.tier, since, capped, maxRounds, fixed, dropped: candidates.length - kept.length, outside });
-  writeFileSync12(join19(c.root, "review.json"), JSON.stringify({ ...state, depth, tier: risk2.tier }, null, 2) + "\n");
-  writeFileSync12(join19(c.root, "review-tally.txt"), counts(state.findings) + "\n");
+  const body = renderReview(state, { kind, depth, tier: risk2.tier, since, capped, maxRounds, fixed, dropped: candidates.length - kept.length, outside });
+  const prefix = kind === "review" ? "review" : "security";
+  writeFileSync12(join19(c.root, `${prefix}.json`), JSON.stringify({ ...state, depth, tier: risk2.tier }, null, 2) + "\n");
+  writeFileSync12(join19(c.root, `${prefix}-tally.txt`), counts(state.findings) + "\n");
   if (c.dryRun) {
     console.log(body);
     return 0;
   }
-  const comments = inline.filter((f) => !nitIds.has(f.id)).map((f) => ({ path: f.file, line: f.line, body: `**${LABEL[f.severity]}** \xB7 ${f.bug_class}
+  const comments = inline.filter((f) => !nitIds.has(f.id)).map((f) => ({
+    path: f.file,
+    line: f.line,
+    body: `**${LABEL[f.severity]}**${kind === "security" ? " \xB7 security" : ""} \xB7 ${f.bug_class} \xB7 ${f.id}
 
 ${f.title}${f.evidence ? `
 
 ${f.evidence}` : ""}
 
-<!-- sdlc:finding id=${f.id} -->` }));
+<!-- sdlc:finding id=${f.id} -->`
+  }));
   if (comments.length) {
     const r = await prInlineComments(ctx, n, head, comments);
     log3(`${r.posted} inline comment${r.posted === 1 ? "" : "s"} posted`);
     for (const f of r.failed) log3(`inline comment skipped: ${f}`);
   }
-  log3(await prUpsertComment(ctx, n, REVIEW_MARKER, body, ours));
-  log3(await notify({ event: "review.done", change: findChange(c.root, c.loaded, { branch, active: false }), note: counts(state.findings) }, c.loaded, c.env));
+  log3(await prUpsertComment(ctx, n, spec.marker, body, ours));
+  await reviewStatus(c, thread, { [kind]: state });
+  if (kind === "review") log3(await notify({ event: "review.done", change: findChange(c.root, c.loaded, { branch, active: false }), note: counts(state.findings) }, c.loaded, c.env));
+  return 0;
+}
+function reviewVerdict(states, res, head) {
+  if (!states.review && !states.security) return { state: "pending", description: "the automated review has not run yet" };
+  const stale = Object.keys(states).filter((k) => states[k] && states[k].sha !== head);
+  const block2 = Object.keys(states).flatMap((k) => blocking(k, applyResolutions(states[k].findings, res)).map((f) => ({ ...f, kind: k })));
+  if (block2.length) {
+    const list = block2.map((f) => `${f.id} ${f.kind === "security" ? "security" : "Important"} ${f.file}:${f.line}`).join(", ");
+    return { state: "failure", description: `${block2.length} open: ${list}. Fix, or reply resolved: <reason>` };
+  }
+  if (stale.length) return { state: "pending", description: `waiting for the ${stale.join(" and ")} of ${head.slice(0, 7)}` };
+  const resolved = Object.keys(states).flatMap((k) => states[k].findings.filter((f) => f.status === "open" && res.has(f.id)));
+  return { state: "success", description: `no open Important or security findings${resolved.length ? ` (${resolved.length} resolved with a reason)` : ""}` };
+}
+async function reviewStatus(c, thread, fresh = {}) {
+  const n = prNumber(c.env);
+  if (n === void 0) throw new SdlcError("sdlc ci review-status needs PR_NUMBER (or CI_MERGE_REQUEST_IID, BITBUCKET_PR_ID)");
+  const ctx = { root: c.root, loaded: c.loaded, env: c.env };
+  thread ??= await prThread(ctx, n);
+  const head = headSha(c);
+  const states = {};
+  for (const k of ["review", "security"]) {
+    const s = fresh[k] ?? stateFrom(thread, k);
+    if (s) states[k] = s;
+  }
+  const v = reviewVerdict(states, resolutions(thread, c.loaded), head);
+  if (c.dryRun) {
+    console.log(`${REVIEW_STATUS}: ${v.state} \u2014 ${v.description}`);
+    return 0;
+  }
+  log3(await commitStatus(ctx, head, { state: v.state, context: REVIEW_STATUS, description: v.description }));
   return 0;
 }
 
@@ -36288,6 +36401,9 @@ var CI_HELP = `sdlc ci install [--provider github|gitlab|bitbucket] [--preset so
 sdlc ci bootstrap              install the agent CLI (and the Claude plugin when plugin.marketplace_repo is set)
 sdlc ci review                 review the PR/MR with REVIEW.md: one finder per pass, a verifier that votes, inline comments
                                and a summary; depth by risk tier (ci.review.depth), at most ci.review.max_rounds (3) rounds
+sdlc ci security               the same, read-only, with security passes only (injection, access control, data and secrets)
+sdlc ci review-status          set the sdlc/review commit status: failure while an Important or security finding is open
+                               (closed when fixed, or by a maintainer's "resolved: <reason>" reply)
 sdlc ci intent-to-spec         for accepted intents without spec.md: write the spec headless, commit, push
 sdlc ci triage <log>           summarize a failed build and comment on the PR/MR
 sdlc ci tracker-merged         move the merged change's tickets to tracker.transitions.merged (alias: jira-merged)
@@ -36347,6 +36463,10 @@ async function ciCommand(root, args) {
       return bootstrap(c);
     case "review":
       return review(c);
+    case "security":
+      return review(c, "security");
+    case "review-status":
+      return reviewStatus(c);
     case "intent-to-spec":
       return intentToSpec(c);
     case "triage":

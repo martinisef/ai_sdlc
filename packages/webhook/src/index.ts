@@ -1,4 +1,4 @@
-// `@claude` and `/approve <artifact>` in GitLab MR and Bitbucket PR comments. Neither provider starts pipelines from comments, so this
+// `@claude`, `/approve <artifact>` and `resolved: <reason>` in GitLab MR and Bitbucket PR comments. Neither provider starts pipelines from comments, so this
 // small service receives the comment webhook and triggers the project's pipeline, where `sdlc ci mention`
 // runs the agent. The service holds no model credentials and no state: it only validates and forwards.
 import { createHmac, timingSafeEqual } from 'node:crypto';
@@ -23,8 +23,8 @@ export interface WebhookEnv {
 
 export interface Mention {
   provider: 'gitlab' | 'bitbucket';
-  /** `mention` runs `sdlc ci mention`; `gate` runs `sdlc ci gate` for /approve and /reject. */
-  job: 'mention' | 'gate';
+  /** `mention` runs `sdlc ci mention`; `gate` runs `sdlc ci gate` for /approve and /reject; `review-status` recomputes sdlc/review. */
+  job: 'mention' | 'gate' | 'review-status';
   /** GitLab project id or Bitbucket workspace/repo. */
   project: string;
   number: number;
@@ -41,6 +41,9 @@ export interface Mention {
 /** Same grammar as `sdlc ci gate`. */
 export const GATE_COMMAND = /^\/(approve|reject) (intent|spec|plan)(?:[ \t]+.*)?$/m;
 export const isGateCommand = (body: string) => GATE_COMMAND.test(body.replace(/\r/g, '')) && !body.includes(REPLY_MARKER);
+
+/** `resolved: <reason>` (or `resolved f2: <reason>`), as `sdlc ci review-status` reads it. */
+export const isResolution = (body: string) => /^resolved(?:[\s,]+[fs]\d+)*\s*:\s*\S/i.test(body.trim()) && !body.includes(REPLY_MARKER);
 
 /** Our own replies carry this marker; never react to them (no loops). */
 export const REPLY_MARKER = '(ai-sdlc)';
@@ -75,6 +78,7 @@ export function pipelineVariables(m: Mention): Record<string, string> {
       ...(m.prAuthor ? { PR_AUTHOR: m.prAuthor } : {}),
     };
   }
+  if (m.job === 'review-status') return base;
   return { ...base, SDLC_MENTION_AUTHOR: m.author, SDLC_MENTION_BODY: m.body.slice(0, 4000) };
 }
 
@@ -108,7 +112,8 @@ export function gitlabMention(p: any, mention?: string): Mention | string {
   const note = p?.object_attributes;
   const mr = p?.merge_request;
   if (p?.object_kind !== 'note' || note?.noteable_type !== 'MergeRequest' || !mr) return 'not a merge request comment';
-  const job = isGateCommand(note.note ?? '') ? 'gate' : mentions(note.note ?? '', mention) ? 'mention' : undefined;
+  const text = note.note ?? '';
+  const job = isGateCommand(text) ? 'gate' : isResolution(text) ? 'review-status' : mentions(text, mention) ? 'mention' : undefined;
   if (!job) return 'no mention';
   return {
     provider: 'gitlab',
@@ -128,7 +133,7 @@ export function bitbucketMention(p: any, mention?: string): Mention | string {
   const pr = p?.pullrequest;
   const body = p?.comment?.content?.raw ?? '';
   if (!pr || !p?.comment) return 'not a pull request comment';
-  const job = isGateCommand(body) ? 'gate' : mentions(body, mention) ? 'mention' : undefined;
+  const job = isGateCommand(body) ? 'gate' : isResolution(body) ? 'review-status' : mentions(body, mention) ? 'mention' : undefined;
   if (!job) return 'no mention';
   return {
     provider: 'bitbucket',

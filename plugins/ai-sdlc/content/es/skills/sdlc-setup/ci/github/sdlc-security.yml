@@ -1,0 +1,38 @@
+name: sdlc security
+# Security review de solo lectura de cada PR (`sdlc ci security`): finders de inyección e input inseguro, control de
+# acceso, y exposición de datos y secretos, más un verificador que vota. La profundidad sigue al nivel de riesgo.
+# Los findings de seguridad abiertos (salvo los pre-existentes) dejan en rojo el commit status sdlc/review hasta que se
+# arreglan o alguien con permisos responde "resolved: <razón>" (el job resolve de sdlc-review.yml lo recalcula).
+# ¿No usás Claude? Agregá --agent codex|cursor y pasá OPENAI_API_KEY / CURSOR_API_KEY.
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+
+jobs:
+  security:
+    if: ${{ !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    concurrency:
+      group: sdlc-security-${{ github.event.pull_request.number }}
+    permissions:
+      contents: read
+      pull-requests: write
+      statuses: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npx -y @morsadev/sdlc@0 ci bootstrap
+      - name: Security review
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: npx -y @morsadev/sdlc@0 ci security

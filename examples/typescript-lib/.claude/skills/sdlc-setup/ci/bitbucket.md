@@ -3,7 +3,7 @@
 ## Files installed by /sdlc-setup
 | Template | Destination | What it does |
 |---|---|---|
-| `bitbucket/bitbucket-pipelines.yml` | `bitbucket-pipelines.yml` | PRs: build + review in parallel, triage if it fails · `change/**`: intent → spec · `main`: Jira to *merged* · custom: evals, control bands |
+| `bitbucket/bitbucket-pipelines.yml` | `bitbucket-pipelines.yml` | PRs: build + review + security review in parallel, triage if it fails · `change/**`: intent → spec · `main`: Jira to *merged* · custom: evals, control bands |
 
 Every step runs `npx -y @morsadev/sdlc@0 ci <cmd>` on `node:22`: there is no CI script to copy.
 
@@ -14,7 +14,7 @@ In `.sdlc/config.json` fill in `vcs.workspace` and `vcs.repo` (the remote may no
 
 ## Differences from GitHub/GitLab
 - **No official CLI**: `sdlc vcs` uses the REST API 2.0 (create PR, comment, read comments and statuses).
-- **Review**: step with the headless agent (`claude -p`, or `ci.agent`) + comment via the API. No inline comments in the MVP: a single summary comment with `file:line`.
+- **Review**: review and security steps with the headless agent (`claude -p`, or `ci.agent`): inline comments and a summary via the API, and the `sdlc/review` build status. A `resolved: <reason>` reply runs the `sdlc-review-status` custom pipeline through `sdlc webhook`.
 - **`@claude` in comments**: Pipelines are not triggered by comments, so a small service does it: `sdlc webhook` (one per workspace; see "@claude in comments" below) receives the "Pull request: Comment created" webhook and runs the `sdlc-mention` custom pipeline, which runs `sdlc ci mention`. Without the service, remove `sdlc-mention`.
 - **Draft PRs**: supported by the API (`draft: true`); if the workspace does not support them, the intent PR is opened as a regular PR with "[intent]" in the title.
 
@@ -25,7 +25,7 @@ In `.sdlc/config.json` fill in `vcs.workspace` and `vcs.repo` (the remote may no
 ## Manual configuration (add to SETUP.md)
 1. **Repository variables** (secured): `ANTHROPIC_API_KEY`, `BITBUCKET_ACCESS_TOKEN`, `SDLC_PLUGIN_TOKEN` if applicable, `JIRA_EMAIL` + `JIRA_API_TOKEN`, `LINEAR_API_KEY` with Linear, `SDLC_NOTIFY_WEBHOOK` for [notifications](https://martinisef.github.io/ai_sdlc/guide/notifications).
 2. **Branch restrictions** on `main`: no direct push, merge only via PR.
-3. **Merge checks**: at least 1 approval, green builds. *Check in the workspace plan* which checks are enforced (on some plans they are only warnings).
+3. **Merge checks**: at least 1 approval, green builds (including `sdlc/review` and `sdlc/gates`). *Check in the workspace plan* which checks are enforced (on some plans they are only warnings).
 4. **Default reviewers** / code owners for `CLAUDE.md`, `REVIEW.md`, `.claude/`, `evals/` (availability depends on the plan).
 5. Nightly **schedule** for the `agent-evals` custom pipeline (and a daily one for `control-bands` with Stage 6).
 6. **Jira ↔ Bitbucket** integration enabled on the Atlassian site (automatically links branches and PRs with the key).
