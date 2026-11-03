@@ -1,7 +1,7 @@
 // Headless agent runs for CI: one prompt in, the final answer out.
 // Claude Code is the reference; Codex and Cursor's CLI are supported best-effort (their permission models are coarser:
 // read-only vs workspace-write sandbox for Codex, proposal vs --force for Cursor).
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -38,48 +38,88 @@ export function skillRef(agent: CiAgent, name: string): string {
   return agent === 'claude' ? `the ${name} skill` : `the skill in .agents/skills/${name}/SKILL.md`;
 }
 
-export function runAgent(agent: CiAgent, task: AgentTask, model?: string, env = process.env): string {
+interface Invocation {
+  bin: string;
+  args: string[];
+  env: NodeJS.ProcessEnv;
+  tmp: string;
+  lastMessage?: string;
+}
+
+function invocation(agent: CiAgent, task: AgentTask, model: string | undefined, env: NodeJS.ProcessEnv): Invocation {
   const tmp = mkdtempSync(join(tmpdir(), 'sdlc-agent-'));
-  try {
-    let args: string[];
-    let lastMessage: string | undefined;
-    switch (agent) {
-      case 'claude':
-        args = ['-p', task.prompt, '--allowedTools', task.allowedTools ?? READ_TOOLS];
-        if (task.mode === 'edit') args.push('--permission-mode', 'acceptEdits');
-        if (model) args.push('--model', model);
-        break;
-      case 'codex':
-        lastMessage = join(tmp, 'last.md');
-        // workspace-write keeps .git read-only and has no network, so on an (ephemeral) CI runner edit mode could
-        // neither commit nor install dependencies; there the guardrails are the git hooks and the pipeline
-        args = ['exec', '--sandbox', task.mode !== 'edit' ? 'read-only' : env.CI ? 'danger-full-access' : 'workspace-write', '--output-last-message', lastMessage];
-        if (model) args.push('-m', model);
-        args.push(task.prompt);
-        break;
-      case 'cursor':
-        // --trust: headless runs cannot answer the workspace-trust prompt; ask mode is Cursor's read-only mode
-        args = ['-p', '--output-format', 'text', '--trust', '--workspace', task.cwd];
-        args.push(...(task.mode === 'edit' ? ['--force'] : ['--mode', 'ask']));
-        if (model) args.push('--model', model);
-        args.push(task.prompt);
-        break;
-    }
-    // `codex exec` authenticates non-interactively with CODEX_API_KEY
-    if (agent === 'codex' && !env.CODEX_API_KEY && env.OPENAI_API_KEY) env = { ...env, CODEX_API_KEY: env.OPENAI_API_KEY };
-    const bin = agentBin(agent, env);
-    const r = spawnSync(bin, args, { cwd: task.cwd, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'], maxBuffer: 64 * 1024 * 1024 });
-    if (r.error) throw new SdlcError(`${bin}: ${(r.error as NodeJS.ErrnoException).code === 'ENOENT' ? 'not installed (run: sdlc ci bootstrap)' : r.error.message}`);
-    if (r.status !== 0) throw new SdlcError(`${bin} exited with ${r.status}`);
-    if (lastMessage) {
-      try {
-        return readFileSync(lastMessage, 'utf8').trim();
-      } catch {
-        /* older codex: fall back to stdout */
-      }
-    }
-    return r.stdout.trim();
-  } finally {
-    rmSync(tmp, { recursive: true, force: true });
+  let args: string[];
+  let lastMessage: string | undefined;
+  switch (agent) {
+    case 'claude':
+      args = ['-p', task.prompt, '--allowedTools', task.allowedTools ?? READ_TOOLS];
+      if (task.mode === 'edit') args.push('--permission-mode', 'acceptEdits');
+      if (model) args.push('--model', model);
+      break;
+    case 'codex':
+      lastMessage = join(tmp, 'last.md');
+      // workspace-write keeps .git read-only and has no network, so on an (ephemeral) CI runner edit mode could
+      // neither commit nor install dependencies; there the guardrails are the git hooks and the pipeline
+      args = ['exec', '--sandbox', task.mode !== 'edit' ? 'read-only' : env.CI ? 'danger-full-access' : 'workspace-write', '--output-last-message', lastMessage];
+      if (model) args.push('-m', model);
+      args.push(task.prompt);
+      break;
+    case 'cursor':
+      // --trust: headless runs cannot answer the workspace-trust prompt; ask mode is Cursor's read-only mode
+      args = ['-p', '--output-format', 'text', '--trust', '--workspace', task.cwd];
+      args.push(...(task.mode === 'edit' ? ['--force'] : ['--mode', 'ask']));
+      if (model) args.push('--model', model);
+      args.push(task.prompt);
+      break;
   }
+  // `codex exec` authenticates non-interactively with CODEX_API_KEY
+  if (agent === 'codex' && !env.CODEX_API_KEY && env.OPENAI_API_KEY) env = { ...env, CODEX_API_KEY: env.OPENAI_API_KEY };
+  return { bin: agentBin(agent, env), args, env, tmp, lastMessage };
+}
+
+function answer(inv: Invocation, stdout: string): string {
+  if (inv.lastMessage) {
+    try {
+      return readFileSync(inv.lastMessage, 'utf8').trim();
+    } catch {
+      /* older codex: fall back to stdout */
+    }
+  }
+  return stdout.trim();
+}
+
+const failure = (bin: string, error: Error | undefined, status: number | null): SdlcError | undefined =>
+  error
+    ? new SdlcError(`${bin}: ${(error as NodeJS.ErrnoException).code === 'ENOENT' ? 'not installed (run: sdlc ci bootstrap)' : error.message}`)
+    : status !== 0
+      ? new SdlcError(`${bin} exited with ${status}`)
+      : undefined;
+
+export function runAgent(agent: CiAgent, task: AgentTask, model?: string, env = process.env): string {
+  const inv = invocation(agent, task, model, env);
+  try {
+    const r = spawnSync(inv.bin, inv.args, { cwd: task.cwd, env: inv.env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'], maxBuffer: 64 * 1024 * 1024 });
+    const err = failure(inv.bin, r.error, r.status);
+    if (err) throw err;
+    return answer(inv, r.stdout);
+  } finally {
+    rmSync(inv.tmp, { recursive: true, force: true });
+  }
+}
+
+/** Same as runAgent without blocking, so independent runs (review finders, verifier votes) go in parallel. */
+export function runAgentAsync(agent: CiAgent, task: AgentTask, model?: string, env = process.env): Promise<string> {
+  const inv = invocation(agent, task, model, env);
+  return new Promise<string>((resolve, reject) => {
+    const child = spawn(inv.bin, inv.args, { cwd: task.cwd, env: inv.env, stdio: ['ignore', 'pipe', 'inherit'] });
+    let stdout = '';
+    let spawnError: Error | undefined;
+    child.stdout.setEncoding('utf8').on('data', (d: string) => (stdout += d));
+    child.on('error', (e) => (spawnError = e));
+    child.on('close', (status) => {
+      const err = failure(inv.bin, spawnError, spawnError ? null : status);
+      if (err) reject(err);
+      else resolve(answer(inv, stdout));
+    });
+  }).finally(() => rmSync(inv.tmp, { recursive: true, force: true }));
 }

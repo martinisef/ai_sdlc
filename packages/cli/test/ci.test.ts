@@ -10,21 +10,108 @@ import { commitAll, project, sdlc } from './helpers.ts';
 const stubLog = () => join(mkdtempSync(join(tmpdir(), 'sdlc-stub-')), 'calls.log');
 const read = (f: string) => (existsSync(f) ? readFileSync(f, 'utf8') : '');
 
-test('ci review: runs the agent read-only, posts the comment and writes the tally', async () => {
-  const root = project({ vcs: { provider: 'github' } }, 'change/x');
+function reviewRepo(config: object = {}) {
+  const root = project({ vcs: { provider: 'github' }, ...config }, 'change/x');
+  mkdirSync(join(root, 'src'));
+  writeFileSync(join(root, 'src/a.py'), 'def f(xs):\n    out = []\n    for i in range(len(xs) + 1):\n        out.append(xs[i])\n    x = len(out)\n    return x\n');
+  commitAll(root, 'feat: f');
+  return root;
+}
+
+const head = (root: string) => execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
+const stateComment = (state: object, extra: object = {}) =>
+  JSON.stringify({ id: '41', author: 'github-actions[bot]', association: 'NONE', createdAt: '2026-11-01T00:00:00Z', body: `## Automated review (ai-sdlc)\n<!-- sdlc:review-summary -->\n<!-- sdlc:review-state ${Buffer.from(JSON.stringify(state)).toString('base64')} -->`, ...extra }) + '\n';
+
+test('ci review: a finder per pass, the verifier drops what it does not support, inline comments and a summary that starts with the counts', async () => {
+  const root = reviewRepo();
   const log = stubLog();
-  const r = await sdlc(root, ['ci', 'review'], { STUB_LOG: log, PR_NUMBER: '5', BASE_REF: 'main' });
+  const r = await sdlc(root, ['ci', 'review'], { STUB_LOG: log, STUB_DROP: 'f2', PR_NUMBER: '5', BASE_REF: 'main', HEAD_REF: 'change/x' });
   assert.equal(r.code, 0, r.err);
   const calls = read(log);
-  assert.match(calls, /claude -p You are the automated reviewer/);
+  assert.equal(calls.match(/^claude -p You are a review finder/gm)?.length, 1, 'low risk: Quick review, one finder');
+  assert.match(calls, /Your pass: every pass in REVIEW.md/);
+  assert.equal(calls.match(/^claude -p You are the review verifier/gm)?.length, 1);
   assert.match(calls, /--allowedTools Read,Grep,Glob,Bash\(git diff:\*\)/);
   assert.doesNotMatch(calls, /acceptEdits/);
-  assert.match(calls, /gh pr comment 5 --body ## Automated review/);
-  assert.equal(readFileSync(join(root, 'review-tally.txt'), 'utf8'), 'Important: 1 · Nit: 0\n');
+  assert.match(calls, /gh api -X POST repos\/\{owner\}\/\{repo\}\/pulls\/5\/comments -f body=\*\*Important\*\* · off-by-one\n\noff by one/);
+  assert.match(calls, new RegExp(`-f commit_id=${head(root)} -f path=src/a.py -F line=3 -f side=RIGHT`));
+  assert.doesNotMatch(calls.slice(calls.indexOf('gh api -X POST')), /rename x to count/, 'the dropped nit is not posted anywhere');
+  assert.match(calls, /gh pr comment 5 --body ## Automated review \(ai-sdlc\)\n\nImportant: 1 · Nit: 0 · Pre-existing: 0\n\nRound 1 of 3 · Quick review \(risk low\)/);
+  assert.match(calls, /The verifier dropped 1 candidate/);
+  assert.equal(readFileSync(join(root, 'review-tally.txt'), 'utf8'), 'Important: 1 · Nit: 0 · Pre-existing: 0\n');
+  const json = JSON.parse(readFileSync(join(root, 'review.json'), 'utf8'));
+  assert.equal(json.depth, 'quick');
+  assert.deepEqual(json.findings.map((f: { id: string; status: string; bug_class: string }) => [f.id, f.status, f.bug_class]), [['f1', 'open', 'off-by-one']]);
 
   const none = await sdlc(root, ['ci', 'review'], { STUB_LOG: log });
   assert.equal(none.code, 0);
   assert.match(none.err, /not a PR\/MR/);
+});
+
+test('ci review: depth follows the tier or ci.review.depth; deep runs five passes and three verifier votes', async () => {
+  const standard = reviewRepo({ ci: { review: { depth: 'standard' } } });
+  const log = stubLog();
+  const r = await sdlc(standard, ['ci', 'review', '--dry-run'], { STUB_LOG: log, PR_NUMBER: '5' });
+  assert.equal(r.code, 0, r.err);
+  assert.equal(read(log).match(/^claude -p You are a review finder/gm)?.length, 3);
+  for (const pass of ['Bugs', 'Security', 'Compliance']) assert.match(read(log), new RegExp(`Your pass: ${pass}:`));
+  assert.match(r.out, /^## Automated review \(ai-sdlc\)\n\nImportant: 1 · Nit: 1 · Pre-existing: 0\n\nRound 1 of 3 · Standard review/);
+  assert.match(r.out, /\| Important \| `src\/a.py:3` \| off by one — range\(len\(xs\) \+ 1\) reads past the end \| off-by-one \| bugs \|/);
+  assert.doesNotMatch(read(log), /gh /, 'dry run does not post');
+
+  const high = reviewRepo({ risk: { high_risk_paths: ['src/**'] } });
+  const log2 = stubLog();
+  await sdlc(high, ['ci', 'review', '--dry-run'], { STUB_LOG: log2, PR_NUMBER: '5' });
+  assert.equal(read(log2).match(/^claude -p You are a review finder/gm)?.length, 5);
+  assert.equal(read(log2).match(/^claude -p You are the review verifier/gm)?.length, 3);
+});
+
+test('ci review: the next round reviews only the new commits, never repeats a finding and notices fixes', async () => {
+  const root = reviewRepo();
+  const first = head(root);
+  writeFileSync(join(root, 'src/a.py'), read(join(root, 'src/a.py')) + '# more\n');
+  commitAll(root, 'fix: more');
+  const dir = mkdtempSync(join(tmpdir(), 'sdlc-stub-'));
+  const log = join(dir, 'calls.log');
+  const f1 = { id: 'f1', severity: 'important', file: 'src/a.py', line: 3, title: 'off by one', evidence: '', bug_class: 'off-by-one', pass: 'bugs', status: 'open', round: 1 };
+  writeFileSync(join(dir, 'issues_5_comments'), stateComment({ round: 1, sha: first, findings: [f1] }));
+  const env = { STUB_LOG: log, STUB_GH_DIR: dir, STUB_FIXED: 'f1', PR_NUMBER: '5', BASE_REF: 'main', HEAD_REF: 'change/x' };
+  const r = await sdlc(root, ['ci', 'review'], env);
+  assert.equal(r.code, 0, r.err);
+  const calls = read(log);
+  assert.match(calls, new RegExp(`Diff to review: git diff ${first}\\.\\.HEAD\\. These are only the commits since the last review round`));
+  assert.match(calls, /Already reported \(do not report them again, even reworded\):\n- src\/a.py:3 \[off-by-one\] off by one/);
+  assert.match(calls, /New candidates: \[\{"id":"f2"/, 'the repeated off-by-one is not a new candidate');
+  assert.match(calls, /Findings still open from earlier rounds: \[\{"id":"f1"/);
+  assert.match(calls, /issues\/comments\/41 -f body=## Automated review \(ai-sdlc\)\n\nImportant: 0 · Nit: 1 · Pre-existing: 0\n\nRound 2 of 3/);
+  assert.match(calls, /Fixed since the last round: `src\/a.py:3` off by one/);
+  assert.doesNotMatch(calls, /pulls\/5\/comments -f body=\*\*Important/, 'the old finding is not commented again');
+
+  writeFileSync(join(dir, 'issues_5_comments'), stateComment({ round: 1, sha: head(root), findings: [] }));
+  const again = await sdlc(root, ['ci', 'review'], env);
+  assert.match(again.err, /was already reviewed \(round 1\)/);
+
+  writeFileSync(join(dir, 'issues_5_comments'), stateComment({ round: 9, sha: first, findings: [] }, { author: 'mallory', association: 'CONTRIBUTOR' }));
+  writeFileSync(log, '');
+  await sdlc(root, ['ci', 'review'], env);
+  assert.match(read(log), /Round 1 of 3/, 'a state comment from a contributor is ignored');
+});
+
+test('ci review: after the round cap no finder runs; the verifier only rechecks the open findings', async () => {
+  const root = reviewRepo();
+  const first = head(root);
+  writeFileSync(join(root, 'src/a.py'), read(join(root, 'src/a.py')) + '# more\n');
+  commitAll(root, 'fix: more');
+  const dir = mkdtempSync(join(tmpdir(), 'sdlc-stub-'));
+  const log = join(dir, 'calls.log');
+  const f1 = { id: 'f1', severity: 'important', file: 'src/a.py', line: 3, title: 'off by one', evidence: '', bug_class: 'off-by-one', pass: 'bugs', status: 'open', round: 3 };
+  writeFileSync(join(dir, 'issues_5_comments'), stateComment({ round: 3, sha: first, findings: [f1] }));
+  const r = await sdlc(root, ['ci', 'review'], { STUB_LOG: log, STUB_GH_DIR: dir, PR_NUMBER: '5', BASE_REF: 'main' });
+  assert.equal(r.code, 0, r.err);
+  assert.doesNotMatch(read(log), /review finder/);
+  assert.match(read(log), /review verifier/);
+  assert.match(read(log), /Important: 1 · Nit: 0 · Pre-existing: 0\n\nRound 4 of 3/);
+  assert.match(read(log), /Round cap reached \(3\)/);
 });
 
 test('ci review with codex: sandboxed read-only, answer taken from the last message', async () => {
@@ -33,9 +120,10 @@ test('ci review with codex: sandboxed read-only, answer taken from the last mess
   const r = await sdlc(root, ['ci', 'review', '--dry-run'], { STUB_LOG: log, PR_NUMBER: '5' });
   assert.equal(r.code, 0, r.err);
   assert.match(read(log), /codex exec --sandbox read-only --output-last-message \S+ -m gpt-x/);
-  assert.equal(r.out, '## Automated review (ai-sdlc)\n\nImportant: 0 · Nit: 2', 'stdout noise is ignored');
+  assert.match(r.out, /^## Automated review \(ai-sdlc\)\n\nImportant: 0 · Nit: 1 · Pre-existing: 0\n/, 'stdout noise is ignored');
+  assert.match(r.out, /`src\/b.py:1` \| unused import/);
   assert.doesNotMatch(read(log), /gh pr comment/, 'dry run does not post');
-  assert.equal(readFileSync(join(root, 'review-tally.txt'), 'utf8'), 'Important: 0 · Nit: 2\n');
+  assert.equal(readFileSync(join(root, 'review-tally.txt'), 'utf8'), 'Important: 0 · Nit: 1 · Pre-existing: 0\n');
 
   const bad = await sdlc(root, ['ci', 'review', '--agent', 'gemini'], { STUB_LOG: log, PR_NUMBER: '5' });
   assert.equal(bad.code, 1);
@@ -48,7 +136,7 @@ test('ci review with cursor: `agent` found on PATH, trusted workspace, ask mode 
   const r = await sdlc(root, ['ci', 'review', '--dry-run'], { STUB_LOG: log, PR_NUMBER: '5' });
   assert.equal(r.code, 0, r.err);
   assert.match(read(log), new RegExp(`^agent -p --output-format text --trust --workspace ${root.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} --mode ask `, 'm'));
-  assert.equal(r.out, '## Automated review (ai-sdlc)\n\nImportant: 1 · Nit: 0');
+  assert.match(r.out, /^## Automated review \(ai-sdlc\)\n\nImportant: 1 · Nit: 0 · Pre-existing: 0\n/);
 });
 
 test('ci intent-to-spec: only accepted intents without a spec; pushes the new commits', async () => {

@@ -6,7 +6,7 @@ import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, before, test } from 'node:test';
-import { commitStatus, detectProvider, httpJson, loadConfig, prChecks, prComment, prComments, prCreate, prCurrent, prThread, prUpsertComment, SdlcError, type VcsContext } from '@ai-native-sdlc/core';
+import { commitStatus, detectProvider, httpJson, loadConfig, prChecks, prComment, prComments, prCreate, prCurrent, prInlineComments, prThread, prUpsertComment, SdlcError, type VcsContext } from '@ai-native-sdlc/core';
 import { gitIn, repo } from './helpers.ts';
 
 interface Seen {
@@ -174,4 +174,24 @@ test('prThread and prUpsertComment: GitLab discussions and Bitbucket comments, w
     },
   });
   assert.deepEqual(await prThread(bb, 3), [{ id: '5', author: 'ana', body: 'ok', createdAt: '2026-11-01T10:00:00Z', path: 'a.py', line: 9, replyTo: '4' }]);
+});
+
+test('prInlineComments: GitLab discussions at the MR diff_refs, Bitbucket inline comments; failures are reported, not thrown', async () => {
+  const env = { GITLAB_TOKEN: 'glpat-test', CI_API_V4_URL: `${base}/api/v4`, CI_PROJECT_ID: '42' };
+  const gl = ctx({ vcs: { provider: 'gitlab' } }, env);
+  reset({ 'GET /api/v4/projects/42/merge_requests/7': { body: { diff_refs: { base_sha: 'b', start_sha: 's', head_sha: 'h' } } } });
+  const r = await prInlineComments(gl, 7, 'h', [{ path: 'src/a.py', line: 3, body: 'off by one' }]);
+  assert.deepEqual(r, { posted: 1, failed: [] });
+  assert.deepEqual([seen.at(-1)!.method, seen.at(-1)!.url, seen.at(-1)!.body], [
+    'POST',
+    '/api/v4/projects/42/merge_requests/7/discussions',
+    { body: 'off by one', position: { position_type: 'text', base_sha: 'b', start_sha: 's', head_sha: 'h', new_path: 'src/a.py', new_line: 3 } },
+  ]);
+
+  const bb = ctx({}, { BITBUCKET_ACCESS_TOKEN: 'bb-token', BITBUCKET_API: base }, 'git@bitbucket.org:acme/shop.git');
+  reset({ 'POST /repositories/acme/shop/pullrequests/3/comments': { status: 400, body: { error: { message: 'line not in diff' } } } });
+  const bad = await prInlineComments(bb, 3, 'h', [{ path: 'a.py', line: 99, body: 'x' }]);
+  assert.equal(bad.posted, 0);
+  assert.match(bad.failed[0], /^a.py:99: /);
+  assert.deepEqual(seen.at(-1)!.body, { content: { raw: 'x' }, inline: { path: 'a.py', to: 99 } });
 });

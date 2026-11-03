@@ -1,7 +1,7 @@
 // `sdlc ci <cmd>`: the CI entry point. Same behaviour on GitHub Actions, GitLab CI and Bitbucket Pipelines;
 // the provider YAML only decides *when* each subcommand runs.
 import { execFileSync, spawnSync } from 'node:child_process';
-import { appendFileSync, existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import {
@@ -28,13 +28,15 @@ import { matrixAgents, renderScorecard, updateScorecard, type EvalReport } from 
 import { ciSecrets, installCi } from './install.ts';
 import { gate, gateStatus } from './gates.ts';
 import { risk } from './risk.ts';
+import { review } from './review.ts';
 import { isPreset, PRESET_SPECS } from '../presets.ts';
 import { findChange } from '../notify.ts';
 
 export const CI_HELP = `sdlc ci install [--provider github|gitlab|bitbucket] [--preset solo|team-github|regulated]
                                copy the pipeline templates (stack setup filled in; never overwrites)
 sdlc ci bootstrap              install the agent CLI (and the Claude plugin when plugin.marketplace_repo is set)
-sdlc ci review                 review the PR/MR with REVIEW.md and post the result as a comment
+sdlc ci review                 review the PR/MR with REVIEW.md: one finder per pass, a verifier that votes, inline comments
+                               and a summary; depth by risk tier (ci.review.depth), at most ci.review.max_rounds (3) rounds
 sdlc ci intent-to-spec         for accepted intents without spec.md: write the spec headless, commit, push
 sdlc ci triage <log>           summarize a failed build and comment on the PR/MR
 sdlc ci tracker-merged         move the merged change's tickets to tracker.transitions.merged (alias: jira-merged)
@@ -189,39 +191,6 @@ function bootstrap(c: CiEnv): number {
   execFileSync('claude', ['plugin', 'marketplace', 'add', home], { stdio: ['ignore', 'ignore', 'inherit'] });
   execFileSync('claude', ['plugin', 'install', 'ai-sdlc@ai-native-sdlc'], { stdio: ['ignore', 'ignore', 'inherit'] });
   log('ai-sdlc plugin installed');
-  return 0;
-}
-
-const TALLY = /Important: \d+ · Nit: \d+/g;
-
-async function review(c: CiEnv): Promise<number> {
-  const n = prNumber(c.env);
-  if (n === undefined) {
-    log('not a PR/MR, nothing to review');
-    return 0;
-  }
-  const base = baseRef(c);
-  git(c.root, ['fetch', '-q', 'origin', base]);
-  const out = runAgent(
-    c.agent,
-    {
-      mode: 'read',
-      allowedTools: READ_TOOLS,
-      cwd: c.root,
-      prompt: `You are the automated reviewer for this PR/MR. Follow REVIEW.md to the letter.
-Diff to review: git diff origin/${base}...HEAD. Read changes/<slug>/spec.md and plan.md for the change (the branch is ${headRef(c)}) for the Compliance pass.
-Output format in markdown: title '## Automated review (ai-sdlc)', a table of findings sorted by severity (Important first) with columns Pass | Severity | File:line | Finding, and at the end a line 'Important: N · Nit: M'.
-Do not approve or block: the findings inform the code owner. Do not modify any file.`,
-    },
-    c.model,
-  );
-  // Machine-readable tally for teams that want to gate merges on findings.
-  writeFileSync(join(c.root, 'review-tally.txt'), (out.match(TALLY)?.at(-1) ?? '') + '\n');
-  await post(c, n, out);
-  if (!c.dryRun) {
-    const tally = out.match(TALLY)?.at(-1);
-    log(await notify({ event: 'review.done', change: findChange(c.root, c.loaded, { branch: headRef(c), active: false }), note: tally }, c.loaded, c.env));
-  }
   return 0;
 }
 

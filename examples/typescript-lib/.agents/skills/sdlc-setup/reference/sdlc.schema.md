@@ -87,4 +87,6 @@ It is read by the guardrails (`sdlc hook`, for any agent), the loop skills, the 
 | `ci.agent` | `sdlc ci`, `sdlc bands check` | Headless agent in CI: `claude` (default), `codex` (`codex exec`) or `cursor` (`cursor-agent`). Overridden by `--agent` or `SDLC_CI_AGENT`. |
 | `ci.model` | `sdlc ci` | Model passed to the agent CLI. |
 | `ci.min_pass_rate` | `sdlc ci evals` | Minimum eval pass rate (default 0.8; `EVAL_MIN_PASS_RATE` overrides it). |
+| `ci.review.depth` | `sdlc ci review` | `auto` (default: low Quick, medium Standard, high Deep), or fixed: `quick`, `standard`, `deep`. |
+| `ci.review.max_rounds` | `sdlc ci review` | Review rounds per PR (default 3). After the cap the reviewer only checks whether the open findings were fixed. |
 | `ci.mention_mode` | `sdlc ci mention` | `read` (default): the agent only answers `@claude` comments. `edit`: it may also commit changes within the approved plan to the PR/MR branch. |

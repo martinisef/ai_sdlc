@@ -3,8 +3,27 @@
 printf 'claude %s\n' "$*" >> "$STUB_LOG"
 prompt="$2"
 case "$prompt" in
-  *"automated reviewer"*)
-    printf '## Automated review (ai-sdlc)\n\n| Pass | Severity | File:line | Finding |\n|---|---|---|---|\n| Correctness | Important | src/a.py:3 | off by one |\n\nImportant: 1 · Nit: 0\n' ;;
+  *"review finder"*)
+    # $STUB_FINDINGS (a file) replaces the answer of the Bugs pass (or the single Quick pass); other passes find nothing
+    case "$prompt" in
+      *"pass: Bugs"*|*"pass: every pass"*)
+        if [ -n "$STUB_FINDINGS" ]; then cat "$STUB_FINDINGS"
+        else printf '[{"severity":"important","file":"src/a.py","line":3,"title":"off by one","evidence":"range(len(xs) + 1) reads past the end","bug_class":"off-by-one"},{"severity":"nit","file":"src/a.py","line":5,"title":"rename x to count","evidence":"","bug_class":"naming"}]\n'
+        fi ;;
+      *) echo '[]' ;;
+    esac ;;
+  *"review verifier"*)
+    # keep every new candidate except the ids in $STUB_DROP; earlier findings are fixed if listed in $STUB_FIXED
+    votes=""
+    for id in $(printf '%s\n' "$prompt" | grep '^New candidates:' | grep -o '"id":"f[0-9]*"' | cut -d'"' -f4); do
+      case " $STUB_DROP " in *" $id "*) v=drop ;; *) v=keep ;; esac
+      votes="$votes{\"id\":\"$id\",\"vote\":\"$v\"},"
+    done
+    for id in $(printf '%s\n' "$prompt" | grep '^Findings still open' | grep -o '"id":"f[0-9]*"' | cut -d'"' -f4); do
+      case " $STUB_FIXED " in *" $id "*) v=fixed ;; *) v=open ;; esac
+      votes="$votes{\"id\":\"$id\",\"vote\":\"$v\"},"
+    done
+    printf 'Checked.\n```json\n[%s]\n```\n' "${votes%,}" ;;
   *"second risk classifier"*)
     printf 'It changes when sessions expire.\nESCALATE: high — session expiry is an auth boundary\n' ;;
   *"build log"*)

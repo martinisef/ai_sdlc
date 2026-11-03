@@ -1,15 +1,29 @@
 # Review instructions
 
 ## Passes
-Run three passes and tag each finding with its pass:
+`sdlc ci review` runs one finder per pass and a verifier that votes on each finding. Tag each finding with its pass:
 - **Bugs**: logic errors, broken edge cases, subtle regressions.
 - **Security**: injection, authentication/authorization gaps, PII in logs or errors, secrets.
 - **Compliance**: the change complies with `changes/<slug>/spec.md` and `plan.md` (files, order, verification) and with the design principles in CLAUDE.md. If the diff departs from the plan and `plan.md` does not record the deviation, that is a finding.
 
+Depth follows the risk tier (`sdlc risk`): **Quick** at low (one finder for every pass), **Standard** at medium (one finder per pass), **Deep** at high (also **Tests** and **Regressions** in code outside the diff, and three verifier votes).
+
+## Severity
+Every finding has one, a `file:line` and the evidence that proves it:
+- **Important**: breaks behavior, leaks data or violates a policy. Fix it before merging.
+- **Nit**: minor and worth fixing, never blocking. Style and naming are Nit.
+- **Pre-existing**: a real problem in code this PR did not change. Listed so it is not lost, not to block this PR.
+
+Also give each finding a **bug class** (off-by-one, missing authorization check, unhandled error…): it says what to look for elsewhere and feeds the reviewer's evals.
+
 ## What Important means here
-Reserve **Important** for findings that break behavior, leak data or violate a policy.
-Style and naming are **Nit**.
 <!-- /sdlc-setup fills in the project-specific criteria -->
+
+## Convergence
+- At most three rounds per PR (`ci.review.max_rounds`). After that, the reviewer only checks whether the open findings were fixed; a person reviews the rest.
+- From the second round on, review only the commits since the last round.
+- Never report a finding again, even reworded. A finding that is still there stays open; it is not a new one.
+- The verifier drops what the code does not support and anything that is only style.
 
 ## Loop rules
 - In fix PRs: the test that reproduces the bug is not modified after its commit. If it changed, that is Important.

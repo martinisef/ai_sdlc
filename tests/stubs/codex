@@ -2,6 +2,7 @@
 # codex stub: logs args to $STUB_LOG; writes its final answer to --output-last-message.
 printf 'codex %s\n' "$*" >> "$STUB_LOG"
 out=""
+prompt="${@: -1}"
 while [ $# -gt 0 ]; do
   case "$1" in
     --output-last-message) out="$2"; shift 2 ;;
@@ -9,5 +10,9 @@ while [ $# -gt 0 ]; do
   esac
 done
 echo "progress noise on stdout"
-[ -n "$out" ] && printf '## Automated review (ai-sdlc)\n\nImportant: 0 · Nit: 2\n' > "$out"
+case "$prompt" in
+  *"review finder"*) answer='[{"severity":"nit","file":"src/b.py","line":1,"title":"unused import","bug_class":"dead code"}]' ;;
+  *) answer='[]' ;;
+esac
+[ -n "$out" ] && printf '%s\n' "$answer" > "$out"
 exit 0
