@@ -31,6 +31,7 @@ Every command works from any directory inside the repository. The project root i
 | `sdlc quick "<what>" [--ticket KEY] [--no-branch]` | Quick lane: `intent.md` with `lane: quick` on branch `change/<slug>`, no spec or plan. The pre-push hook checks `quick_lane` limits (default 10 code files; nothing under `risk.high_risk_paths` or `quick_lane.forbid_paths`). |
 | `sdlc quick --check [--json]` | Whether the active quick change is still within the limits (exit 1 if not). |
 | `sdlc promote [<change>]` | Quick lane → full loop: `lane: full`, intent back to `draft` for the PO. |
+| `sdlc risk [<change>] [--base B] [--json]` | Risk tier set by the change, not the author: the diff against the base (paths, weighted size, dependencies, deletions), the paths the spec and plan name, and the declared `risk:`. See [Risk tiers](../guide/risk). |
 | `sdlc approve <change> <intent\|spec\|plan> [-m comment]` | Gate decision as a commit. See [Gates](../guide/concepts#gates). |
 | `sdlc reject <change> <intent\|spec\|plan> [-m comment]` | The same, setting `status: rejected`. |
 | `sdlc lock on\|off\|status` | Test-lock during a fix: test files (`test_globs`) cannot be edited while it is on. |

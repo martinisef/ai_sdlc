@@ -10,6 +10,7 @@ import {
   LEGACY_CONFIG_PATH,
   configJsonSchema,
   branchFiles,
+  changeRisk,
   checkQuick,
   decideGate,
   ensureSdlcDir,
@@ -78,6 +79,7 @@ Loop
   quick "<what>" [--ticket KEY] [--no-branch]   small change without spec/plan (limits checked on push)
   quick --check [--json]             is the active quick change still within quick_lane limits?
   promote [<change>]                 quick lane → full loop (intent back to draft for the PO)
+  risk [<change>] [--base B] [--json]   risk tier set by the change: diff against the base, paths the spec/plan name, declared risk
   approve <change> <intent|spec|plan> [-m comment]
   reject  <change> <intent|spec|plan> [-m comment]
   lock on|off|status                 test-lock during a fix
@@ -104,7 +106,7 @@ function parseArgs(argv: string[]) {
     else if (a.startsWith('--')) {
       const [k, v] = a.slice(2).split('=', 2);
       if (v !== undefined) flags[k] = v;
-      else if (['agent', 'port', 'ticket', 'title', 'locale', 'preset', 'first-change', 'change', 'artifact', 'decision', 'by', 'pr-url'].includes(k)) flags[k] = argv[++i] ?? '';
+      else if (['agent', 'port', 'ticket', 'title', 'locale', 'preset', 'first-change', 'change', 'artifact', 'decision', 'by', 'pr-url', 'base'].includes(k)) flags[k] = argv[++i] ?? '';
       else flags[k] = true;
     } else pos.push(a);
   }
@@ -387,6 +389,20 @@ async function main() {
       } catch (e) {
         fail((e as Error).message);
       }
+      return;
+    }
+
+    case 'risk': {
+      const loaded = loadConfig(root);
+      const changes = listChanges(root, { locale: localeOf(loaded), defaultBranch: loaded?.config.vcs?.default_branch });
+      const id = pos[0];
+      const change = id ? changes.find((c) => c.dir === id.replace(/^changes\//, '') || c.slug === id) : changes.find((c) => c.active);
+      if (id && !change) fail(`change not found: ${id}`);
+      const base = typeof flags.base === 'string' ? flags.base : (loaded?.config.vcs?.default_branch ?? 'main');
+      const r = changeRisk(root, loaded, change, { base });
+      if (flags.json) return void console.log(JSON.stringify({ change: change?.id, ...r }, null, 2));
+      console.log(`${change ? `${change.id}: ` : ''}${r.tier} risk (${r.files} files against ${base}, ${r.weight} weighted lines of code)`);
+      for (const x of r.reasons) console.log(`  ${x.tier.padEnd(6)} ${x.reason}`);
       return;
     }
 

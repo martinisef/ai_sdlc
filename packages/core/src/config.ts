@@ -11,6 +11,8 @@ export const CI_AGENTS = ['claude', 'codex', 'cursor'] as const;
 export const NOTIFY_EVENTS = ['gate.pending', 'gate.decided', 'spec.ready', 'review.done', 'change.merged'] as const;
 export type NotifyEvent = (typeof NOTIFY_EVENTS)[number];
 export type CiAgent = (typeof CI_AGENTS)[number];
+export const RISK_PROFILES = ['strict', 'graded'] as const;
+export type RiskProfile = (typeof RISK_PROFILES)[number];
 
 const commandMap = z.record(z.string(), z.string());
 
@@ -60,7 +62,22 @@ export const ConfigSchema = z.looseObject({
   append_only_paths: z.array(z.string()).optional(),
   test_globs: z.array(z.string()).optional(),
   secret_patterns_extra: z.array(z.string()).optional(),
-  risk: z.looseObject({ high_risk_paths: z.array(z.string()).optional() }).optional(),
+  risk: z
+    .looseObject({
+      high_risk_paths: z.array(z.string()).optional(),
+      /** Paths that are never low risk (default: CI workflows, `.sdlc/**`, REVIEW.md). */
+      always_human_paths: z.array(z.string()).optional(),
+      /** `strict` (default): every gate needs a person. `graded`: human approvals scale with the tier. */
+      profile: z.enum(RISK_PROFILES).optional(),
+      /** Human approvals per tier; defaults depend on `profile`. */
+      tiers: z.partialRecord(z.enum(['low', 'medium', 'high']), z.looseObject({ approvals: z.number().int().min(0).max(5) })).optional(),
+      /** Authors (git name, email or `@login`) who get the lighter paths; everyone else needs another person. */
+      trusted_authors: z.array(z.string()).optional(),
+      size: z.looseObject({ low_max_lines: z.number().int().min(0).optional(), high_min_lines: z.number().int().positive().optional() }).optional(),
+      /** `sdlc ci risk`: also ask the agent whether this change needs another person (it can only raise the tier). */
+      agent_escalation: z.boolean().optional(),
+    })
+    .optional(),
   production_gate: z
     .looseObject({ patterns: z.array(z.string()).optional(), approval_env: z.string().optional() })
     .optional(),

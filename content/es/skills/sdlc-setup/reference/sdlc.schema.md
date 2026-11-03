@@ -41,7 +41,15 @@ Lo leen los guardrails (`sdlc hook`, para cualquier agente), las skills del loop
   "protected_paths": ["migrations/**", "src/gen/**", "infra/**"],
   "test_globs": ["tests/**", "**/*_test.py"],
   "secret_patterns_extra": [],
-  "risk": { "high_risk_paths": ["src/auth/**", "infra/**"] },
+  "risk": {
+    "high_risk_paths": ["src/auth/**", "infra/**"],
+    "always_human_paths": [".github/workflows/**", ".sdlc/**", "REVIEW.md"],
+    "profile": "strict",
+    "tiers": { "low": { "approvals": 0 }, "medium": { "approvals": 1 }, "high": { "approvals": 2 } },
+    "trusted_authors": ["@ana", "juan@example.com"],
+    "size": { "low_max_lines": 50, "high_min_lines": 800 },
+    "agent_escalation": false
+  },
   "production_gate": { "patterns": ["deploy.*prod", "terraform apply"], "approval_env": "RELEASE_APPROVAL" },
   "gates": { "intent": ["po"], "spec": ["po", "policy-owners"], "plan": ["tech-lead"] },
   "roles": { "po": ["ana@miempresa.com"], "tech-lead": ["juan@miempresa.com"] },
@@ -62,7 +70,13 @@ Lo leen los guardrails (`sdlc hook`, para cualquier agente), las skills del loop
 | `append_only_paths` | hook `protect-paths`, pre-commit | Mismos globs; se pueden crear archivos nuevos pero no cambiar los existentes (por ejemplo, migraciones aplicadas: `db/migrate/**`). |
 | `test_globs` | hook `test-lock` | Archivos que no se pueden editar durante `/sdlc-fix`. |
 | `secret_patterns_extra` | hook `secrets-guard` | Regex ERE adicionales (ej. formato de IDs internos sensibles). |
-| `risk.high_risk_paths` | `/sdlc-spec`, `/sdlc-plan`, REVIEW.md | Marca `risk: high` → requiere tech lead. |
+| `risk.high_risk_paths` | `sdlc risk`, `/sdlc-spec`, `/sdlc-plan`, REVIEW.md | Un cambio que las toca (o cuya spec/plan las nombra) es de riesgo **high**; un plan high también necesita tech lead. |
+| `risk.always_human_paths` | `sdlc risk` | Nunca son de riesgo low (como mínimo **medium**). Por defecto: workflows de CI (`.github/workflows/**`, `.gitlab-ci.yml`, `ci/*.gitlab-ci.yml`, `bitbucket-pipelines.yml`), `.sdlc/**` y `REVIEW.md`. Definir la clave reemplaza la lista. |
+| `risk.profile` | gates, `sdlc ci gate-status` | `strict` (por defecto): cada gate necesita una persona, como hasta ahora. `graded`: las aprobaciones humanas escalan con el nivel (`risk.tiers`). Arrancá estricto y aflojá con datos (`sdlc metrics`). |
+| `risk.tiers` | gates | Aprobaciones humanas por nivel. Por defecto en `graded`: low 0, medium 1, high 2. El intent siempre lo aprueba una persona. |
+| `risk.trusted_authors` | gates | Quién tiene los caminos livianos (nombre de git, email o `@login`). Sin definir: todos los de `roles` (o cualquiera, si no hay roles). El resto siempre necesita otra persona. |
+| `risk.size` | `sdlc risk` | `low_max_lines` (por defecto 50) y `high_min_lines` (por defecto 800) de líneas de código ponderadas: las modificadas y borradas cuentan completas, las de archivos nuevos cuentan la mitad; docs y `test_globs` no cuentan. |
+| `risk.agent_escalation` | `sdlc ci risk` | `true`: un segundo clasificador, un agente, lee el diff y puede subir el nivel (nunca bajarlo). |
 | `production_gate` | hook `production-gate` | Regex ERE sobre comandos Bash; sin la variable de aprobación → bloqueo. |
 | `gates` | `sdlc approve`, dashboard | Roles que pueden aprobar cada artefacto. Sin roles: cualquier persona (nunca un agente o bot). `risk: high` suma `tech-lead` al plan. |
 | `gates_self_approval` | `sdlc approve` | `true` (preset `solo`): el autor puede aprobar su propia spec y plan. Los agentes y bots siguen sin poder. |

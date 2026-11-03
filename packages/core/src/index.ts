@@ -16,5 +16,6 @@ export * from './notify.ts';
 export * from './policies.ts';
 export * from './project.ts';
 export * from './quick.ts';
+export * from './risk.ts';
 export * from './telemetry.ts';
 export * from './vcs.ts';

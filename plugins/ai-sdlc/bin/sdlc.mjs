@@ -1761,7 +1761,7 @@ var require_merge = __commonJS({
 var require_addPairToJSMap = __commonJS({
   "node_modules/yaml/dist/nodes/addPairToJSMap.js"(exports) {
     "use strict";
-    var log3 = require_log();
+    var log4 = require_log();
     var merge2 = require_merge();
     var stringify = require_stringify();
     var identity = require_identity();
@@ -1810,7 +1810,7 @@ var require_addPairToJSMap = __commonJS({
           let jsonStr = JSON.stringify(strKey);
           if (jsonStr.length > 40)
             jsonStr = jsonStr.substring(0, 36) + '..."';
-          log3.warn(ctx.doc.options.logLevel, `Keys with collection values will be stringified due to JS Object restrictions: ${jsonStr}. Set mapAsMap: true to use object keys.`);
+          log4.warn(ctx.doc.options.logLevel, `Keys with collection values will be stringified due to JS Object restrictions: ${jsonStr}. Set mapAsMap: true to use object keys.`);
           ctx.mapKeyWarned = true;
         }
         return strKey;
@@ -7227,7 +7227,7 @@ var require_public_api = __commonJS({
     var composer = require_composer();
     var Document = require_Document();
     var errors = require_errors();
-    var log3 = require_log();
+    var log4 = require_log();
     var identity = require_identity();
     var lineCounter = require_line_counter();
     var parser = require_parser();
@@ -7279,7 +7279,7 @@ var require_public_api = __commonJS({
       const doc = parseDocument(src, options);
       if (!doc)
         return null;
-      doc.warnings.forEach((warning) => log3.warn(doc.options.logLevel, warning));
+      doc.warnings.forEach((warning) => log4.warn(doc.options.logLevel, warning));
       if (doc.errors.length > 0) {
         if (doc.options.logLevel !== "silent")
           throw doc.errors[0];
@@ -28079,7 +28079,7 @@ function localeOf(loaded) {
 function configJsonSchema() {
   return external_exports.toJSONSchema(ConfigSchema, { io: "input" });
 }
-var AGENTS, ARTIFACTS, CI_AGENTS, NOTIFY_EVENTS, commandMap, ConfigSchema, CONFIG_PATH, LEGACY_CONFIG_PATH;
+var AGENTS, ARTIFACTS, CI_AGENTS, NOTIFY_EVENTS, RISK_PROFILES, commandMap, ConfigSchema, CONFIG_PATH, LEGACY_CONFIG_PATH;
 var init_config = __esm({
   "packages/core/src/config.ts"() {
     "use strict";
@@ -28088,6 +28088,7 @@ var init_config = __esm({
     ARTIFACTS = ["intent", "spec", "plan"];
     CI_AGENTS = ["claude", "codex", "cursor"];
     NOTIFY_EVENTS = ["gate.pending", "gate.decided", "spec.ready", "review.done", "change.merged"];
+    RISK_PROFILES = ["strict", "graded"];
     commandMap = external_exports.record(external_exports.string(), external_exports.string());
     ConfigSchema = external_exports.looseObject({
       version: external_exports.literal(1),
@@ -28127,7 +28128,20 @@ var init_config = __esm({
       append_only_paths: external_exports.array(external_exports.string()).optional(),
       test_globs: external_exports.array(external_exports.string()).optional(),
       secret_patterns_extra: external_exports.array(external_exports.string()).optional(),
-      risk: external_exports.looseObject({ high_risk_paths: external_exports.array(external_exports.string()).optional() }).optional(),
+      risk: external_exports.looseObject({
+        high_risk_paths: external_exports.array(external_exports.string()).optional(),
+        /** Paths that are never low risk (default: CI workflows, `.sdlc/**`, REVIEW.md). */
+        always_human_paths: external_exports.array(external_exports.string()).optional(),
+        /** `strict` (default): every gate needs a person. `graded`: human approvals scale with the tier. */
+        profile: external_exports.enum(RISK_PROFILES).optional(),
+        /** Human approvals per tier; defaults depend on `profile`. */
+        tiers: external_exports.partialRecord(external_exports.enum(["low", "medium", "high"]), external_exports.looseObject({ approvals: external_exports.number().int().min(0).max(5) })).optional(),
+        /** Authors (git name, email or `@login`) who get the lighter paths; everyone else needs another person. */
+        trusted_authors: external_exports.array(external_exports.string()).optional(),
+        size: external_exports.looseObject({ low_max_lines: external_exports.number().int().min(0).optional(), high_min_lines: external_exports.number().int().positive().optional() }).optional(),
+        /** `sdlc ci risk`: also ask the agent whether this change needs another person (it can only raise the tier). */
+        agent_escalation: external_exports.boolean().optional()
+      }).optional(),
       production_gate: external_exports.looseObject({ patterns: external_exports.array(external_exports.string()).optional(), approval_env: external_exports.string().optional() }).optional(),
       /** Who may approve each artifact: role names, resolved through `roles`. Empty → anyone but an agent. */
       gates: external_exports.partialRecord(external_exports.enum(ARTIFACTS), external_exports.array(external_exports.string())).optional(),
@@ -29450,6 +29464,125 @@ var init_quick = __esm({
   }
 });
 
+// packages/core/src/risk.ts
+function parseTier(v) {
+  const s = v?.trim().toLowerCase() ?? "";
+  if (/^(high|alto|alta)\b/.test(s)) return "high";
+  if (/^(medium|medio|media)\b/.test(s)) return "medium";
+  if (/^(low|bajo|baja|routine|rutina)\b/.test(s)) return "low";
+  return void 0;
+}
+function riskSettings(loaded) {
+  const r = loaded?.config.risk ?? {};
+  return {
+    highRisk: r.high_risk_paths ?? [],
+    alwaysHuman: r.always_human_paths ?? ALWAYS_HUMAN_DEFAULTS,
+    lowMaxLines: r.size?.low_max_lines ?? RISK_SIZE_DEFAULTS.low_max_lines,
+    highMinLines: r.size?.high_min_lines ?? RISK_SIZE_DEFAULTS.high_min_lines,
+    tests: loaded?.config.test_globs ?? [],
+    sensitive: [...loaded?.config.protected_paths ?? [], ...loaded?.config.append_only_paths ?? []]
+  };
+}
+function classifyRisk(loaded, files) {
+  const s = riskSettings(loaded);
+  const reasons = [];
+  const first = (tier, pick2, why) => {
+    for (const f of files) {
+      const m = pick2(f);
+      if (m) return void reasons.push({ tier, reason: why(f, m) });
+    }
+  };
+  first("high", (f) => matchAny(f.path, s.highRisk), (f, m) => `${f.path} is a high-risk path (${m})`);
+  first("medium", (f) => matchAny(f.path, s.alwaysHuman), (f, m) => `${f.path} always needs a person (${m})`);
+  first("medium", (f) => matchAny(f.path, DEPENDENCY_MANIFESTS), (f) => `${f.path} changes dependencies`);
+  first("medium", (f) => matchAny(f.path, s.sensitive), (f, m) => `${f.path} is protected or append-only (${m})`);
+  const code2 = files.filter((f) => isCodePath(f.path) && !matchAny(f.path, s.tests));
+  first("medium", (f) => code2.includes(f) && f.status === "D" ? "deleted" : void 0, (f) => `${f.path} is deleted`);
+  const weight = Math.round(code2.reduce((n, f) => n + (f.status === "A" ? f.added / 2 : f.added + f.deleted), 0));
+  if (weight >= s.highMinLines) reasons.push({ tier: "high", reason: `${weight} weighted lines of code changed (risk.size.high_min_lines: ${s.highMinLines})` });
+  else if (weight > s.lowMaxLines) reasons.push({ tier: "medium", reason: `${weight} weighted lines of code changed (risk.size.low_max_lines: ${s.lowMaxLines})` });
+  reasons.sort((a, b) => tierRank(b.tier) - tierRank(a.tier));
+  return { tier: maxTier(...reasons.map((r) => r.tier)), reasons, weight, files: files.length };
+}
+function diffFiles(root, base, head = "HEAD") {
+  if (git(root, ["rev-parse", "--verify", "--quiet", `${base}^{commit}`]) === void 0) return [];
+  const range = `${base}...${head}`;
+  const counts = /* @__PURE__ */ new Map();
+  for (const l of lines(git(root, ["diff", "--numstat", "-M", range]))) {
+    const [a, d, ...p] = l.split("	");
+    const path = p.join("	").replace(/^.*=> /, "").replace(/[{}]/g, "");
+    counts.set(path, [Number(a) || 0, Number(d) || 0]);
+  }
+  return lines(git(root, ["diff", "--name-status", "-M", range])).map((l) => {
+    const [st, ...paths] = l.split("	");
+    const path = paths.at(-1);
+    const [added, deleted] = counts.get(path) ?? [0, 0];
+    return { path, status: st[0] === "R" ? "R" : st[0] === "A" ? "A" : st[0] === "D" ? "D" : "M", added, deleted };
+  });
+}
+function plannedFiles(change) {
+  const text = [change.artifacts.spec?.body, change.artifacts.plan?.body].filter(Boolean).join("\n");
+  const found = /* @__PURE__ */ new Set();
+  for (const m of text.matchAll(/`([^`\s]+)`/g)) {
+    const p = m[1].replace(/^\.\//, "");
+    if (/^[\w.*-]+(\/[\w.*@-]+)*\/$|^[\w.*-]+(\/[\w.*@-]+)+$|^[\w-]+\.[a-z]{1,5}$/i.test(p) && !/^https?:/.test(p)) found.add(p.replace(/\/$/, "/**"));
+  }
+  return [...found];
+}
+function changeRisk(root, loaded, change, opts2 = {}) {
+  const diff = opts2.base ? diffFiles(root, opts2.base, opts2.head) : [];
+  const planned = change ? plannedFiles(change).map((path) => ({ path, status: "M", added: 0, deleted: 0 })) : [];
+  const seen = new Set(diff.map((f) => f.path));
+  const a = classifyRisk(loaded, [...diff, ...planned.filter((f) => !seen.has(f.path))]);
+  const declared = parseTier(change?.risk);
+  const reasons = [...a.reasons];
+  if (declared && tierRank(declared) > tierRank(a.tier)) reasons.unshift({ tier: declared, reason: `the spec declares risk: ${declared}` });
+  if (opts2.escalated && tierRank(opts2.escalated) > tierRank(maxTier(a.tier, declared)))
+    reasons.unshift({ tier: opts2.escalated, reason: opts2.escalatedReason ?? `escalated to ${opts2.escalated}` });
+  return { ...a, reasons, declared, escalated: opts2.escalated, computed: a.tier, tier: maxTier(a.tier, declared, opts2.escalated) };
+}
+function riskMarker(tier, reason) {
+  return `<!-- sdlc:risk tier=${tier} reason="${reason.replace(/"|-->/g, "'")}" -->`;
+}
+function parseEscalation(out) {
+  const m = [...out.matchAll(/^\s*\**ESCALATE:?\**\s*:?\s*(none|low|medium|high)\b[\s:—–-]*(.*)$/gim)].at(-1);
+  if (!m || m[1].toLowerCase() === "none") return {};
+  return { tier: m[1].toLowerCase(), reason: m[2].trim() || void 0 };
+}
+var RISK_TIERS, ALWAYS_HUMAN_DEFAULTS, DEPENDENCY_MANIFESTS, RISK_SIZE_DEFAULTS, tierRank, maxTier;
+var init_risk = __esm({
+  "packages/core/src/risk.ts"() {
+    "use strict";
+    init_changes();
+    init_git();
+    init_glob();
+    RISK_TIERS = ["low", "medium", "high"];
+    ALWAYS_HUMAN_DEFAULTS = [".github/workflows/**", ".gitlab-ci.yml", "ci/*.gitlab-ci.yml", "bitbucket-pipelines.yml", ".sdlc/**", "REVIEW.md"];
+    DEPENDENCY_MANIFESTS = [
+      "**/package.json",
+      "**/package-lock.json",
+      "**/pnpm-lock.yaml",
+      "**/yarn.lock",
+      "**/pyproject.toml",
+      "**/uv.lock",
+      "**/poetry.lock",
+      "**/requirements*.txt",
+      "**/go.mod",
+      "**/go.sum",
+      "**/Gemfile",
+      "**/Gemfile.lock",
+      "**/*.csproj",
+      "**/Cargo.toml",
+      "**/Cargo.lock",
+      "**/pom.xml",
+      "**/build.gradle*"
+    ];
+    RISK_SIZE_DEFAULTS = { low_max_lines: 50, high_min_lines: 800 };
+    tierRank = (t2) => RISK_TIERS.indexOf(t2);
+    maxTier = (...ts) => ts.reduce((a, b) => b && tierRank(b) > tierRank(a) ? b : a, "low");
+  }
+});
+
 // packages/core/src/telemetry.ts
 import { randomUUID } from "node:crypto";
 import { existsSync as existsSync6, mkdirSync as mkdirSync4, readFileSync as readFileSync8, writeFileSync as writeFileSync5 } from "node:fs";
@@ -29668,6 +29801,86 @@ async function prComments(ctx, n) {
     }
   }
 }
+async function gitlab(ctx, method, path, body) {
+  const env = ctx.env ?? process.env;
+  if (env.GITLAB_TOKEN && env.CI_API_V4_URL && env.CI_PROJECT_ID)
+    return httpJson(method, `${env.CI_API_V4_URL}/projects/${env.CI_PROJECT_ID}${path}`, { "private-token": env.GITLAB_TOKEN }, body);
+  if (!hasTool("glab", env)) throw new SdlcError("without glab, GITLAB_TOKEN, CI_API_V4_URL and CI_PROJECT_ID are required");
+  const fields = [];
+  const flat = (o, prefix = "") => {
+    for (const [k, v] of Object.entries(o)) {
+      const key = prefix ? `${prefix}[${k}]` : k;
+      if (v && typeof v === "object") flat(v, key);
+      else if (v !== void 0) fields.push("-f", `${key}=${v}`);
+    }
+  };
+  if (body) flat(body);
+  const out = tool(ctx, "glab", ["api", "-X", method, `projects/:id${path}`, ...fields]);
+  return out ? JSON.parse(out) : void 0;
+}
+async function prThread(ctx, n) {
+  let all;
+  switch (vcsProvider(ctx)) {
+    case "github": {
+      const jsonl = (path, jq) => tool(ctx, "gh", ["api", `repos/{owner}/{repo}/${path}`, "--paginate", "--jq", jq]).split("\n").filter(Boolean).map((l) => JSON.parse(l));
+      const common = "id: (.id|tostring), author: .user.login, body, createdAt: .created_at, association: .author_association";
+      all = [
+        ...jsonl(`issues/${n}/comments`, `.[] | {${common}}`),
+        ...jsonl(
+          `pulls/${n}/comments`,
+          `.[] | {${common}, path, line: (.line // .original_line), replyTo: (if .in_reply_to_id then (.in_reply_to_id|tostring) else null end)}`
+        )
+      ];
+      break;
+    }
+    case "gitlab": {
+      const discussions = await gitlab(ctx, "GET", `/merge_requests/${n}/discussions?per_page=100`) ?? [];
+      all = discussions.flatMap((d) => {
+        const notes = (d.notes ?? []).filter((x) => !x.system);
+        return notes.map((x, i) => ({
+          id: String(x.id),
+          author: x.author?.username ?? "",
+          body: x.body ?? "",
+          createdAt: x.created_at ?? "",
+          path: x.position?.new_path ?? void 0,
+          line: x.position?.new_line ?? void 0,
+          replyTo: i > 0 ? String(notes[0].id) : void 0
+        }));
+      });
+      break;
+    }
+    case "bitbucket": {
+      const page = await bitbucket(ctx)("GET", `/pullrequests/${n}/comments?pagelen=100`);
+      all = (page.values ?? []).filter((c) => !c.deleted).map((c) => ({
+        id: String(c.id),
+        author: c.user?.nickname ?? c.user?.display_name ?? "",
+        body: c.content?.raw ?? "",
+        createdAt: c.created_on ?? "",
+        path: c.inline?.path ?? void 0,
+        line: c.inline?.to ?? void 0,
+        replyTo: c.parent?.id ? String(c.parent.id) : void 0
+      }));
+      break;
+    }
+  }
+  return all.map((c) => Object.fromEntries(Object.entries(c).filter(([, v]) => v !== null && v !== void 0))).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+}
+async function prUpsertComment(ctx, n, marker, body, isOurs2 = () => true) {
+  const mine = (await prThread(ctx, n)).filter((c) => !c.path && c.body.includes(marker) && isOurs2(c)).at(-1);
+  if (!mine) return prComment(ctx, n, body);
+  switch (vcsProvider(ctx)) {
+    case "github":
+      tool(ctx, "gh", ["api", "-X", "PATCH", `repos/{owner}/{repo}/issues/comments/${mine.id}`, "-f", `body=${body}`]);
+      break;
+    case "gitlab":
+      await gitlab(ctx, "PUT", `/merge_requests/${n}/notes/${mine.id}`, { body });
+      break;
+    case "bitbucket":
+      await bitbucket(ctx)("PUT", `/pullrequests/${n}/comments/${mine.id}`, { content: { raw: body } });
+      break;
+  }
+  return `comment ${mine.id} updated on #${n}`;
+}
 async function prChecks(ctx, n) {
   switch (vcsProvider(ctx)) {
     case "github":
@@ -29716,6 +29929,7 @@ var init_src = __esm({
     init_policies();
     init_project();
     init_quick();
+    init_risk();
     init_telemetry();
     init_vcs();
   }
@@ -33902,14 +34116,14 @@ __export(src_exports, {
   staticFile: () => staticFile
 });
 import { randomBytes, timingSafeEqual } from "node:crypto";
-import { existsSync as existsSync17, mkdirSync as mkdirSync8, readFileSync as readFileSync20, watch, writeFileSync as writeFileSync12 } from "node:fs";
+import { existsSync as existsSync17, mkdirSync as mkdirSync8, readFileSync as readFileSync20, watch, writeFileSync as writeFileSync13 } from "node:fs";
 import { homedir as homedir4 } from "node:os";
-import { basename as basename2, dirname as dirname7, extname, join as join19, resolve as resolve3, sep } from "node:path";
+import { basename as basename2, dirname as dirname7, extname, join as join20, resolve as resolve3, sep } from "node:path";
 import { fileURLToPath as fileURLToPath2 } from "node:url";
 import { execFile } from "node:child_process";
 function uiDir() {
-  const candidates = [process.env.SDLC_UI_DIR, join19(here2, "ui"), join19(here2, "..", "..", "ui", "dist")];
-  return candidates.find((c) => c && existsSync17(join19(c, "index.html")));
+  const candidates = [process.env.SDLC_UI_DIR, join20(here2, "ui"), join20(here2, "..", "..", "ui", "dist")];
+  return candidates.find((c) => c && existsSync17(join20(c, "index.html")));
 }
 function loadWorkspaces(current) {
   let list = [];
@@ -33921,7 +34135,7 @@ function loadWorkspaces(current) {
 }
 function saveWorkspaces(list) {
   mkdirSync8(dirname7(WORKSPACES_FILE), { recursive: true });
-  writeFileSync12(WORKSPACES_FILE, JSON.stringify([...new Set(list)], null, 2));
+  writeFileSync13(WORKSPACES_FILE, JSON.stringify([...new Set(list)], null, 2));
 }
 function cachedPr(root, branch, loaded) {
   const key = `${root}#${branch}`;
@@ -33950,7 +34164,7 @@ function timeline(root, c) {
 }
 function staticFile(dir, path) {
   const file2 = resolve3(dir, path === "/" ? "index.html" : path.slice(1));
-  return file2.startsWith(dir + sep) && existsSync17(file2) && extname(file2) ? file2 : join19(dir, "index.html");
+  return file2.startsWith(dir + sep) && existsSync17(file2) && extname(file2) ? file2 : join20(dir, "index.html");
 }
 function createApp(opts2) {
   const app = new Hono3();
@@ -33976,7 +34190,7 @@ function createApp(opts2) {
   app.post("/api/workspaces", async (c) => {
     const { path } = await c.req.json();
     const p = resolve3(path);
-    if (!existsSync17(join19(p, ".git"))) throw new Error(`${p} is not a git repository`);
+    if (!existsSync17(join20(p, ".git"))) throw new Error(`${p} is not a git repository`);
     workspaces = [...workspaces.filter((w) => w !== p), p];
     saveWorkspaces(workspaces.slice(1).concat(opts2.root));
     return c.json({ ok: true });
@@ -34069,7 +34283,7 @@ function createApp(opts2) {
         timer = setTimeout(() => void stream2.writeSSE({ event: "change", data: String(Date.now()) }), 300);
       };
       for (const p of ["changes", ".sdlc", ".git/refs", ".git/HEAD", CONFIG_PATH]) {
-        const full = join19(root, p);
+        const full = join20(root, p);
         if (!existsSync17(full)) continue;
         try {
           watchers.push(watch(full, { recursive: !extname(p) && p !== ".git/HEAD" }, ping));
@@ -34122,7 +34336,7 @@ var init_src3 = __esm({
     init_src2();
     init_src();
     here2 = dirname7(fileURLToPath2(import.meta.url));
-    WORKSPACES_FILE = join19(process.env.XDG_CONFIG_HOME ?? join19(homedir4(), ".config"), "sdlc", "workspaces.json");
+    WORKSPACES_FILE = join20(process.env.XDG_CONFIG_HOME ?? join20(homedir4(), ".config"), "sdlc", "workspaces.json");
     prCache = /* @__PURE__ */ new Map();
   }
 });
@@ -34536,8 +34750,8 @@ var init_src5 = __esm({
 // packages/cli/src/main.ts
 init_src2();
 init_src();
-import { existsSync as existsSync18, mkdirSync as mkdirSync9, readFileSync as readFileSync22, rmSync as rmSync7, writeFileSync as writeFileSync13 } from "node:fs";
-import { join as join20 } from "node:path";
+import { existsSync as existsSync18, mkdirSync as mkdirSync9, readFileSync as readFileSync22, rmSync as rmSync7, writeFileSync as writeFileSync14 } from "node:fs";
+import { join as join21 } from "node:path";
 
 // packages/cli/src/init.ts
 init_src2();
@@ -35231,9 +35445,9 @@ async function bandsCommand(root, args) {
 // packages/cli/src/ci/index.ts
 init_src();
 import { execFileSync as execFileSync9, spawnSync as spawnSync3 } from "node:child_process";
-import { appendFileSync as appendFileSync3, existsSync as existsSync16, readdirSync as readdirSync7, readFileSync as readFileSync19, rmSync as rmSync6, writeFileSync as writeFileSync11 } from "node:fs";
+import { appendFileSync as appendFileSync3, existsSync as existsSync16, readdirSync as readdirSync7, readFileSync as readFileSync19, rmSync as rmSync6, writeFileSync as writeFileSync12 } from "node:fs";
 import { homedir as homedir3 } from "node:os";
-import { dirname as dirname6, join as join18 } from "node:path";
+import { dirname as dirname6, join as join19 } from "node:path";
 
 // packages/cli/src/ci/evals.ts
 init_src();
@@ -35506,6 +35720,52 @@ async function gate(c) {
   return gateStatus({ ...c, env: { ...c.env, HEAD_SHA: "" } }, cmd.decision === "approved");
 }
 
+// packages/cli/src/ci/risk.ts
+init_src();
+import { writeFileSync as writeFileSync11 } from "node:fs";
+import { join as join18 } from "node:path";
+var RISK_HEADER = "## Risk (ai-sdlc)";
+var RISK_SUMMARY = "<!-- sdlc:risk-summary -->";
+var log2 = (msg) => process.stderr.write(`[sdlc-ci] ${msg}
+`);
+function baseCommit(root, base) {
+  return git(root, ["rev-parse", "--verify", "--quiet", `origin/${base}^{commit}`]) ? `origin/${base}` : base;
+}
+function renderRisk(r, extra = []) {
+  const why = r.reasons.length ? r.reasons.map((x) => `- **${x.tier}**: ${x.reason}`) : ["- small change, no sensitive paths, no dependency changes"];
+  return [RISK_HEADER, "", `**Tier: ${r.tier}** (${r.files} files, ${r.weight} weighted lines of code)`, ...extra, "", ...why, "", RISK_SUMMARY].join("\n");
+}
+function escalationPrompt(base, branch, r) {
+  return `You are the second risk classifier for this PR/MR. A deterministic classifier set the tier to ${r.tier}${r.reasons.length ? ` because: ${r.reasons.map((x) => x.reason).join("; ")}` : ""}.
+Read the diff (git diff ${base}...HEAD) and changes/<slug>/spec.md and plan.md for the branch ${branch}.
+Question: does this particular change need another person even though its tier says it does not?
+Escalate for: authentication or authorization, money or billing, data loss or irreversible migrations, public contracts,
+concurrency, security boundaries, CI or release workflows, or an architecture pattern others will copy. Size alone is not a reason.
+Do not modify any file. Answer in at most five lines, and end with exactly one line:
+ESCALATE: none   or   ESCALATE: medium \u2014 <reason>   or   ESCALATE: high \u2014 <reason>`;
+}
+async function risk(c, escalate, extra = () => []) {
+  const n = prNumber(c.env);
+  const baseName = baseRef(c);
+  git(c.root, ["fetch", "-q", "origin", baseName]);
+  const base = baseCommit(c.root, baseName);
+  const change = changeForBranch(c, headRef(c));
+  let r = changeRisk(c.root, c.loaded, change, { base });
+  let marker = "";
+  if ((escalate || c.loaded?.config.risk?.agent_escalation) && r.tier !== "high") {
+    const out = runAgent(c.agent, { mode: "read", cwd: c.root, allowedTools: READ_TOOLS, prompt: escalationPrompt(base, headRef(c), r) }, c.model);
+    const e = parseEscalation(out);
+    r = changeRisk(c.root, c.loaded, change, { base, escalated: e.tier, escalatedReason: e.reason && `second classifier: ${e.reason}` });
+    if (r.escalated && r.tier === r.escalated) marker = riskMarker(r.escalated, e.reason ?? "");
+  }
+  writeFileSync11(join18(c.root, "risk.json"), JSON.stringify(r, null, 2) + "\n");
+  const body = renderRisk(r, extra(r, c.loaded)) + (marker ? `
+${marker}` : "");
+  if (n === void 0 || c.dryRun) console.log(body);
+  else log2(await prUpsertComment({ root: c.root, loaded: c.loaded, env: c.env }, n, RISK_SUMMARY, body));
+  return 0;
+}
+
 // packages/cli/src/notify.ts
 init_src();
 function findChange(root, loaded, o) {
@@ -35573,6 +35833,8 @@ sdlc ci matrix [--only agent]  agents with credentials here, as JSON (the evals 
 sdlc ci scorecard <report.json\u2026> [--out docs/reference/agent-scorecard.md]   eval \xD7 agent table; rewritten only when a result changed
 sdlc ci gate                   /approve|/reject intent|spec|plan in a PR/MR comment \u2192 gate commit on the branch + reply
 sdlc ci gate-status            set the sdlc/gates commit status (success once the plan is approved or the change is quick)
+sdlc ci risk [--escalate]      risk tier of the PR/MR from the diff (sticky comment, risk.json); --escalate (or
+                               risk.agent_escalation) asks the agent whether it needs another person: it can only raise it
 sdlc ci mention                answer an @claude comment on the PR/MR (triggered by \`sdlc webhook\`; ci.mention_mode read|edit)
 
 Options: --agent claude|codex|cursor (or SDLC_CI_AGENT, or ci.agent) \xB7 --model M \xB7 --dry-run (print, do not post/push)
@@ -35580,7 +35842,7 @@ Env: ANTHROPIC_API_KEY | OPENAI_API_KEY | CURSOR_API_KEY \xB7 GH_TOKEN | GITLAB_
      JIRA_EMAIL + JIRA_API_TOKEN (or JIRA_PAT) \xB7 LINEAR_API_KEY \xB7 SDLC_PLUGIN_REPO_URL / SDLC_PLUGIN_TOKEN (private marketplace)
      SDLC_NOTIFY_WEBHOOK (Slack or generic webhook: gate.pending, gate.decided, spec.ready, review.done, change.merged)
 `;
-var log2 = (msg) => process.stderr.write(`[sdlc-ci] ${msg}
+var log3 = (msg) => process.stderr.write(`[sdlc-ci] ${msg}
 `);
 function prNumber(env) {
   const n = env.PR_NUMBER || env.CI_MERGE_REQUEST_IID || env.BITBUCKET_PR_ID;
@@ -35599,7 +35861,7 @@ async function ciCommand(root, args) {
   const flags = {};
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
-    if (a === "--dry-run") flags["dry-run"] = true;
+    if (a === "--dry-run" || a === "--escalate") flags[a.slice(2)] = true;
     else if (a.startsWith("--")) flags[a.slice(2)] = args[++i] ?? "";
     else pos.push(a);
   }
@@ -35644,6 +35906,8 @@ async function ciCommand(root, args) {
       return gate(c);
     case "gate-status":
       return gateStatus(c);
+    case "risk":
+      return risk(c, flags.escalate === true);
     default:
       process.stderr.write(CI_HELP);
       return 1;
@@ -35671,10 +35935,10 @@ var INSTALL = {
 };
 function bootstrap(c) {
   let bin = agentBin(c.agent, c.env);
-  if (hasTool(bin, c.env)) log2(`${bin} already installed`);
+  if (hasTool(bin, c.env)) log3(`${bin} already installed`);
   else {
     const [cmd, args] = INSTALL[c.agent];
-    log2(`installing ${bin}: ${cmd} ${args.join(" ")}`);
+    log3(`installing ${bin}: ${cmd} ${args.join(" ")}`);
     const r = spawnSync3(cmd, args, { stdio: ["ignore", "ignore", "inherit"] });
     if (r.status !== 0) throw new SdlcError(`could not install ${bin}`);
     bin = agentBin(c.agent, c.env);
@@ -35683,28 +35947,28 @@ function bootstrap(c) {
 `);
   }
   if (c.agent !== "claude") {
-    log2(`${bin} reads the rendered skills in .agents/skills (commit the output of sdlc sync)`);
+    log3(`${bin} reads the rendered skills in .agents/skills (commit the output of sdlc sync)`);
     return 0;
   }
   let url2 = c.env.SDLC_PLUGIN_REPO_URL || c.loaded?.config.plugin?.marketplace_repo;
   if (!url2) {
-    log2("no plugin.marketplace_repo: Claude uses the project skills in .claude/skills (commit the output of sdlc sync)");
+    log3("no plugin.marketplace_repo: Claude uses the project skills in .claude/skills (commit the output of sdlc sync)");
     return 0;
   }
   if (c.env.SDLC_PLUGIN_TOKEN) url2 = url2.replace("https://", `https://${c.env.SDLC_PLUGIN_TOKEN_USER || "x-access-token"}:${c.env.SDLC_PLUGIN_TOKEN}@`);
-  const home = c.env.SDLC_HOME || join18(homedir3(), ".ai-sdlc");
+  const home = c.env.SDLC_HOME || join19(homedir3(), ".ai-sdlc");
   rmSync6(home, { recursive: true, force: true });
   execFileSync9("git", ["clone", "-q", "--depth", "1", url2, home], { stdio: ["ignore", "ignore", "inherit"] });
   execFileSync9("claude", ["plugin", "marketplace", "add", home], { stdio: ["ignore", "ignore", "inherit"] });
   execFileSync9("claude", ["plugin", "install", "ai-sdlc@ai-native-sdlc"], { stdio: ["ignore", "ignore", "inherit"] });
-  log2("ai-sdlc plugin installed");
+  log3("ai-sdlc plugin installed");
   return 0;
 }
 var TALLY = /Important: \d+ · Nit: \d+/g;
 async function review(c) {
   const n = prNumber(c.env);
   if (n === void 0) {
-    log2("not a PR/MR, nothing to review");
+    log3("not a PR/MR, nothing to review");
     return 0;
   }
   const base = baseRef(c);
@@ -35722,11 +35986,11 @@ Do not approve or block: the findings inform the code owner. Do not modify any f
     },
     c.model
   );
-  writeFileSync11(join18(c.root, "review-tally.txt"), (out.match(TALLY)?.at(-1) ?? "") + "\n");
+  writeFileSync12(join19(c.root, "review-tally.txt"), (out.match(TALLY)?.at(-1) ?? "") + "\n");
   await post(c, n, out);
   if (!c.dryRun) {
     const tally = out.match(TALLY)?.at(-1);
-    log2(await notify({ event: "review.done", change: findChange(c.root, c.loaded, { branch: headRef(c), active: false }), note: tally }, c.loaded, c.env));
+    log3(await notify({ event: "review.done", change: findChange(c.root, c.loaded, { branch: headRef(c), active: false }), note: tally }, c.loaded, c.env));
   }
   return 0;
 }
@@ -35735,22 +35999,22 @@ async function post(c, n, body) {
     console.log(body);
     return;
   }
-  log2(await prComment({ root: c.root, loaded: c.loaded, env: c.env }, n, body));
+  log3(await prComment({ root: c.root, loaded: c.loaded, env: c.env }, n, body));
 }
 function pendingIntents(root) {
-  const dir = join18(root, "changes");
+  const dir = join19(root, "changes");
   if (!existsSync16(dir)) return [];
-  return readdirSync7(dir, { withFileTypes: true }).filter((d) => d.isDirectory() && !d.name.startsWith("_")).map((d) => `changes/${d.name}`).filter((d) => existsSync16(join18(root, d, "intent.md")) && !existsSync16(join18(root, d, "spec.md"))).filter((d) => isApproved(parseFrontmatter(readFileSync19(join18(root, d, "intent.md"), "utf8")).data.status)).sort();
+  return readdirSync7(dir, { withFileTypes: true }).filter((d) => d.isDirectory() && !d.name.startsWith("_")).map((d) => `changes/${d.name}`).filter((d) => existsSync16(join19(root, d, "intent.md")) && !existsSync16(join19(root, d, "spec.md"))).filter((d) => isApproved(parseFrontmatter(readFileSync19(join19(root, d, "intent.md"), "utf8")).data.status)).sort();
 }
 async function intentToSpec(c) {
   const pending = pendingIntents(c.root);
   if (!pending.length) {
-    log2("no accepted intents without a spec");
+    log3("no accepted intents without a spec");
     return 0;
   }
   const before = git(c.root, ["rev-parse", "HEAD"]);
   for (const d of pending) {
-    log2(`generating spec for ${d} with ${c.agent}`);
+    log3(`generating spec for ${d} with ${c.agent}`);
     runAgent(
       c.agent,
       {
@@ -35763,16 +36027,16 @@ async function intentToSpec(c) {
     );
   }
   if (git(c.root, ["rev-parse", "HEAD"]) === before) {
-    log2("the agent made no commits; nothing to push");
+    log3("the agent made no commits; nothing to push");
     return 1;
   }
   if (c.dryRun) {
-    log2(`dry run: not pushing HEAD:${headRef(c)}`);
+    log3(`dry run: not pushing HEAD:${headRef(c)}`);
     return 0;
   }
   execFileSync9("git", ["push", "origin", `HEAD:${headRef(c)}`], { cwd: c.root, stdio: ["ignore", "inherit", "inherit"] });
-  for (const d of pending.filter((x) => existsSync16(join18(c.root, x, "spec.md")))) {
-    log2(await notify({ event: "spec.ready", change: findChange(c.root, c.loaded, { id: d }), artifact: "spec" }, c.loaded, c.env));
+  for (const d of pending.filter((x) => existsSync16(join19(c.root, x, "spec.md")))) {
+    log3(await notify({ event: "spec.ready", change: findChange(c.root, c.loaded, { id: d }), artifact: "spec" }, c.loaded, c.env));
   }
   return 0;
 }
@@ -35784,7 +36048,7 @@ function scorecard(c, files, out) {
     console.log(block2);
     return 0;
   }
-  console.log(updateScorecard(join18(c.root, out), block2) ? `updated ${out}` : `${out}: no result changed`);
+  console.log(updateScorecard(join19(c.root, out), block2) ? `updated ${out}` : `${out}: no result changed`);
   return 0;
 }
 async function triage(c, logFile) {
@@ -35811,23 +36075,23 @@ async function trackerMerged(c) {
   const message = git(c.root, ["log", "-1", "--format=%B"]) ?? "";
   const branch = c.env.MERGED_BRANCH || mergedBranch(message);
   const merged = branch ? findChange(c.root, c.loaded, { branch, active: false }) : void 0;
-  if (merged && !c.dryRun) log2(await notify({ event: "change.merged", change: merged }, c.loaded, c.env));
+  if (merged && !c.dryRun) log3(await notify({ event: "change.merged", change: merged }, c.loaded, c.env));
   if (!trackerEnabled(c.loaded)) {
-    log2("tracker not configured");
+    log3("tracker not configured");
     return 0;
   }
   const text = [message, headRef(c), branch ?? ""].join("\n");
   const keys = trackerKeys(c.loaded, [text, merged?.ticket ?? ""].join("\n"));
   if (!keys.length) {
-    log2("the merge does not reference any tickets");
+    log3("the merge does not reference any tickets");
     return 0;
   }
   const j = tracker(c.loaded, c.env, c.root);
   for (const k of keys) {
     try {
-      log2(await j.transition(k, "merged"));
+      log3(await j.transition(k, "merged"));
     } catch (e) {
-      log2(`could not transition ${k}: ${e.message} (continuing; the tracker does not block)`);
+      log3(`could not transition ${k}: ${e.message} (continuing; the tracker does not block)`);
     }
   }
   return 0;
@@ -35866,7 +36130,7 @@ ${quoted}
 
 ${out.trim()}`;
   if (edit && git(c.root, ["rev-parse", "HEAD"]) !== before) {
-    if (c.dryRun) log2(`dry run: not pushing HEAD:${headRef(c)}`);
+    if (c.dryRun) log3(`dry run: not pushing HEAD:${headRef(c)}`);
     else execFileSync9("git", ["push", "origin", `HEAD:${headRef(c)}`], { cwd: c.root, stdio: ["ignore", "inherit", "inherit"] });
     body += `
 
@@ -35897,6 +36161,7 @@ Loop
   quick "<what>" [--ticket KEY] [--no-branch]   small change without spec/plan (limits checked on push)
   quick --check [--json]             is the active quick change still within quick_lane limits?
   promote [<change>]                 quick lane \u2192 full loop (intent back to draft for the PO)
+  risk [<change>] [--base B] [--json]   risk tier set by the change: diff against the base, paths the spec/plan name, declared risk
   approve <change> <intent|spec|plan> [-m comment]
   reject  <change> <intent|spec|plan> [-m comment]
   lock on|off|status                 test-lock during a fix
@@ -35922,7 +36187,7 @@ function parseArgs(argv) {
     else if (a.startsWith("--")) {
       const [k, v] = a.slice(2).split("=", 2);
       if (v !== void 0) flags[k] = v;
-      else if (["agent", "port", "ticket", "title", "locale", "preset", "first-change", "change", "artifact", "decision", "by", "pr-url"].includes(k)) flags[k] = argv[++i] ?? "";
+      else if (["agent", "port", "ticket", "title", "locale", "preset", "first-change", "change", "artifact", "decision", "by", "pr-url", "base"].includes(k)) flags[k] = argv[++i] ?? "";
       else flags[k] = true;
     } else pos.push(a);
   }
@@ -35959,7 +36224,7 @@ function slugify2(title) {
 function newChange(root, slug, opts2) {
   const loaded = loadConfig(root);
   const dir = `changes/${(/* @__PURE__ */ new Date()).toISOString().slice(0, 7)}-${slug}`;
-  if (existsSync18(join20(root, dir))) fail3(`${dir} already exists`);
+  if (existsSync18(join21(root, dir))) fail3(`${dir} already exists`);
   if (opts2.branch) gitOrThrow(root, ["checkout", "-b", `change/${slug}`]);
   const who = gitUser(root);
   const fields = { change: slug, created: (/* @__PURE__ */ new Date()).toISOString().slice(0, 10), author: who.name ?? who.email ?? "" };
@@ -35976,8 +36241,8 @@ ${opts2.title}
     body = setFrontmatter(templateFor(root, "intent", localeOf(loaded)), fields);
     if (opts2.title) body = body.replace(/^# (Intent: )?.*$/m, (_m, p) => `# ${p ?? ""}${opts2.title}`);
   }
-  mkdirSync9(join20(root, dir), { recursive: true });
-  writeFileSync13(join20(root, dir, "intent.md"), body);
+  mkdirSync9(join21(root, dir), { recursive: true });
+  writeFileSync14(join21(root, dir, "intent.md"), body);
   recordEvent(root, { type: opts2.quick ? "change.quick" : "change.new", change: slug, by: who.name });
   console.log(`created ${dir}/intent.md${opts2.branch ? ` on branch change/${slug}` : ""}${opts2.quick ? " (quick lane: no spec, no plan)" : ""}`);
   if (!loaded) console.log("Note: project not configured (sdlc init).");
@@ -36076,9 +36341,9 @@ async function main() {
       return;
     }
     case "migrate": {
-      const legacy = join20(root, LEGACY_CONFIG_PATH);
+      const legacy = join21(root, LEGACY_CONFIG_PATH);
       if (!existsSync18(legacy)) fail3(`no ${LEGACY_CONFIG_PATH} to migrate`);
-      if (existsSync18(join20(root, CONFIG_PATH))) fail3(`${CONFIG_PATH} already exists`);
+      if (existsSync18(join21(root, CONFIG_PATH))) fail3(`${CONFIG_PATH} already exists`);
       migrateLegacy(root);
       console.log(`moved ${LEGACY_CONFIG_PATH} \u2192 ${CONFIG_PATH}`);
       printSync(sync(root, requireConfig(root)));
@@ -36189,20 +36454,33 @@ async function main() {
       }
       return;
     }
+    case "risk": {
+      const loaded = loadConfig(root);
+      const changes = listChanges(root, { locale: localeOf(loaded), defaultBranch: loaded?.config.vcs?.default_branch });
+      const id = pos[0];
+      const change = id ? changes.find((c) => c.dir === id.replace(/^changes\//, "") || c.slug === id) : changes.find((c) => c.active);
+      if (id && !change) fail3(`change not found: ${id}`);
+      const base = typeof flags.base === "string" ? flags.base : loaded?.config.vcs?.default_branch ?? "main";
+      const r = changeRisk(root, loaded, change, { base });
+      if (flags.json) return void console.log(JSON.stringify({ change: change?.id, ...r }, null, 2));
+      console.log(`${change ? `${change.id}: ` : ""}${r.tier} risk (${r.files} files against ${base}, ${r.weight} weighted lines of code)`);
+      for (const x of r.reasons) console.log(`  ${x.tier.padEnd(6)} ${x.reason}`);
+      return;
+    }
     case "notify":
       process.exitCode = await notifyCommand(root, loadConfig(root), pos, flags);
       return;
     case "lock": {
-      const lock = join20(root, FIX_LOCKS[0]);
+      const lock = join21(root, FIX_LOCKS[0]);
       if (pos[0] === "on") {
         ensureSdlcDir(root);
-        writeFileSync13(lock, (/* @__PURE__ */ new Date()).toISOString() + "\n");
+        writeFileSync14(lock, (/* @__PURE__ */ new Date()).toISOString() + "\n");
         console.log("test-lock ON: test files cannot be edited until `sdlc lock off`");
       } else if (pos[0] === "off") {
-        for (const p of FIX_LOCKS) rmSync7(join20(root, p), { force: true });
+        for (const p of FIX_LOCKS) rmSync7(join21(root, p), { force: true });
         console.log("test-lock OFF");
       } else {
-        console.log(FIX_LOCKS.some((p) => existsSync18(join20(root, p))) ? "on" : "off");
+        console.log(FIX_LOCKS.some((p) => existsSync18(join21(root, p))) ? "on" : "off");
       }
       return;
     }

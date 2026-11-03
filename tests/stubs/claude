@@ -5,6 +5,8 @@ prompt="$2"
 case "$prompt" in
   *"automated reviewer"*)
     printf '## Automated review (ai-sdlc)\n\n| Pass | Severity | File:line | Finding |\n|---|---|---|---|\n| Correctness | Important | src/a.py:3 | off by one |\n\nImportant: 1 · Nit: 0\n' ;;
+  *"second risk classifier"*)
+    printf 'It changes when sessions expire.\nESCALATE: high — session expiry is an auth boundary\n' ;;
   *"build log"*)
     printf '## Automated triage (ai-sdlc)\nLooks flaky: network timeout in setup.\n' ;;
   *"mentioned you"*)

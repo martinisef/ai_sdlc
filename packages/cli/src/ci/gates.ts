@@ -40,7 +40,7 @@ export function parseGateCommand(body: string): GateCommand | undefined {
 
 const log = (msg: string) => process.stderr.write(`[sdlc-ci] ${msg}\n`);
 
-function changeForBranch(c: CiEnv, branch: string): Change | undefined {
+export function changeForBranch(c: Pick<CiEnv, 'root' | 'loaded'>, branch: string): Change | undefined {
   const slug = branch.replace(/^change\//, '');
   return listChanges(c.root, { locale: localeOf(c.loaded), defaultBranch: c.loaded?.config.vcs?.default_branch }).find(
     (x) => x.branch === branch || x.slug === slug || x.dir === slug,
