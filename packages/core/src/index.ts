@@ -14,6 +14,7 @@ export * from './metrics.ts';
 export * from './next.ts';
 export * from './notify.ts';
 export * from './policies.ts';
+export * from './pr-sections.ts';
 export * from './project.ts';
 export * from './quick.ts';
 export * from './risk.ts';

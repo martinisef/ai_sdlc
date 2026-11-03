@@ -28,11 +28,14 @@ Si algo falla, arreglalo o reportalo; no abras un PR rojo.
    - Ticket: <KEY + link> (si hay)
    ## Desvíos del plan
    <ninguno | lista>
-   ## Verificación
-   <salida resumida de build/test/lint + veredicto del verifier>
+   ## Pruebas
+   <qué se corrió y cómo: salida resumida de build/test/lint, veredicto del verifier, pruebas manuales>
    ## Riesgo
-   <routine | high → requiere tech lead>
+   <nivel de `sdlc risk` (low | medium | high) y por qué; high → requiere tech lead>
+   ## Cómo revertir
+   <revertir el PR | apagar el flag `<nombre>` | el paso down de la migración; lo que no se pueda deshacer>
    ```
+   **Pruebas**, **Riesgo** y **Cómo revertir** son obligatorias y tienen que estar completas: sin ellas `sdlc/gates` queda en rojo (`ci.pr_sections`; también valen los títulos en inglés Testing, Risk, How to revert). Riesgo declara al menos el nivel que calcula `sdlc risk`; nunca uno menor. Si el cambio no se deshace revirtiendo el PR (migración de datos, llamada externa, contrato publicado), explicá cómo deshacerlo, o decí que no se puede y ponelo detrás de un flag.
 3. Título: `<KEY> <título>` si hay ticket (Jira lo linkea), si no `<título>`.
 4. `sdlc vcs pr-create --title "<título>" --body-file <tmp>` (o editá el existente con la CLI del proveedor). Mostrá el link.
 5. Tracker: transición `ship` + comentario con el link al PR. Si falla, avisá y seguí.
@@ -46,3 +49,5 @@ Loop hasta que el PR esté verde y solo espere aprobación humana (máximo ~5 it
 
 ## Cierre
 Link al PR, estado de checks, comentarios pendientes de decisión humana, y quién tiene que aprobar (code owner; tech lead si `risk: high`). Después del merge, el pipeline transiciona el ticket a *Done*.
+
+**Lo mergeás, es tuyo.** Recordale a la persona que dirige al agente que el cambio mergeado es suyo: sigue el despliegue (flag, release escalonado, dashboards) y lo revierte si se porta mal, siguiendo el "Cómo revertir" del PR. Los reviewers lo revisaron; no son sus dueños.

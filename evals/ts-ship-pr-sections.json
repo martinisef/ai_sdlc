@@ -1,0 +1,34 @@
+{
+  "name": "ts-ship-pr-sections",
+  "description": "The PR description from /sdlc-ship carries Testing, Risk (with the tier) and How to revert, which sdlc/gates requires.",
+  "cwd": "examples/typescript-lib",
+  "tags": [
+    "ship"
+  ],
+  "setup": "mkdir -p changes/2026-11-trim && for a in intent spec plan; do printf -- \"---\\nchange: trim\\nstatus: approved\\n---\\n# ${a}: trim whitespace in parse\\n\" > changes/2026-11-trim/$a.md; done && \"$EVAL_DIR/fixtures/commit.sh\" 'trim artifacts' && printf '\\nexport const trimmed = (s: string): string => s.trim();\\n' >> src/index.ts && \"$EVAL_DIR/fixtures/commit.sh\" 'feat: trim helper'",
+  "prompt": "Following step 2 of the sdlc-ship skill, write the PR description for the change changes/2026-11-trim into PR_BODY.md. Do not push, open a PR or run the tracker steps; only write the file.",
+  "allowed_tools": "Read,Grep,Glob,Write,Bash(.sdlc/bin/sdlc:*),Bash(git log:*),Bash(git diff:*),Bash(make:*)",
+  "checks": [
+    {
+      "type": "file_matches",
+      "glob": "PR_BODY.md",
+      "pattern": "^#{2,3} Testing\\s*\\n+\\s*\\S"
+    },
+    {
+      "type": "file_matches",
+      "glob": "PR_BODY.md",
+      "pattern": "^#{2,3} Risk\\s*\\n[^#]*\\b(low|medium|high)\\b",
+      "ignore_case": true
+    },
+    {
+      "type": "file_matches",
+      "glob": "PR_BODY.md",
+      "pattern": "^#{2,3} How to revert\\s*\\n+\\s*\\S"
+    },
+    {
+      "type": "diff_excludes",
+      "glob": "src/**",
+      "why": "writing the description does not change code"
+    }
+  ]
+}

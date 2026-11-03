@@ -26,7 +26,7 @@ import { agentBin, pickAgent, READ_TOOLS, runAgent, skillRef } from './agent.ts'
 import { loadEvals, runEvals } from './evals.ts';
 import { matrixAgents, renderScorecard, updateScorecard, type EvalReport } from './scorecard.ts';
 import { ciSecrets, installCi } from './install.ts';
-import { gate, gateStatus } from './gates.ts';
+import { gate, gateStatus, mergeQueue } from './gates.ts';
 import { risk } from './risk.ts';
 import { review, reviewStatus } from './review.ts';
 import { isPreset, PRESET_SPECS } from '../presets.ts';
@@ -47,7 +47,10 @@ sdlc ci evals [pattern] [--tags a,b] [--out results.json]   run evals/*.json aga
 sdlc ci matrix [--only agent]  agents with credentials here, as JSON (the evals workflow's matrix)
 sdlc ci scorecard <report.json…> [--out docs/reference/agent-scorecard.md]   eval × agent table; rewritten only when a result changed
 sdlc ci gate                   /approve|/reject intent|spec|plan in a PR/MR comment → gate commit on the branch + reply
-sdlc ci gate-status            set the sdlc/gates commit status (success once the plan is approved or the change is quick)
+sdlc ci gate-status            set the sdlc/gates commit status (success once the plan is approved or the change is quick,
+                               and the PR description has ci.pr_sections: Testing, Risk, How to revert)
+sdlc ci merge-queue            GitHub merge_group: carry sdlc/gates and sdlc/review to the queue commit once they are
+                               green on every PR in the group
 sdlc ci risk [--escalate]      risk tier of the PR/MR from the diff (sticky comment, risk.json); --escalate (or
                                risk.agent_escalation) asks the agent whether it needs another person: it can only raise it
 sdlc ci mention                answer an @claude comment on the PR/MR (triggered by \`sdlc webhook\`; ci.mention_mode read|edit)
@@ -139,6 +142,8 @@ export async function ciCommand(root: string, args: string[]): Promise<number> {
       return gate(c);
     case 'gate-status':
       return gateStatus(c);
+    case 'merge-queue':
+      return mergeQueue(c);
     case 'risk':
       return risk(c, flags.escalate === true);
     default:

@@ -8,6 +8,7 @@ import { test } from 'node:test';
 import { parseGateCommand } from '../src/ci/gates.ts';
 import { commitAll, project, sdlc } from './helpers.ts';
 
+const BODY = '## What and why\nExport.\n## Testing\nnpm test, green.\n## Risk\nmedium: new export module.\n## How to revert\nRevert the PR; no migrations.\n';
 const stubLog = () => join(mkdtempSync(join(tmpdir(), 'sdlc-stub-')), 'calls.log');
 const read = (f: string) => (existsSync(f) ? readFileSync(f, 'utf8') : '');
 
@@ -129,7 +130,7 @@ test('ci gate-status, graded: approvals on the PR against the tier, pinned to th
   const head = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
   const dir = mkdtempSync(join(tmpdir(), 'sdlc-gh-'));
   const log = join(dir, 'calls.log');
-  const base = { STUB_LOG: log, STUB_GH_DIR: dir, PR_NUMBER: '7', HEAD_REF: 'change/export', BASE_REF: 'main', HEAD_SHA: head };
+  const base = { STUB_LOG: log, STUB_GH_DIR: dir, PR_NUMBER: '7', HEAD_REF: 'change/export', BASE_REF: 'main', HEAD_SHA: head, PR_BODY: BODY };
 
   // medium risk (70 weighted lines: both files are new); a PR opened by an untrusted author needs another person
   await sdlc(root, ['ci', 'gate-status'], { ...base, PR_AUTHOR: 'eve' });
@@ -150,4 +151,49 @@ test('ci gate-status, graded: approvals on the PR against the tier, pinned to th
   writeFileSync(join(dir, 'pulls_7_reviews'), JSON.stringify({ login: 'lia', state: 'APPROVED', sha: head2 }) + '\n');
   await sdlc(root, ['ci', 'gate-status'], { ...base, HEAD_SHA: head2, PR_AUTHOR: 'eve' });
   assert.match(read(log), /state=success -f context=sdlc\/gates -f description=export: gates hold at medium risk; code 1\/1/);
+});
+
+test('ci gate-status: a PR needs Testing, Risk (at least the computed tier) and How to revert before sdlc/gates is green', async () => {
+  const { root } = changeRepo({});
+  writeFileSync(join(root, 'changes/2026-11-export/spec.md'), '---\nstatus: approved\n---\n');
+  writeFileSync(join(root, 'changes/2026-11-export/plan.md'), '---\nstatus: approved\n---\n');
+  commitAll(root, 'approved');
+  const dir = mkdtempSync(join(tmpdir(), 'sdlc-gh-'));
+  const log = join(dir, 'calls.log');
+  const run = (extra: Record<string, string>) => sdlc(root, ['ci', 'gate-status', '--dry-run'], { STUB_LOG: log, HEAD_REF: 'change/export', HEAD_SHA: 'abc1234', PR_NUMBER: '7', ...extra });
+  assert.equal((await run({ PR_BODY: BODY })).out, 'sdlc/gates: success — export: intent, spec and plan approved');
+  assert.equal((await run({ PR_BODY: '## What\nx\n## Testing\n<!-- how -->\n' })).out, 'sdlc/gates: failure — the PR description needs ## Testing, ## Risk, ## How to revert');
+  assert.equal((await run({ PR_BODY: '## Pruebas\nok\n## Riesgo\nbajo\n## Cómo revertir\nrevert\n' })).out, 'sdlc/gates: success — export: intent, spec and plan approved', 'Spanish headings count');
+  assert.match((await run({ PR_BODY: BODY.replace('medium: new', 'none really') })).out, /failure — ## Risk must state the tier/);
+
+  const strict = await sdlc(root, ['ci', 'gate-status'], { STUB_LOG: log, STUB_GH_DIR: dir, HEAD_REF: 'change/export', HEAD_SHA: 'abc1234', PR_NUMBER: '7' });
+  assert.equal(strict.code, 0, strict.err);
+  assert.match(read(log), /gh api repos\/\{owner\}\/\{repo\}\/pulls\/7 --jq \.body \/\/ ""/, 'without PR_BODY the description is read from the forge');
+  assert.match(read(log), /statuses\/abc1234 -f state=failure -f context=sdlc\/gates -f description=the PR description needs/);
+  writeFileSync(join(dir, 'pulls_7'), BODY);
+  await sdlc(root, ['ci', 'gate-status'], { STUB_LOG: log, STUB_GH_DIR: dir, HEAD_REF: 'change/export', HEAD_SHA: 'def5678', PR_NUMBER: '7' });
+  assert.match(read(log), /statuses\/def5678 -f state=success/);
+
+  writeFileSync(join(root, '.sdlc/config.json'), JSON.stringify({ version: 1, vcs: { provider: 'github' }, ci: { pr_sections: [] } }));
+  assert.match((await run({ PR_BODY: '' })).out, /^sdlc\/gates: success/, 'ci.pr_sections [] turns the check off');
+});
+
+test('ci merge-queue: carries sdlc/gates and sdlc/review to the queue commit only when every PR in the group has them green', async () => {
+  const root = project({ vcs: { provider: 'github' } });
+  const dir = mkdtempSync(join(tmpdir(), 'sdlc-gh-'));
+  const log = join(dir, 'calls.log');
+  const a = 'a'.repeat(40);
+  const b = 'b'.repeat(40);
+  writeFileSync(join(dir, `commits_${a}_status`), [JSON.stringify({ context: 'sdlc/gates', state: 'success' }), JSON.stringify({ context: 'sdlc/review', state: 'success' })].join('\n') + '\n');
+  writeFileSync(join(dir, `commits_${b}_status`), [JSON.stringify({ context: 'sdlc/gates', state: 'success' }), JSON.stringify({ context: 'sdlc/review', state: 'failure' })].join('\n') + '\n');
+  const env = { STUB_LOG: log, STUB_GH_DIR: dir, HEAD_SHA: 'q'.repeat(7) };
+  const r = await sdlc(root, ['ci', 'merge-queue'], { ...env, MERGE_GROUP_REF: `refs/heads/gh-readonly-queue/main/pr-12-${a}` });
+  assert.equal(r.code, 0, r.err);
+  assert.match(read(log), /statuses\/qqqqqqq -f state=success -f context=sdlc\/gates -f description=green on #12 before the merge queue/);
+  assert.match(read(log), /statuses\/qqqqqqq -f state=success -f context=sdlc\/review/);
+  await sdlc(root, ['ci', 'merge-queue'], { ...env, MERGE_GROUP_REF: `refs/heads/gh-readonly-queue/main/pr-12-${a}-pr-13-${b}` });
+  assert.match(read(log), /statuses\/qqqqqqq -f state=failure -f context=sdlc\/review -f description=not green on #13/);
+  const bad = await sdlc(root, ['ci', 'merge-queue'], { STUB_LOG: log });
+  assert.equal(bad.code, 1);
+  assert.match(bad.err, /needs HEAD_SHA and MERGE_GROUP_REF/);
 });

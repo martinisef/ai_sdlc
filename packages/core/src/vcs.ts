@@ -381,6 +381,27 @@ export async function prInlineComments(ctx: VcsContext, n: number, sha: string, 
   return { posted: comments.length - failed.length, failed };
 }
 
+/** Commit statuses on `sha` (GitHub), latest per context. */
+export function commitStatuses(ctx: VcsContext, sha: string): { context: string; state: string }[] {
+  const all = tool(ctx, 'gh', ['api', `repos/{owner}/{repo}/commits/${sha}/status`, '--jq', '.statuses[] | {context, state}'])
+    .split('\n')
+    .filter(Boolean)
+    .map((l) => JSON.parse(l) as { context: string; state: string });
+  return [...new Map(all.reverse().map((s) => [s.context, s])).values()];
+}
+
+/** The PR/MR description. */
+export async function prBody(ctx: VcsContext, n: number): Promise<string> {
+  switch (vcsProvider(ctx)) {
+    case 'github':
+      return tool(ctx, 'gh', ['api', `repos/{owner}/{repo}/pulls/${n}`, '--jq', '.body // ""']);
+    case 'gitlab':
+      return (await gitlab(ctx, 'GET', `/merge_requests/${n}`))?.description ?? '';
+    case 'bitbucket':
+      return (await bitbucket(ctx)('GET', `/pullrequests/${n}`))?.description ?? '';
+  }
+}
+
 export async function prChecks(ctx: VcsContext, n: number): Promise<PrCheck[]> {
   switch (vcsProvider(ctx)) {
     case 'github':

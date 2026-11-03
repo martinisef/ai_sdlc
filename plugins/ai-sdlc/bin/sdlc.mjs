@@ -28171,6 +28171,8 @@ var init_config = __esm({
         min_pass_rate: external_exports.number().min(0).max(1).optional(),
         /** `sdlc ci mention`: answer only (read) or also commit requested changes to the PR branch (edit). */
         mention_mode: external_exports.enum(["read", "edit"]).optional(),
+        /** Headings every PR/MR description needs before sdlc/gates turns green ([] turns the check off). */
+        pr_sections: external_exports.array(external_exports.string()).optional(),
         /** `sdlc ci review`: depth (auto follows the risk tier: low quick, medium standard, high deep) and the round cap. */
         review: external_exports.looseObject({
           depth: external_exports.enum(["auto", "quick", "standard", "deep"]).optional(),
@@ -29638,6 +29640,56 @@ var init_policies = __esm({
   }
 });
 
+// packages/core/src/pr-sections.ts
+function requiredPrSections(loaded) {
+  return loaded?.config.ci?.pr_sections ?? DEFAULT_PR_SECTIONS;
+}
+function prSections(body) {
+  const out = /* @__PURE__ */ new Map();
+  const lines2 = body.replace(/\r/g, "").replace(/<!--[\s\S]*?-->/g, "").split("\n");
+  let current;
+  for (const l of lines2) {
+    const h = /^#{2,3}\s+(.+?)\s*#*\s*$/.exec(l);
+    if (h) {
+      current = h[1].toLowerCase().replace(/[:.]+$/, "").trim();
+      out.set(current, "");
+    } else if (current) out.set(current, `${out.get(current)}${l}
+`);
+  }
+  for (const [k, v] of out) out.set(k, v.trim());
+  return out;
+}
+function checkPrBody(body, required2, tier) {
+  const sections = prSections(body);
+  const find = (name) => {
+    const names = ALIASES[name.toLowerCase()] ?? [name.toLowerCase()];
+    return [...sections].find(([k]) => names.includes(k))?.[1];
+  };
+  const missing = required2.filter((s) => !find(s));
+  const riskRequired = required2.some((s) => s.toLowerCase() === "risk");
+  const risk2 = riskRequired ? find("risk") : void 0;
+  const word = risk2 ? /\b(low|medium|high|bajo|medio|alto)\b/i.exec(risk2)?.[1].toLowerCase() : void 0;
+  const declared = word ? { bajo: "low", medio: "medium", alto: "high" }[word] ?? word : void 0;
+  let problem;
+  if (missing.length) problem = `the PR description needs ${missing.map((s) => `## ${s}`).join(", ")}`;
+  else if (risk2 !== void 0 && !declared) problem = `## Risk must state the tier (${RISK_TIERS.join(", ")})`;
+  else if (declared && tier && tierRank(declared) < tierRank(tier)) problem = `## Risk says ${declared}, the change is ${tier} (sdlc risk)`;
+  return { ok: !problem, missing, declared, problem };
+}
+var DEFAULT_PR_SECTIONS, ALIASES;
+var init_pr_sections = __esm({
+  "packages/core/src/pr-sections.ts"() {
+    "use strict";
+    init_risk();
+    DEFAULT_PR_SECTIONS = ["Testing", "Risk", "How to revert"];
+    ALIASES = {
+      testing: ["testing", "tests", "pruebas", "verification", "verificaci\xF3n"],
+      risk: ["risk", "riesgo"],
+      "how to revert": ["how to revert", "revert", "rollback", "c\xF3mo revertir", "como revertir"]
+    };
+  }
+});
+
 // packages/core/src/quick.ts
 import { readFileSync as readFileSync7, writeFileSync as writeFileSync4 } from "node:fs";
 import { join as join8 } from "node:path";
@@ -30034,6 +30086,20 @@ async function prInlineComments(ctx, n, sha2, comments) {
   }
   return { posted: comments.length - failed.length, failed };
 }
+function commitStatuses(ctx, sha2) {
+  const all = tool(ctx, "gh", ["api", `repos/{owner}/{repo}/commits/${sha2}/status`, "--jq", ".statuses[] | {context, state}"]).split("\n").filter(Boolean).map((l) => JSON.parse(l));
+  return [...new Map(all.reverse().map((s) => [s.context, s])).values()];
+}
+async function prBody(ctx, n) {
+  switch (vcsProvider(ctx)) {
+    case "github":
+      return tool(ctx, "gh", ["api", `repos/{owner}/{repo}/pulls/${n}`, "--jq", '.body // ""']);
+    case "gitlab":
+      return (await gitlab(ctx, "GET", `/merge_requests/${n}`))?.description ?? "";
+    case "bitbucket":
+      return (await bitbucket(ctx)("GET", `/pullrequests/${n}`))?.description ?? "";
+  }
+}
 async function prChecks(ctx, n) {
   switch (vcsProvider(ctx)) {
     case "github":
@@ -30080,6 +30146,7 @@ var init_src = __esm({
     init_next();
     init_notify();
     init_policies();
+    init_pr_sections();
     init_project();
     init_quick();
     init_risk();
@@ -35917,9 +35984,25 @@ function waitingArtifact(change) {
 }
 function touched2(c, path) {
   if (c.env.PR_ACTION === "opened" || c.env.PR_ACTION === "reopened") return true;
-  if (c.env.PR_ACTION === "submitted" || c.env.PR_ACTION === "dismissed") return false;
+  if (c.env.PR_ACTION === "submitted" || c.env.PR_ACTION === "dismissed" || c.env.PR_ACTION === "edited") return false;
   const before = c.env.BEFORE_SHA && !/^0+$/.test(c.env.BEFORE_SHA) ? c.env.BEFORE_SHA : "HEAD~1";
   return (git(c.root, ["diff", "--name-only", before, "HEAD"]) ?? "").split("\n").includes(path);
+}
+async function descriptionProblem(c, change, n, tier) {
+  const required2 = requiredPrSections(c.loaded);
+  if (!required2.length) return void 0;
+  let body = c.env.PR_BODY ?? (c.env.CI_MERGE_REQUEST_DESCRIPTION_IS_TRUNCATED === "true" ? void 0 : c.env.CI_MERGE_REQUEST_DESCRIPTION);
+  if (body === void 0) {
+    if (c.dryRun) return void 0;
+    try {
+      body = await prBody({ root: c.root, loaded: c.loaded, env: c.env }, n);
+    } catch (e) {
+      log2(`could not read the PR description: ${e.message}`);
+      return void 0;
+    }
+  }
+  tier ??= (await prRisk(c, change, n)).tier;
+  return checkPrBody(body, required2, tier).problem;
 }
 async function gateStatus(c, announce = false) {
   const branch = headRef(c);
@@ -35934,7 +36017,11 @@ async function gateStatus(c, announce = false) {
     if (n !== void 0 && !c.dryRun) approvals = await prApprovals({ root: c.root, loaded: c.loaded, env: c.env }, n);
     opts2 = { loaded: c.loaded, tier, code: codeGate(c.root, c.loaded, { tier, head: sha2, approvals, director: directorOf(c, change) }) };
   }
-  const g = gateState(change, opts2);
+  let g = gateState(change, opts2);
+  if (g.state === "success" && n !== void 0) {
+    const problem = await descriptionProblem(c, change, n, opts2.tier);
+    if (problem) g = { state: "failure", description: problem };
+  }
   const waiting = waitingArtifact(change);
   const pending = waiting && (announce || touched2(c, change.artifacts[waiting].path));
   if (c.dryRun) {
@@ -35994,6 +36081,21 @@ async function gate(c) {
   const decided = changeForBranch(c, branch) ?? change;
   if (!c.dryRun) log2(await notify({ event: "gate.decided", change: decided, artifact: cmd.artifact, decision: cmd.decision, by: `@${login}`, note: cmd.comment }, c.loaded, c.env));
   return gateStatus({ ...c, env: { ...c.env, HEAD_SHA: "" } }, cmd.decision === "approved");
+}
+var QUEUE_CONTEXTS = [GATES_CONTEXT, "sdlc/review"];
+async function mergeQueue(c) {
+  const sha2 = c.env.HEAD_SHA;
+  const ref = c.env.MERGE_GROUP_REF ?? "";
+  const prs = [...ref.matchAll(/pr-(\d+)-([0-9a-f]{40})/g)].map((m) => ({ n: m[1], sha: m[2] }));
+  if (!sha2 || !prs.length) throw new SdlcError("sdlc ci merge-queue needs HEAD_SHA and MERGE_GROUP_REF (gh-readonly-queue/<base>/pr-<n>-<sha>)");
+  const ctx = { root: c.root, loaded: c.loaded, env: c.env };
+  for (const context of QUEUE_CONTEXTS) {
+    const failing = c.dryRun ? [] : prs.filter((p) => commitStatuses(ctx, p.sha).some((s2) => s2.context === context && s2.state !== "success"));
+    const s = failing.length ? { state: "failure", description: `not green on #${failing.map((p) => p.n).join(", #")}` } : { state: "success", description: `green on #${prs.map((p) => p.n).join(", #")} before the merge queue` };
+    if (c.dryRun) console.log(`${context}: ${s.state} \u2014 ${s.description}`);
+    else log2(await commitStatus(ctx, sha2, { context, ...s }));
+  }
+  return 0;
 }
 
 // packages/cli/src/ci/review.ts
@@ -36411,7 +36513,10 @@ sdlc ci evals [pattern] [--tags a,b] [--out results.json]   run evals/*.json aga
 sdlc ci matrix [--only agent]  agents with credentials here, as JSON (the evals workflow's matrix)
 sdlc ci scorecard <report.json\u2026> [--out docs/reference/agent-scorecard.md]   eval \xD7 agent table; rewritten only when a result changed
 sdlc ci gate                   /approve|/reject intent|spec|plan in a PR/MR comment \u2192 gate commit on the branch + reply
-sdlc ci gate-status            set the sdlc/gates commit status (success once the plan is approved or the change is quick)
+sdlc ci gate-status            set the sdlc/gates commit status (success once the plan is approved or the change is quick,
+                               and the PR description has ci.pr_sections: Testing, Risk, How to revert)
+sdlc ci merge-queue            GitHub merge_group: carry sdlc/gates and sdlc/review to the queue commit once they are
+                               green on every PR in the group
 sdlc ci risk [--escalate]      risk tier of the PR/MR from the diff (sticky comment, risk.json); --escalate (or
                                risk.agent_escalation) asks the agent whether it needs another person: it can only raise it
 sdlc ci mention                answer an @claude comment on the PR/MR (triggered by \`sdlc webhook\`; ci.mention_mode read|edit)
@@ -36489,6 +36594,8 @@ async function ciCommand(root, args) {
       return gate(c);
     case "gate-status":
       return gateStatus(c);
+    case "merge-queue":
+      return mergeQueue(c);
     case "risk":
       return risk(c, flags.escalate === true);
     default:
