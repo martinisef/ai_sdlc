@@ -6,7 +6,8 @@ All CI logic is in one command, `sdlc ci <cmd>`. The per-provider templates are 
 sdlc ci install [--provider github|gitlab|bitbucket] [--preset solo|team-github|regulated]
                                copy the pipeline templates (stack setup filled in; never overwrites)
 sdlc ci bootstrap              install the agent CLI (and the Claude plugin when plugin.marketplace_repo is set)
-sdlc ci review                 review the PR/MR with REVIEW.md and post the result as a comment
+sdlc ci review                 review the PR/MR with REVIEW.md: one finder per pass, a verifier that votes, inline comments
+                               and a summary; depth by risk tier (ci.review.depth), at most ci.review.max_rounds (3) rounds
 sdlc ci intent-to-spec         for accepted intents without spec.md: write the spec headless, commit, push
 sdlc ci triage <log>           summarize a failed build and comment on the PR/MR
 sdlc ci tracker-merged         move the merged change's tickets to tracker.transitions.merged (alias: jira-merged)
@@ -45,6 +46,24 @@ The repository root is a composite action:
     ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
     GH_TOKEN: ${{ github.token }}
 ```
+
+## Automated review
+
+`sdlc ci review` reviews the PR/MR in three steps:
+
+1. **Finders.** One read-only agent run per pass, in parallel. Each answers with findings as JSON: severity (`important`, `nit` or `pre_existing`), `file:line`, evidence and a bug class.
+2. **Verifier.** Another run checks each candidate against the code and votes `keep` or `drop`; it drops what the code does not support and anything that is only style. At high risk three verifiers vote, and the majority decides.
+3. **Comments.** Each Important finding and up to five nits on a line of the diff become inline comments. A sticky summary starts with the counts (`Important: 1 · Nit: 2 · Pre-existing: 0`, also in `review-tally.txt`) and lists every open finding; `review.json` has the details.
+
+| Tier | Depth | Finders | Verifier votes |
+|---|---|---|---|
+| low | Quick | one, for every pass | 1 |
+| medium | Standard | Bugs, Security, Compliance | 1 |
+| high | Deep | the three plus Tests and Regressions | 3 |
+
+`ci.review.depth` fixes the depth instead (`quick`, `standard`, `deep`; `auto` is the default).
+
+**Convergence.** The summary keeps the state of the review (round, reviewed commit, findings). The next run reviews only the commits since then, tells the finders what was already reported so they do not repeat it, and asks the verifier whether the open findings were fixed. The same commit is never reviewed twice. After `ci.review.max_rounds` (3) rounds no finder runs; the verifier only rechecks the open findings. The state is read only from comments by a bot or a maintainer, so a contributor cannot fake it.
 
 ## Gates from the PR
 

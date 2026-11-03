@@ -114,6 +114,13 @@ export const ConfigSchema = z.looseObject({
       min_pass_rate: z.number().min(0).max(1).optional(),
       /** `sdlc ci mention`: answer only (read) or also commit requested changes to the PR branch (edit). */
       mention_mode: z.enum(['read', 'edit']).optional(),
+      /** `sdlc ci review`: depth (auto follows the risk tier: low quick, medium standard, high deep) and the round cap. */
+      review: z
+        .looseObject({
+          depth: z.enum(['auto', 'quick', 'standard', 'deep']).optional(),
+          max_rounds: z.number().int().min(1).max(10).optional(),
+        })
+        .optional(),
     })
     .optional(),
 });

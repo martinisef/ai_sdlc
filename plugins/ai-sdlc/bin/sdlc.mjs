@@ -1761,7 +1761,7 @@ var require_merge = __commonJS({
 var require_addPairToJSMap = __commonJS({
   "node_modules/yaml/dist/nodes/addPairToJSMap.js"(exports) {
     "use strict";
-    var log4 = require_log();
+    var log5 = require_log();
     var merge2 = require_merge();
     var stringify = require_stringify();
     var identity = require_identity();
@@ -1810,7 +1810,7 @@ var require_addPairToJSMap = __commonJS({
           let jsonStr = JSON.stringify(strKey);
           if (jsonStr.length > 40)
             jsonStr = jsonStr.substring(0, 36) + '..."';
-          log4.warn(ctx.doc.options.logLevel, `Keys with collection values will be stringified due to JS Object restrictions: ${jsonStr}. Set mapAsMap: true to use object keys.`);
+          log5.warn(ctx.doc.options.logLevel, `Keys with collection values will be stringified due to JS Object restrictions: ${jsonStr}. Set mapAsMap: true to use object keys.`);
           ctx.mapKeyWarned = true;
         }
         return strKey;
@@ -7227,7 +7227,7 @@ var require_public_api = __commonJS({
     var composer = require_composer();
     var Document = require_Document();
     var errors = require_errors();
-    var log4 = require_log();
+    var log5 = require_log();
     var identity = require_identity();
     var lineCounter = require_line_counter();
     var parser = require_parser();
@@ -7279,7 +7279,7 @@ var require_public_api = __commonJS({
       const doc = parseDocument(src, options);
       if (!doc)
         return null;
-      doc.warnings.forEach((warning) => log4.warn(doc.options.logLevel, warning));
+      doc.warnings.forEach((warning) => log5.warn(doc.options.logLevel, warning));
       if (doc.errors.length > 0) {
         if (doc.options.logLevel !== "silent")
           throw doc.errors[0];
@@ -11916,26 +11916,26 @@ function isRecursive(inst, stack, resolve4) {
   let result = NONE;
   const check2 = (child) => {
     if (result !== PROVEN && child?._zod) {
-      const answer = isRecursive(child, stack, resolve4);
-      if (answer > result)
-        result = answer;
+      const answer2 = isRecursive(child, stack, resolve4);
+      if (answer2 > result)
+        result = answer2;
     }
   };
   const shape = (sh, spread) => {
-    let answer = NONE;
+    let answer2 = NONE;
     for (const key of Reflect.ownKeys(sh)) {
       const desc = Object.getOwnPropertyDescriptor(sh, key);
       if (spread && !desc.enumerable)
         continue;
       const child = desc.get ? ASSUMED : desc.value?._zod ? isRecursive(desc.value, stack, resolve4) : NONE;
-      if (child > answer)
-        answer = child;
+      if (child > answer2)
+        answer2 = child;
     }
-    return answer;
+    return answer2;
   };
-  const merge2 = (answer) => {
-    if (answer > result)
-      result = answer;
+  const merge2 = (answer2) => {
+    if (answer2 > result)
+      result = answer2;
   };
   const def = inst._zod.def;
   const kind = def.type;
@@ -12038,10 +12038,10 @@ function isRecursive(inst, stack, resolve4) {
   stack.delete(inst);
   return settle(inst, result);
 }
-function settle(inst, answer) {
-  if (answer !== ASSUMED)
-    recursive.set(inst, answer === PROVEN);
-  return answer;
+function settle(inst, answer2) {
+  if (answer2 !== ASSUMED)
+    recursive.set(inst, answer2 === PROVEN);
+  return answer2;
 }
 function isRecursiveSchema(inst) {
   return isRecursive(inst, /* @__PURE__ */ new Set(), true) !== NONE;
@@ -22770,13 +22770,13 @@ function _promise(Class2, innerType) {
 }
 // @__NO_SIDE_EFFECTS__
 function _custom(Class2, fn, _params) {
-  const norm = normalizeParams(_params);
-  norm.abort ?? (norm.abort = true);
+  const norm2 = normalizeParams(_params);
+  norm2.abort ?? (norm2.abort = true);
   const schema = new Class2({
     type: "custom",
     check: "custom",
     fn,
-    ...norm
+    ...norm2
   });
   return schema;
 }
@@ -28170,7 +28170,12 @@ var init_config = __esm({
         model: external_exports.string().optional(),
         min_pass_rate: external_exports.number().min(0).max(1).optional(),
         /** `sdlc ci mention`: answer only (read) or also commit requested changes to the PR branch (edit). */
-        mention_mode: external_exports.enum(["read", "edit"]).optional()
+        mention_mode: external_exports.enum(["read", "edit"]).optional(),
+        /** `sdlc ci review`: depth (auto follows the risk tier: low quick, medium standard, high deep) and the round cap. */
+        review: external_exports.looseObject({
+          depth: external_exports.enum(["auto", "quick", "standard", "deep"]).optional(),
+          max_rounds: external_exports.number().int().min(1).max(10).optional()
+        }).optional()
       }).optional()
     });
     CONFIG_PATH = ".sdlc/config.json";
@@ -28731,16 +28736,16 @@ function classifyRisk(loaded, files) {
 function diffFiles(root, base, head = "HEAD") {
   if (git(root, ["rev-parse", "--verify", "--quiet", `${base}^{commit}`]) === void 0) return [];
   const range = `${base}...${head}`;
-  const counts = /* @__PURE__ */ new Map();
+  const counts2 = /* @__PURE__ */ new Map();
   for (const l of lines(git(root, ["diff", "--numstat", "-M", range]))) {
     const [a, d, ...p] = l.split("	");
     const path = p.join("	").replace(/^.*=> /, "").replace(/[{}]/g, "");
-    counts.set(path, [Number(a) || 0, Number(d) || 0]);
+    counts2.set(path, [Number(a) || 0, Number(d) || 0]);
   }
   return lines(git(root, ["diff", "--name-status", "-M", range])).map((l) => {
     const [st, ...paths] = l.split("	");
     const path = paths.at(-1);
-    const [added, deleted] = counts.get(path) ?? [0, 0];
+    const [added, deleted] = counts2.get(path) ?? [0, 0];
     return { path, status: st[0] === "R" ? "R" : st[0] === "A" ? "A" : st[0] === "D" ? "D" : "M", added, deleted };
   });
 }
@@ -30002,6 +30007,33 @@ async function prUpsertComment(ctx, n, marker, body, isOurs2 = () => true) {
   }
   return `comment ${mine.id} updated on #${n}`;
 }
+async function prInlineComments(ctx, n, sha2, comments) {
+  const failed = [];
+  let refs;
+  for (const c of comments) {
+    try {
+      switch (vcsProvider(ctx)) {
+        case "github":
+          tool(ctx, "gh", ["api", "-X", "POST", `repos/{owner}/{repo}/pulls/${n}/comments`, "-f", `body=${c.body}`, "-f", `commit_id=${sha2}`, "-f", `path=${c.path}`, "-F", `line=${c.line}`, "-f", "side=RIGHT"]);
+          break;
+        case "gitlab":
+          refs ??= (await gitlab(ctx, "GET", `/merge_requests/${n}`))?.diff_refs;
+          if (!refs) throw new SdlcError("the MR has no diff_refs");
+          await gitlab(ctx, "POST", `/merge_requests/${n}/discussions`, {
+            body: c.body,
+            position: { position_type: "text", base_sha: refs.base_sha, start_sha: refs.start_sha, head_sha: refs.head_sha, new_path: c.path, new_line: c.line }
+          });
+          break;
+        case "bitbucket":
+          await bitbucket(ctx)("POST", `/pullrequests/${n}/comments`, { content: { raw: c.body }, inline: { path: c.path, to: c.line } });
+          break;
+      }
+    } catch (e) {
+      failed.push(`${c.path}:${c.line}: ${e.message}`);
+    }
+  }
+  return { posted: comments.length - failed.length, failed };
+}
 async function prChecks(ctx, n) {
   switch (vcsProvider(ctx)) {
     case "github":
@@ -30138,10 +30170,10 @@ function readJson(root, path) {
     return {};
   }
 }
-function mergeHookMap(existing = {}, ours) {
+function mergeHookMap(existing = {}, ours2) {
   const out = {};
   for (const [ev, entries] of Object.entries(existing)) out[ev] = entries.filter((e) => !isOurs(e));
-  for (const [ev, entries] of Object.entries(ours)) out[ev] = [...out[ev] ?? [], ...entries];
+  for (const [ev, entries] of Object.entries(ours2)) out[ev] = [...out[ev] ?? [], ...entries];
   for (const ev of Object.keys(out)) if (out[ev].length === 0) delete out[ev];
   return out;
 }
@@ -34239,12 +34271,12 @@ __export(src_exports, {
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import { existsSync as existsSync17, mkdirSync as mkdirSync8, readFileSync as readFileSync20, watch, writeFileSync as writeFileSync13 } from "node:fs";
 import { homedir as homedir4 } from "node:os";
-import { basename as basename2, dirname as dirname7, extname, join as join20, resolve as resolve3, sep } from "node:path";
+import { basename as basename2, dirname as dirname7, extname, join as join21, resolve as resolve3, sep } from "node:path";
 import { fileURLToPath as fileURLToPath2 } from "node:url";
 import { execFile } from "node:child_process";
 function uiDir() {
-  const candidates = [process.env.SDLC_UI_DIR, join20(here2, "ui"), join20(here2, "..", "..", "ui", "dist")];
-  return candidates.find((c) => c && existsSync17(join20(c, "index.html")));
+  const candidates = [process.env.SDLC_UI_DIR, join21(here2, "ui"), join21(here2, "..", "..", "ui", "dist")];
+  return candidates.find((c) => c && existsSync17(join21(c, "index.html")));
 }
 function loadWorkspaces(current) {
   let list = [];
@@ -34285,7 +34317,7 @@ function timeline(root, c) {
 }
 function staticFile(dir, path) {
   const file2 = resolve3(dir, path === "/" ? "index.html" : path.slice(1));
-  return file2.startsWith(dir + sep) && existsSync17(file2) && extname(file2) ? file2 : join20(dir, "index.html");
+  return file2.startsWith(dir + sep) && existsSync17(file2) && extname(file2) ? file2 : join21(dir, "index.html");
 }
 function createApp(opts2) {
   const app = new Hono3();
@@ -34311,7 +34343,7 @@ function createApp(opts2) {
   app.post("/api/workspaces", async (c) => {
     const { path } = await c.req.json();
     const p = resolve3(path);
-    if (!existsSync17(join20(p, ".git"))) throw new Error(`${p} is not a git repository`);
+    if (!existsSync17(join21(p, ".git"))) throw new Error(`${p} is not a git repository`);
     workspaces = [...workspaces.filter((w) => w !== p), p];
     saveWorkspaces(workspaces.slice(1).concat(opts2.root));
     return c.json({ ok: true });
@@ -34404,7 +34436,7 @@ function createApp(opts2) {
         timer = setTimeout(() => void stream2.writeSSE({ event: "change", data: String(Date.now()) }), 300);
       };
       for (const p of ["changes", ".sdlc", ".git/refs", ".git/HEAD", CONFIG_PATH]) {
-        const full = join20(root, p);
+        const full = join21(root, p);
         if (!existsSync17(full)) continue;
         try {
           watchers.push(watch(full, { recursive: !extname(p) && p !== ".git/HEAD" }, ping));
@@ -34457,7 +34489,7 @@ var init_src3 = __esm({
     init_src2();
     init_src();
     here2 = dirname7(fileURLToPath2(import.meta.url));
-    WORKSPACES_FILE = join20(process.env.XDG_CONFIG_HOME ?? join20(homedir4(), ".config"), "sdlc", "workspaces.json");
+    WORKSPACES_FILE = join21(process.env.XDG_CONFIG_HOME ?? join21(homedir4(), ".config"), "sdlc", "workspaces.json");
     prCache = /* @__PURE__ */ new Map();
   }
 });
@@ -34872,7 +34904,7 @@ var init_src5 = __esm({
 init_src2();
 init_src();
 import { existsSync as existsSync18, mkdirSync as mkdirSync9, readFileSync as readFileSync22, rmSync as rmSync7, writeFileSync as writeFileSync14 } from "node:fs";
-import { join as join21 } from "node:path";
+import { join as join22 } from "node:path";
 
 // packages/cli/src/init.ts
 init_src2();
@@ -35371,7 +35403,7 @@ import { execFileSync as execFileSync6 } from "node:child_process";
 
 // packages/cli/src/ci/agent.ts
 init_src();
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { mkdtempSync as mkdtempSync2, readFileSync as readFileSync16, rmSync as rmSync4 } from "node:fs";
 import { homedir as homedir2, tmpdir as tmpdir2 } from "node:os";
 import { join as join16 } from "node:path";
@@ -35390,45 +35422,67 @@ function agentBin(agent, env = process.env) {
 function skillRef(agent, name) {
   return agent === "claude" ? `the ${name} skill` : `the skill in .agents/skills/${name}/SKILL.md`;
 }
-function runAgent(agent, task, model, env = process.env) {
+function invocation(agent, task, model, env) {
   const tmp = mkdtempSync2(join16(tmpdir2(), "sdlc-agent-"));
-  try {
-    let args;
-    let lastMessage;
-    switch (agent) {
-      case "claude":
-        args = ["-p", task.prompt, "--allowedTools", task.allowedTools ?? READ_TOOLS];
-        if (task.mode === "edit") args.push("--permission-mode", "acceptEdits");
-        if (model) args.push("--model", model);
-        break;
-      case "codex":
-        lastMessage = join16(tmp, "last.md");
-        args = ["exec", "--sandbox", task.mode !== "edit" ? "read-only" : env.CI ? "danger-full-access" : "workspace-write", "--output-last-message", lastMessage];
-        if (model) args.push("-m", model);
-        args.push(task.prompt);
-        break;
-      case "cursor":
-        args = ["-p", "--output-format", "text", "--trust", "--workspace", task.cwd];
-        args.push(...task.mode === "edit" ? ["--force"] : ["--mode", "ask"]);
-        if (model) args.push("--model", model);
-        args.push(task.prompt);
-        break;
-    }
-    if (agent === "codex" && !env.CODEX_API_KEY && env.OPENAI_API_KEY) env = { ...env, CODEX_API_KEY: env.OPENAI_API_KEY };
-    const bin = agentBin(agent, env);
-    const r = spawnSync(bin, args, { cwd: task.cwd, env, encoding: "utf8", stdio: ["ignore", "pipe", "inherit"], maxBuffer: 64 * 1024 * 1024 });
-    if (r.error) throw new SdlcError(`${bin}: ${r.error.code === "ENOENT" ? "not installed (run: sdlc ci bootstrap)" : r.error.message}`);
-    if (r.status !== 0) throw new SdlcError(`${bin} exited with ${r.status}`);
-    if (lastMessage) {
-      try {
-        return readFileSync16(lastMessage, "utf8").trim();
-      } catch {
-      }
-    }
-    return r.stdout.trim();
-  } finally {
-    rmSync4(tmp, { recursive: true, force: true });
+  let args;
+  let lastMessage;
+  switch (agent) {
+    case "claude":
+      args = ["-p", task.prompt, "--allowedTools", task.allowedTools ?? READ_TOOLS];
+      if (task.mode === "edit") args.push("--permission-mode", "acceptEdits");
+      if (model) args.push("--model", model);
+      break;
+    case "codex":
+      lastMessage = join16(tmp, "last.md");
+      args = ["exec", "--sandbox", task.mode !== "edit" ? "read-only" : env.CI ? "danger-full-access" : "workspace-write", "--output-last-message", lastMessage];
+      if (model) args.push("-m", model);
+      args.push(task.prompt);
+      break;
+    case "cursor":
+      args = ["-p", "--output-format", "text", "--trust", "--workspace", task.cwd];
+      args.push(...task.mode === "edit" ? ["--force"] : ["--mode", "ask"]);
+      if (model) args.push("--model", model);
+      args.push(task.prompt);
+      break;
   }
+  if (agent === "codex" && !env.CODEX_API_KEY && env.OPENAI_API_KEY) env = { ...env, CODEX_API_KEY: env.OPENAI_API_KEY };
+  return { bin: agentBin(agent, env), args, env, tmp, lastMessage };
+}
+function answer(inv, stdout) {
+  if (inv.lastMessage) {
+    try {
+      return readFileSync16(inv.lastMessage, "utf8").trim();
+    } catch {
+    }
+  }
+  return stdout.trim();
+}
+var failure2 = (bin, error62, status) => error62 ? new SdlcError(`${bin}: ${error62.code === "ENOENT" ? "not installed (run: sdlc ci bootstrap)" : error62.message}`) : status !== 0 ? new SdlcError(`${bin} exited with ${status}`) : void 0;
+function runAgent(agent, task, model, env = process.env) {
+  const inv = invocation(agent, task, model, env);
+  try {
+    const r = spawnSync(inv.bin, inv.args, { cwd: task.cwd, env: inv.env, encoding: "utf8", stdio: ["ignore", "pipe", "inherit"], maxBuffer: 64 * 1024 * 1024 });
+    const err = failure2(inv.bin, r.error, r.status);
+    if (err) throw err;
+    return answer(inv, r.stdout);
+  } finally {
+    rmSync4(inv.tmp, { recursive: true, force: true });
+  }
+}
+function runAgentAsync(agent, task, model, env = process.env) {
+  const inv = invocation(agent, task, model, env);
+  return new Promise((resolve4, reject) => {
+    const child = spawn(inv.bin, inv.args, { cwd: task.cwd, env: inv.env, stdio: ["ignore", "pipe", "inherit"] });
+    let stdout = "";
+    let spawnError;
+    child.stdout.setEncoding("utf8").on("data", (d) => stdout += d);
+    child.on("error", (e) => spawnError = e);
+    child.on("close", (status) => {
+      const err = failure2(inv.bin, spawnError, spawnError ? null : status);
+      if (err) reject(err);
+      else resolve4(answer(inv, stdout));
+    });
+  }).finally(() => rmSync4(inv.tmp, { recursive: true, force: true }));
 }
 
 // packages/cli/src/bands.ts
@@ -35566,9 +35620,9 @@ async function bandsCommand(root, args) {
 // packages/cli/src/ci/index.ts
 init_src();
 import { execFileSync as execFileSync9, spawnSync as spawnSync3 } from "node:child_process";
-import { appendFileSync as appendFileSync3, existsSync as existsSync16, readdirSync as readdirSync7, readFileSync as readFileSync19, rmSync as rmSync6, writeFileSync as writeFileSync12 } from "node:fs";
+import { appendFileSync as appendFileSync3, existsSync as existsSync16, readdirSync as readdirSync7, readFileSync as readFileSync19, rmSync as rmSync6 } from "node:fs";
 import { homedir as homedir3 } from "node:os";
-import { dirname as dirname6, join as join19 } from "node:path";
+import { dirname as dirname6, join as join20 } from "node:path";
 
 // packages/cli/src/ci/evals.ts
 init_src();
@@ -35937,6 +35991,11 @@ async function gate(c) {
   return gateStatus({ ...c, env: { ...c.env, HEAD_SHA: "" } }, cmd.decision === "approved");
 }
 
+// packages/cli/src/ci/review.ts
+init_src();
+import { writeFileSync as writeFileSync12 } from "node:fs";
+import { join as join19 } from "node:path";
+
 // packages/cli/src/notify.ts
 init_src();
 function findChange(root, loaded, o) {
@@ -35991,11 +36050,244 @@ async function notifyCommand(root, loaded, pos, flags) {
   return 0;
 }
 
+// packages/cli/src/ci/review.ts
+var REVIEW_HEADER = "## Automated review (ai-sdlc)";
+var REVIEW_MARKER = "<!-- sdlc:review-summary -->";
+var STATE2 = /<!-- sdlc:review-state ([A-Za-z0-9+/=]+) -->/;
+var SEVERITIES = ["important", "nit", "pre_existing"];
+var LABEL = { important: "Important", nit: "Nit", pre_existing: "Pre-existing" };
+var DEPTHS = {
+  quick: { label: "Quick", passes: ["all"], votes: 1 },
+  standard: { label: "Standard", passes: ["bugs", "security", "compliance"], votes: 1 },
+  deep: { label: "Deep", passes: ["bugs", "security", "compliance", "tests", "regressions"], votes: 3 }
+};
+var TIER_DEPTH = { low: "quick", medium: "standard", high: "deep" };
+var PASS_FOCUS = {
+  all: "every pass in REVIEW.md (Bugs, Security, Compliance)",
+  bugs: "Bugs: logic errors, broken edge cases, subtle regressions",
+  security: "Security: injection, authentication or authorization gaps, PII in logs or errors, secrets",
+  compliance: "Compliance: the diff against changes/<slug>/spec.md and plan.md and the principles in CLAUDE.md; a deviation from the plan that plan.md does not record is a finding",
+  tests: "Tests: behavior the spec requires that no test covers, tests that cannot fail, a reproduction test changed after its commit",
+  regressions: "Regressions: callers and modules outside the diff that this change breaks (read them)"
+};
+var MAX_NITS = 5;
+var DEFAULT_MAX_ROUNDS = 3;
+var log3 = (msg) => process.stderr.write(`[sdlc-ci] ${msg}
+`);
+function parseJsonArray(out) {
+  const fenced = /```(?:json)?\s*\n([\s\S]*?)```/.exec(out)?.[1];
+  const text = fenced ?? out.slice(out.indexOf("["), out.lastIndexOf("]") + 1);
+  try {
+    const v = JSON.parse(text);
+    return Array.isArray(v) ? v : void 0;
+  } catch {
+    return void 0;
+  }
+}
+function parseFindings(out, pass) {
+  return (parseJsonArray(out) ?? []).flatMap((x) => {
+    const f = x;
+    const severity = String(f.severity ?? "").toLowerCase().replace(/[- ]/g, "_");
+    const line = Number(f.line);
+    if (!SEVERITIES.includes(severity) || typeof f.file !== "string" || !f.file || !Number.isInteger(line) || line < 1 || typeof f.title !== "string") return [];
+    return [{ severity, file: f.file.replace(/^\.?\//, ""), line, title: f.title.trim(), evidence: String(f.evidence ?? "").trim(), bug_class: String(f.bug_class ?? "unclassified").trim().toLowerCase(), pass: pass === "all" ? String(f.pass ?? "bugs").toLowerCase() : pass }];
+  });
+}
+var norm = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+function sameFinding(a, b) {
+  if (a.file !== b.file) return false;
+  return a.bug_class === b.bug_class && Math.abs(a.line - b.line) <= 5 || norm(a.title) === norm(b.title);
+}
+function changedLines(diff) {
+  const lines2 = /* @__PURE__ */ new Map();
+  let file2;
+  for (const l of diff.split("\n")) {
+    const f = /^\+\+\+ (?:b\/)?(.+)$/.exec(l);
+    if (f) {
+      file2 = f[1] === "/dev/null" ? void 0 : f[1];
+      continue;
+    }
+    const h = /^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/.exec(l);
+    if (h && file2) {
+      const set2 = lines2.get(file2) ?? /* @__PURE__ */ new Set();
+      const start = Number(h[1]);
+      for (let i = 0; i < Number(h[2] ?? 1); i++) set2.add(start + i);
+      lines2.set(file2, set2);
+    }
+  }
+  return lines2;
+}
+var encodeState = (s) => `<!-- sdlc:review-state ${Buffer.from(JSON.stringify(s)).toString("base64")} -->`;
+function stateFrom(thread) {
+  const raw2 = thread.filter((c) => !c.path && ours(c)).map((c) => STATE2.exec(c.body)?.[1]).filter(Boolean).at(-1);
+  if (!raw2) return void 0;
+  try {
+    return JSON.parse(Buffer.from(raw2, "base64").toString("utf8"));
+  } catch {
+    return void 0;
+  }
+}
+var ours = (c) => !c.association || c.author.endsWith("[bot]") || ["OWNER", "MEMBER", "COLLABORATOR"].includes(c.association);
+function finderPrompt(pass, range, full, branch, known) {
+  return `You are a review finder for this PR/MR. Your pass: ${PASS_FOCUS[pass]}. Follow REVIEW.md (what Important means, what not to report).
+Diff to review: git diff ${range}.${range === full ? "" : ` These are only the commits since the last review round; git diff ${full} is the whole PR, for context only.`}
+Read changes/<slug>/spec.md and plan.md for the change on the branch ${branch}.
+${known.length ? `Already reported (do not report them again, even reworded):
+${known.map((f) => `- ${f.file}:${f.line} [${f.bug_class}] ${f.title}`).join("\n")}
+` : ""}Report only what you can prove: a file and line, and the code or the reasoning that shows the problem. severity: important (breaks behavior, leaks data, violates a policy), nit (minor; never formatting or what lint checks), pre_existing (a real problem in code this PR did not change). bug_class: a short name for the kind of bug (off-by-one, missing authorization check, unhandled error, race condition\u2026).
+Do not modify any file. Answer only with a JSON array, [] if you found nothing:
+[{"severity": "important", "file": "src/a.ts", "line": 12, "title": "one line", "evidence": "why it is wrong", "bug_class": "off-by-one"${pass === "all" ? ', "pass": "bugs|security|compliance"' : ""}}]`;
+}
+function verifierPrompt(full, candidates, open2) {
+  const j = (fs) => JSON.stringify(fs.map(({ id, severity, file: file2, line, title, evidence: evidence2 }) => ({ id, severity, file: file2, line, title, evidence: evidence2 })));
+  return `You are the review verifier for this PR/MR. Check each finding against the code at HEAD (git diff ${full}, and read the files).
+${candidates.length ? `New candidates: ${j(candidates)}
+For each one vote keep (real, the evidence holds, and it matters) or drop (wrong, not supported by the code, a duplicate, or only style, naming or formatting). You may correct the severity (important, nit, pre_existing).
+` : ""}${open2.length ? `Findings still open from earlier rounds: ${j(open2)}
+For each one vote open (the problem is still in the code) or fixed (it is gone).
+` : ""}Do not modify any file. Answer only with a JSON array: [{"id": "f1", "vote": "keep|drop|open|fixed", "severity": "important", "reason": "short"}]`;
+}
+function parseVotes(out) {
+  const arr = parseJsonArray(out);
+  if (!arr) return void 0;
+  return arr.flatMap((x) => {
+    const v = x;
+    const severity = String(v.severity ?? "").toLowerCase().replace(/[- ]/g, "_");
+    return typeof v.id === "string" ? [{ id: v.id, vote: String(v.vote ?? "").toLowerCase(), severity: SEVERITIES.includes(severity) ? severity : void 0 }] : [];
+  });
+}
+function tally(ballots, id, yes) {
+  const votes = ballots.map((b) => b.find((v) => v.id === id)).filter((v) => !!v);
+  if (!votes.length) return { pass: true };
+  const ayes = votes.filter((v) => v.vote === yes);
+  const counts2 = /* @__PURE__ */ new Map();
+  for (const v of ayes) if (v.severity) counts2.set(v.severity, (counts2.get(v.severity) ?? 0) + 1);
+  const severity = [...counts2].sort((a, b) => b[1] - a[1])[0]?.[0];
+  return { pass: ayes.length * 2 > votes.length, severity };
+}
+var cell = (s) => s.replace(/\|/g, "\\|").replace(/\n+/g, " ");
+function counts(findings) {
+  const open2 = findings.filter((f) => f.status === "open");
+  return SEVERITIES.map((s) => `${LABEL[s]}: ${open2.filter((f) => f.severity === s).length}`).join(" \xB7 ");
+}
+function renderReview(state, o) {
+  const open2 = state.findings.filter((f) => f.status === "open");
+  const order2 = (f) => SEVERITIES.indexOf(f.severity);
+  const nits = open2.filter((f) => f.severity === "nit");
+  const shown = [...open2.filter((f) => f.severity !== "nit"), ...nits.slice(0, MAX_NITS)].sort((a, b) => order2(a) - order2(b) || a.file.localeCompare(b.file) || a.line - b.line);
+  const scope = o.since ? `only the commits since ${o.since.slice(0, 7)}` : "the whole PR";
+  const lines2 = [
+    REVIEW_HEADER,
+    "",
+    counts(state.findings),
+    "",
+    `Round ${state.round} of ${o.maxRounds} \xB7 ${DEPTHS[o.depth].label} review (risk ${o.tier}) \xB7 ${state.sha.slice(0, 7)}, ${scope}`
+  ];
+  if (shown.length) {
+    lines2.push("", "| Severity | File:line | Finding | Bug class | Pass |", "|---|---|---|---|---|");
+    for (const f of shown) lines2.push(`| ${LABEL[f.severity]} | \`${f.file}:${f.line}\` | ${cell(f.title)}${f.evidence ? ` \u2014 ${cell(f.evidence)}` : ""} | ${cell(f.bug_class)} | ${f.pass} |`);
+    if (nits.length > MAX_NITS) lines2.push("", `${nits.length - MAX_NITS} more nits not shown.`);
+  } else lines2.push("", "No open findings.");
+  if (o.fixed.length) lines2.push("", `Fixed since the last round: ${o.fixed.map((f) => `\`${f.file}:${f.line}\` ${cell(f.title)}`).join("; ")}`);
+  if (o.dropped) lines2.push("", `The verifier dropped ${o.dropped} candidate${o.dropped === 1 ? "" : "s"} (not supported by the code, or only style).`);
+  if (o.outside.length) lines2.push("", `Not on lines of this diff, so only listed here: ${o.outside.map((f) => `\`${f.file}:${f.line}\``).join(", ")}.`);
+  if (o.capped) lines2.push("", `Round cap reached (${o.maxRounds}): no new findings are looked for; the verifier only checks whether the open ones were fixed. A person reviews the rest.`);
+  lines2.push("", "The findings inform the code owner; they do not approve or block by themselves.", "", REVIEW_MARKER, encodeState(state));
+  return lines2.join("\n");
+}
+async function review(c) {
+  const n = prNumber(c.env);
+  if (n === void 0) {
+    log3("not a PR/MR, nothing to review");
+    return 0;
+  }
+  const ctx = { root: c.root, loaded: c.loaded, env: c.env };
+  const baseName = baseRef(c);
+  git(c.root, ["fetch", "-q", "origin", baseName]);
+  const base = baseCommit(c.root, baseName);
+  const branch = headRef(c);
+  const head = git(c.root, ["rev-parse", "HEAD"]) ?? "HEAD";
+  const change = changeForBranch(c, branch);
+  const risk2 = await prRisk(c, change, n);
+  const setting = c.loaded?.config.ci?.review;
+  const depth = setting?.depth && setting.depth !== "auto" ? setting.depth : TIER_DEPTH[risk2.tier];
+  const maxRounds = setting?.max_rounds ?? DEFAULT_MAX_ROUNDS;
+  let prev;
+  if (!c.dryRun) {
+    try {
+      prev = stateFrom(await prThread(ctx, n));
+    } catch (e) {
+      log3(`could not read the PR comments: ${e.message}`);
+    }
+  }
+  if (prev?.sha === head) {
+    log3(`${head.slice(0, 7)} was already reviewed (round ${prev.round})`);
+    return 0;
+  }
+  const round = (prev?.round ?? 0) + 1;
+  const capped = round > maxRounds;
+  const since = prev && git(c.root, ["merge-base", "--is-ancestor", prev.sha, head]) !== void 0 ? prev.sha : void 0;
+  const full = `${base}...HEAD`;
+  const range = since ? `${since}..HEAD` : full;
+  const known = prev?.findings ?? [];
+  const run3 = (prompt) => runAgentAsync(c.agent, { mode: "read", allowedTools: READ_TOOLS, cwd: c.root, prompt }, c.model).catch((e) => (log3(e.message), ""));
+  const { passes, votes } = DEPTHS[depth];
+  const found = capped ? [] : (await Promise.all(passes.map(async (p) => parseFindings(await run3(finderPrompt(p, range, full, branch, known)), p)))).flat();
+  let next = known.reduce((m, f) => Math.max(m, Number(f.id.slice(1)) || 0), 0);
+  const candidates = [];
+  for (const f of found) if (![...known, ...candidates].some((k) => sameFinding(k, f))) candidates.push({ ...f, id: `f${++next}` });
+  const open2 = known.filter((f) => f.status === "open");
+  const ballots = candidates.length || open2.length ? (await Promise.all(Array.from({ length: votes }, () => run3(verifierPrompt(full, candidates, open2))))).map(parseVotes).filter((b) => !!b) : [];
+  const kept = candidates.flatMap((f) => {
+    const t2 = tally(ballots, f.id, "keep");
+    return t2.pass ? [{ ...f, severity: t2.severity ?? f.severity, status: "open", round }] : [];
+  });
+  const fixed = [];
+  const carried = known.map((f) => {
+    if (f.status !== "open") return f;
+    const t2 = tally(ballots, f.id, "fixed");
+    if (t2.pass && ballots.some((b) => b.some((v) => v.id === f.id))) {
+      const g = { ...f, status: "fixed" };
+      fixed.push(g);
+      return g;
+    }
+    return f;
+  });
+  const state = { round, sha: head, findings: [...carried, ...kept] };
+  const inDiff = changedLines(git(c.root, ["diff", "-U0", "--no-color", full]) ?? "");
+  const inline = kept.filter((f) => f.severity !== "pre_existing" && inDiff.get(f.file)?.has(f.line));
+  const outside = kept.filter((f) => !inline.includes(f));
+  const nitIds = new Set(inline.filter((f) => f.severity === "nit").slice(MAX_NITS).map((f) => f.id));
+  const body = renderReview(state, { depth, tier: risk2.tier, since, capped, maxRounds, fixed, dropped: candidates.length - kept.length, outside });
+  writeFileSync12(join19(c.root, "review.json"), JSON.stringify({ ...state, depth, tier: risk2.tier }, null, 2) + "\n");
+  writeFileSync12(join19(c.root, "review-tally.txt"), counts(state.findings) + "\n");
+  if (c.dryRun) {
+    console.log(body);
+    return 0;
+  }
+  const comments = inline.filter((f) => !nitIds.has(f.id)).map((f) => ({ path: f.file, line: f.line, body: `**${LABEL[f.severity]}** \xB7 ${f.bug_class}
+
+${f.title}${f.evidence ? `
+
+${f.evidence}` : ""}
+
+<!-- sdlc:finding id=${f.id} -->` }));
+  if (comments.length) {
+    const r = await prInlineComments(ctx, n, head, comments);
+    log3(`${r.posted} inline comment${r.posted === 1 ? "" : "s"} posted`);
+    for (const f of r.failed) log3(`inline comment skipped: ${f}`);
+  }
+  log3(await prUpsertComment(ctx, n, REVIEW_MARKER, body, ours));
+  log3(await notify({ event: "review.done", change: findChange(c.root, c.loaded, { branch, active: false }), note: counts(state.findings) }, c.loaded, c.env));
+  return 0;
+}
+
 // packages/cli/src/ci/index.ts
 var CI_HELP = `sdlc ci install [--provider github|gitlab|bitbucket] [--preset solo|team-github|regulated]
                                copy the pipeline templates (stack setup filled in; never overwrites)
 sdlc ci bootstrap              install the agent CLI (and the Claude plugin when plugin.marketplace_repo is set)
-sdlc ci review                 review the PR/MR with REVIEW.md and post the result as a comment
+sdlc ci review                 review the PR/MR with REVIEW.md: one finder per pass, a verifier that votes, inline comments
+                               and a summary; depth by risk tier (ci.review.depth), at most ci.review.max_rounds (3) rounds
 sdlc ci intent-to-spec         for accepted intents without spec.md: write the spec headless, commit, push
 sdlc ci triage <log>           summarize a failed build and comment on the PR/MR
 sdlc ci tracker-merged         move the merged change's tickets to tracker.transitions.merged (alias: jira-merged)
@@ -36013,7 +36305,7 @@ Env: ANTHROPIC_API_KEY | OPENAI_API_KEY | CURSOR_API_KEY \xB7 GH_TOKEN | GITLAB_
      JIRA_EMAIL + JIRA_API_TOKEN (or JIRA_PAT) \xB7 LINEAR_API_KEY \xB7 SDLC_PLUGIN_REPO_URL / SDLC_PLUGIN_TOKEN (private marketplace)
      SDLC_NOTIFY_WEBHOOK (Slack or generic webhook: gate.pending, gate.decided, spec.ready, review.done, change.merged)
 `;
-var log3 = (msg) => process.stderr.write(`[sdlc-ci] ${msg}
+var log4 = (msg) => process.stderr.write(`[sdlc-ci] ${msg}
 `);
 function prNumber(env) {
   const n = env.PR_NUMBER || env.CI_MERGE_REQUEST_IID || env.BITBUCKET_PR_ID;
@@ -36106,10 +36398,10 @@ var INSTALL = {
 };
 function bootstrap(c) {
   let bin = agentBin(c.agent, c.env);
-  if (hasTool(bin, c.env)) log3(`${bin} already installed`);
+  if (hasTool(bin, c.env)) log4(`${bin} already installed`);
   else {
     const [cmd, args] = INSTALL[c.agent];
-    log3(`installing ${bin}: ${cmd} ${args.join(" ")}`);
+    log4(`installing ${bin}: ${cmd} ${args.join(" ")}`);
     const r = spawnSync3(cmd, args, { stdio: ["ignore", "ignore", "inherit"] });
     if (r.status !== 0) throw new SdlcError(`could not install ${bin}`);
     bin = agentBin(c.agent, c.env);
@@ -36118,51 +36410,21 @@ function bootstrap(c) {
 `);
   }
   if (c.agent !== "claude") {
-    log3(`${bin} reads the rendered skills in .agents/skills (commit the output of sdlc sync)`);
+    log4(`${bin} reads the rendered skills in .agents/skills (commit the output of sdlc sync)`);
     return 0;
   }
   let url2 = c.env.SDLC_PLUGIN_REPO_URL || c.loaded?.config.plugin?.marketplace_repo;
   if (!url2) {
-    log3("no plugin.marketplace_repo: Claude uses the project skills in .claude/skills (commit the output of sdlc sync)");
+    log4("no plugin.marketplace_repo: Claude uses the project skills in .claude/skills (commit the output of sdlc sync)");
     return 0;
   }
   if (c.env.SDLC_PLUGIN_TOKEN) url2 = url2.replace("https://", `https://${c.env.SDLC_PLUGIN_TOKEN_USER || "x-access-token"}:${c.env.SDLC_PLUGIN_TOKEN}@`);
-  const home = c.env.SDLC_HOME || join19(homedir3(), ".ai-sdlc");
+  const home = c.env.SDLC_HOME || join20(homedir3(), ".ai-sdlc");
   rmSync6(home, { recursive: true, force: true });
   execFileSync9("git", ["clone", "-q", "--depth", "1", url2, home], { stdio: ["ignore", "ignore", "inherit"] });
   execFileSync9("claude", ["plugin", "marketplace", "add", home], { stdio: ["ignore", "ignore", "inherit"] });
   execFileSync9("claude", ["plugin", "install", "ai-sdlc@ai-native-sdlc"], { stdio: ["ignore", "ignore", "inherit"] });
-  log3("ai-sdlc plugin installed");
-  return 0;
-}
-var TALLY = /Important: \d+ · Nit: \d+/g;
-async function review(c) {
-  const n = prNumber(c.env);
-  if (n === void 0) {
-    log3("not a PR/MR, nothing to review");
-    return 0;
-  }
-  const base = baseRef(c);
-  git(c.root, ["fetch", "-q", "origin", base]);
-  const out = runAgent(
-    c.agent,
-    {
-      mode: "read",
-      allowedTools: READ_TOOLS,
-      cwd: c.root,
-      prompt: `You are the automated reviewer for this PR/MR. Follow REVIEW.md to the letter.
-Diff to review: git diff origin/${base}...HEAD. Read changes/<slug>/spec.md and plan.md for the change (the branch is ${headRef(c)}) for the Compliance pass.
-Output format in markdown: title '## Automated review (ai-sdlc)', a table of findings sorted by severity (Important first) with columns Pass | Severity | File:line | Finding, and at the end a line 'Important: N \xB7 Nit: M'.
-Do not approve or block: the findings inform the code owner. Do not modify any file.`
-    },
-    c.model
-  );
-  writeFileSync12(join19(c.root, "review-tally.txt"), (out.match(TALLY)?.at(-1) ?? "") + "\n");
-  await post(c, n, out);
-  if (!c.dryRun) {
-    const tally = out.match(TALLY)?.at(-1);
-    log3(await notify({ event: "review.done", change: findChange(c.root, c.loaded, { branch: headRef(c), active: false }), note: tally }, c.loaded, c.env));
-  }
+  log4("ai-sdlc plugin installed");
   return 0;
 }
 async function post(c, n, body) {
@@ -36170,22 +36432,22 @@ async function post(c, n, body) {
     console.log(body);
     return;
   }
-  log3(await prComment({ root: c.root, loaded: c.loaded, env: c.env }, n, body));
+  log4(await prComment({ root: c.root, loaded: c.loaded, env: c.env }, n, body));
 }
 function pendingIntents(root) {
-  const dir = join19(root, "changes");
+  const dir = join20(root, "changes");
   if (!existsSync16(dir)) return [];
-  return readdirSync7(dir, { withFileTypes: true }).filter((d) => d.isDirectory() && !d.name.startsWith("_")).map((d) => `changes/${d.name}`).filter((d) => existsSync16(join19(root, d, "intent.md")) && !existsSync16(join19(root, d, "spec.md"))).filter((d) => isApproved(parseFrontmatter(readFileSync19(join19(root, d, "intent.md"), "utf8")).data.status)).sort();
+  return readdirSync7(dir, { withFileTypes: true }).filter((d) => d.isDirectory() && !d.name.startsWith("_")).map((d) => `changes/${d.name}`).filter((d) => existsSync16(join20(root, d, "intent.md")) && !existsSync16(join20(root, d, "spec.md"))).filter((d) => isApproved(parseFrontmatter(readFileSync19(join20(root, d, "intent.md"), "utf8")).data.status)).sort();
 }
 async function intentToSpec(c) {
   const pending = pendingIntents(c.root);
   if (!pending.length) {
-    log3("no accepted intents without a spec");
+    log4("no accepted intents without a spec");
     return 0;
   }
   const before = git(c.root, ["rev-parse", "HEAD"]);
   for (const d of pending) {
-    log3(`generating spec for ${d} with ${c.agent}`);
+    log4(`generating spec for ${d} with ${c.agent}`);
     runAgent(
       c.agent,
       {
@@ -36198,16 +36460,16 @@ async function intentToSpec(c) {
     );
   }
   if (git(c.root, ["rev-parse", "HEAD"]) === before) {
-    log3("the agent made no commits; nothing to push");
+    log4("the agent made no commits; nothing to push");
     return 1;
   }
   if (c.dryRun) {
-    log3(`dry run: not pushing HEAD:${headRef(c)}`);
+    log4(`dry run: not pushing HEAD:${headRef(c)}`);
     return 0;
   }
   execFileSync9("git", ["push", "origin", `HEAD:${headRef(c)}`], { cwd: c.root, stdio: ["ignore", "inherit", "inherit"] });
-  for (const d of pending.filter((x) => existsSync16(join19(c.root, x, "spec.md")))) {
-    log3(await notify({ event: "spec.ready", change: findChange(c.root, c.loaded, { id: d }), artifact: "spec" }, c.loaded, c.env));
+  for (const d of pending.filter((x) => existsSync16(join20(c.root, x, "spec.md")))) {
+    log4(await notify({ event: "spec.ready", change: findChange(c.root, c.loaded, { id: d }), artifact: "spec" }, c.loaded, c.env));
   }
   return 0;
 }
@@ -36219,7 +36481,7 @@ function scorecard(c, files, out) {
     console.log(block2);
     return 0;
   }
-  console.log(updateScorecard(join19(c.root, out), block2) ? `updated ${out}` : `${out}: no result changed`);
+  console.log(updateScorecard(join20(c.root, out), block2) ? `updated ${out}` : `${out}: no result changed`);
   return 0;
 }
 async function triage(c, logFile) {
@@ -36246,23 +36508,23 @@ async function trackerMerged(c) {
   const message = git(c.root, ["log", "-1", "--format=%B"]) ?? "";
   const branch = c.env.MERGED_BRANCH || mergedBranch(message);
   const merged = branch ? findChange(c.root, c.loaded, { branch, active: false }) : void 0;
-  if (merged && !c.dryRun) log3(await notify({ event: "change.merged", change: merged }, c.loaded, c.env));
+  if (merged && !c.dryRun) log4(await notify({ event: "change.merged", change: merged }, c.loaded, c.env));
   if (!trackerEnabled(c.loaded)) {
-    log3("tracker not configured");
+    log4("tracker not configured");
     return 0;
   }
   const text = [message, headRef(c), branch ?? ""].join("\n");
   const keys = trackerKeys(c.loaded, [text, merged?.ticket ?? ""].join("\n"));
   if (!keys.length) {
-    log3("the merge does not reference any tickets");
+    log4("the merge does not reference any tickets");
     return 0;
   }
   const j = tracker(c.loaded, c.env, c.root);
   for (const k of keys) {
     try {
-      log3(await j.transition(k, "merged"));
+      log4(await j.transition(k, "merged"));
     } catch (e) {
-      log3(`could not transition ${k}: ${e.message} (continuing; the tracker does not block)`);
+      log4(`could not transition ${k}: ${e.message} (continuing; the tracker does not block)`);
     }
   }
   return 0;
@@ -36301,7 +36563,7 @@ ${quoted}
 
 ${out.trim()}`;
   if (edit && git(c.root, ["rev-parse", "HEAD"]) !== before) {
-    if (c.dryRun) log3(`dry run: not pushing HEAD:${headRef(c)}`);
+    if (c.dryRun) log4(`dry run: not pushing HEAD:${headRef(c)}`);
     else execFileSync9("git", ["push", "origin", `HEAD:${headRef(c)}`], { cwd: c.root, stdio: ["ignore", "inherit", "inherit"] });
     body += `
 
@@ -36396,7 +36658,7 @@ function slugify2(title) {
 function newChange(root, slug, opts2) {
   const loaded = loadConfig(root);
   const dir = `changes/${(/* @__PURE__ */ new Date()).toISOString().slice(0, 7)}-${slug}`;
-  if (existsSync18(join21(root, dir))) fail3(`${dir} already exists`);
+  if (existsSync18(join22(root, dir))) fail3(`${dir} already exists`);
   if (opts2.branch) gitOrThrow(root, ["checkout", "-b", `change/${slug}`]);
   const who = gitUser(root);
   const fields = { change: slug, created: (/* @__PURE__ */ new Date()).toISOString().slice(0, 10), author: who.name ?? who.email ?? "" };
@@ -36413,8 +36675,8 @@ ${opts2.title}
     body = setFrontmatter(templateFor(root, "intent", localeOf(loaded)), fields);
     if (opts2.title) body = body.replace(/^# (Intent: )?.*$/m, (_m, p) => `# ${p ?? ""}${opts2.title}`);
   }
-  mkdirSync9(join21(root, dir), { recursive: true });
-  writeFileSync14(join21(root, dir, "intent.md"), body);
+  mkdirSync9(join22(root, dir), { recursive: true });
+  writeFileSync14(join22(root, dir, "intent.md"), body);
   recordEvent(root, { type: opts2.quick ? "change.quick" : "change.new", change: slug, by: who.name });
   console.log(`created ${dir}/intent.md${opts2.branch ? ` on branch change/${slug}` : ""}${opts2.quick ? " (quick lane: no spec, no plan)" : ""}`);
   if (!loaded) console.log("Note: project not configured (sdlc init).");
@@ -36513,9 +36775,9 @@ async function main() {
       return;
     }
     case "migrate": {
-      const legacy = join21(root, LEGACY_CONFIG_PATH);
+      const legacy = join22(root, LEGACY_CONFIG_PATH);
       if (!existsSync18(legacy)) fail3(`no ${LEGACY_CONFIG_PATH} to migrate`);
-      if (existsSync18(join21(root, CONFIG_PATH))) fail3(`${CONFIG_PATH} already exists`);
+      if (existsSync18(join22(root, CONFIG_PATH))) fail3(`${CONFIG_PATH} already exists`);
       migrateLegacy(root);
       console.log(`moved ${LEGACY_CONFIG_PATH} \u2192 ${CONFIG_PATH}`);
       printSync(sync(root, requireConfig(root)));
@@ -36646,16 +36908,16 @@ async function main() {
       process.exitCode = await notifyCommand(root, loadConfig(root), pos, flags);
       return;
     case "lock": {
-      const lock = join21(root, FIX_LOCKS[0]);
+      const lock = join22(root, FIX_LOCKS[0]);
       if (pos[0] === "on") {
         ensureSdlcDir(root);
         writeFileSync14(lock, (/* @__PURE__ */ new Date()).toISOString() + "\n");
         console.log("test-lock ON: test files cannot be edited until `sdlc lock off`");
       } else if (pos[0] === "off") {
-        for (const p of FIX_LOCKS) rmSync7(join21(root, p), { force: true });
+        for (const p of FIX_LOCKS) rmSync7(join22(root, p), { force: true });
         console.log("test-lock OFF");
       } else {
-        console.log(FIX_LOCKS.some((p) => existsSync18(join21(root, p))) ? "on" : "off");
+        console.log(FIX_LOCKS.some((p) => existsSync18(join22(root, p))) ? "on" : "off");
       }
       return;
     }

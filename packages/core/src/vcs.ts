@@ -345,6 +345,42 @@ export async function prUpsertComment(ctx: VcsContext, n: number, marker: string
   return `comment ${mine.id} updated on #${n}`;
 }
 
+export interface InlineComment {
+  path: string;
+  /** Line on the new side of the diff. */
+  line: number;
+  body: string;
+}
+
+/** Comments on lines of the PR/MR diff at `sha`. Returns how many were posted; a line outside the diff is skipped. */
+export async function prInlineComments(ctx: VcsContext, n: number, sha: string, comments: InlineComment[]): Promise<{ posted: number; failed: string[] }> {
+  const failed: string[] = [];
+  let refs: { base_sha: string; start_sha: string; head_sha: string } | undefined;
+  for (const c of comments) {
+    try {
+      switch (vcsProvider(ctx)) {
+        case 'github':
+          tool(ctx, 'gh', ['api', '-X', 'POST', `repos/{owner}/{repo}/pulls/${n}/comments`, '-f', `body=${c.body}`, '-f', `commit_id=${sha}`, '-f', `path=${c.path}`, '-F', `line=${c.line}`, '-f', 'side=RIGHT']);
+          break;
+        case 'gitlab':
+          refs ??= (await gitlab(ctx, 'GET', `/merge_requests/${n}`))?.diff_refs;
+          if (!refs) throw new SdlcError('the MR has no diff_refs');
+          await gitlab(ctx, 'POST', `/merge_requests/${n}/discussions`, {
+            body: c.body,
+            position: { position_type: 'text', base_sha: refs.base_sha, start_sha: refs.start_sha, head_sha: refs.head_sha, new_path: c.path, new_line: c.line },
+          });
+          break;
+        case 'bitbucket':
+          await bitbucket(ctx)('POST', `/pullrequests/${n}/comments`, { content: { raw: c.body }, inline: { path: c.path, to: c.line } });
+          break;
+      }
+    } catch (e) {
+      failed.push(`${c.path}:${c.line}: ${(e as Error).message}`);
+    }
+  }
+  return { posted: comments.length - failed.length, failed };
+}
+
 export async function prChecks(ctx: VcsContext, n: number): Promise<PrCheck[]> {
   switch (vcsProvider(ctx)) {
     case 'github':
