@@ -3,7 +3,7 @@
 De un repositorio existente a un cambio mergeado: el agente escribe y vos decidís. Necesitás Node ≥ 22.18, git y un agente (Claude Code, Cursor, o Codex u otro que lea AGENTS.md).
 
 ::: tip ¿Es tu primera vez?
-Esta página es la versión corta. [Empezá acá](./empezar/que-es) explica cada paso, usa una app de ejemplo chiquita y tiene un video de tres minutos.
+Esta página es la versión corta. [Empezá acá](./empezar/que-es.md) explica cada paso, usa una app de ejemplo chiquita y tiene un video de tres minutos.
 :::
 
 ## 1. Configurar (1 minuto)
@@ -56,4 +56,4 @@ Las aprobaciones son commits con tu identidad: los agentes y bots no pueden apro
 - Guardrails que se sostuvieron mientras el agente trabajaba: rutas protegidas, secretos, el production gate, plan antes que código.
 - `npx sdlc metrics --funnel`: hasta dónde llegan los cambios en el loop.
 
-Siguiente: la [guía para equipos](./guia-equipo).
+Siguiente: la [guía para equipos](./guia-equipo.md).

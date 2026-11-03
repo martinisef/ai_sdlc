@@ -1,10 +1,10 @@
 # Agent scorecard
 
-How each agent does on the [product evals](./evals): the same tasks and checks, with the skills rendered for that agent (Claude Code reads the plugin; Codex and Cursor read `.agents/skills`). The weekly [evals workflow](https://github.com/martinisef/ai_sdlc/actions/workflows/evals.yml) runs one job per agent with an API key and updates this page through a pull request when a result changes.
+How each agent does on the [product evals](./evals.md): the same tasks and checks, with the skills rendered for that agent (Claude Code reads the plugin; Codex and Cursor read `.agents/skills`). The weekly [evals workflow](https://github.com/martinisef/ai_sdlc/actions/workflows/evals.yml) runs one job per agent with an API key and updates this page through a pull request when a result changes.
 
 ✅ passed · ❌ failed · — not run for that agent.
 
-The reviewer has its own table: clean PRs it left without an Important finding (false positives) and real problems it caught, including the ones captured from reverts and incidents ([reviewer evals](./evals#reviewer-evals)). Below it, what happened to its comments on real PRs (`sdlc metrics --prs`):
+The reviewer has its own table: clean PRs it left without an Important finding (false positives) and real problems it caught, including the ones captured from reverts and incidents ([reviewer evals](./evals.md#reviewer-evals)). Below it, what happened to its comments on real PRs (`sdlc metrics --prs`):
 
 - **fixed**: the finding went away in a later commit;
 - **intentional**: resolved with a reason (the finding is right, the code stays);

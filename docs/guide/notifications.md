@@ -9,7 +9,7 @@ The loop waits on people: the PO accepts the intent, someone approves the spec a
 | `gate.decided` | `sdlc ci gate`, after `/approve` or `/reject` in a comment | the decision, who made it, the reason |
 | `review.done` | `sdlc ci review`, and `sdlc-review.yml` on GitHub | the review finished; the `Important: N · Nit: M` tally |
 | `change.merged` | `sdlc ci tracker-merged` (the merged-PR job) | the change is merged |
-| `risk.raised` | `sdlc bands check`, when a tier with `raise_risk` trips the [circuit breaker](../reference/bands#circuit-breaker) | the new minimum tier, until when, and which metric left its band |
+| `risk.raised` | `sdlc bands check`, when a tier with `raise_risk` trips the [circuit breaker](../reference/bands.md#circuit-breaker) | the new minimum tier, until when, and which metric left its band |
 
 Each message carries the change, its stage, whoever has to act (from `gates` and `roles`), and links to the PR and to the artifact on the branch.
 

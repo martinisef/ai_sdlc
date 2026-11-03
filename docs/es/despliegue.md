@@ -19,7 +19,7 @@ También valen los títulos en inglés (`## Testing`, `## Risk`, `## How to reve
 Mergear no es liberar. Para cualquier cosa por encima de low, separá las dos:
 
 - **Feature flags.** Poné el comportamiento nuevo detrás de un flag apagado por defecto, mergeá, prendelo para pocos usuarios y después para todos. "Cómo revertir" pasa a ser "apagar el flag": tarda segundos y no necesita deploy. Sacá el flag en un cambio posterior, cuando ya esté prendido para todos.
-- **Release escalonado.** Desplegá primero a un canary o a un porcentaje chico, compará su tasa de errores y su latencia con el resto, y después ampliá. Las [control bands](../reference/bands) (`sdlc bands check`) miran las mismas métricas después del merge.
+- **Release escalonado.** Desplegá primero a un canary o a un porcentaje chico, compará su tasa de errores y su latencia con el resto, y después ampliá. Las [control bands](../reference/bands.md) (`sdlc bands check`) miran las mismas métricas después del merge.
 - **Pasos irreversibles.** Las migraciones de datos, las llamadas externas y los contratos publicados no se revierten con el PR. Separalos: primero una migración aditiva, después el código que la usa, al final la limpieza.
 
 ## Merge queue
@@ -36,4 +36,4 @@ GitLab tiene merge trains y Bitbucket merge checks; los dos corren el pipeline s
 
 - Seguí el despliegue hasta que el cambio esté prendido para todos. Si se porta mal, primero seguí "Cómo revertir" y después investigá.
 - Un incidente pasa por `/sdlc-incident`: abre un cambio con la línea de tiempo, y el fix viene con un test que lo reproduce.
-- Un revert es una señal, no un fracaso. Las [métricas](../reference/telemetry) cuentan los reverts por cambio; si son frecuentes, el nivel o el review se están perdiendo algo.
+- Un revert es una señal, no un fracaso. Las [métricas](../reference/telemetry.md) cuentan los reverts por cambio; si son frecuentes, el nivel o el review se están perdiendo algo.

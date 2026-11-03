@@ -27,7 +27,7 @@ Any tier can also carry `raise_risk: { tier: medium | high, hours: 72 }`. While 
 
 - The floor is written to `.sdlc/risk-floor.json` and to the ref `refs/sdlc/risk-floor`. When there is a remote, the ref is pushed so `sdlc ci risk` and the gates read it on every PR.
 - A new floor never lowers one in force.
-- The floor is announced with the `risk.raised` [notification](../guide/notifications) and logged as a `risk.raised` event. `sdlc metrics` and the dashboard show it until it expires.
+- The floor is announced with the `risk.raised` [notification](../guide/notifications.md) and logged as a `risk.raised` event. `sdlc metrics` and the dashboard show it until it expires.
 
 The guardrails it is meant for are reverts and incidents, read from git with `sdlc metrics --value`:
 

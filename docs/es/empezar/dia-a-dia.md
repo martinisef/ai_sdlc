@@ -47,8 +47,8 @@ Mira en qué etapa está cada cambio y te dice lo único que hay que hacer ahora
 - **Nada de secretos en el código.** Escribir algo que parece una contraseña o una API key se bloquea.
 - **Durante un arreglo de bug, los tests quedan bloqueados.** El arreglo tiene que hacer pasar el test existente, no cambiarlo.
 
-Cuando algo se bloquea, el mensaje dice por qué y qué hacer. Mirá [Problemas frecuentes](./problemas).
+Cuando algo se bloquea, el mensaje dice por qué y qué hacer. Mirá [Problemas frecuentes](./problemas.md).
 
 ## Trabajar en equipo
 
-Corré `npx sdlc init --locale es --preset team-github` en lugar de `solo`. Pregunta quién es el Product Owner (aprueba intent y spec) y quién el tech lead (aprueba el plan). Todo lo demás queda igual. Más en la [guía para equipos](../guia-equipo).
+Corré `npx sdlc init --locale es --preset team-github` en lugar de `solo`. Pregunta quién es el Product Owner (aprueba intent y spec) y quién el tech lead (aprueba el plan). Todo lo demás queda igual. Más en la [guía para equipos](../guia-equipo.md).
