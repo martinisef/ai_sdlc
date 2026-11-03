@@ -3,7 +3,7 @@
 De un repositorio existente a un cambio mergeado: el agente escribe y vos decidís. Necesitás Node ≥ 22.18, git y un agente (Claude Code, Cursor, o Codex u otro que lea AGENTS.md).
 
 ::: tip ¿Es tu primera vez?
-Esta página es la versión corta. [Empezá acá](./empezar/que-es) explica cada paso, usa una app de ejemplo chiquita y tiene un video de cuatro minutos.
+Esta página es la versión corta. [Empezá acá](./empezar/que-es) explica cada paso, usa una app de ejemplo chiquita y tiene un video de tres minutos.
 :::
 
 ## 1. Configurar (1 minuto)

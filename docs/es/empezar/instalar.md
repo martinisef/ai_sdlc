@@ -2,7 +2,7 @@
 
 Unos 10 minutos la primera vez. Los comandos se escriben en una **terminal**: Terminal en macOS, tu aplicación de terminal en Linux, o Ubuntu (WSL) en Windows.
 
-![Instalar y verificar la configuración](/media/install-es.gif)
+![Instalar y verificar la configuración](../../media/install-es.gif)
 
 ## 1. Fijate qué ya tenés
 

@@ -13,7 +13,7 @@ Each step says what you type, what you should see, and what to do if you see som
 
 ## Part 1: a small change (quick lane)
 
-![The quick lane](/media/quick-en.gif)
+![The quick lane](../media/quick-en.gif)
 
 ### Step 1. Say what you want
 
@@ -64,7 +64,7 @@ git merge change/list-shows-how-many-to-dos-there-are
 
 ## Part 2: a real feature (the full loop)
 
-![The full loop](/media/loop-en.gif)
+![The full loop](../media/loop-en.gif)
 
 ### Step 4. Start the change
 
@@ -140,7 +140,7 @@ Blocked by ai-sdlc: branch change/mark-done has code changes but changes/2026-11
 
 That is the guardrail doing its job. Approve the plan first.
 
-![A push before the plan is approved, blocked](/media/guardrail-en.gif)
+![A push before the plan is approved, blocked](../media/guardrail-en.gif)
 :::
 
 ### Step 8. Build it
@@ -174,13 +174,13 @@ npx sdlc ui
 
 It opens `http://127.0.0.1:4319` in your browser. Nothing leaves your machine.
 
-![Inbox: what is waiting for your decision](/media/dashboard-inbox-en.png)
+![Inbox: what is waiting for your decision](../media/dashboard-inbox-en.png)
 
 - **Inbox**: what is waiting for your decision. The approve and reject buttons do the same as `npx sdlc approve`.
 - **Board**: every change and the stage it is at.
 - **Change** (when you open one): intent, spec and plan side by side, with their history.
 
-![Board: every change by stage](/media/dashboard-board-en.png)
+![Board: every change by stage](../media/dashboard-board-en.png)
 
 ## What you just did
 

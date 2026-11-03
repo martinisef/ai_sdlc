@@ -91,8 +91,10 @@ for p in $pairs; do
   [ -f "$REPO/$en" ] && [ -f "$REPO/$es" ] || { ko "$en / $es exist" ""; continue; }
   a="$(grep -c '^##' "$REPO/$en")"; b="$(grep -c '^##' "$REPO/$es")"
   [ "$a" = "$b" ] && ok "$en and $es have $a headings" || ko "$en and $es have the same headings" "    en: $a, es: $b"
-  for m in $(grep -o '/media/[a-z-]*-en\.[a-z0-9]*' "$REPO/$en" | sort -u); do
-    f="$REPO/docs/public${m}"; fes="${f/-en./-es.}"
+  # images are relative (they also render on GitHub); the video is served from docs/public
+  for m in $(grep -o 'media/[a-z-]*-en\.[a-z0-9]*' "$REPO/$en" | sort -u); do
+    case "$m" in *.mp4|*.vtt) f="$REPO/docs/public/$m" ;; *) f="$REPO/docs/$m" ;; esac
+    fes="${f/-en./-es.}"
     [ -f "$f" ] && [ -f "$fes" ] && grep -q "${m/-en./-es.}" "$REPO/$es" && ok "$m in both" || ko "$m in both" "    missing file or not used in $es"
   done
 done
