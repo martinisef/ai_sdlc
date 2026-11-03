@@ -2,7 +2,7 @@
 change: <slug>
 status: draft            # draft → accepted (Product Owner) | rejected
 author: <name (area)>
-origin: idea             # idea | ticket | incident
+origin: idea             # idea | ticket | incident | review
 ticket:                  # PROJ-123 if the project uses Jira
 created: <YYYY-MM-DD>
 approved_by:             # who accepted the intent (filled in by the PO or recorded on acceptance)

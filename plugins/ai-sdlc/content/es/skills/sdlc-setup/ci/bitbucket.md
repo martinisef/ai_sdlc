@@ -7,7 +7,7 @@
 
 Todos los steps corren `npx -y @morsadev/sdlc@0 ci <cmd>` sobre `node:22`: no hay script de CI para copiar.
 
-Si ya existe `bitbucket-pipelines.yml`, mergeá los steps (`pull-requests`, `branches.change/**`, `custom.agent-evals`, `custom.control-bands`) sin borrar lo existente.
+Si ya existe `bitbucket-pipelines.yml`, mergeá los steps (`pull-requests`, `branches.change/**`, `custom.agent-evals`, `custom.nightly-review`, `custom.control-bands`) sin borrar lo existente.
 Completá los bloques `# >>> stack` (imagen y setup) desde `stacks/<lang>.md` → "CI · Bitbucket".
 Sin Jira: sacá el step "Jira → merged". Sin Stage 6: sacá `custom.control-bands`.
 En `.sdlc/config.json` completá `vcs.workspace` y `vcs.repo` (el remote puede no estar disponible en todos los contextos).
@@ -27,7 +27,7 @@ En `.sdlc/config.json` completá `vcs.workspace` y `vcs.repo` (el remote puede n
 2. **Branch restrictions** en `main`: sin push directo, merge solo vía PR.
 3. **Merge checks**: mínimo 1 aprobación, builds verdes (incluidos `sdlc/review` y `sdlc/gates`). *Verificar en el plan del workspace* qué checks son obligatorios (en algunos planes son solo advertencias).
 4. **Default reviewers** / code owners para `CLAUDE.md`, `REVIEW.md`, `.claude/`, `evals/` (disponibilidad según plan).
-5. **Schedule** nocturno del pipeline custom `agent-evals` (y uno diario para `control-bands` con Stage 6).
+5. **Schedule** nocturno de los pipelines custom `agent-evals` y `nightly-review` (y uno diario para `control-bands` con Stage 6).
 6. Integración **Jira ↔ Bitbucket** activada en el sitio de Atlassian (linkea ramas y PRs con la key automáticamente).
 
 ## @claude en comentarios

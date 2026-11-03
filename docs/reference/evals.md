@@ -55,7 +55,7 @@ Each eval runs in a throwaway, detached git worktree of `HEAD`, so commit what y
 
 The automated review is tested the same way: the setup commits a change and the prompt asks for a review of `HEAD` that ends with `IMPORTANT_FINDINGS: <n>`.
 
-- **Misses become evals.** `sdlc ci capture-eval <commit> --origin incident --expect "<finding>"` stores the commit that caused an incident as `evals/fixtures/review/<name>.patch` and writes `evals/review-incident-<sha>.json`. The eval applies the patch on a fresh checkout and expects at least one Important finding in the file it changed. `/sdlc-incident` runs it when a merged commit is the cause. `sdlc ci capture-eval --reverts [--since 30d]` does the same for every commit the default branch reverted (`This reverts commit …`), skipping the ones already captured.
+- **Misses become evals.** `sdlc ci capture-eval <commit> --origin incident --expect "<finding>"` stores the commit that caused an incident as `evals/fixtures/review/<name>.patch` and writes `evals/review-incident-<sha>.json`. The eval applies the patch on a fresh checkout and expects at least one Important finding in the file it changed. `/sdlc-incident` runs it when a merged commit is the cause. `sdlc ci capture-eval --reverts [--since 30d]` does the same for every commit the default branch reverted (`This reverts commit …`), skipping the ones already captured. The [nightly review](./ci#nightly-review) templates run it every night and open a PR with the new evals.
 - **Clean PRs measure false positives.** Evals tagged `clean` apply a correct change (a tested function, tests only, docstrings) and expect `IMPORTANT_FINDINGS: 0`. A reviewer that flags them is noisy, and people learn to ignore it.
 
 ```json

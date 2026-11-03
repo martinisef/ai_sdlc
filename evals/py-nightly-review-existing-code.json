@@ -1,0 +1,28 @@
+{
+  "name": "py-nightly-review-existing-code",
+  "cwd": "examples/python-api",
+  "tags": [
+    "review",
+    "nightly"
+  ],
+  "description": "The nightly review reads existing code, not a diff: a bug committed long ago must still come up as Important.",
+  "setup": "sed -i.bak 's/        if new_status not in TRANSITIONS\\[claim.status\\]:/        if False and new_status not in TRANSITIONS[claim.status]:/' src/claims/store.py && rm src/claims/store.py.bak && \"$EVAL_DIR/fixtures/commit.sh\" 'perf: skip transition lookup' && echo '# notes' >> README.md && \"$EVAL_DIR/fixtures/commit.sh\" 'docs: notes'",
+  "prompt": "You are a review finder for existing code: there is no diff, read the module src/claims (git ls-files src/claims) and what it calls. Follow REVIEW.md (what Important means, what not to report) and print the findings table with file:line and evidence. Then end with exactly one line: IMPORTANT_FINDINGS: <number of Important findings>. Do not modify files.",
+  "allowed_tools": "Read,Grep,Glob,Bash(git ls-files:*),Bash(git log:*)",
+  "checks": [
+    {
+      "type": "output_matches",
+      "pattern": "^\\W*IMPORTANT_FINDINGS:\\W*[1-9]",
+      "why": "the transition check is disabled"
+    },
+    {
+      "type": "output_contains",
+      "text": "store.py"
+    },
+    {
+      "type": "diff_excludes",
+      "glob": "**",
+      "why": "review is read-only"
+    }
+  ]
+}

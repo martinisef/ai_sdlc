@@ -14,6 +14,7 @@ const TARGETS: Record<Provider, Record<string, string>> = {
     'sdlc-gates.yml': '.github/workflows/sdlc-gates.yml',
     'sdlc-evals.yml': '.github/workflows/sdlc-evals.yml',
     'sdlc-bands.yml': '.github/workflows/sdlc-bands.yml',
+    'sdlc-nightly-review.yml': '.github/workflows/sdlc-nightly-review.yml',
   },
   gitlab: { 'gitlab-ci.yml': '.gitlab-ci.yml', 'sdlc.gitlab-ci.yml': 'ci/sdlc.gitlab-ci.yml' },
   bitbucket: { 'bitbucket-pipelines.yml': 'bitbucket-pipelines.yml' },

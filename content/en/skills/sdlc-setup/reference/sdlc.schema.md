@@ -90,4 +90,6 @@ It is read by the guardrails (`sdlc hook`, for any agent), the loop skills, the 
 | `ci.pr_sections` | `sdlc ci gate-status`, `/sdlc-ship` | Headings every PR/MR description needs before `sdlc/gates` is green. Default `["Testing", "Risk", "How to revert"]` (Spanish headings count too); Risk must state at least the computed tier. `[]` turns the check off. |
 | `ci.review.depth` | `sdlc ci review` | `auto` (default: low Quick, medium Standard, high Deep), or fixed: `quick`, `standard`, `deep`. |
 | `ci.review.max_rounds` | `sdlc ci review` | Review rounds per PR (default 3). After the cap the reviewer only checks whether the open findings were fixed. |
+| `ci.nightly.modules` | `sdlc ci nightly-review` | Directories the nightly review rotates through, one per night (default: every top-level code directory, and each child of `src/`, `packages/`, `lib/`…). |
+| `ci.nightly.max_intents` | `sdlc ci nightly-review` | Intents a night may open for Important findings (default 3). |
 | `ci.mention_mode` | `sdlc ci mention` | `read` (default): the agent only answers `@claude` comments. `edit`: it may also commit changes within the approved plan to the PR/MR branch. |

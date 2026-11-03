@@ -9,6 +9,7 @@
 | `github/sdlc-gates.yml` | `.github/workflows/sdlc-gates.yml` | `/approve spec`, `/reject plan …` in PR comments → gate commit; `sdlc/gates` commit status (make it required) |
 | `github/sdlc-loop.yml` | `.github/workflows/sdlc-loop.yml` | accepted intent → automatic spec.md; merged PR → Jira to *merged* |
 | `github/sdlc-evals.yml` | `.github/workflows/sdlc-evals.yml` | configuration evals on PRs that touch the agent configuration + nightly |
+| `github/sdlc-nightly-review.yml` | `.github/workflows/sdlc-nightly-review.yml` | nightly review of existing code, one module per night (`sdlc ci nightly-review`): Important findings become intents on `change/review-*` with a draft PR; reverted commits become reviewer evals |
 | `github/sdlc-bands.yml` | `.github/workflows/sdlc-bands.yml` | Stage 6 only: daily `sdlc bands check` over `ops/bands.yaml` |
 
 Every workflow calls `npx -y @morsadev/sdlc@0 ci <cmd>` (Node 22 via `actions/setup-node`): there is no CI script to copy. Pin a version (`@0.2.0`) if the team prefers reproducible pipelines over updates.

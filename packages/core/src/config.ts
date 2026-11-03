@@ -123,6 +123,13 @@ export const ConfigSchema = z.looseObject({
           max_rounds: z.number().int().min(1).max(10).optional(),
         })
         .optional(),
+      /** `sdlc ci nightly-review`: the modules it rotates through (one per night) and how many intents a night may open. */
+      nightly: z
+        .looseObject({
+          modules: z.array(z.string()).optional(),
+          max_intents: z.number().int().min(0).max(20).optional(),
+        })
+        .optional(),
     })
     .optional(),
 });
