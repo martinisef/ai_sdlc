@@ -106,4 +106,5 @@ sdlc:gate-status:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
   script:
+    - npx -y @morsadev/sdlc@0 ci risk
     - HEAD_SHA="$CI_COMMIT_SHA" BEFORE_SHA="$CI_COMMIT_BEFORE_SHA" npx -y @morsadev/sdlc@0 ci gate-status

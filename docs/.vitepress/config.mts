@@ -37,6 +37,7 @@ export default defineConfig({
             items: [
               { text: 'The loop', link: '/guide/concepts' },
               { text: 'Guardrails', link: '/guide/guardrails' },
+              { text: 'Risk tiers', link: '/guide/risk' },
               { text: 'Dashboard', link: '/guide/dashboard' },
               { text: 'Editor extension', link: '/guide/editor' },
             ],
@@ -86,6 +87,7 @@ export default defineConfig({
               { text: 'Inicio', link: '/es/' },
               { text: 'Tu primer cambio en 10 minutos', link: '/es/primer-cambio' },
               { text: 'Para equipos', link: '/es/guia-equipo' },
+              { text: 'Niveles de riesgo', link: '/es/riesgo' },
               { text: 'Para plataforma', link: '/es/guia-plataforma' },
               { text: 'Managed settings', link: '/es/managed-settings' },
               { text: 'Avisos', link: '/es/avisos' },

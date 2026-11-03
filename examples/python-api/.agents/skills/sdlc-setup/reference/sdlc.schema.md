@@ -41,7 +41,15 @@ It is read by the guardrails (`sdlc hook`, for any agent), the loop skills, the 
   "protected_paths": ["migrations/**", "src/gen/**", "infra/**"],
   "test_globs": ["tests/**", "**/*_test.py"],
   "secret_patterns_extra": [],
-  "risk": { "high_risk_paths": ["src/auth/**", "infra/**"] },
+  "risk": {
+    "high_risk_paths": ["src/auth/**", "infra/**"],
+    "always_human_paths": [".github/workflows/**", ".sdlc/**", "REVIEW.md"],
+    "profile": "strict",
+    "tiers": { "low": { "approvals": 0 }, "medium": { "approvals": 1 }, "high": { "approvals": 2 } },
+    "trusted_authors": ["@ana", "juan@example.com"],
+    "size": { "low_max_lines": 50, "high_min_lines": 800 },
+    "agent_escalation": false
+  },
   "production_gate": { "patterns": ["deploy.*prod", "terraform apply"], "approval_env": "RELEASE_APPROVAL" },
   "gates": { "intent": ["po"], "spec": ["po", "policy-owners"], "plan": ["tech-lead"] },
   "roles": { "po": ["ana@example.com"], "tech-lead": ["juan@example.com"] },
@@ -62,7 +70,13 @@ It is read by the guardrails (`sdlc hook`, for any agent), the loop skills, the 
 | `append_only_paths` | `protect-paths` hook, pre-commit | Same globs; new files are allowed, existing ones cannot change (e.g. applied migrations: `db/migrate/**`). |
 | `test_globs` | `test-lock` hook | Files that cannot be edited during `/sdlc-fix`. |
 | `secret_patterns_extra` | `secrets-guard` hook | Additional ERE regexes (e.g. format of sensitive internal IDs). |
-| `risk.high_risk_paths` | `/sdlc-spec`, `/sdlc-plan`, REVIEW.md | Marks `risk: high` → requires tech lead. |
+| `risk.high_risk_paths` | `sdlc risk`, `/sdlc-spec`, `/sdlc-plan`, REVIEW.md | A change that touches them (or whose spec/plan names them) is **high** risk; a plan at high risk also needs a tech lead. |
+| `risk.always_human_paths` | `sdlc risk` | Never low risk (at least **medium**). Default: CI workflows (`.github/workflows/**`, `.gitlab-ci.yml`, `ci/*.gitlab-ci.yml`, `bitbucket-pipelines.yml`), `.sdlc/**` and `REVIEW.md`. Setting the key replaces the list. |
+| `risk.profile` | gates, `sdlc ci gate-status` | `strict` (default): every gate needs a person, as before. `graded`: human approvals scale with the tier (`risk.tiers`). Start strict; loosen with evidence (`sdlc metrics`). |
+| `risk.tiers` | gates | Human approvals per tier. `graded` defaults: low 0, medium 1, high 2. The intent always needs a person. |
+| `risk.trusted_authors` | gates | Who gets the lighter paths (git name, email or `@login`). Unset: everyone in `roles` (or anyone, when there are no roles). Others always need another person. |
+| `risk.size` | `sdlc risk` | `low_max_lines` (default 50) and `high_min_lines` (default 800) of weighted code lines: modified and deleted lines count fully, lines in new files count half; docs and `test_globs` do not count. |
+| `risk.agent_escalation` | `sdlc ci risk` | `true`: a second, agent classifier reads the diff and may raise the tier (never lower it). |
 | `production_gate` | `production-gate` hook | ERE regexes over Bash commands; without the approval variable → block. |
 | `gates` | `sdlc approve`, dashboard | Roles that can approve each artifact. No roles: any person (never an agent or bot). `risk: high` adds `tech-lead` to the plan. |
 | `gates_self_approval` | `sdlc approve` | `true` (preset `solo`): the author may approve their own spec and plan. Agents and bots still cannot. |

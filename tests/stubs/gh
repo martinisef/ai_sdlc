@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 # gh stub: logs args to $STUB_LOG and returns canned output.
 printf 'gh %s\n' "$*" >> "$STUB_LOG"
+# api reads: $STUB_GH_DIR/<path with / as _> (e.g. issues_5_comments), already in --jq output form
+if [ "$1" = api ] && [ -n "$STUB_GH_DIR" ]; then
+  for a in "$@"; do
+    case "$a" in
+      repos/*) f="$STUB_GH_DIR/$(printf '%s' "${a#repos/\{owner\}/\{repo\}/}" | sed 's/?.*//; s#/#_#g')"; [ -f "$f" ] && cat "$f" ;;
+    esac
+  done
+  exit 0
+fi
 case "$1 $2" in
   "pr create") echo "https://github.com/acme/app/pull/12" ;;
   "pr view")   echo '{"number":12,"url":"https://github.com/acme/app/pull/12","state":"OPEN"}' ;;

@@ -13,6 +13,8 @@ sdlc ci tracker-merged         move the merged change's tickets to tracker.trans
 sdlc ci evals [pattern] [--out results.json]   run evals/*.json against the agent; fail below ci.min_pass_rate (0.8)
 sdlc ci gate                   /approve|/reject intent|spec|plan in a PR/MR comment → gate commit on the branch + reply
 sdlc ci gate-status            set the sdlc/gates commit status (success once the plan is approved or the change is quick)
+sdlc ci risk [--escalate]      risk tier of the PR/MR from the diff (sticky comment, risk.json); --escalate (or
+                               risk.agent_escalation) asks the agent whether it needs another person: it can only raise it
 sdlc ci mention                answer an @claude comment on the PR/MR (triggered by `sdlc webhook`; ci.mention_mode read|edit)
 
 Options: --agent claude|codex|cursor (or SDLC_CI_AGENT, or ci.agent) · --model M · --dry-run (print, do not post/push)
@@ -52,6 +54,10 @@ A comment whose line starts with `/approve <intent|spec|plan>` or `/reject <inte
 - **GitLab and Bitbucket**: `sdlc webhook` sees `/approve` and `/reject` and triggers the `sdlc:gate` job / `sdlc-gate` custom pipeline (`SDLC_JOB=gate`). Limit who can decide with `SDLC_ALLOWED_AUTHORS` and `roles`.
 
 `sdlc ci gate-status` sets the **`sdlc/gates`** commit status: pending while intent, spec or plan wait, success once the plan is approved, for quick-lane changes, and for branches without a change folder; failure if the change was rejected. Make it a required check in branch protection so code cannot merge before its gates. The gate job refreshes it after each decision.
+
+## Risk tier of the PR
+
+`sdlc ci risk` classifies the PR/MR from its diff against the base (see [Risk tiers](../guide/risk)) and keeps one sticky comment, `## Risk (ai-sdlc)`, up to date with the tier and the reasons. It also writes `risk.json`. With `--escalate` or `risk.agent_escalation: true`, a second, read-only agent run answers "does this change need another person anyway?". It can raise the tier, never lower it; the escalation is recorded in the comment and the gates read it from there.
 
 ## `@claude` on GitLab and Bitbucket
 

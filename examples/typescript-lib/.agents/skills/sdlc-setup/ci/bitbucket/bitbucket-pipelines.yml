@@ -43,6 +43,7 @@ pipelines:
               name: sdlc/gates
               image: node:22
               script:
+                - HEAD_REF="$BITBUCKET_BRANCH" npx -y @morsadev/sdlc@0 ci risk
                 - HEAD_REF="$BITBUCKET_BRANCH" HEAD_SHA="$BITBUCKET_COMMIT" npx -y @morsadev/sdlc@0 ci gate-status
 
   branches:

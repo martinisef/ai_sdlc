@@ -20,6 +20,7 @@ jobs:
     permissions:
       contents: read
       statuses: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -28,6 +29,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Risk tier (sticky comment)
+        # With risk.agent_escalation: true, run `npx -y @morsadev/sdlc@0 ci bootstrap` first and pass the agent key.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_REF: ${{ github.head_ref }}
+          BASE_REF: ${{ github.base_ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: npx -y @morsadev/sdlc@0 ci risk
       - name: sdlc/gates status
         env:
           GH_TOKEN: ${{ github.token }}

@@ -210,6 +210,112 @@ export async function prComments(ctx: VcsContext, n: number): Promise<PrComment[
   }
 }
 
+/** GitLab REST in CI (project token) or `glab api` on a laptop. Paths are relative to the project. */
+async function gitlab(ctx: VcsContext, method: string, path: string, body?: Record<string, unknown>): Promise<any> {
+  const env = ctx.env ?? process.env;
+  if (env.GITLAB_TOKEN && env.CI_API_V4_URL && env.CI_PROJECT_ID)
+    return httpJson(method, `${env.CI_API_V4_URL}/projects/${env.CI_PROJECT_ID}${path}`, { 'private-token': env.GITLAB_TOKEN }, body);
+  if (!hasTool('glab', env)) throw new SdlcError('without glab, GITLAB_TOKEN, CI_API_V4_URL and CI_PROJECT_ID are required');
+  const fields: string[] = [];
+  const flat = (o: Record<string, unknown>, prefix = '') => {
+    for (const [k, v] of Object.entries(o)) {
+      const key = prefix ? `${prefix}[${k}]` : k;
+      if (v && typeof v === 'object') flat(v as Record<string, unknown>, key);
+      else if (v !== undefined) fields.push('-f', `${key}=${v}`);
+    }
+  };
+  if (body) flat(body);
+  const out = tool(ctx, 'glab', ['api', '-X', method, `projects/:id${path}`, ...fields]);
+  return out ? JSON.parse(out) : undefined;
+}
+
+export interface ThreadComment {
+  id: string;
+  author: string;
+  body: string;
+  createdAt: string;
+  /** GitHub `author_association` (OWNER, MEMBER, COLLABORATOR, CONTRIBUTOR, NONE…); unknown elsewhere. */
+  association?: string;
+  /** Inline comments: file and line on the new side. */
+  path?: string;
+  line?: number;
+  /** Id of the comment this one replies to (inline threads). */
+  replyTo?: string;
+}
+
+/** Every comment on the PR/MR, general and inline, oldest first. */
+export async function prThread(ctx: VcsContext, n: number): Promise<ThreadComment[]> {
+  let all: ThreadComment[];
+  switch (vcsProvider(ctx)) {
+    case 'github': {
+      const jsonl = (path: string, jq: string) =>
+        tool(ctx, 'gh', ['api', `repos/{owner}/{repo}/${path}`, '--paginate', '--jq', jq])
+          .split('\n')
+          .filter(Boolean)
+          .map((l) => JSON.parse(l) as ThreadComment);
+      const common = 'id: (.id|tostring), author: .user.login, body, createdAt: .created_at, association: .author_association';
+      all = [
+        ...jsonl(`issues/${n}/comments`, `.[] | {${common}}`),
+        ...jsonl(
+          `pulls/${n}/comments`,
+          `.[] | {${common}, path, line: (.line // .original_line), replyTo: (if .in_reply_to_id then (.in_reply_to_id|tostring) else null end)}`,
+        ),
+      ];
+      break;
+    }
+    case 'gitlab': {
+      const discussions = (await gitlab(ctx, 'GET', `/merge_requests/${n}/discussions?per_page=100`)) ?? [];
+      all = discussions.flatMap((d: any) => {
+        const notes = (d.notes ?? []).filter((x: any) => !x.system);
+        return notes.map((x: any, i: number) => ({
+          id: String(x.id),
+          author: x.author?.username ?? '',
+          body: x.body ?? '',
+          createdAt: x.created_at ?? '',
+          path: x.position?.new_path ?? undefined,
+          line: x.position?.new_line ?? undefined,
+          replyTo: i > 0 ? String(notes[0].id) : undefined,
+        }));
+      });
+      break;
+    }
+    case 'bitbucket': {
+      const page = await bitbucket(ctx)('GET', `/pullrequests/${n}/comments?pagelen=100`);
+      all = (page.values ?? [])
+        .filter((c: any) => !c.deleted)
+        .map((c: any) => ({
+          id: String(c.id),
+          author: c.user?.nickname ?? c.user?.display_name ?? '',
+          body: c.content?.raw ?? '',
+          createdAt: c.created_on ?? '',
+          path: c.inline?.path ?? undefined,
+          line: c.inline?.to ?? undefined,
+          replyTo: c.parent?.id ? String(c.parent.id) : undefined,
+        }));
+      break;
+    }
+  }
+  return all.map((c) => Object.fromEntries(Object.entries(c).filter(([, v]) => v !== null && v !== undefined)) as unknown as ThreadComment).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+}
+
+/** Edits our comment that carries `marker` (a sticky summary) or posts a new one. */
+export async function prUpsertComment(ctx: VcsContext, n: number, marker: string, body: string, isOurs: (c: ThreadComment) => boolean = () => true): Promise<string> {
+  const mine = (await prThread(ctx, n)).filter((c) => !c.path && c.body.includes(marker) && isOurs(c)).at(-1);
+  if (!mine) return prComment(ctx, n, body);
+  switch (vcsProvider(ctx)) {
+    case 'github':
+      tool(ctx, 'gh', ['api', '-X', 'PATCH', `repos/{owner}/{repo}/issues/comments/${mine.id}`, '-f', `body=${body}`]);
+      break;
+    case 'gitlab':
+      await gitlab(ctx, 'PUT', `/merge_requests/${n}/notes/${mine.id}`, { body });
+      break;
+    case 'bitbucket':
+      await bitbucket(ctx)('PUT', `/pullrequests/${n}/comments/${mine.id}`, { content: { raw: body } });
+      break;
+  }
+  return `comment ${mine.id} updated on #${n}`;
+}
+
 export async function prChecks(ctx: VcsContext, n: number): Promise<PrCheck[]> {
   switch (vcsProvider(ctx)) {
     case 'github':

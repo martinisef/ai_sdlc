@@ -6,7 +6,7 @@ import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, before, test } from 'node:test';
-import { commitStatus, detectProvider, httpJson, loadConfig, prChecks, prComment, prComments, prCreate, prCurrent, SdlcError, type VcsContext } from '@ai-native-sdlc/core';
+import { commitStatus, detectProvider, httpJson, loadConfig, prChecks, prComment, prComments, prCreate, prCurrent, prThread, prUpsertComment, SdlcError, type VcsContext } from '@ai-native-sdlc/core';
 import { gitIn, repo } from './helpers.ts';
 
 interface Seen {
@@ -139,4 +139,39 @@ test('bitbucket: basic auth with an API token, config workspace/repo, and clear 
   await assert.rejects(prComment(ctx({ vcs: { provider: 'bitbucket' } }, { BITBUCKET_API: base }), 1, 'x'), /missing Bitbucket credentials/);
   await assert.rejects(prComment(ctx({ vcs: { provider: 'bitbucket' } }, { BITBUCKET_ACCESS_TOKEN: 't', BITBUCKET_API: base }), 1, 'x'), /workspace\/repo/);
   await assert.rejects(prComment(ctx({}, {}), 1, 'x'), /could not determine the VCS provider/);
+});
+
+test('prThread and prUpsertComment: GitLab discussions and Bitbucket comments, with replies and inline positions', async () => {
+  const env = { GITLAB_TOKEN: 'glpat-test', CI_API_V4_URL: `${base}/api/v4`, CI_PROJECT_ID: '42' };
+  const gl = ctx({ vcs: { provider: 'gitlab' } }, env);
+  reset({
+    'GET /api/v4/projects/42/merge_requests/7/discussions': {
+      body: [
+        { notes: [{ id: 1, author: { username: 'bot' }, body: 'summary <!-- m -->', created_at: '2026-11-01T10:00:00Z' }] },
+        {
+          notes: [
+            { id: 2, author: { username: 'bot' }, body: 'finding', created_at: '2026-11-01T10:01:00Z', position: { new_path: 'src/a.py', new_line: 3 } },
+            { id: 3, author: { username: 'ana' }, body: 'resolved: intentional', created_at: '2026-11-01T11:00:00Z' },
+            { id: 4, system: true, body: 'changed the description', created_at: '2026-11-01T12:00:00Z' },
+          ],
+        },
+      ],
+    },
+  });
+  assert.deepEqual(await prThread(gl, 7), [
+    { id: '1', author: 'bot', body: 'summary <!-- m -->', createdAt: '2026-11-01T10:00:00Z' },
+    { id: '2', author: 'bot', body: 'finding', createdAt: '2026-11-01T10:01:00Z', path: 'src/a.py', line: 3 },
+    { id: '3', author: 'ana', body: 'resolved: intentional', createdAt: '2026-11-01T11:00:00Z', replyTo: '2' },
+  ]);
+  assert.equal(await prUpsertComment(gl, 7, '<!-- m -->', 'new summary <!-- m -->'), 'comment 1 updated on #7');
+  assert.deepEqual([seen.at(-1)!.method, seen.at(-1)!.url, seen.at(-1)!.body], ['PUT', '/api/v4/projects/42/merge_requests/7/notes/1', { body: 'new summary <!-- m -->' }]);
+  assert.equal(await prUpsertComment(gl, 7, '<!-- other -->', 'x'), 'comment posted on MR !7');
+
+  const bb = ctx({}, { BITBUCKET_ACCESS_TOKEN: 'bb-token', BITBUCKET_API: base }, 'git@bitbucket.org:acme/shop.git');
+  reset({
+    'GET /repositories/acme/shop/pullrequests/3/comments': {
+      body: { values: [{ id: 5, user: { nickname: 'ana' }, content: { raw: 'ok' }, created_on: '2026-11-01T10:00:00Z', inline: { path: 'a.py', to: 9 }, parent: { id: 4 } }] },
+    },
+  });
+  assert.deepEqual(await prThread(bb, 3), [{ id: '5', author: 'ana', body: 'ok', createdAt: '2026-11-01T10:00:00Z', path: 'a.py', line: 9, replyTo: '4' }]);
 });
