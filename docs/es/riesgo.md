@@ -45,3 +45,5 @@ Las reglas que lo hacen seguro:
 ## Arrancá estricto
 
 `risk.profile` es `strict` por defecto: cada gate sigue necesitando una persona y el nivel solo informa (el comentario de la PR, la profundidad del review). Pasá a `graded` cuando tengas datos que lo respalden: `sdlc metrics` muestra el tiempo humano por PR junto a la tasa de reverts e incidentes.
+
+Si esas tasas suben, una [control band con `raise_risk`](../reference/bands#circuit-breaker) hace de circuit breaker: todos los cambios pasan a ser al menos `medium` (o `high`) por un tiempo, y se avisa al equipo.

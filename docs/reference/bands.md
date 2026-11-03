@@ -21,6 +21,27 @@ Detection is deterministic. The agent only runs once a band breaks, and the **ti
 
 A metric with an open incident branch does not get a second one. When a tier is not configured, the closest lower one applies.
 
+## Circuit breaker
+
+Any tier can also carry `raise_risk: { tier: medium | high, hours: 72 }`. While the band is broken, every change is classified at least at that tier for the next `hours`. With `risk.profile: graded`, low-risk changes stop merging without a person until the metric is back in its band.
+
+- The floor is written to `.sdlc/risk-floor.json` and to the ref `refs/sdlc/risk-floor`. When there is a remote, the ref is pushed so `sdlc ci risk` and the gates read it on every PR.
+- A new floor never lowers one in force.
+- The floor is announced with the `risk.raised` [notification](../guide/notifications) and logged as a `risk.raised` event. `sdlc metrics` and the dashboard show it until it expires.
+
+The guardrails it is meant for are reverts and incidents, read from git with `sdlc metrics --value`:
+
+```yaml
+bands:
+  - metric: revert_rate
+    source: { command: "sdlc metrics --value revert_rate --since 7d" }
+    direction: up
+    tiers:
+      1sigma: { action: log }
+      2sigma: { action: log, raise_risk: { tier: medium, hours: 72 } }
+      3sigma: { action: diagnose, raise_risk: { tier: high, hours: 72 } }
+```
+
 ## Sources
 
 | Source | Reading |

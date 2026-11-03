@@ -2,7 +2,7 @@
 // a second, agent classifier asks whether this change needs another person anyway. It can only raise the tier.
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { approvalsFor, changeRisk, escalationFrom, git, isGraded, parseEscalation, prThread, prUpsertComment, riskMarker, type Change, type ChangeRisk } from '@ai-native-sdlc/core';
+import { approvalsFor, changeRisk, escalationFrom, fetchRiskFloor, git, isGraded, parseEscalation, prThread, prUpsertComment, riskMarker, type Change, type ChangeRisk } from '@ai-native-sdlc/core';
 import { READ_TOOLS, runAgent } from './agent.ts';
 import { changeForBranch } from './gates.ts';
 import { baseRef, headRef, prNumber, type CiEnv } from './index.ts';
@@ -38,6 +38,7 @@ ESCALATE: none   or   ESCALATE: medium — <reason>   or   ESCALATE: high — <r
 export async function prRisk(c: CiEnv, change: Change | undefined, n: number | undefined): Promise<ChangeRisk> {
   const base = baseCommit(c.root, baseRef(c));
   let esc: { tier?: ChangeRisk['tier']; reason?: string } = {};
+  fetchRiskFloor(c.root);
   if (n !== undefined && !c.dryRun) {
     try {
       esc = escalationFrom((await prThread({ root: c.root, loaded: c.loaded, env: c.env }, n)).map((x) => x.body));
@@ -52,6 +53,7 @@ export async function risk(c: CiEnv, escalate: boolean): Promise<number> {
   const n = prNumber(c.env);
   const baseName = baseRef(c);
   git(c.root, ['fetch', '-q', 'origin', baseName]);
+  fetchRiskFloor(c.root);
   const base = baseCommit(c.root, baseName);
   const change = changeForBranch(c, headRef(c));
   let r = changeRisk(c.root, c.loaded, change, { base });

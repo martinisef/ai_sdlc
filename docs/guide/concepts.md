@@ -66,4 +66,6 @@ An incident produces three things:
 - lead time from intent to spec and from spec to plan;
 - spec rework after the plan;
 - guardrail blocks per policy;
-- gate decisions.
+- gate decisions;
+- human time per change: approvals, hours waiting for a person, review rounds and human comments (median and p95);
+- the guardrails for spending less of it: revert rate and incidents per change ([details](../reference/telemetry#human-time-and-guardrails)).

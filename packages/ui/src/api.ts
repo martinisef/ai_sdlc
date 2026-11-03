@@ -139,8 +139,26 @@ export interface SdlcEvent {
   detail?: string;
 }
 
+export interface Spread {
+  median?: number;
+  p95?: number;
+}
+
 export interface Metrics {
-  changes: { change: string; stage: string; origin?: string; intentToSpecH?: number; specToPlanH?: number; specReworkAfterPlan?: number; firstCommitAt?: string }[];
+  changes: {
+    change: string;
+    stage: string;
+    origin?: string;
+    intentToSpecH?: number;
+    specToPlanH?: number;
+    specReworkAfterPlan?: number;
+    firstCommitAt?: string;
+    humanApprovals?: number;
+    waitingH?: number;
+    pr?: number;
+    reviewRounds?: number;
+    humanComments?: number;
+  }[];
   summary: {
     changes: number;
     byStage: Record<string, number>;
@@ -150,6 +168,16 @@ export interface Metrics {
     specReworkRate?: number;
     guardrailBlocks: Record<string, number>;
     gateDecisions: number;
+    humanApprovals: Spread;
+    waitingH: Spread;
+    reviewRounds: Spread;
+    humanComments: Spread;
+    landed: number;
+    reverts: number;
+    revertRate?: number;
+    incidents: number;
+    incidentRate?: number;
+    riskFloor?: { tier: string; until: string; reason: string };
   };
 }
 

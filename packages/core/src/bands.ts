@@ -17,6 +17,8 @@ const Tier = z.strictObject({
   tools: z.string().optional(),
   /** propose: pull_request (draft PR with the incident intent) and/or runbook:<name> (suggested, a human runs it). */
   routes: z.array(z.string()).optional(),
+  /** Circuit breaker: while the band is broken, every change is at least this tier for `hours`. */
+  raise_risk: z.strictObject({ tier: z.enum(['medium', 'high']), hours: z.number().positive().default(72) }).optional(),
 });
 
 const Source = z.union([

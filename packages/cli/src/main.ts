@@ -34,6 +34,9 @@ import {
   loadConfig,
   localeOf,
   metrics,
+  METRIC_VALUES,
+  PR_STATS_PATH,
+  durationSeconds,
   projectDir,
   promote,
   quickLimits,
@@ -44,6 +47,7 @@ import {
   writeConfig,
   type Artifact,
 } from '@ai-native-sdlc/core';
+import { refreshPrStats } from './metrics.ts';
 import { askConfig, detectConfig, presetConfig, scaffold, templateFor } from './init.ts';
 import { defaultPreset, isPreset, PRESET_SPECS, PRESETS, type Preset } from './presets.ts';
 import { ciSecrets, installCi } from './ci/install.ts';
@@ -74,6 +78,8 @@ Loop
   next [--json]                      the one thing to do now: approve, ask the agent, ship, or start a change
   status [--json | --metrics]        changes and their stage
   metrics [--json] [--funnel]        leading indicators from git + activity log; --funnel: how far changes get
+          [--since 30d] [--prs]      window for the guardrails; --prs: refresh review rounds and comments from the forge
+          [--value <name>]           one number for a control band (revert_rate, incident_rate, waiting_hours_p95, …)
   telemetry on|off|status [--payload]   opt-in anonymous counts (off by default; needs SDLC_TELEMETRY_URL)
   new <slug> [--ticket KEY] [--title T] [--no-branch]
   quick "<what>" [--ticket KEY] [--no-branch]   small change without spec/plan (limits checked on push)
@@ -107,7 +113,7 @@ function parseArgs(argv: string[]) {
     else if (a.startsWith('--')) {
       const [k, v] = a.slice(2).split('=', 2);
       if (v !== undefined) flags[k] = v;
-      else if (['agent', 'port', 'ticket', 'title', 'locale', 'preset', 'first-change', 'change', 'artifact', 'decision', 'by', 'pr-url', 'base'].includes(k)) flags[k] = argv[++i] ?? '';
+      else if (['agent', 'port', 'ticket', 'title', 'locale', 'preset', 'first-change', 'change', 'artifact', 'decision', 'by', 'pr-url', 'base', 'value', 'since'].includes(k)) flags[k] = argv[++i] ?? '';
       else flags[k] = true;
     } else pos.push(a);
   }
@@ -329,7 +335,27 @@ async function main() {
         if (flags.json) return void console.log(JSON.stringify(f, null, 2));
         return printFunnel(f);
       }
-      const m = metrics(root, { locale: localeOf(loaded), defaultBranch: loaded?.config.vcs?.default_branch });
+      if (flags.prs) {
+        const r = await refreshPrStats(root, loaded);
+        for (const f of r.failed) console.error(`could not read ${f}`);
+        console.error(`${PR_STATS_PATH}: ${Object.keys(r.changes).length} PR(s)`);
+      }
+      let since: Date | undefined;
+      if (typeof flags.since === 'string') {
+        try {
+          since = new Date(Date.now() - durationSeconds(flags.since) * 1000);
+        } catch (e) {
+          fail((e as Error).message);
+        }
+      }
+      const m = metrics(root, { locale: localeOf(loaded), defaultBranch: loaded?.config.vcs?.default_branch, since });
+      if (flags.value !== undefined) {
+        const get = METRIC_VALUES[String(flags.value)];
+        if (!get) fail(`unknown metric ${flags.value} (${Object.keys(METRIC_VALUES).join(', ')})`);
+        const v = get(m.summary);
+        if (v === undefined) fail(`${flags.value}: no data yet`);
+        return void console.log(String(v));
+      }
       if (flags.json) return void console.log(JSON.stringify(m, null, 2));
       return printMetricsLegacy(root, m);
     }
@@ -475,10 +501,17 @@ function printFunnel(f: Funnel) {
 }
 
 function printMetricsLegacy(root: string, m = metrics(root)) {
+  const h = (x?: number) => (x === undefined ? '-' : x.toFixed(1));
   for (const c of m.changes) {
-    const h = (x?: number) => (x === undefined ? '-' : x.toFixed(1));
     console.log(`${c.change}\tintent→spec: ${h(c.intentToSpecH)}h\tspec→plan: ${h(c.specToPlanH)}h\tspec rework post-plan: ${c.specReworkAfterPlan ?? '-'}`);
   }
+  const s = m.summary;
+  const sp = (x: { median?: number; p95?: number }, unit = '') => (x.median === undefined ? '-' : `median ${h(x.median)}${unit}, p95 ${h(x.p95)}${unit}`);
+  const pct = (x?: number) => (x === undefined ? '-' : `${Math.round(x * 1000) / 10}%`);
+  console.log(`${m.changes.length ? '\n' : ''}Human time: approvals per change ${sp(s.humanApprovals)} · waiting for a person ${sp(s.waitingH, 'h')}`);
+  console.log(`Review: rounds ${sp(s.reviewRounds)} · human comments ${sp(s.humanComments)}${s.reviewRounds.median === undefined ? ' (sdlc metrics --prs)' : ''}`);
+  console.log(`Guardrails: reverts ${s.reverts}/${s.landed} (${pct(s.revertRate)}) · incidents ${s.incidents} (${pct(s.incidentRate)} per change)`);
+  if (s.riskFloor) console.log(`Circuit breaker: minimum tier ${s.riskFloor.tier} until ${s.riskFloor.until} (${s.riskFloor.reason})`);
 }
 
 const TELEMETRY_CMDS = new Set(['init', 'next', 'status', 'metrics', 'new', 'quick', 'promote', 'approve', 'reject', 'doctor', 'sync']);

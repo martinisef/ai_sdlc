@@ -3,6 +3,9 @@
 import type { Change } from './changes.ts';
 import { isCodePath } from './changes.ts';
 import type { LoadedConfig } from './config.ts';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { ensureSdlcDir } from './events.ts';
 import { git, lines } from './git.ts';
 import { matchAny } from './glob.ts';
 
@@ -149,7 +152,7 @@ export function changeRisk(
   root: string,
   loaded: LoadedConfig | undefined,
   change: Pick<Change, 'artifacts' | 'risk'> | undefined,
-  opts: { base?: string; head?: string; escalated?: RiskTier; escalatedReason?: string } = {},
+  opts: { base?: string; head?: string; escalated?: RiskTier; escalatedReason?: string; now?: Date } = {},
 ): ChangeRisk {
   const diff = opts.base ? diffFiles(root, opts.base, opts.head) : [];
   const planned = change ? plannedFiles(change).map((path) => ({ path, status: 'M' as const, added: 0, deleted: 0 })) : [];
@@ -160,7 +163,63 @@ export function changeRisk(
   if (declared && tierRank(declared) > tierRank(a.tier)) reasons.unshift({ tier: declared, reason: `the spec declares risk: ${declared}` });
   if (opts.escalated && tierRank(opts.escalated) > tierRank(maxTier(a.tier, declared)))
     reasons.unshift({ tier: opts.escalated, reason: opts.escalatedReason ?? `escalated to ${opts.escalated}` });
-  return { ...a, reasons, declared, escalated: opts.escalated, computed: a.tier, tier: maxTier(a.tier, declared, opts.escalated) };
+  const floor = readRiskFloor(root, opts.now);
+  if (floor && tierRank(floor.tier) > tierRank(maxTier(a.tier, declared, opts.escalated)))
+    reasons.unshift({ tier: floor.tier, reason: `circuit breaker until ${floor.until}: ${floor.reason}` });
+  return { ...a, reasons, declared, escalated: opts.escalated, computed: a.tier, tier: maxTier(a.tier, declared, opts.escalated, floor?.tier) };
+}
+
+/** A temporary minimum tier, set by `sdlc bands check` when reverts or incidents leave their band. */
+export interface RiskFloor {
+  tier: RiskTier;
+  /** ISO date-time; the floor no longer applies after it. */
+  until: string;
+  reason: string;
+}
+
+export const RISK_FLOOR_PATH = '.sdlc/risk-floor.json';
+/** Where CI keeps the floor so every pipeline sees it: a ref outside the branches, holding floor.json. */
+export const RISK_FLOOR_REF = 'refs/sdlc/risk-floor';
+
+function parseFloor(raw: string | undefined): RiskFloor | undefined {
+  if (!raw) return undefined;
+  try {
+    const f = JSON.parse(raw) as RiskFloor;
+    return RISK_TIERS.includes(f.tier) && !Number.isNaN(Date.parse(f.until)) ? f : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** The floor in force now: the local file or the ref, whichever is higher. */
+export function readRiskFloor(root: string, now = new Date()): RiskFloor | undefined {
+  const local = existsSync(join(root, RISK_FLOOR_PATH)) ? readFileSync(join(root, RISK_FLOOR_PATH), 'utf8') : undefined;
+  const fromRef = git(root, ['cat-file', '-p', `${RISK_FLOOR_REF}:floor.json`]);
+  const active = [parseFloor(local), parseFloor(fromRef)].filter((f): f is RiskFloor => !!f && Date.parse(f.until) > now.getTime());
+  return active.sort((a, b) => tierRank(b.tier) - tierRank(a.tier) || b.until.localeCompare(a.until))[0];
+}
+
+/** Records the floor in the file and in RISK_FLOOR_REF (a commit with floor.json); never lowers one in force. */
+export function writeRiskFloor(root: string, floor: RiskFloor, now = new Date()): RiskFloor {
+  const current = readRiskFloor(root, now);
+  const next = current && (tierRank(current.tier) > tierRank(floor.tier) || (current.tier === floor.tier && current.until > floor.until)) ? current : floor;
+  const json = JSON.stringify(next, null, 2) + '\n';
+  ensureSdlcDir(root);
+  writeFileSync(join(root, RISK_FLOOR_PATH), json);
+  const blob = git(root, ['hash-object', '-w', '--stdin'], json);
+  const tree = blob && git(root, ['mktree'], `100644 blob ${blob}\tfloor.json\n`);
+  const commit = tree && git(root, ['-c', 'user.name=sdlc', '-c', 'user.email=sdlc@localhost', 'commit-tree', tree, '-m', `risk floor ${next.tier} until ${next.until}`]);
+  if (commit) git(root, ['update-ref', RISK_FLOOR_REF, commit]);
+  return next;
+}
+
+/** CI checkouts do not fetch RISK_FLOOR_REF; bring it in so the floor applies there too. Silent when absent. */
+export function fetchRiskFloor(root: string): void {
+  if (git(root, ['remote', 'get-url', 'origin'])) git(root, ['fetch', '-q', 'origin', `+${RISK_FLOOR_REF}:${RISK_FLOOR_REF}`]);
+}
+
+export function pushRiskFloor(root: string): boolean {
+  return !!git(root, ['remote', 'get-url', 'origin']) && git(root, ['push', '-q', '-f', 'origin', `${RISK_FLOOR_REF}:${RISK_FLOOR_REF}`]) !== undefined;
 }
 
 /** Marker the second classifier leaves on the PR; it can only raise the tier, so its author needs no trust. */

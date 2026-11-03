@@ -1,9 +1,11 @@
 // `sdlc risk` and `sdlc ci risk` against the gh and claude stubs.
 import assert from 'node:assert/strict';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
+import { writeRiskFloor } from '@ai-native-sdlc/core';
 import { commitAll, project, sdlc } from './helpers.ts';
 
 const tmp = () => mkdtempSync(join(tmpdir(), 'sdlc-stub-'));
@@ -76,4 +78,21 @@ test('sdlc approve --auto: only when the tier needs nobody (risk.profile graded)
   writeFileSync(join(strict, 'changes/x/spec.md'), '---\nstatus: draft\n---\n');
   commitAll(strict, 'spec');
   assert.match((await sdlc(strict, ['approve', 'x', 'spec', '--auto'])).err, /risk.profile is strict/);
+});
+
+test('ci risk: the circuit breaker floor comes from refs/sdlc/risk-floor on the remote', async () => {
+  const root = riskRepo();
+  const remote = join(tmp(), 'r.git');
+  execFileSync('git', ['init', '-q', '--bare', remote]);
+  execFileSync('git', ['remote', 'add', 'origin', remote], { cwd: root });
+  execFileSync('git', ['push', '-q', 'origin', 'main', 'change/export'], { cwd: root });
+  writeRiskFloor(root, { tier: 'high', until: new Date(Date.now() + 3600_000).toISOString(), reason: 'incident_rate out of its band' });
+  execFileSync('git', ['push', '-q', 'origin', 'refs/sdlc/risk-floor'], { cwd: root });
+  execFileSync('git', ['update-ref', '-d', 'refs/sdlc/risk-floor'], { cwd: root });
+  rmSync(join(root, '.sdlc/risk-floor.json'));
+
+  const r = await sdlc(root, ['ci', 'risk', '--dry-run'], { STUB_LOG: join(tmp(), 'log'), HEAD_REF: 'change/export', BASE_REF: 'main' });
+  assert.equal(r.code, 0, r.err);
+  assert.match(r.out, /\*\*Tier: high\*\*/);
+  assert.match(r.out, /- \*\*high\*\*: circuit breaker until .*incident_rate out of its band/);
 });

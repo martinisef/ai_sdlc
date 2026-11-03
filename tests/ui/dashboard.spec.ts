@@ -81,6 +81,8 @@ test('health, metrics and activity load', async ({ page, dashboard }) => {
   await expect(page.locator('main')).toContainText('config');
   await page.goto(`${dashboard}#/metrics`);
   await expect(page.locator('main')).toContainText('Changes by stage');
+  await expect(page.locator('main')).toContainText('Waiting for a person');
+  await expect(page.locator('main')).toContainText('Revert rate');
   await page.goto(`${dashboard}#/activity`);
   await expect(page.locator('main h2, main .empty, main table').first()).toBeVisible();
 });
