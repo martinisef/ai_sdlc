@@ -84,6 +84,8 @@ A finding closes in one of two ways:
 1. **Fixed.** The next round's verifier sees it is gone from the code.
 2. **Resolved with a reason.** Someone replies `resolved: <reason>` to its inline comment, or writes `resolved f2 s1: <reason>` anywhere on the PR. On GitHub only owners, members and collaborators count; on GitLab and Bitbucket, the `risk.trusted_authors`. Agents and bots never count, and a reply without a reason is ignored.
 
+Start the reason with `wrong` or `false positive` when the finding was mistaken, and with `intentional` when it is right but the code stays. `sdlc metrics --prs` counts every finding as fixed, wrong, intentional, ignored (open when the PR merged) or open, and the [agent scorecard](./agent-scorecard) shows the totals. A reviewer miss that reaches production becomes an eval with `sdlc ci capture-eval` ([reviewer evals](./evals#reviewer-evals)).
+
 On GitHub the `resolve` job in `sdlc-review.yml` runs on those replies; on GitLab and Bitbucket `sdlc webhook` triggers `review-status` (`SDLC_JOB=review-status`). `sdlc ci security` runs from `sdlc-security.yml` (GitHub), `sdlc:security` (GitLab) or the security step (Bitbucket). Make `sdlc/review` a required check.
 
 ## Gates from the PR

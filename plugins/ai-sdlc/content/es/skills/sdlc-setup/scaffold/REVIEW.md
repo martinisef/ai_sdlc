@@ -25,6 +25,9 @@ Además, a cada finding ponele una **clase de bug** (off-by-one, falta un cheque
 - Nunca reportes un finding de nuevo, aunque sea con otras palabras. Un finding que sigue ahí sigue abierto; no es uno nuevo.
 - El verificador descarta lo que el código no sostiene y lo que es solo estilo.
 
+## Cerrar un finding
+Arreglalo, o respondé `resolved: <motivo>` (o `resolved f2: <motivo>`). Empezá el motivo con `falso positivo` o `incorrecto` cuando el finding estaba equivocado, y con `intencional` cuando es correcto pero el código queda así: `sdlc metrics --prs` cuenta cada resultado y el scorecard los muestra.
+
 ## Reglas del loop
 - En PRs de fix: el test que reproduce el bug no se modifica después de su commit. Si cambió, es Important.
 - Cambios en rutas de `risk.high_risk_paths` (.sdlc/config.json): marcá que requieren aprobación de tech lead.

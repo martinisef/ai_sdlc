@@ -66,3 +66,17 @@ test('loadEvals --tags: the release gate set (guardrail, gates) from the real ev
   assert.ok(!gate.includes('py-intent'));
   assert.equal(gate.length, new Set(gate).size);
 });
+
+test('renderScorecard: the reviewer apart (clean PRs, problems caught) and comment outcomes on real PRs', () => {
+  const evals = [
+    { name: 'py-review-finds-x', tags: ['review'] },
+    { name: 'review-revert-1a2b3c4d', tags: ['review', 'from-revert'] },
+    { name: 'ts-review-clean-a', tags: ['review', 'clean'] },
+    { name: 'ts-review-clean-b', tags: ['review', 'clean'] },
+  ];
+  const r = report('claude', { 'py-review-finds-x': true, 'review-revert-1a2b3c4d': false, 'ts-review-clean-a': true, 'ts-review-clean-b': false });
+  const block = renderScorecard([r], evals, '2026-11-02', { prs: 4, totals: { fixed: 6, wrong: 1, intentional: 2, ignored: 1, open: 3 } });
+  assert.match(block, /\| Reviewer \| Clean PRs without false positives \| Problems caught \|\n\|---\|---\|---\|\n\| Claude Code \| 1\/2 \| 1\/2 \|/);
+  assert.match(block, /Comment outcomes on 4 real PRs: fixed 6 · intentional 2 · wrong 1 · ignored 1 · open 3\n<!-- scorecard:end -->$/);
+  assert.doesNotMatch(renderScorecard([report('codex', { 'py-intent': true })], EVALS, '2026-11-02'), /Reviewer/, 'no review evals, no section');
+});

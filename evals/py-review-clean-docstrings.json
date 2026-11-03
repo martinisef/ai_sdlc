@@ -1,0 +1,24 @@
+{
+  "name": "py-review-clean-docstrings",
+  "description": "Clean PR (false-positive check). Docstrings only. Nothing Important to report.",
+  "cwd": "examples/python-api",
+  "tags": [
+    "review",
+    "clean"
+  ],
+  "setup": "cd \"$EVAL_ROOT\" && git apply \"$EVAL_DIR/fixtures/review/py-clean-docstrings.patch\" && \"$EVAL_DIR/fixtures/commit.sh\" 'docs: docstrings for ClaimStore.get and list'",
+  "prompt": "Review the last commit (git show HEAD) following REVIEW.md and print the findings table. Then end with exactly one line: IMPORTANT_FINDINGS: <number of Important findings>. Do not modify files.",
+  "allowed_tools": "Read,Grep,Glob,Bash(git show:*),Bash(git log:*),Bash(git diff:*)",
+  "checks": [
+    {
+      "type": "output_matches",
+      "pattern": "^\\W*IMPORTANT_FINDINGS:\\W*0\\b",
+      "why": "a clean change gets no Important finding"
+    },
+    {
+      "type": "diff_excludes",
+      "glob": "**",
+      "why": "review is read-only"
+    }
+  ]
+}

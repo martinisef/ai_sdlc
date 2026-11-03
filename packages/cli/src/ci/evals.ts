@@ -14,6 +14,7 @@ export type EvalCheck =
   | { type: 'diff_excludes'; glob: string; why?: string }
   | { type: 'diff_includes'; glob: string; why?: string }
   | { type: 'output_contains'; text: string; why?: string }
+  | { type: 'output_matches'; pattern: string; why?: string }
   | { type: 'file_matches'; glob: string; pattern: string; ignore_case?: boolean; why?: string };
 
 export interface EvalCase {
@@ -27,6 +28,8 @@ export interface EvalCase {
   /** Shell command run in `cwd` before the agent (fixtures, dependencies, a locked test…). */
   setup?: string;
   tags?: string[];
+  /** Reviewer evals captured by `sdlc ci capture-eval`: the commit that was reverted or caused an incident. */
+  source?: { commit: string; origin: 'revert' | 'incident'; expect?: string };
   checks: EvalCheck[];
 }
 
@@ -70,6 +73,9 @@ export function applyChecks(e: EvalCase, dir: string, output: string, env: NodeJ
         break;
       case 'output_contains':
         if (!output.toLowerCase().includes(c.text.toLowerCase())) failures.push(`output does not contain '${c.text}'`);
+        break;
+      case 'output_matches':
+        if (!new RegExp(c.pattern, 'mi').test(output)) failures.push(`output does not match /${c.pattern}/`);
         break;
       case 'file_matches': {
         const re = new RegExp(c.pattern, c.ignore_case ? 'mi' : 'm');

@@ -1,0 +1,13 @@
+diff --git a/examples/typescript-lib/test/money.test.ts b/examples/typescript-lib/test/money.test.ts
+index eb33e01..4da4dcb 100644
+--- a/examples/typescript-lib/test/money.test.ts
++++ b/examples/typescript-lib/test/money.test.ts
+@@ -16,6 +16,8 @@ test('arithmetic is exact and refuses mixed currencies', () => {
+   assert.equal(add(parse('0.1', 'USD'), parse('0.2', 'USD')).amount, 30n);
+   assert.equal(subtract(money(100, 'USD'), money(250, 'USD')).amount, -150n);
+   assert.throws(() => add(money(1, 'USD'), money(1, 'EUR')), /currency mismatch/);
++  assert.throws(() => subtract(money(1, 'USD'), money(1, 'JPY')), /currency mismatch/);
++  assert.equal(add(parse('-0.10', 'USD'), parse('0.10', 'USD')).amount, 0n);
+   assert.throws(() => money(1.5, 'USD'), MoneyError);
+ });
+ 

@@ -1,0 +1,24 @@
+{
+  "name": "ts-review-clean-negate",
+  "description": "Clean PR (false-positive check). A correct, tested new function: negate(m) with tests and the export. Nothing Important to report.",
+  "cwd": "examples/typescript-lib",
+  "tags": [
+    "review",
+    "clean"
+  ],
+  "setup": "cd \"$EVAL_ROOT\" && git apply \"$EVAL_DIR/fixtures/review/ts-clean-negate.patch\" && \"$EVAL_DIR/fixtures/commit.sh\" 'feat: negate(m) for refunds'",
+  "prompt": "Review the last commit (git show HEAD) following REVIEW.md and print the findings table. Then end with exactly one line: IMPORTANT_FINDINGS: <number of Important findings>. Do not modify files.",
+  "allowed_tools": "Read,Grep,Glob,Bash(git show:*),Bash(git log:*),Bash(git diff:*)",
+  "checks": [
+    {
+      "type": "output_matches",
+      "pattern": "^\\W*IMPORTANT_FINDINGS:\\W*0\\b",
+      "why": "a clean change gets no Important finding"
+    },
+    {
+      "type": "diff_excludes",
+      "glob": "**",
+      "why": "review is read-only"
+    }
+  ]
+}

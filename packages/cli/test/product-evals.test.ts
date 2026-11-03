@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import { loadEvals, promptFor } from '../src/ci/evals.ts';
 import { REPO } from './helpers.ts';
 
-const CHECKS = new Set(['command', 'diff_excludes', 'diff_includes', 'output_contains', 'file_matches']);
+const CHECKS = new Set(['command', 'diff_excludes', 'diff_includes', 'output_contains', 'output_matches', 'file_matches']);
 
 test('product evals: 20+ well-formed cases over examples/', () => {
   const evals = loadEvals(REPO);
@@ -23,7 +23,7 @@ test('product evals: 20+ well-formed cases over examples/', () => {
     assert.ok(e.checks.length > 0, `${e.name}: at least one check`);
     for (const c of e.checks) {
       assert.ok(CHECKS.has(c.type), `${e.name}: unknown check ${c.type}`);
-      if (c.type === 'file_matches') assert.doesNotThrow(() => new RegExp(c.pattern, 'm'), `${e.name}: regex ${c.pattern}`);
+      if (c.type === 'file_matches' || c.type === 'output_matches') assert.doesNotThrow(() => new RegExp(c.pattern, 'm'), `${e.name}: regex ${c.pattern}`);
     }
     for (const m of (e.setup ?? '').matchAll(/fixtures\/stage\.sh \S+ (\S+)((?: [a-z]+(?::[a-z]+)?)+)/g)) {
       for (const artifact of m[2]!.trim().split(' ')) {
@@ -32,9 +32,11 @@ test('product evals: 20+ well-formed cases over examples/', () => {
     }
   }
   assert.deepEqual([...examples].sort(), ['examples/python-api', 'examples/typescript-lib']);
-  for (const tag of ['intent', 'spec', 'plan', 'build', 'fix', 'incident', 'status', 'protected-paths', 'secrets', 'test-lock', 'production-gate', 'gates']) {
+  for (const tag of ['intent', 'spec', 'plan', 'build', 'fix', 'incident', 'status', 'review', 'clean', 'protected-paths', 'secrets', 'test-lock', 'production-gate', 'gates']) {
     assert.ok(evals.some((e) => e.tags?.includes(tag)), `no eval covers ${tag}`);
   }
+  for (const e of evals) for (const m of (e.setup ?? '').matchAll(/fixtures\/review\/(\S+?\.patch)/g)) assert.ok(existsSync(join(REPO, 'evals/fixtures/review', m[1]!)), `${e.name}: ${m[1]}`);
+  assert.ok(evals.filter((e) => e.tags?.includes('clean')).length >= 3, 'clean PRs measure the reviewer false positives');
   for (const f of readdirSync(join(REPO, 'evals/fixtures')).filter((f) => f.endsWith('.sh'))) {
     assert.ok(statSync(join(REPO, 'evals/fixtures', f)).mode & 0o100, `${f} is executable`);
   }

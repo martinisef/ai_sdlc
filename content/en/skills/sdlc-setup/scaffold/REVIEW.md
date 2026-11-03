@@ -25,6 +25,9 @@ Also give each finding a **bug class** (off-by-one, missing authorization check,
 - Never report a finding again, even reworded. A finding that is still there stays open; it is not a new one.
 - The verifier drops what the code does not support and anything that is only style.
 
+## Closing a finding
+Fix it, or reply `resolved: <reason>` (or `resolved f2: <reason>`). Start the reason with `wrong` or `false positive` when the finding was mistaken, and with `intentional` when it is right but the code stays as it is: `sdlc metrics --prs` counts each outcome, and the scorecard shows them.
+
 ## Loop rules
 - In fix PRs: the test that reproduces the bug is not modified after its commit. If it changed, that is Important.
 - Changes to paths in `risk.high_risk_paths` (.sdlc/config.json): flag that they require tech lead approval.

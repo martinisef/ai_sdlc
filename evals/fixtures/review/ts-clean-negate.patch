@@ -1,0 +1,46 @@
+diff --git a/examples/typescript-lib/src/index.ts b/examples/typescript-lib/src/index.ts
+index f149f8e..567bfcf 100644
+--- a/examples/typescript-lib/src/index.ts
++++ b/examples/typescript-lib/src/index.ts
+@@ -1,2 +1,2 @@
+-export { add, allocate, format, isCurrency, money, MoneyError, parse, subtract, type Money } from './money.ts';
++export { add, allocate, format, isCurrency, money, MoneyError, negate, parse, subtract, type Money } from './money.ts';
+ export { CURRENCIES, type CurrencyCode } from './gen/currencies.generated.ts';
+diff --git a/examples/typescript-lib/src/money.ts b/examples/typescript-lib/src/money.ts
+index f73c302..5babdc7 100644
+--- a/examples/typescript-lib/src/money.ts
++++ b/examples/typescript-lib/src/money.ts
+@@ -44,6 +44,11 @@ export function subtract(a: Money, b: Money): Money {
+   return { amount: a.amount - b.amount, currency: a.currency };
+ }
+ 
++/** The same amount with the opposite sign, e.g. to book a refund. */
++export function negate(m: Money): Money {
++  return { amount: -m.amount, currency: m.currency };
++}
++
+ /**
+  * Split `m` by integer ratios without losing a single minor unit: the remainder goes to the first shares.
+  * allocate(money(100, 'USD'), [1, 1, 1]) → 34, 33, 33.
+diff --git a/examples/typescript-lib/test/money.test.ts b/examples/typescript-lib/test/money.test.ts
+index eb33e01..d3ca046 100644
+--- a/examples/typescript-lib/test/money.test.ts
++++ b/examples/typescript-lib/test/money.test.ts
+@@ -1,6 +1,6 @@
+ import assert from 'node:assert/strict';
+ import { test } from 'node:test';
+-import { add, allocate, format, money, MoneyError, parse, subtract } from '../src/index.ts';
++import { add, allocate, format, money, MoneyError, negate, parse, subtract } from '../src/index.ts';
+ 
+ test('parse respects each currency minor units', () => {
+   assert.equal(parse('12.3', 'USD').amount, 1230n);
+@@ -32,3 +32,9 @@ test('format', () => {
+   assert.equal(format(money(500, 'JPY')), '¥500');
+   assert.equal(format(money(1250, 'KWD')), 'KD1.250');
+ });
++
++test('negate flips the sign and keeps the currency', () => {
++  assert.deepEqual(negate(money(250, 'EUR')), { amount: -250n, currency: 'EUR' });
++  assert.equal(negate(negate(money(1, 'USD'))).amount, 1n);
++  assert.equal(add(money(7, 'USD'), negate(money(7, 'USD'))).amount, 0n);
++});
