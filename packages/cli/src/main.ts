@@ -80,7 +80,8 @@ Loop
   quick --check [--json]             is the active quick change still within quick_lane limits?
   promote [<change>]                 quick lane → full loop (intent back to draft for the PO)
   risk [<change>] [--base B] [--json]   risk tier set by the change: diff against the base, paths the spec/plan name, declared risk
-  approve <change> <intent|spec|plan> [-m comment]
+  approve <change> <intent|spec|plan> [-m comment] [--auto]
+                                     --auto: record the approval when the risk tier needs no person (risk.profile graded)
   reject  <change> <intent|spec|plan> [-m comment]
   lock on|off|status                 test-lock during a fix
   ui [--port N] [--no-open]          local dashboard
@@ -380,12 +381,15 @@ async function main() {
     case 'approve':
     case 'reject': {
       const [change, artifact] = pos;
-      if (!change || !ARTIFACTS.includes(artifact as Artifact)) fail(`usage: sdlc ${cmd} <change> <${ARTIFACTS.join('|')}> [-m comment]`);
+      if (!change || !ARTIFACTS.includes(artifact as Artifact)) fail(`usage: sdlc ${cmd} <change> <${ARTIFACTS.join('|')}> [-m comment]${cmd === 'approve' ? ' [--auto]' : ''}`);
       try {
+        if (flags.auto && cmd !== 'approve') fail('--auto only applies to sdlc approve');
         const r = decideGate(root, loadConfig(root), change, artifact as Artifact, cmd === 'approve' ? 'approved' : 'rejected', {
           comment: typeof flags.m === 'string' ? flags.m : undefined,
+          auto: !!flags.auto,
         });
-        console.log(`${r.change}/${r.artifact}.md ${r.decision} by ${r.by} (${r.commit})`);
+        const partial = r.approvals && r.approvals.have < r.approvals.need ? `; ${r.approvals.have} of ${r.approvals.need} approvals, still waiting for another person` : '';
+        console.log(`${r.change}/${r.artifact}.md ${r.decision} by ${r.by} (${r.commit})${partial}`);
       } catch (e) {
         fail((e as Error).message);
       }

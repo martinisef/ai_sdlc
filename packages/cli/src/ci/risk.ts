@@ -2,7 +2,7 @@
 // a second, agent classifier asks whether this change needs another person anyway. It can only raise the tier.
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { changeRisk, git, parseEscalation, prThread, prUpsertComment, escalationFrom, riskMarker, type ChangeRisk, type Change, type LoadedConfig } from '@ai-native-sdlc/core';
+import { approvalsFor, changeRisk, escalationFrom, git, isGraded, parseEscalation, prThread, prUpsertComment, riskMarker, type Change, type ChangeRisk } from '@ai-native-sdlc/core';
 import { READ_TOOLS, runAgent } from './agent.ts';
 import { changeForBranch } from './gates.ts';
 import { baseRef, headRef, prNumber, type CiEnv } from './index.ts';
@@ -48,7 +48,7 @@ export async function prRisk(c: CiEnv, change: Change | undefined, n: number | u
   return changeRisk(c.root, c.loaded, change, { base, escalated: esc.tier, escalatedReason: esc.reason && `second classifier: ${esc.reason}` });
 }
 
-export async function risk(c: CiEnv, escalate: boolean, extra: (r: ChangeRisk, l: LoadedConfig | undefined) => string[] = () => []): Promise<number> {
+export async function risk(c: CiEnv, escalate: boolean): Promise<number> {
   const n = prNumber(c.env);
   const baseName = baseRef(c);
   git(c.root, ['fetch', '-q', 'origin', baseName]);
@@ -63,7 +63,9 @@ export async function risk(c: CiEnv, escalate: boolean, extra: (r: ChangeRisk, l
     if (r.escalated && r.tier === r.escalated) marker = riskMarker(r.escalated, e.reason ?? '');
   }
   writeFileSync(join(c.root, 'risk.json'), JSON.stringify(r, null, 2) + '\n');
-  const body = renderRisk(r, extra(r, c.loaded)) + (marker ? `\n${marker}` : '');
+  const need = approvalsFor(c.loaded, r.tier);
+  const extra = isGraded(c.loaded) ? [`Human approvals for the code: ${need === 0 ? 'none once the automated checks are green' : need} (risk.profile graded)`] : [];
+  const body = renderRisk(r, extra) + (marker ? `\n${marker}` : '');
   if (n === undefined || c.dryRun) console.log(body);
   else log(await prUpsertComment({ root: c.root, loaded: c.loaded, env: c.env }, n, RISK_SUMMARY, body));
   return 0;

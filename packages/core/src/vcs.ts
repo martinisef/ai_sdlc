@@ -298,6 +298,35 @@ export async function prThread(ctx: VcsContext, n: number): Promise<ThreadCommen
   return all.map((c) => Object.fromEntries(Object.entries(c).filter(([, v]) => v !== null && v !== undefined)) as unknown as ThreadComment).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 }
 
+export interface PrApproval {
+  login: string;
+  /** Commit the approval was given on (GitHub). GitLab and Bitbucket reset approvals on push when configured to. */
+  sha?: string;
+}
+
+/** Current approvals of the PR/MR on the forge: each person's latest review, if it approves. */
+export async function prApprovals(ctx: VcsContext, n: number): Promise<PrApproval[]> {
+  switch (vcsProvider(ctx)) {
+    case 'github': {
+      const reviews = tool(ctx, 'gh', ['api', `repos/{owner}/{repo}/pulls/${n}/reviews`, '--paginate', '--jq', '.[] | {login: .user.login, state, sha: .commit_id}'])
+        .split('\n')
+        .filter(Boolean)
+        .map((l) => JSON.parse(l) as { login: string; state: string; sha: string });
+      const latest = new Map<string, { state: string; sha: string }>();
+      for (const r of reviews) if (r.state !== 'COMMENTED' && r.state !== 'PENDING') latest.set(r.login, r);
+      return [...latest].filter(([, r]) => r.state === 'APPROVED').map(([login, r]) => ({ login, sha: r.sha }));
+    }
+    case 'gitlab': {
+      const a = await gitlab(ctx, 'GET', `/merge_requests/${n}/approvals`);
+      return (a?.approved_by ?? []).map((x: any) => ({ login: x.user?.username ?? '' })).filter((x: PrApproval) => x.login);
+    }
+    case 'bitbucket': {
+      const pr = await bitbucket(ctx)('GET', `/pullrequests/${n}`);
+      return (pr?.participants ?? []).filter((p: any) => p.approved).map((p: any) => ({ login: p.user?.nickname ?? p.user?.display_name ?? '' }));
+    }
+  }
+}
+
 /** Edits our comment that carries `marker` (a sticky summary) or posts a new one. */
 export async function prUpsertComment(ctx: VcsContext, n: number, marker: string, body: string, isOurs: (c: ThreadComment) => boolean = () => true): Promise<string> {
   const mine = (await prThread(ctx, n)).filter((c) => !c.path && c.body.includes(marker) && isOurs(c)).at(-1);

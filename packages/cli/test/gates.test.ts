@@ -115,3 +115,39 @@ test('ci gate notifies gate.decided and the next gate.pending; gate-status annou
     server.close();
   }
 });
+
+test('ci gate-status, graded: approvals on the PR against the tier, pinned to their commit', async () => {
+  const root = project({ vcs: { provider: 'github' }, risk: { profile: 'graded', trusted_authors: ['@ana', 'Ana'] } }, 'change/export');
+  mkdirSync(join(root, 'changes/2026-11-export'), { recursive: true });
+  for (const a of ['intent', 'spec', 'plan']) writeFileSync(join(root, `changes/2026-11-export/${a}.md`), `---\nstatus: ${a === 'intent' ? 'accepted' : 'approved'}\napproved_by: Ana\nauthor: Ana\n---\n# ${a}\n`);
+  mkdirSync(join(root, 'src'));
+  writeFileSync(join(root, 'src/export.ts'), Array.from({ length: 80 }, (_, i) => `export const v${i} = ${i};`).join('\n') + '\n');
+  writeFileSync(join(root, 'src/old.ts'), 'x\n'.repeat(60));
+  commitAll(root, 'code');
+  writeFileSync(join(root, 'src/old.ts'), 'y\n'.repeat(60));
+  commitAll(root, 'more code');
+  const head = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
+  const dir = mkdtempSync(join(tmpdir(), 'sdlc-gh-'));
+  const log = join(dir, 'calls.log');
+  const base = { STUB_LOG: log, STUB_GH_DIR: dir, PR_NUMBER: '7', HEAD_REF: 'change/export', BASE_REF: 'main', HEAD_SHA: head };
+
+  // medium risk (70 weighted lines: both files are new); a PR opened by an untrusted author needs another person
+  await sdlc(root, ['ci', 'gate-status'], { ...base, PR_AUTHOR: 'eve' });
+  assert.match(read(log), /state=pending -f context=sdlc\/gates -f description=export: code needs 1 more approval at medium risk \(0\/1\)/);
+
+  // the trusted director counts as the one person
+  await sdlc(root, ['ci', 'gate-status'], { ...base, PR_AUTHOR: 'ana' });
+  assert.match(read(log), /state=success -f context=sdlc\/gates -f description=export: gates hold at medium risk; code 1\/1, @ana counts as reviewer/);
+
+  // an approval from eve on an older commit does not count after an agent pushed
+  writeFileSync(join(root, 'src/old.ts'), 'z\n'.repeat(60));
+  execFileSync('git', ['-c', 'user.name=claude[bot]', '-c', 'user.email=bot@anthropic.com', 'commit', '-qam', 'agent'], { cwd: root });
+  const head2 = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
+  writeFileSync(join(dir, 'pulls_7_reviews'), [JSON.stringify({ login: 'lia', state: 'APPROVED', sha: head }), JSON.stringify({ login: 'dependabot[bot]', state: 'APPROVED', sha: head2 })].join('\n') + '\n');
+  await sdlc(root, ['ci', 'gate-status'], { ...base, HEAD_SHA: head2, PR_AUTHOR: 'eve' });
+  assert.match(read(log), /description=export: code needs 1 more approval at medium risk \(0\/1; new commits invalidated @lia\)/);
+
+  writeFileSync(join(dir, 'pulls_7_reviews'), JSON.stringify({ login: 'lia', state: 'APPROVED', sha: head2 }) + '\n');
+  await sdlc(root, ['ci', 'gate-status'], { ...base, HEAD_SHA: head2, PR_AUTHOR: 'eve' });
+  assert.match(read(log), /state=success -f context=sdlc\/gates -f description=export: gates hold at medium risk; code 1\/1/);
+});

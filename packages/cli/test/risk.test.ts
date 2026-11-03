@@ -58,3 +58,22 @@ test('ci risk --escalate: the second classifier can raise the tier and leaves th
   assert.match(r.out, /second classifier: session expiry is an auth boundary/);
   assert.match(r.out, /<!-- sdlc:risk tier=high reason="session expiry is an auth boundary" -->/);
 });
+
+test('sdlc approve --auto: only when the tier needs nobody (risk.profile graded)', async () => {
+  const root = project({ risk: { profile: 'graded' } }, 'change/export');
+  mkdirSync(join(root, 'changes/2026-11-export'), { recursive: true });
+  writeFileSync(join(root, 'changes/2026-11-export/intent.md'), '---\nstatus: accepted\nauthor: t\n---\n# Intent: export\n');
+  writeFileSync(join(root, 'changes/2026-11-export/spec.md'), '---\nstatus: draft\n---\n# Spec\n');
+  commitAll(root, 'spec');
+  const ok = await sdlc(root, ['approve', 'export', 'spec', '--auto']);
+  assert.equal(ok.code, 0, ok.err);
+  assert.match(ok.out, /spec.md approved by sdlc \(risk low\)/);
+  const intent = await sdlc(root, ['approve', 'export', 'intent', '--auto']);
+  assert.equal(intent.code, 1);
+  assert.match(intent.err, /intent needs 1 human approval at low risk/);
+  const strict = project({}, 'change/x');
+  mkdirSync(join(strict, 'changes/x'), { recursive: true });
+  writeFileSync(join(strict, 'changes/x/spec.md'), '---\nstatus: draft\n---\n');
+  commitAll(strict, 'spec');
+  assert.match((await sdlc(strict, ['approve', 'x', 'spec', '--auto'])).err, /risk.profile is strict/);
+});

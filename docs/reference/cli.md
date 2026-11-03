@@ -32,7 +32,7 @@ Every command works from any directory inside the repository. The project root i
 | `sdlc quick --check [--json]` | Whether the active quick change is still within the limits (exit 1 if not). |
 | `sdlc promote [<change>]` | Quick lane → full loop: `lane: full`, intent back to `draft` for the PO. |
 | `sdlc risk [<change>] [--base B] [--json]` | Risk tier set by the change, not the author: the diff against the base (paths, weighted size, dependencies, deletions), the paths the spec and plan name, and the declared `risk:`. See [Risk tiers](../guide/risk). |
-| `sdlc approve <change> <intent\|spec\|plan> [-m comment]` | Gate decision as a commit. See [Gates](../guide/concepts#gates). |
+| `sdlc approve <change> <intent\|spec\|plan> [-m comment] [--auto]` | Gate decision as a commit. See [Gates](../guide/concepts#gates). `--auto` (with `risk.profile: graded`) records the approval when the risk tier needs nobody; see [Risk tiers](../guide/risk#approvals-per-tier). |
 | `sdlc reject <change> <intent\|spec\|plan> [-m comment]` | The same, setting `status: rejected`. |
 | `sdlc lock on\|off\|status` | Test-lock during a fix: test files (`test_globs`) cannot be edited while it is on. |
 | `sdlc ui [--port N] [--no-open]` | Local [dashboard](../guide/dashboard) (default port 4319). |

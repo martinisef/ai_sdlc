@@ -21,6 +21,27 @@ changes/2026-11-session-timeout: high risk (4 files against main, 38 weighted li
   high   src/auth/session.ts is a high-risk path (src/auth/**)
 ```
 
+## Aprobaciones por nivel
+
+Con `risk.profile: graded`, cuántas personas tienen que aprobar escala con el nivel. Los valores por defecto (se cambian en `risk.tiers`):
+
+| Nivel | Aprobaciones humanas | Ejemplos |
+|---|---|---|
+| low | ninguna, una vez que los controles automáticos están en verde | docs, textos, cambios chicos y aditivos |
+| medium | una persona | cambios de producto comunes, dependencias, archivos de CI |
+| high | dos personas | `risk.high_risk_paths`, cambios grandes, lo que escale el segundo clasificador |
+
+Las reglas que lo hacen seguro:
+
+- **El intent siempre lo aprueba una persona.** Decidir si algo se construye no se delega, sea cual sea el nivel.
+- **La spec y el plan siguen al nivel.** En low, `sdlc approve <cambio> spec --auto` registra la aprobación como `sdlc (risk low)` (lo corren las skills); se niega cuando el nivel o el autor piden una persona. En high el gate queda en `draft` después de la primera aprobación (`approved_by: Ana`) y se abre con la segunda (`approved_by: Ana, Juan`). Cada aprobación guarda `approved_sha` y `approved_tier`.
+- **Si el cambio crece, el gate se vuelve a abrir.** Una aprobación dada en low no alcanza cuando el diff vuelve el cambio medium: `sdlc/gates` vuelve a pending hasta que alguien apruebe.
+- **Las aprobaciones del código son los reviews del forge**, y `sdlc ci gate-status` las cuenta contra el nivel del diff de la PR. Poné en 0 las "required approvals" de la branch protection y exigí `sdlc/gates`.
+- **Una aprobación cubre un commit.** Un review de GitHub queda atado al commit en que se dio. Sigue valiendo después de commits de autores de confianza, commits de gates y merges limpios; un push de un agente, un merge resuelto a mano o un force-push la invalidan. En GitLab y Bitbucket, activá "remove approvals when commits are added" / "reset approvals on changes".
+- **La persona que dirige al agente cuenta como un reviewer** (el autor de la PR, o el autor del intent si la abrió un bot), siempre que sea de confianza. En high además tiene que aprobar otra persona.
+- **Solo los autores de confianza tienen los caminos livianos.** `risk.trusted_authors` (nombre de git, email o `@login`; sin definir son todos los de `roles`). Cualquier otro siempre necesita otra persona, y quien dirige no cuenta.
+- **La aprobación de un agente nunca cuenta**, ni en los artefactos ni en la PR.
+
 ## Arrancá estricto
 
 `risk.profile` es `strict` por defecto: cada gate sigue necesitando una persona y el nivel solo informa (el comentario de la PR, la profundidad del review). Pasá a `graded` cuando tengas datos que lo respalden: `sdlc metrics` muestra el tiempo humano por PR junto a la tasa de reverts e incidentes.

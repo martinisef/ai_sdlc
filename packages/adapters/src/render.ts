@@ -29,7 +29,7 @@ const BIN = '.sdlc/bin/sdlc';
 const LOOP: Record<Locale, (cmds: string) => string> = {
   es: (cmds) => `## Cómo trabajamos (loop AI-native)
 - Cada cambio vive en \`changes/<slug>/\` (intent.md → spec.md → plan.md) en la rama \`change/<slug>\`. Cada etapa termina commiteando su artefacto; la siguiente lo lee.
-- Los gates son humanos: intent lo acepta el Product Owner, spec el PO + policy owners, plan el engineer/tech lead. El agente nunca aprueba (\`sdlc approve\` o el dashboard \`sdlc ui\`).
+- Los gates son humanos: intent lo acepta el Product Owner, spec el PO + policy owners, plan el engineer/tech lead. El agente nunca aprueba por una persona (\`sdlc approve\` o el dashboard \`sdlc ui\`). Con \`risk.profile: graded\`, \`sdlc approve <cambio> <spec|plan> --auto\` registra la aprobación solo cuando el nivel de riesgo no pide a nadie.
 - Nada se implementa sin un \`plan.md\` aprobado. Si la implementación se desvía, actualizá \`plan.md\` en el mismo commit. Excepción: la persona pide explícitamente un cambio chico fuera del loop; hacelo y avisá que queda sin trazabilidad.
 - Cambios chicos y de bajo riesgo: carril rápido (\`sdlc quick "<qué>"\`, después /sdlc-quick), sin spec ni plan; los límites (\`quick_lane\`, rutas de alto riesgo) se chequean en cada push. Si los supera: \`sdlc promote\`.
 - Durante un fix (\`sdlc lock on\`) no se editan tests: primero el test que falla, después el código.
@@ -40,7 +40,7 @@ const LOOP: Record<Locale, (cmds: string) => string> = {
 ${cmds}`,
   en: (cmds) => `## How we work (AI-native loop)
 - Each change lives in \`changes/<slug>/\` (intent.md → spec.md → plan.md) on branch \`change/<slug>\`. Each stage ends by committing its artifact; the next one reads it.
-- Gates are human: the Product Owner accepts the intent, PO + policy owners approve the spec, the engineer/tech lead approves the plan. The agent never approves (\`sdlc approve\` or the \`sdlc ui\` dashboard).
+- Gates are human: the Product Owner accepts the intent, PO + policy owners approve the spec, the engineer/tech lead approves the plan. The agent never approves for a person (\`sdlc approve\` or the \`sdlc ui\` dashboard). With \`risk.profile: graded\`, \`sdlc approve <change> <spec|plan> --auto\` records the approval only when the risk tier needs nobody.
 - Nothing is implemented without an approved \`plan.md\`. If the implementation deviates, update \`plan.md\` in the same commit. Exception: the person explicitly asks for a small change outside the loop; do it and say it has no traceability.
 - Small, low-risk changes: quick lane (\`sdlc quick "<what>"\`, then /sdlc-quick), no spec or plan; the limits (\`quick_lane\`, high-risk paths) are checked on every push. Beyond them: \`sdlc promote\`.
 - During a fix (\`sdlc lock on\`) tests are not edited: failing test first, then the code.

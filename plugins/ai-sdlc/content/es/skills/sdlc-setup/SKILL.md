@@ -34,6 +34,7 @@ Agrupá en 2-3 rondas, no más de 4 preguntas por ronda:
 4. **Tracker**: Jira, GitHub Issues, Linear o ninguno. Seguí `trackers/<jira|github|linear|none>.md` (claves, modo, mapeo de etapas). El preset `team-github` usa GitHub Issues por defecto.
 5. **Políticas**: qué skills de política de la org aplican (listá las disponibles en el plugin).
 6. **Agentes**: qué agentes usa el equipo (Claude Code, Cursor, Codex u otros con AGENTS.md) → `agents` en la config.
+7. **Aprobaciones**: `strict` (recomendado para arrancar: cada gate necesita una persona) o `graded` (aprobaciones humanas por nivel de riesgo: low 0, medium 1, high 2) → `risk.profile`. Con graded, preguntá quiénes son los autores de confianza (`risk.trusted_authors`, `@login` en el forge) y explicá que los cambios de riesgo low se mergean solo con los controles automáticos.
 
 ## 3. Copiar lo fijo
 Copiá `scaffold/` al proyecto **sin pisar archivos existentes**. Si un archivo ya existe (`CLAUDE.md`, `REVIEW.md`), mostrá qué secciones faltan y proponé agregarlas (merge), no reemplazar.

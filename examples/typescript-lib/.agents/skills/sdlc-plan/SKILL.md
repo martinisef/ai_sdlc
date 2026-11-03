@@ -33,6 +33,8 @@ Invite the engineer to correct it. Iterate until **someone who never saw this co
 ## 3. Acceptance (gate)
 The engineer accepts the plan (when exiting plan mode). If `risk: high`, a tech lead or architect is also needed: leave it in `status: draft` and request that approval.
 
+With `risk.profile: graded`, the tier decides how many people (`sdlc risk <slug>`; the paths the plan names count): low needs nobody (`sdlc approve <slug> plan --auto` once plan.md is written in draft), medium needs the engineer, high needs the engineer and one more person (leave `status: draft` with `approved_by: <engineer>` and ask for the second `sdlc approve`).
+
 ## 4. Record plan.md
 Once out of plan mode, write `changes/<slug>/plan.md` from the template with the accepted plan, `status: approved`, `approved_by: <engineer>`, `risk`. Commit: `plan(<slug>): <title>` (+ key).
 Tracker: `plan` transition + comment with path and SHA (`jira-sot`: also a summary). If it fails, say so and continue.

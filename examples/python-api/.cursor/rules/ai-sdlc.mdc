@@ -4,7 +4,7 @@ alwaysApply: true
 ---
 ## How we work (AI-native loop)
 - Each change lives in `changes/<slug>/` (intent.md → spec.md → plan.md) on branch `change/<slug>`. Each stage ends by committing its artifact; the next one reads it.
-- Gates are human: the Product Owner accepts the intent, PO + policy owners approve the spec, the engineer/tech lead approves the plan. The agent never approves (`sdlc approve` or the `sdlc ui` dashboard).
+- Gates are human: the Product Owner accepts the intent, PO + policy owners approve the spec, the engineer/tech lead approves the plan. The agent never approves for a person (`sdlc approve` or the `sdlc ui` dashboard). With `risk.profile: graded`, `sdlc approve <change> <spec|plan> --auto` records the approval only when the risk tier needs nobody.
 - Nothing is implemented without an approved `plan.md`. If the implementation deviates, update `plan.md` in the same commit. Exception: the person explicitly asks for a small change outside the loop; do it and say it has no traceability.
 - Small, low-risk changes: quick lane (`sdlc quick "<what>"`, then /sdlc-quick), no spec or plan; the limits (`quick_lane`, high-risk paths) are checked on every push. Beyond them: `sdlc promote`.
 - During a fix (`sdlc lock on`) tests are not edited: failing test first, then the code.

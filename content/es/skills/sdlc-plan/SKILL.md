@@ -33,6 +33,8 @@ Invitá al engineer a corregir. Iterá hasta que **alguien que nunca vio esta co
 ## 3. Aceptación (gate)
 El engineer acepta el plan (al salir de plan mode). Si `risk: high`, se necesita además un tech lead o arquitecto: dejalo en `status: draft` y pedí esa aprobación.
 
+Con `risk.profile: graded`, el nivel decide cuántas personas (`sdlc risk <slug>`; cuentan las rutas que nombra el plan): low no necesita a nadie (`sdlc approve <slug> plan --auto` una vez escrito plan.md en draft), medium necesita al engineer, high necesita al engineer y una persona más (dejalo en `status: draft` con `approved_by: <engineer>` y pedí el segundo `sdlc approve`).
+
 ## 4. Registrar plan.md
 Ya fuera de plan mode, escribí `changes/<slug>/plan.md` desde el template con el plan aceptado, `status: approved`, `approved_by: <engineer>`, `risk`. Commit: `plan(<slug>): <título>` (+ key).
 Tracker: transición `plan` + comentario con path y SHA (`jira-sot`: también resumen). Si falla, avisá y seguí.

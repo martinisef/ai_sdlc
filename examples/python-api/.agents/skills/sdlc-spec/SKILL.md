@@ -42,6 +42,8 @@ Tell the PO what to review, in this order:
 2. Does the spec solve the intent's problem? Are the open questions answered or carried over?
 Approval: `status: approved` + `approved_by`. If it is `risk: high`, a tech lead too.
 
+How many people depends on `risk.profile` in `.sdlc/config.json`. With `strict` (the default), always one. With `graded`, the tier decides (`sdlc risk <slug>`): low needs nobody, so run `sdlc approve <slug> spec --auto` (it refuses when the tier or the author needs a person); medium needs one person and high two. Tell the PO how many approvals are needed and why (the reasons `sdlc risk` prints).
+
 ## Headless mode (CI)
 If you run with `claude -p` (no user): do not ask questions; write the spec, leave anything doubtful as a concern, commit and finish. The pipeline opens/updates the PR.
 
