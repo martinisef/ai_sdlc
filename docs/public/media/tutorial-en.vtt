@@ -1,17 +1,17 @@
 WEBVTT
 
-00:00:00.000 --> 00:00:37.200
+00:00:00.000 --> 00:00:34.567
 Install: npm i -D @morsadev/sdlc, then npx sdlc init. sdlc doctor checks the setup.
 
-00:00:37.200 --> 00:01:12.133
+00:00:34.567 --> 00:01:07.767
 A small change takes the quick lane: no spec or plan, limits checked on every push.
 
-00:01:12.133 --> 00:02:07.800
+00:01:07.767 --> 00:02:01.167
 A real feature: the agent writes intent, spec and plan; you approve each one. Agent steps are sped up.
 
-00:02:07.800 --> 00:02:29.200
+00:02:01.167 --> 00:02:21.500
 Code pushed before the plan is approved is blocked by the git hook.
 
-00:02:29.200 --> 00:02:46.133
+00:02:21.500 --> 00:02:36.233
 The same decisions in the local dashboard: npx sdlc ui.
 
