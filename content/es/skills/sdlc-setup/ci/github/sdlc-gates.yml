@@ -7,16 +7,19 @@ name: sdlc gates
 # Con risk.profile graded, sdlc/gates además cuenta las aprobaciones de la PR contra el nivel de riesgo (low 0,
 # medium 1, high 2): cada aprobación queda atada al commit en que se dio, y la persona que dirige al agente cuenta como una.
 # En ese caso poné en 0 las "required approvals" de la branch protection y dejá que decida sdlc/gates.
+# Con merge queue, el job queue lleva sdlc/gates y sdlc/review al commit de la cola cuando todas las PRs del
+# grupo los tienen en verde (ci.yml también corre en merge_group).
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, edited]
   pull_request_review:
     types: [submitted, dismissed]
   issue_comment:
     types: [created]
+  merge_group:
 
 concurrency:
-  group: sdlc-gates-${{ github.event.pull_request.number || github.event.issue.number }}
+  group: sdlc-gates-${{ github.event.pull_request.number || github.event.issue.number || github.event.merge_group.head_sha }}
 
 jobs:
   status:
@@ -53,6 +56,7 @@ jobs:
           PR_ACTION: ${{ github.event.action }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_BODY: ${{ github.event.pull_request.body }}
           SDLC_NOTIFY_WEBHOOK: ${{ secrets.SDLC_NOTIFY_WEBHOOK }}
         run: npx -y @morsadev/sdlc@0 ci gate-status
 
@@ -90,3 +94,21 @@ jobs:
           AUTHOR_ASSOCIATION: ${{ github.event.comment.author_association }}
           SDLC_NOTIFY_WEBHOOK: ${{ secrets.SDLC_NOTIFY_WEBHOOK }}
         run: npx -y @morsadev/sdlc@0 ci gate
+
+  queue:
+    if: github.event_name == 'merge_group'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      statuses: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Llevar sdlc/gates y sdlc/review al commit de la cola
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.merge_group.head_sha }}
+          MERGE_GROUP_REF: ${{ github.event.merge_group.head_ref }}
+        run: npx -y @morsadev/sdlc@0 ci merge-queue

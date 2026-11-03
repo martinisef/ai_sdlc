@@ -4,8 +4,10 @@ import { execFileSync } from 'node:child_process';
 import {
   artifactGate,
   ARTIFACTS,
+  checkPrBody,
   codeGate,
   commitStatus,
+  commitStatuses,
   decideGate,
   git,
   isAgent,
@@ -16,7 +18,9 @@ import {
   localeOf,
   notify,
   prApprovals,
+  prBody,
   prComment,
+  requiredPrSections,
   SdlcError,
   type Approver,
   type Artifact,
@@ -110,9 +114,27 @@ function waitingArtifact(change: Change | undefined): Artifact | undefined {
 /** Did this push touch `path`? PR_ACTION=opened|reopened counts as new for everything on the branch. */
 function touched(c: CiEnv, path: string): boolean {
   if (c.env.PR_ACTION === 'opened' || c.env.PR_ACTION === 'reopened') return true;
-  if (c.env.PR_ACTION === 'submitted' || c.env.PR_ACTION === 'dismissed') return false;
+  if (c.env.PR_ACTION === 'submitted' || c.env.PR_ACTION === 'dismissed' || c.env.PR_ACTION === 'edited') return false;
   const before = c.env.BEFORE_SHA && !/^0+$/.test(c.env.BEFORE_SHA) ? c.env.BEFORE_SHA : 'HEAD~1';
   return (git(c.root, ['diff', '--name-only', before, 'HEAD']) ?? '').split('\n').includes(path);
+}
+
+/** Why the PR description is not ready (ci.pr_sections), if it is not. PR_BODY wins over asking the forge. */
+async function descriptionProblem(c: CiEnv, change: Change | undefined, n: number, tier?: RiskTier): Promise<string | undefined> {
+  const required = requiredPrSections(c.loaded);
+  if (!required.length) return undefined;
+  let body = c.env.PR_BODY ?? (c.env.CI_MERGE_REQUEST_DESCRIPTION_IS_TRUNCATED === 'true' ? undefined : c.env.CI_MERGE_REQUEST_DESCRIPTION);
+  if (body === undefined) {
+    if (c.dryRun) return undefined;
+    try {
+      body = await prBody({ root: c.root, loaded: c.loaded, env: c.env }, n);
+    } catch (e) {
+      log(`could not read the PR description: ${(e as Error).message}`);
+      return undefined;
+    }
+  }
+  tier ??= (await prRisk(c, change, n)).tier;
+  return checkPrBody(body, required, tier).problem;
 }
 
 /** Sets `sdlc/gates`; announces gate.pending when the waiting artifact is new in this push (or `announce`). */
@@ -129,7 +151,11 @@ export async function gateStatus(c: CiEnv, announce = false): Promise<number> {
     if (n !== undefined && !c.dryRun) approvals = await prApprovals({ root: c.root, loaded: c.loaded, env: c.env }, n);
     opts = { loaded: c.loaded, tier, code: codeGate(c.root, c.loaded, { tier, head: sha, approvals, director: directorOf(c, change) }) };
   }
-  const g = gateState(change, opts);
+  let g = gateState(change, opts);
+  if (g.state === 'success' && n !== undefined) {
+    const problem = await descriptionProblem(c, change, n, opts.tier);
+    if (problem) g = { state: 'failure', description: problem };
+  }
   const waiting = waitingArtifact(change);
   const pending = waiting && (announce || touched(c, change!.artifacts[waiting]!.path));
   if (c.dryRun) {
@@ -188,4 +214,29 @@ export async function gate(c: CiEnv): Promise<number> {
   const decided = changeForBranch(c, branch) ?? change;
   if (!c.dryRun) log(await notify({ event: 'gate.decided', change: decided, artifact: cmd.artifact, decision: cmd.decision, by: `@${login}`, note: cmd.comment }, c.loaded, c.env));
   return gateStatus({ ...c, env: { ...c.env, HEAD_SHA: '' } }, cmd.decision === 'approved');
+}
+
+/** Contexts a merge-queue commit needs, carried from the PRs in the group once they passed there. */
+export const QUEUE_CONTEXTS = [GATES_CONTEXT, 'sdlc/review'];
+
+/**
+ * `sdlc ci merge-queue` (GitHub `merge_group`): the queue builds a new commit, and required commit statuses must be
+ * on it. Each PR in the group (from MERGE_GROUP_REF, gh-readonly-queue/<base>/pr-<n>-<sha>) must already have them
+ * green on its head commit; then they are set on the queue commit (HEAD_SHA).
+ */
+export async function mergeQueue(c: CiEnv): Promise<number> {
+  const sha = c.env.HEAD_SHA;
+  const ref = c.env.MERGE_GROUP_REF ?? '';
+  const prs = [...ref.matchAll(/pr-(\d+)-([0-9a-f]{40})/g)].map((m) => ({ n: m[1], sha: m[2] }));
+  if (!sha || !prs.length) throw new SdlcError('sdlc ci merge-queue needs HEAD_SHA and MERGE_GROUP_REF (gh-readonly-queue/<base>/pr-<n>-<sha>)');
+  const ctx = { root: c.root, loaded: c.loaded, env: c.env };
+  for (const context of QUEUE_CONTEXTS) {
+    const failing = c.dryRun ? [] : prs.filter((p) => commitStatuses(ctx, p.sha).some((s) => s.context === context && s.state !== 'success'));
+    const s = failing.length
+      ? { state: 'failure' as const, description: `not green on #${failing.map((p) => p.n).join(', #')}` }
+      : { state: 'success' as const, description: `green on #${prs.map((p) => p.n).join(', #')} before the merge queue` };
+    if (c.dryRun) console.log(`${context}: ${s.state} — ${s.description}`);
+    else log(await commitStatus(ctx, sha, { context, ...s }));
+  }
+  return 0;
 }

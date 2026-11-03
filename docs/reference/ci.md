@@ -16,7 +16,10 @@ sdlc ci triage <log>           summarize a failed build and comment on the PR/MR
 sdlc ci tracker-merged         move the merged change's tickets to tracker.transitions.merged (alias: jira-merged)
 sdlc ci evals [pattern] [--out results.json]   run evals/*.json against the agent; fail below ci.min_pass_rate (0.8)
 sdlc ci gate                   /approve|/reject intent|spec|plan in a PR/MR comment → gate commit on the branch + reply
-sdlc ci gate-status            set the sdlc/gates commit status (success once the plan is approved or the change is quick)
+sdlc ci gate-status            set the sdlc/gates commit status (success once the plan is approved or the change is quick,
+                               and the PR description has ci.pr_sections: Testing, Risk, How to revert)
+sdlc ci merge-queue            GitHub merge_group: carry sdlc/gates and sdlc/review to the queue commit once they are
+                               green on every PR in the group
 sdlc ci risk [--escalate]      risk tier of the PR/MR from the diff (sticky comment, risk.json); --escalate (or
                                risk.agent_escalation) asks the agent whether it needs another person: it can only raise it
 sdlc ci mention                answer an @claude comment on the PR/MR (triggered by `sdlc webhook`; ci.mention_mode read|edit)
