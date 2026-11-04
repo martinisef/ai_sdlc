@@ -29,7 +29,8 @@ sdlc tracker get KEY                                → {"key","summary","status
 sdlc tracker transitions KEY                        → available transitions, one per line
 sdlc tracker transition KEY <stage|name>            → stage = intent|spec|plan|ship|merged (tracker.transitions)
 sdlc tracker comment KEY --body-file F
-sdlc tracker create --summary S --body-file F [--type T]  → new key
+sdlc tracker create --summary S --body-file F [--type T] [--parent EPIC] [--labels a,b]  → new key
+sdlc tracker link BLOCKER BLOCKED                   → BLOCKER blocks BLOCKED
 sdlc tracker set-description KEY --body-file F
 sdlc tracker statuses                               → project workflow statuses
 Keys: PROJ-123 (Jira), #123 or owner/repo#123 (GitHub Issues), ENG-123 (Linear).
@@ -118,9 +119,17 @@ export async function trackerCommand(root: string, args: string[]): Promise<numb
       await t().comment(need('comment KEY --body-file F'), bodyFile(o, process.cwd()).body);
       console.log(`comment added on ${pos[0]}`);
       return 0;
-    case 'create':
-      if (typeof o.summary !== 'string') fail('usage: create --summary S --body-file F [--type T]');
-      console.log(await t().create({ summary: o.summary as string, body: bodyFile(o, process.cwd()).body, type: typeof o.type === 'string' ? o.type : undefined }));
+    case 'create': {
+      if (typeof o.summary !== 'string') fail('usage: create --summary S --body-file F [--type T] [--parent EPIC] [--labels a,b]');
+      const str = (k: string) => (typeof o[k] === 'string' ? (o[k] as string) : undefined);
+      const labels = str('labels')?.split(',').map((l) => l.trim()).filter(Boolean);
+      console.log(await t().create({ summary: o.summary as string, body: bodyFile(o, process.cwd()).body, type: str('type'), parent: str('parent'), labels }));
+      return 0;
+    }
+    case 'link':
+      if (!pos[0] || !pos[1]) fail('usage: link BLOCKER BLOCKED');
+      await t().link(pos[0], pos[1]);
+      console.log(`${pos[0]} blocks ${pos[1]}`);
       return 0;
     case 'set-description':
       await t().setDescription(need('set-description KEY --body-file F'), bodyFile(o, process.cwd()).body);

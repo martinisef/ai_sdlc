@@ -22,6 +22,14 @@ export interface Issue {
   url: string;
 }
 
+export interface CreateIssue {
+  summary: string;
+  body: string;
+  type?: string;
+  parent?: string;
+  labels?: string[];
+}
+
 export interface Transition {
   id: string;
   name: string;
@@ -35,7 +43,10 @@ export interface Tracker {
   /** `target` is a loop stage (mapped in tracker.transitions) or a provider transition/status/label name. */
   transition(key: string, target: string): Promise<string>;
   comment(key: string, body: string): Promise<void>;
-  create(o: { summary: string; body: string; type?: string }): Promise<string>;
+  /** `parent`: the epic's key (Jira parent or Epic Link, GitHub sub-issue, Linear parent issue). */
+  create(o: CreateIssue): Promise<string>;
+  /** Record that `blocker` blocks `blocked`. */
+  link(blocker: string, blocked: string): Promise<void>;
   setDescription(key: string, body: string): Promise<void>;
   statuses(): Promise<string[]>;
 }
@@ -97,10 +108,20 @@ export function jira(loaded: LoadedConfig | undefined, env: NodeJS.ProcessEnv = 
       await call('POST', `/issue/${key}/comment`, { body });
     },
     async create(o) {
-      const r = await call('POST', '/issue', {
-        fields: { project: { key: projectKey() }, summary: o.summary, description: o.body, issuetype: { name: o.type ?? tracker.default_issue_type ?? 'Task' } },
-      });
+      const fields: Record<string, unknown> = {
+        project: { key: projectKey() },
+        summary: o.summary,
+        description: o.body,
+        issuetype: { name: o.type ?? tracker.default_issue_type ?? 'Task' },
+      };
+      if (o.labels?.length) fields.labels = o.labels.map((l) => l.replace(/\s+/g, '-'));
+      // Cloud links any issue to its epic through `parent`; Data Center/Server needs the Epic Link custom field
+      if (o.parent) fields[tracker.epic_link_field ?? 'parent'] = tracker.epic_link_field ? o.parent : { key: o.parent };
+      const r = await call('POST', '/issue', { fields });
       return r.key;
+    },
+    async link(blocker, blocked) {
+      await call('POST', '/issueLink', { type: { name: 'Blocks' }, inwardIssue: { key: blocker }, outwardIssue: { key: blocked } });
     },
     async setDescription(key, body) {
       await call('PUT', `/issue/${key}`, { fields: { description: body } });
@@ -169,8 +190,24 @@ function githubIssues(loaded: LoadedConfig, env: NodeJS.ProcessEnv, root: string
     },
     async create(o) {
       const type = o.type ?? tracker.default_issue_type;
-      const r = await call('POST', '/issues', { title: o.summary, body: o.body, labels: type ? [type] : [] });
+      const labels = [...new Set([...(type ? [type] : []), ...(o.labels ?? [])])];
+      const r = await call('POST', '/issues', { title: o.summary, body: o.body, labels });
+      if (o.parent) {
+        const epic = num(o.parent);
+        try {
+          await call('POST', `/issues/${epic}/sub_issues`, { sub_issue_id: r.id });
+        } catch {
+          // sub-issues unavailable (older GHES, plan): a task list in the epic links them instead
+          const e = await call('GET', `/issues/${epic}`);
+          await call('PATCH', `/issues/${epic}`, { body: `${e.body ?? ''}\n- [ ] #${r.number}`.trimStart() });
+        }
+      }
       return `#${r.number}`;
+    },
+    async link(blocker, blocked) {
+      const n = num(blocked);
+      const i = await call('GET', `/issues/${n}`);
+      await call('PATCH', `/issues/${n}`, { body: `${i.body ?? ''}\n\nBlocked by #${num(blocker)}`.trimStart() });
     },
     async setDescription(key, body) {
       await call('PATCH', `/issues/${num(key)}`, { body });
@@ -221,12 +258,17 @@ function linear(loaded: LoadedConfig, env: NodeJS.ProcessEnv): Tracker {
       await gql('mutation($id: String!, $body: String!) { commentCreate(input: { issueId: $id, body: $body }) { success } }', { id: await issueId(k), body });
     },
     async create(o) {
-      const d = await gql('mutation($team: String!, $title: String!, $body: String) { issueCreate(input: { teamId: $team, title: $title, description: $body }) { issue { identifier } } }', {
-        team: (await getTeam()).id,
-        title: o.summary,
-        body: o.body,
-      });
+      const d = await gql(
+        'mutation($team: String!, $title: String!, $body: String, $parent: String) { issueCreate(input: { teamId: $team, title: $title, description: $body, parentId: $parent }) { issue { identifier } } }',
+        { team: (await getTeam()).id, title: o.summary, body: o.body, parent: o.parent ? await issueId(o.parent) : null },
+      );
       return d.issueCreate.issue.identifier;
+    },
+    async link(blocker, blocked) {
+      await gql('mutation($a: String!, $b: String!) { issueRelationCreate(input: { issueId: $a, relatedIssueId: $b, type: blocks }) { success } }', {
+        a: await issueId(blocker),
+        b: await issueId(blocked),
+      });
     },
     async setDescription(k, body) {
       await gql('mutation($id: String!, $body: String!) { issueUpdate(id: $id, input: { description: $body }) { success } }', { id: await issueId(k), body });

@@ -1,10 +1,12 @@
 import { spawn, execFileSync, type ChildProcess } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { delimiter, join, resolve } from 'node:path';
 import { test as base, expect } from '@playwright/test';
 
 const CLI = resolve(import.meta.dirname, '../../packages/cli/dist/sdlc.mjs');
+// the dashboard's agent jobs run tests/ui/stub-agent/claude, never a real agent
+const STUB_AGENT = resolve(import.meta.dirname, 'stub-agent');
 
 export const CONFIG = {
   version: 1,
@@ -43,7 +45,7 @@ function seed(): string {
 function start(root: string, home: string): Promise<{ url: string; proc: ChildProcess }> {
   const proc = spawn(process.execPath, [CLI, 'ui', '--port', '0', '--no-open'], {
     cwd: root,
-    env: { ...process.env, XDG_CONFIG_HOME: home, SDLC_PROJECT_DIR: root },
+    env: { ...process.env, XDG_CONFIG_HOME: home, SDLC_PROJECT_DIR: root, PATH: `${STUB_AGENT}${delimiter}${process.env.PATH}`, SDLC_CI_AGENT: 'claude' },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   return new Promise((ok, fail) => {

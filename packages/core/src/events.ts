@@ -18,6 +18,8 @@ export interface SdlcEvent {
     | 'change.new'
     | 'change.quick'
     | 'change.promote'
+    | 'roadmap.new'
+    | 'roadmap.apply'
     | 'setup.init'
     | 'setup.fix';
   metric?: string;
@@ -30,7 +32,7 @@ export interface SdlcEvent {
 }
 
 export const EVENTS_PATH = '.sdlc/events.jsonl';
-const LOCAL_FILES = ['events.jsonl', 'fix-lock', 'ui-token', 'bands/', 'risk-floor.json', 'pr-stats.json'];
+const LOCAL_FILES = ['events.jsonl', 'fix-lock', 'ui-token', 'bands/', 'risk-floor.json', 'pr-stats.json', 'jobs/'];
 
 /** `.sdlc/` holds committed config next to local-only state; keep the latter out of git. */
 export function ensureSdlcDir(root: string): string {

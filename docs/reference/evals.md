@@ -82,7 +82,7 @@ The [agent scorecard](./agent-scorecard.md) shows both apart, next to what happe
 
 ## The product evals in this repository
 
-`evals/` at the root of this repository holds the product's own evals: 24 tasks over `examples/python-api` and `examples/typescript-lib`. They cover every stage of the loop (intent, spec, plan, build, fix, review, status, quick lane, incident) and every guardrail (protected paths, secrets, test-lock, production gate, gates). A test checks their structure on every PR.
+`evals/` at the root of this repository holds the product's own evals: 33 tasks over `examples/python-api` and `examples/typescript-lib`. They cover every stage of the loop (roadmap, intent, spec, plan, build, fix, review, status, quick lane, incident) and every guardrail (protected paths, secrets, test-lock, production gate, gates). A test checks their structure on every PR.
 
 `.github/workflows/evals.yml` runs them:
 

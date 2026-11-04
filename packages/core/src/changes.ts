@@ -159,6 +159,7 @@ export function listChanges(root: string, opts: ListOptions = {}): Change[] {
     for (const d of lines(git(root, ['ls-tree', '-d', '--name-only', `${b}:changes/`]))) dirs.add(d);
   }
   dirs.delete('_templates');
+  dirs.delete('_roadmaps');
   const active = activeChange(root);
   const base = opts.defaultBranch ?? 'main';
   const baseExists = git(root, ['rev-parse', '--verify', '--quiet', base]) !== undefined;

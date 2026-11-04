@@ -27,7 +27,7 @@ function respond(method: string, url: string, data = ''): unknown {
   const m = `${method} ${url}`;
   if (m === 'GET /gh/repos/acme/app/issues/5')
     return { number: 5, title: 'Claims status', state: 'open', labels: [{ name: 'sdlc:spec' }, { name: 'enhancement' }], body: 'b', html_url: 'https://github.com/acme/app/issues/5' };
-  if (m === 'POST /gh/repos/acme/app/issues') return { number: 9 };
+  if (m === 'POST /gh/repos/acme/app/issues') return { number: 9, id: 909 };
   if (url.startsWith('/gh/')) return method === 'DELETE' ? undefined : {};
   if (url === '/linear') {
     const q = JSON.parse(data).query as string;
@@ -208,6 +208,16 @@ test('tracker: jira over REST', async () => {
   assert.equal(r.code, 1);
   assert.match(r.err, /HTTP 403/);
 
+  reset();
+  assert.equal((await sdlc(['tracker', 'create', '--summary', 'S', '--body-file', body, '--parent', 'PROJ-5', '--labels', 'api, new thing'])).out, 'PROJ-9');
+  assert.ok(logged('"labels":["api","new-thing"],"parent":{"key":"PROJ-5"}'), 'Cloud: parent field; labels without spaces');
+  assert.equal((await sdlc(['tracker', 'link', 'PROJ-2', 'PROJ-3'])).out, 'PROJ-2 blocks PROJ-3');
+  assert.ok(logged('POST /jira/rest/api/2/issueLink {"type":{"name":"Blocks"},"inwardIssue":{"key":"PROJ-2"},"outwardIssue":{"key":"PROJ-3"}}'));
+  config('github', { provider: 'jira', base_url: 'https://jira.acme.local', project_key: 'PROJ', epic_link_field: 'customfield_10014' });
+  reset();
+  await sdlc(['tracker', 'create', '--summary', 'S', '--body-file', body, '--parent', 'PROJ-5']);
+  assert.ok(logged('"customfield_10014":"PROJ-5"'), 'Data Center: the Epic Link custom field');
+
   const pat = await sdlc(['tracker', 'get', 'PROJ-1'], { JIRA_EMAIL: undefined, JIRA_API_TOKEN: undefined, JIRA_PAT: 'p' });
   assert.equal(pat.code, 0);
   assert.ok(logged('Bearer p'));
@@ -229,6 +239,18 @@ test('tracker: github issues over REST (labels per stage, merged closes)', async
   assert.ok(logged('"labels":["enhancement"]'));
   await sdlc(['tracker', 'comment', '#5', '--body-file', body], env);
   assert.ok(logged('POST /gh/repos/acme/app/issues/5/comments'));
+  reset();
+  assert.equal((await sdlc(['tracker', 'create', '--summary', 'S', '--body-file', body, '--parent', '#5', '--labels', 'api'], env)).out, '#9');
+  assert.ok(logged('"labels":["enhancement","api"]'));
+  assert.ok(logged('POST /gh/repos/acme/app/issues/5/sub_issues {"sub_issue_id":909}'), 'stories become sub-issues of the epic');
+  reset();
+  failOn = 'sub_issues';
+  assert.equal((await sdlc(['tracker', 'create', '--summary', 'S', '--body-file', body, '--parent', '#5'], env)).code, 0);
+  failOn = undefined;
+  assert.ok(logged('PATCH /gh/repos/acme/app/issues/5 {"body":"b\\n- [ ] #9"}'), 'without sub-issues: a task list in the epic');
+  reset();
+  assert.equal((await sdlc(['tracker', 'link', '#9', '#5'], env)).out, '#9 blocks #5');
+  assert.ok(logged('PATCH /gh/repos/acme/app/issues/5 {"body":"b\\n\\nBlocked by #9"}'));
   assert.equal((await sdlc(['tracker', 'statuses'], env)).out.split('\n').at(-1), 'closed');
   const noToken = await sdlc(['tracker', 'get', '#5'], { GITHUB_API_URL: `${api}/gh`, GH_TOKEN: undefined, GITHUB_TOKEN: undefined });
   assert.equal(noToken.code, 1);
@@ -247,6 +269,12 @@ test('tracker: linear over GraphQL (workflow states, errors surface)', async () 
   assert.equal((await sdlc(['tracker', 'transition', 'ENG-7', 'Shipped'], env)).code, 1);
   assert.equal((await sdlc(['tracker', 'create', '--summary', 'S', '--body-file', body], env)).out, 'ENG-8');
   assert.ok(logged('"team":"team-1"'));
+  assert.ok(logged('"parent":null'));
+  reset();
+  await sdlc(['tracker', 'create', '--summary', 'S', '--body-file', body, '--parent', 'ENG-7'], env);
+  assert.ok(logged('"parent":"uuid-1"'), 'the epic is the parent issue');
+  assert.equal((await sdlc(['tracker', 'link', 'ENG-7', 'ENG-8'], env)).out, 'ENG-7 blocks ENG-8');
+  assert.ok(logged('issueRelationCreate(input: { issueId: $a, relatedIssueId: $b, type: blocks })'));
   assert.equal((await sdlc(['tracker', 'statuses'], env)).out, 'Done\nIn Design\nTodo');
   writeFileSync(join(tmp, 'fail.md'), 'fail me');
   const r = await sdlc(['tracker', 'comment', 'ENG-7', '--body-file', join(tmp, 'fail.md')], env);

@@ -5,8 +5,10 @@ import { localeOf, type Artifact, type LoadedConfig } from './config.ts';
 import { canApprove, requiredApprovers, type Approver } from './gates.ts';
 import { gitUser } from './git.ts';
 import { t, type Locale } from './i18n.ts';
+import { canDecideRoadmap, checkRoadmap, listRoadmaps, nextStory } from './roadmap.ts';
+import { trackerEnabled } from './tracker.ts';
 
-export type NextKind = 'init' | 'new' | 'switch' | 'agent' | 'approve' | 'wait' | 'ship' | 'done' | 'rejected';
+export type NextKind = 'init' | 'new' | 'switch' | 'agent' | 'approve' | 'wait' | 'ship' | 'done' | 'rejected' | 'roadmap';
 
 export interface NextAction {
   kind: NextKind;
@@ -17,6 +19,8 @@ export interface NextAction {
   /** Agent skill to invoke, when the next step is the agent's. */
   skill?: string;
   change?: string;
+  /** Roadmap slug, for `roadmap` actions. */
+  roadmap?: string;
   stage?: Stage;
   artifact?: Artifact;
   /** Roles (or people) the change is waiting for, when it is not you. */
@@ -74,8 +78,30 @@ export function nextAction(root: string, loaded: LoadedConfig | undefined, opts:
     const { change, artifact } = inbox[0];
     return { kind: 'approve', change, artifact, command: `sdlc approve ${change} ${artifact}`, message: t(locale, 'nx.approve', { change, artifact }), inbox: inbox.slice(1) };
   }
+  const roadmaps = listRoadmaps(root);
+  const drafts = roadmaps.filter((r) => (r.data.status || 'draft') === 'draft').map((r) => ({ r, check: checkRoadmap(r) }));
+  const ready = drafts.find((d) => !d.check.errors.length);
+  if (ready && canDecideRoadmap(who, loaded).ok) {
+    const roadmap = ready.r.slug;
+    return { kind: 'roadmap', roadmap, command: `sdlc roadmap approve ${roadmap}`, message: t(locale, 'nx.roadmap.approve', { roadmap, stories: String(ready.check.stories) }), inbox };
+  }
   const mine = open.find((c) => c.branch && (!c.author || c.author === who.name || c.author === who.email)) ?? open.find((c) => c.branch);
   if (mine) return { kind: 'switch', change: mine.slug, stage: mine.stage, command: `git checkout ${mine.branch}`, message: t(locale, 'nx.switch', { change: mine.slug, stage: mine.stage }), inbox };
+  const unapplied = trackerEnabled(loaded) ? roadmaps.find((r) => r.data.status === 'approved' && r.items.some((i) => !i.fields.key)) : undefined;
+  if (unapplied) {
+    const missing = String(unapplied.items.filter((i) => !i.fields.key).length);
+    return { kind: 'roadmap', roadmap: unapplied.slug, command: `sdlc roadmap apply ${unapplied.slug}`, message: t(locale, 'nx.roadmap.apply', { roadmap: unapplied.slug, missing }), inbox };
+  }
+  const story = nextStory(root, loaded);
+  if (story) {
+    const skill = `/sdlc-intent ${story.key}`;
+    return { kind: 'new', roadmap: story.roadmap, skill, message: t(locale, 'nx.story', { roadmap: story.roadmap, id: story.id, title: story.title, key: story.key! }), inbox };
+  }
+  const draft = drafts.find((d) => d.check.errors.length);
+  if (draft) {
+    const problems = draft.check.open ? `${draft.check.open} open question(s)` : `${draft.check.errors.length} problem(s): sdlc roadmap check ${draft.r.slug}`;
+    return { kind: 'roadmap', roadmap: draft.r.slug, skill: `/sdlc-roadmap ${draft.r.slug}`, message: t(locale, 'nx.roadmap.draft', { roadmap: draft.r.slug, problems }), inbox };
+  }
   return { kind: 'new', command: 'sdlc new <slug>', message: t(locale, 'nx.new'), inbox };
 }
 

@@ -39,7336 +39,6 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   mod
 ));
 
-// node_modules/yaml/dist/nodes/identity.js
-var require_identity = __commonJS({
-  "node_modules/yaml/dist/nodes/identity.js"(exports) {
-    "use strict";
-    var ALIAS = Symbol.for("yaml.alias");
-    var DOC = Symbol.for("yaml.document");
-    var MAP = Symbol.for("yaml.map");
-    var PAIR = Symbol.for("yaml.pair");
-    var SCALAR = Symbol.for("yaml.scalar");
-    var SEQ = Symbol.for("yaml.seq");
-    var NODE_TYPE = Symbol.for("yaml.node.type");
-    var isAlias = (node2) => !!node2 && typeof node2 === "object" && node2[NODE_TYPE] === ALIAS;
-    var isDocument = (node2) => !!node2 && typeof node2 === "object" && node2[NODE_TYPE] === DOC;
-    var isMap = (node2) => !!node2 && typeof node2 === "object" && node2[NODE_TYPE] === MAP;
-    var isPair = (node2) => !!node2 && typeof node2 === "object" && node2[NODE_TYPE] === PAIR;
-    var isScalar = (node2) => !!node2 && typeof node2 === "object" && node2[NODE_TYPE] === SCALAR;
-    var isSeq = (node2) => !!node2 && typeof node2 === "object" && node2[NODE_TYPE] === SEQ;
-    function isCollection(node2) {
-      if (node2 && typeof node2 === "object")
-        switch (node2[NODE_TYPE]) {
-          case MAP:
-          case SEQ:
-            return true;
-        }
-      return false;
-    }
-    function isNode(node2) {
-      if (node2 && typeof node2 === "object")
-        switch (node2[NODE_TYPE]) {
-          case ALIAS:
-          case MAP:
-          case SCALAR:
-          case SEQ:
-            return true;
-        }
-      return false;
-    }
-    var hasAnchor = (node2) => (isScalar(node2) || isCollection(node2)) && !!node2.anchor;
-    exports.ALIAS = ALIAS;
-    exports.DOC = DOC;
-    exports.MAP = MAP;
-    exports.NODE_TYPE = NODE_TYPE;
-    exports.PAIR = PAIR;
-    exports.SCALAR = SCALAR;
-    exports.SEQ = SEQ;
-    exports.hasAnchor = hasAnchor;
-    exports.isAlias = isAlias;
-    exports.isCollection = isCollection;
-    exports.isDocument = isDocument;
-    exports.isMap = isMap;
-    exports.isNode = isNode;
-    exports.isPair = isPair;
-    exports.isScalar = isScalar;
-    exports.isSeq = isSeq;
-  }
-});
-
-// node_modules/yaml/dist/visit.js
-var require_visit = __commonJS({
-  "node_modules/yaml/dist/visit.js"(exports) {
-    "use strict";
-    var identity = require_identity();
-    var BREAK = Symbol("break visit");
-    var SKIP2 = Symbol("skip children");
-    var REMOVE = Symbol("remove node");
-    function visit2(node2, visitor) {
-      const visitor_ = initVisitor(visitor);
-      if (identity.isDocument(node2)) {
-        const cd = visit_(null, node2.contents, visitor_, Object.freeze([node2]));
-        if (cd === REMOVE)
-          node2.contents = null;
-      } else
-        visit_(null, node2, visitor_, Object.freeze([]));
-    }
-    visit2.BREAK = BREAK;
-    visit2.SKIP = SKIP2;
-    visit2.REMOVE = REMOVE;
-    function visit_(key, node2, visitor, path) {
-      const ctrl = callVisitor(key, node2, visitor, path);
-      if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
-        replaceNode(key, path, ctrl);
-        return visit_(key, ctrl, visitor, path);
-      }
-      if (typeof ctrl !== "symbol") {
-        if (identity.isCollection(node2)) {
-          path = Object.freeze(path.concat(node2));
-          for (let i = 0; i < node2.items.length; ++i) {
-            const ci = visit_(i, node2.items[i], visitor, path);
-            if (typeof ci === "number")
-              i = ci - 1;
-            else if (ci === BREAK)
-              return BREAK;
-            else if (ci === REMOVE) {
-              node2.items.splice(i, 1);
-              i -= 1;
-            }
-          }
-        } else if (identity.isPair(node2)) {
-          path = Object.freeze(path.concat(node2));
-          const ck = visit_("key", node2.key, visitor, path);
-          if (ck === BREAK)
-            return BREAK;
-          else if (ck === REMOVE)
-            node2.key = null;
-          const cv = visit_("value", node2.value, visitor, path);
-          if (cv === BREAK)
-            return BREAK;
-          else if (cv === REMOVE)
-            node2.value = null;
-        }
-      }
-      return ctrl;
-    }
-    async function visitAsync(node2, visitor) {
-      const visitor_ = initVisitor(visitor);
-      if (identity.isDocument(node2)) {
-        const cd = await visitAsync_(null, node2.contents, visitor_, Object.freeze([node2]));
-        if (cd === REMOVE)
-          node2.contents = null;
-      } else
-        await visitAsync_(null, node2, visitor_, Object.freeze([]));
-    }
-    visitAsync.BREAK = BREAK;
-    visitAsync.SKIP = SKIP2;
-    visitAsync.REMOVE = REMOVE;
-    async function visitAsync_(key, node2, visitor, path) {
-      const ctrl = await callVisitor(key, node2, visitor, path);
-      if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
-        replaceNode(key, path, ctrl);
-        return visitAsync_(key, ctrl, visitor, path);
-      }
-      if (typeof ctrl !== "symbol") {
-        if (identity.isCollection(node2)) {
-          path = Object.freeze(path.concat(node2));
-          for (let i = 0; i < node2.items.length; ++i) {
-            const ci = await visitAsync_(i, node2.items[i], visitor, path);
-            if (typeof ci === "number")
-              i = ci - 1;
-            else if (ci === BREAK)
-              return BREAK;
-            else if (ci === REMOVE) {
-              node2.items.splice(i, 1);
-              i -= 1;
-            }
-          }
-        } else if (identity.isPair(node2)) {
-          path = Object.freeze(path.concat(node2));
-          const ck = await visitAsync_("key", node2.key, visitor, path);
-          if (ck === BREAK)
-            return BREAK;
-          else if (ck === REMOVE)
-            node2.key = null;
-          const cv = await visitAsync_("value", node2.value, visitor, path);
-          if (cv === BREAK)
-            return BREAK;
-          else if (cv === REMOVE)
-            node2.value = null;
-        }
-      }
-      return ctrl;
-    }
-    function initVisitor(visitor) {
-      if (typeof visitor === "object" && (visitor.Collection || visitor.Node || visitor.Value)) {
-        return Object.assign({
-          Alias: visitor.Node,
-          Map: visitor.Node,
-          Scalar: visitor.Node,
-          Seq: visitor.Node
-        }, visitor.Value && {
-          Map: visitor.Value,
-          Scalar: visitor.Value,
-          Seq: visitor.Value
-        }, visitor.Collection && {
-          Map: visitor.Collection,
-          Seq: visitor.Collection
-        }, visitor);
-      }
-      return visitor;
-    }
-    function callVisitor(key, node2, visitor, path) {
-      if (typeof visitor === "function")
-        return visitor(key, node2, path);
-      if (identity.isMap(node2))
-        return visitor.Map?.(key, node2, path);
-      if (identity.isSeq(node2))
-        return visitor.Seq?.(key, node2, path);
-      if (identity.isPair(node2))
-        return visitor.Pair?.(key, node2, path);
-      if (identity.isScalar(node2))
-        return visitor.Scalar?.(key, node2, path);
-      if (identity.isAlias(node2))
-        return visitor.Alias?.(key, node2, path);
-      return void 0;
-    }
-    function replaceNode(key, path, node2) {
-      const parent = path[path.length - 1];
-      if (identity.isCollection(parent)) {
-        parent.items[key] = node2;
-      } else if (identity.isPair(parent)) {
-        if (key === "key")
-          parent.key = node2;
-        else
-          parent.value = node2;
-      } else if (identity.isDocument(parent)) {
-        parent.contents = node2;
-      } else {
-        const pt = identity.isAlias(parent) ? "alias" : "scalar";
-        throw new Error(`Cannot replace node with ${pt} parent`);
-      }
-    }
-    exports.visit = visit2;
-    exports.visitAsync = visitAsync;
-  }
-});
-
-// node_modules/yaml/dist/doc/directives.js
-var require_directives = __commonJS({
-  "node_modules/yaml/dist/doc/directives.js"(exports) {
-    "use strict";
-    var identity = require_identity();
-    var visit2 = require_visit();
-    var escapeChars = {
-      "!": "%21",
-      ",": "%2C",
-      "[": "%5B",
-      "]": "%5D",
-      "{": "%7B",
-      "}": "%7D"
-    };
-    var escapeTagName = (tn) => tn.replace(/[!,[\]{}]/g, (ch) => escapeChars[ch]);
-    var Directives = class _Directives {
-      constructor(yaml, tags) {
-        this.docStart = null;
-        this.docEnd = false;
-        this.yaml = Object.assign({}, _Directives.defaultYaml, yaml);
-        this.tags = Object.assign({}, _Directives.defaultTags, tags);
-      }
-      clone() {
-        const copy = new _Directives(this.yaml, this.tags);
-        copy.docStart = this.docStart;
-        return copy;
-      }
-      /**
-       * During parsing, get a Directives instance for the current document and
-       * update the stream state according to the current version's spec.
-       */
-      atDocument() {
-        const res = new _Directives(this.yaml, this.tags);
-        switch (this.yaml.version) {
-          case "1.1":
-            this.atNextDocument = true;
-            break;
-          case "1.2":
-            this.atNextDocument = false;
-            this.yaml = {
-              explicit: _Directives.defaultYaml.explicit,
-              version: "1.2"
-            };
-            this.tags = Object.assign({}, _Directives.defaultTags);
-            break;
-        }
-        return res;
-      }
-      /**
-       * @param onError - May be called even if the action was successful
-       * @returns `true` on success
-       */
-      add(line, onError) {
-        if (this.atNextDocument) {
-          this.yaml = { explicit: _Directives.defaultYaml.explicit, version: "1.1" };
-          this.tags = Object.assign({}, _Directives.defaultTags);
-          this.atNextDocument = false;
-        }
-        const parts = line.trim().split(/[ \t]+/);
-        const name = parts.shift();
-        switch (name) {
-          case "%TAG": {
-            if (parts.length !== 2) {
-              onError(0, "%TAG directive should contain exactly two parts");
-              if (parts.length < 2)
-                return false;
-            }
-            const [handle, prefix] = parts;
-            this.tags[handle] = prefix;
-            return true;
-          }
-          case "%YAML": {
-            this.yaml.explicit = true;
-            if (parts.length !== 1) {
-              onError(0, "%YAML directive should contain exactly one part");
-              return false;
-            }
-            const [version2] = parts;
-            if (version2 === "1.1" || version2 === "1.2") {
-              this.yaml.version = version2;
-              return true;
-            } else {
-              const isValid = /^\d+\.\d+$/.test(version2);
-              onError(6, `Unsupported YAML version ${version2}`, isValid);
-              return false;
-            }
-          }
-          default:
-            onError(0, `Unknown directive ${name}`, true);
-            return false;
-        }
-      }
-      /**
-       * Resolves a tag, matching handles to those defined in %TAG directives.
-       *
-       * @returns Resolved tag, which may also be the non-specific tag `'!'` or a
-       *   `'!local'` tag, or `null` if unresolvable.
-       */
-      tagName(source, onError) {
-        if (source === "!")
-          return "!";
-        if (source[0] !== "!") {
-          onError(`Not a valid tag: ${source}`);
-          return null;
-        }
-        if (source[1] === "<") {
-          const verbatim = source.slice(2, -1);
-          if (verbatim === "!" || verbatim === "!!") {
-            onError(`Verbatim tags aren't resolved, so ${source} is invalid.`);
-            return null;
-          }
-          if (source[source.length - 1] !== ">")
-            onError("Verbatim tags must end with a >");
-          return verbatim;
-        }
-        const [, handle, suffix] = source.match(/^(.*!)([^!]*)$/s);
-        if (!suffix)
-          onError(`The ${source} tag has no suffix`);
-        const prefix = this.tags[handle];
-        if (prefix) {
-          try {
-            return prefix + decodeURIComponent(suffix);
-          } catch (error62) {
-            onError(String(error62));
-            return null;
-          }
-        }
-        if (handle === "!")
-          return source;
-        onError(`Could not resolve tag: ${source}`);
-        return null;
-      }
-      /**
-       * Given a fully resolved tag, returns its printable string form,
-       * taking into account current tag prefixes and defaults.
-       */
-      tagString(tag) {
-        for (const [handle, prefix] of Object.entries(this.tags)) {
-          if (tag.startsWith(prefix))
-            return handle + escapeTagName(tag.substring(prefix.length));
-        }
-        return tag[0] === "!" ? tag : `!<${tag}>`;
-      }
-      toString(doc) {
-        const lines2 = this.yaml.explicit ? [`%YAML ${this.yaml.version || "1.2"}`] : [];
-        const tagEntries = Object.entries(this.tags);
-        let tagNames;
-        if (doc && tagEntries.length > 0 && identity.isNode(doc.contents)) {
-          const tags = {};
-          visit2.visit(doc.contents, (_key, node2) => {
-            if (identity.isNode(node2) && node2.tag)
-              tags[node2.tag] = true;
-          });
-          tagNames = Object.keys(tags);
-        } else
-          tagNames = [];
-        for (const [handle, prefix] of tagEntries) {
-          if (handle === "!!" && prefix === "tag:yaml.org,2002:")
-            continue;
-          if (!doc || tagNames.some((tn) => tn.startsWith(prefix)))
-            lines2.push(`%TAG ${handle} ${prefix}`);
-        }
-        return lines2.join("\n");
-      }
-    };
-    Directives.defaultYaml = { explicit: false, version: "1.2" };
-    Directives.defaultTags = { "!!": "tag:yaml.org,2002:" };
-    exports.Directives = Directives;
-  }
-});
-
-// node_modules/yaml/dist/doc/anchors.js
-var require_anchors = __commonJS({
-  "node_modules/yaml/dist/doc/anchors.js"(exports) {
-    "use strict";
-    var identity = require_identity();
-    var visit2 = require_visit();
-    function anchorIsValid(anchor2) {
-      if (/[\x00-\x19\s,[\]{}]/.test(anchor2)) {
-        const sa = JSON.stringify(anchor2);
-        const msg = `Anchor must not contain whitespace or control characters: ${sa}`;
-        throw new Error(msg);
-      }
-      return true;
-    }
-    function anchorNames(root) {
-      const anchors = /* @__PURE__ */ new Set();
-      visit2.visit(root, {
-        Value(_key, node2) {
-          if (node2.anchor)
-            anchors.add(node2.anchor);
-        }
-      });
-      return anchors;
-    }
-    function findNewAnchor(prefix, exclude) {
-      for (let i = 1; true; ++i) {
-        const name = `${prefix}${i}`;
-        if (!exclude.has(name))
-          return name;
-      }
-    }
-    function createNodeAnchors(doc, prefix) {
-      const aliasObjects = [];
-      const sourceObjects = /* @__PURE__ */ new Map();
-      let prevAnchors = null;
-      return {
-        onAnchor: (source) => {
-          aliasObjects.push(source);
-          prevAnchors ?? (prevAnchors = anchorNames(doc));
-          const anchor2 = findNewAnchor(prefix, prevAnchors);
-          prevAnchors.add(anchor2);
-          return anchor2;
-        },
-        /**
-         * With circular references, the source node is only resolved after all
-         * of its child nodes are. This is why anchors are set only after all of
-         * the nodes have been created.
-         */
-        setAnchors: () => {
-          for (const source of aliasObjects) {
-            const ref = sourceObjects.get(source);
-            if (typeof ref === "object" && ref.anchor && (identity.isScalar(ref.node) || identity.isCollection(ref.node))) {
-              ref.node.anchor = ref.anchor;
-            } else {
-              const error62 = new Error("Failed to resolve repeated object (this should not happen)");
-              error62.source = source;
-              throw error62;
-            }
-          }
-        },
-        sourceObjects
-      };
-    }
-    exports.anchorIsValid = anchorIsValid;
-    exports.anchorNames = anchorNames;
-    exports.createNodeAnchors = createNodeAnchors;
-    exports.findNewAnchor = findNewAnchor;
-  }
-});
-
-// node_modules/yaml/dist/doc/applyReviver.js
-var require_applyReviver = __commonJS({
-  "node_modules/yaml/dist/doc/applyReviver.js"(exports) {
-    "use strict";
-    function applyReviver(reviver, obj, key, val) {
-      if (val && typeof val === "object") {
-        if (Array.isArray(val)) {
-          for (let i = 0, len = val.length; i < len; ++i) {
-            const v0 = val[i];
-            const v1 = applyReviver(reviver, val, String(i), v0);
-            if (v1 === void 0)
-              delete val[i];
-            else if (v1 !== v0)
-              val[i] = v1;
-          }
-        } else if (val instanceof Map) {
-          for (const k of Array.from(val.keys())) {
-            const v0 = val.get(k);
-            const v1 = applyReviver(reviver, val, k, v0);
-            if (v1 === void 0)
-              val.delete(k);
-            else if (v1 !== v0)
-              val.set(k, v1);
-          }
-        } else if (val instanceof Set) {
-          for (const v0 of Array.from(val)) {
-            const v1 = applyReviver(reviver, val, v0, v0);
-            if (v1 === void 0)
-              val.delete(v0);
-            else if (v1 !== v0) {
-              val.delete(v0);
-              val.add(v1);
-            }
-          }
-        } else {
-          for (const [k, v0] of Object.entries(val)) {
-            const v1 = applyReviver(reviver, val, k, v0);
-            if (v1 === void 0)
-              delete val[k];
-            else if (v1 !== v0)
-              val[k] = v1;
-          }
-        }
-      }
-      return reviver.call(obj, key, val);
-    }
-    exports.applyReviver = applyReviver;
-  }
-});
-
-// node_modules/yaml/dist/nodes/toJS.js
-var require_toJS = __commonJS({
-  "node_modules/yaml/dist/nodes/toJS.js"(exports) {
-    "use strict";
-    var identity = require_identity();
-    function toJS(value, arg, ctx) {
-      if (Array.isArray(value))
-        return value.map((v, i) => toJS(v, String(i), ctx));
-      if (value && typeof value.toJSON === "function") {
-        if (!ctx || !identity.hasAnchor(value))
-          return value.toJSON(arg, ctx);
-        const data = { aliasCount: 0, count: 1, res: void 0 };
-        ctx.anchors.set(value, data);
-        ctx.onCreate = (res2) => {
-          data.res = res2;
-          delete ctx.onCreate;
-        };
-        const res = value.toJSON(arg, ctx);
-        if (ctx.onCreate)
-          ctx.onCreate(res);
-        return res;
-      }
-      if (typeof value === "bigint" && !ctx?.keep)
-        return Number(value);
-      return value;
-    }
-    exports.toJS = toJS;
-  }
-});
-
-// node_modules/yaml/dist/nodes/Node.js
-var require_Node = __commonJS({
-  "node_modules/yaml/dist/nodes/Node.js"(exports) {
-    "use strict";
-    var applyReviver = require_applyReviver();
-    var identity = require_identity();
-    var toJS = require_toJS();
-    var NodeBase = class {
-      constructor(type) {
-        Object.defineProperty(this, identity.NODE_TYPE, { value: type });
-      }
-      /** Create a copy of this node.  */
-      clone() {
-        const copy = Object.create(Object.getPrototypeOf(this), Object.getOwnPropertyDescriptors(this));
-        if (this.range)
-          copy.range = this.range.slice();
-        return copy;
-      }
-      /** A plain JavaScript representation of this node. */
-      toJS(doc, { mapAsMap, maxAliasCount, onAnchor, reviver } = {}) {
-        if (!identity.isDocument(doc))
-          throw new TypeError("A document argument is required");
-        const ctx = {
-          anchors: /* @__PURE__ */ new Map(),
-          doc,
-          keep: true,
-          mapAsMap: mapAsMap === true,
-          mapKeyWarned: false,
-          maxAliasCount: typeof maxAliasCount === "number" ? maxAliasCount : 100
-        };
-        const res = toJS.toJS(this, "", ctx);
-        if (typeof onAnchor === "function")
-          for (const { count, res: res2 } of ctx.anchors.values())
-            onAnchor(res2, count);
-        return typeof reviver === "function" ? applyReviver.applyReviver(reviver, { "": res }, "", res) : res;
-      }
-    };
-    exports.NodeBase = NodeBase;
-  }
-});
-
-// node_modules/yaml/dist/nodes/Alias.js
-var require_Alias = __commonJS({
-  "node_modules/yaml/dist/nodes/Alias.js"(exports) {
-    "use strict";
-    var anchors = require_anchors();
-    var visit2 = require_visit();
-    var identity = require_identity();
-    var Node5 = require_Node();
-    var toJS = require_toJS();
-    var Alias = class extends Node5.NodeBase {
-      constructor(source) {
-        super(identity.ALIAS);
-        this.source = source;
-        Object.defineProperty(this, "tag", {
-          set() {
-            throw new Error("Alias nodes cannot have tags");
-          }
-        });
-      }
-      /**
-       * Resolve the value of this alias within `doc`, finding the last
-       * instance of the `source` anchor before this node.
-       */
-      resolve(doc, ctx) {
-        if (ctx?.maxAliasCount === 0)
-          throw new ReferenceError("Alias resolution is disabled");
-        let nodes;
-        if (ctx?.aliasResolveCache) {
-          nodes = ctx.aliasResolveCache;
-        } else {
-          nodes = [];
-          visit2.visit(doc, {
-            Node: (_key, node2) => {
-              if (identity.isAlias(node2) || identity.hasAnchor(node2))
-                nodes.push(node2);
-            }
-          });
-          if (ctx)
-            ctx.aliasResolveCache = nodes;
-        }
-        let found = void 0;
-        for (const node2 of nodes) {
-          if (node2 === this)
-            break;
-          if (node2.anchor === this.source)
-            found = node2;
-        }
-        if (found && ctx) {
-          const { anchors: anchors2, doc: doc2, maxAliasCount } = ctx;
-          let data = anchors2.get(found);
-          if (!data) {
-            toJS.toJS(found, null, ctx);
-            data = anchors2.get(found);
-          }
-          if (data?.res === void 0) {
-            const msg = "This should not happen: Alias anchor was not resolved?";
-            throw new ReferenceError(msg);
-          }
-          if (maxAliasCount >= 0) {
-            data.count += 1;
-            if (data.aliasCount === 0)
-              data.aliasCount = getAliasCount(doc2, found, anchors2);
-            if (data.count * data.aliasCount > maxAliasCount) {
-              const msg = "Excessive alias count indicates a resource exhaustion attack";
-              throw new ReferenceError(msg);
-            }
-          }
-        }
-        return found;
-      }
-      toJSON(_arg, ctx) {
-        if (!ctx)
-          return { source: this.source };
-        const source = this.resolve(ctx.doc, ctx);
-        if (!source) {
-          const msg = `Unresolved alias (the anchor must be set before the alias): ${this.source}`;
-          throw new ReferenceError(msg);
-        }
-        return ctx.anchors.get(source).res;
-      }
-      toString(ctx, _onComment, _onChompKeep) {
-        const src = `*${this.source}`;
-        if (ctx) {
-          anchors.anchorIsValid(this.source);
-          if (ctx.options.verifyAliasOrder && !ctx.anchors.has(this.source)) {
-            const msg = `Unresolved alias (the anchor must be set before the alias): ${this.source}`;
-            throw new Error(msg);
-          }
-          if (ctx.implicitKey)
-            return `${src} `;
-        }
-        return src;
-      }
-    };
-    function getAliasCount(doc, node2, anchors2) {
-      if (identity.isAlias(node2)) {
-        const source = node2.resolve(doc);
-        const anchor2 = anchors2 && source && anchors2.get(source);
-        return anchor2 ? anchor2.count * anchor2.aliasCount : 0;
-      } else if (identity.isCollection(node2)) {
-        let count = 0;
-        for (const item of node2.items) {
-          const c = getAliasCount(doc, item, anchors2);
-          if (c > count)
-            count = c;
-        }
-        return count;
-      } else if (identity.isPair(node2)) {
-        const kc = getAliasCount(doc, node2.key, anchors2);
-        const vc = getAliasCount(doc, node2.value, anchors2);
-        return Math.max(kc, vc);
-      }
-      return 1;
-    }
-    exports.Alias = Alias;
-  }
-});
-
-// node_modules/yaml/dist/nodes/Scalar.js
-var require_Scalar = __commonJS({
-  "node_modules/yaml/dist/nodes/Scalar.js"(exports) {
-    "use strict";
-    var identity = require_identity();
-    var Node5 = require_Node();
-    var toJS = require_toJS();
-    var isScalarValue = (value) => !value || typeof value !== "function" && typeof value !== "object";
-    var Scalar = class extends Node5.NodeBase {
-      constructor(value) {
-        super(identity.SCALAR);
-        this.value = value;
-      }
-      toJSON(arg, ctx) {
-        return ctx?.keep ? this.value : toJS.toJS(this.value, arg, ctx);
-      }
-      toString() {
-        return String(this.value);
-      }
-    };
-    Scalar.BLOCK_FOLDED = "BLOCK_FOLDED";
-    Scalar.BLOCK_LITERAL = "BLOCK_LITERAL";
-    Scalar.PLAIN = "PLAIN";
-    Scalar.QUOTE_DOUBLE = "QUOTE_DOUBLE";
-    Scalar.QUOTE_SINGLE = "QUOTE_SINGLE";
-    exports.Scalar = Scalar;
-    exports.isScalarValue = isScalarValue;
-  }
-});
-
-// node_modules/yaml/dist/doc/createNode.js
-var require_createNode = __commonJS({
-  "node_modules/yaml/dist/doc/createNode.js"(exports) {
-    "use strict";
-    var Alias = require_Alias();
-    var identity = require_identity();
-    var Scalar = require_Scalar();
-    var defaultTagPrefix = "tag:yaml.org,2002:";
-    function findTagObject(value, tagName, tags) {
-      if (tagName) {
-        const match2 = tags.filter((t2) => t2.tag === tagName);
-        const tagObj = match2.find((t2) => !t2.format) ?? match2[0];
-        if (!tagObj)
-          throw new Error(`Tag ${tagName} not found`);
-        return tagObj;
-      }
-      return tags.find((t2) => t2.identify?.(value) && !t2.format);
-    }
-    function createNode(value, tagName, ctx) {
-      if (identity.isDocument(value))
-        value = value.contents;
-      if (identity.isNode(value))
-        return value;
-      if (identity.isPair(value)) {
-        const map2 = ctx.schema[identity.MAP].createNode?.(ctx.schema, null, ctx);
-        map2.items.push(value);
-        return map2;
-      }
-      if (value instanceof String || value instanceof Number || value instanceof Boolean || typeof BigInt !== "undefined" && value instanceof BigInt) {
-        value = value.valueOf();
-      }
-      const { aliasDuplicateObjects, onAnchor, onTagObj, schema, sourceObjects } = ctx;
-      let ref = void 0;
-      if (aliasDuplicateObjects && value && typeof value === "object") {
-        ref = sourceObjects.get(value);
-        if (ref) {
-          ref.anchor ?? (ref.anchor = onAnchor(value));
-          return new Alias.Alias(ref.anchor);
-        } else {
-          ref = { anchor: null, node: null };
-          sourceObjects.set(value, ref);
-        }
-      }
-      if (tagName?.startsWith("!!"))
-        tagName = defaultTagPrefix + tagName.slice(2);
-      let tagObj = findTagObject(value, tagName, schema.tags);
-      if (!tagObj) {
-        if (value && typeof value.toJSON === "function") {
-          value = value.toJSON();
-        }
-        if (!value || typeof value !== "object") {
-          const node3 = new Scalar.Scalar(value);
-          if (ref)
-            ref.node = node3;
-          return node3;
-        }
-        tagObj = value instanceof Map ? schema[identity.MAP] : Symbol.iterator in Object(value) ? schema[identity.SEQ] : schema[identity.MAP];
-      }
-      if (onTagObj) {
-        onTagObj(tagObj);
-        delete ctx.onTagObj;
-      }
-      const node2 = tagObj?.createNode ? tagObj.createNode(ctx.schema, value, ctx) : typeof tagObj?.nodeClass?.from === "function" ? tagObj.nodeClass.from(ctx.schema, value, ctx) : new Scalar.Scalar(value);
-      if (tagName)
-        node2.tag = tagName;
-      else if (!tagObj.default)
-        node2.tag = tagObj.tag;
-      if (ref)
-        ref.node = node2;
-      return node2;
-    }
-    exports.createNode = createNode;
-  }
-});
-
-// node_modules/yaml/dist/nodes/Collection.js
-var require_Collection = __commonJS({
-  "node_modules/yaml/dist/nodes/Collection.js"(exports) {
-    "use strict";
-    var createNode = require_createNode();
-    var identity = require_identity();
-    var Node5 = require_Node();
-    function collectionFromPath(schema, path, value) {
-      let v = value;
-      for (let i = path.length - 1; i >= 0; --i) {
-        const k = path[i];
-        if (typeof k === "number" && Number.isInteger(k) && k >= 0) {
-          const a = [];
-          a[k] = v;
-          v = a;
-        } else {
-          v = /* @__PURE__ */ new Map([[k, v]]);
-        }
-      }
-      return createNode.createNode(v, void 0, {
-        aliasDuplicateObjects: false,
-        keepUndefined: false,
-        onAnchor: () => {
-          throw new Error("This should not happen, please report a bug.");
-        },
-        schema,
-        sourceObjects: /* @__PURE__ */ new Map()
-      });
-    }
-    var isEmptyPath = (path) => path == null || typeof path === "object" && !!path[Symbol.iterator]().next().done;
-    var Collection = class extends Node5.NodeBase {
-      constructor(type, schema) {
-        super(type);
-        Object.defineProperty(this, "schema", {
-          value: schema,
-          configurable: true,
-          enumerable: false,
-          writable: true
-        });
-      }
-      /**
-       * Create a copy of this collection.
-       *
-       * @param schema - If defined, overwrites the original's schema
-       */
-      clone(schema) {
-        const copy = Object.create(Object.getPrototypeOf(this), Object.getOwnPropertyDescriptors(this));
-        if (schema)
-          copy.schema = schema;
-        copy.items = copy.items.map((it) => identity.isNode(it) || identity.isPair(it) ? it.clone(schema) : it);
-        if (this.range)
-          copy.range = this.range.slice();
-        return copy;
-      }
-      /**
-       * Adds a value to the collection. For `!!map` and `!!omap` the value must
-       * be a Pair instance or a `{ key, value }` object, which may not have a key
-       * that already exists in the map.
-       */
-      addIn(path, value) {
-        if (isEmptyPath(path))
-          this.add(value);
-        else {
-          const [key, ...rest] = path;
-          const node2 = this.get(key, true);
-          if (identity.isCollection(node2))
-            node2.addIn(rest, value);
-          else if (node2 === void 0 && this.schema)
-            this.set(key, collectionFromPath(this.schema, rest, value));
-          else
-            throw new Error(`Expected YAML collection at ${key}. Remaining path: ${rest}`);
-        }
-      }
-      /**
-       * Removes a value from the collection.
-       * @returns `true` if the item was found and removed.
-       */
-      deleteIn(path) {
-        const [key, ...rest] = path;
-        if (rest.length === 0)
-          return this.delete(key);
-        const node2 = this.get(key, true);
-        if (identity.isCollection(node2))
-          return node2.deleteIn(rest);
-        else
-          throw new Error(`Expected YAML collection at ${key}. Remaining path: ${rest}`);
-      }
-      /**
-       * Returns item at `key`, or `undefined` if not found. By default unwraps
-       * scalar values from their surrounding node; to disable set `keepScalar` to
-       * `true` (collections are always returned intact).
-       */
-      getIn(path, keepScalar) {
-        const [key, ...rest] = path;
-        const node2 = this.get(key, true);
-        if (rest.length === 0)
-          return !keepScalar && identity.isScalar(node2) ? node2.value : node2;
-        else
-          return identity.isCollection(node2) ? node2.getIn(rest, keepScalar) : void 0;
-      }
-      hasAllNullValues(allowScalar) {
-        return this.items.every((node2) => {
-          if (!identity.isPair(node2))
-            return false;
-          const n = node2.value;
-          return n == null || allowScalar && identity.isScalar(n) && n.value == null && !n.commentBefore && !n.comment && !n.tag;
-        });
-      }
-      /**
-       * Checks if the collection includes a value with the key `key`.
-       */
-      hasIn(path) {
-        const [key, ...rest] = path;
-        if (rest.length === 0)
-          return this.has(key);
-        const node2 = this.get(key, true);
-        return identity.isCollection(node2) ? node2.hasIn(rest) : false;
-      }
-      /**
-       * Sets a value in this collection. For `!!set`, `value` needs to be a
-       * boolean to add/remove the item from the set.
-       */
-      setIn(path, value) {
-        const [key, ...rest] = path;
-        if (rest.length === 0) {
-          this.set(key, value);
-        } else {
-          const node2 = this.get(key, true);
-          if (identity.isCollection(node2))
-            node2.setIn(rest, value);
-          else if (node2 === void 0 && this.schema)
-            this.set(key, collectionFromPath(this.schema, rest, value));
-          else
-            throw new Error(`Expected YAML collection at ${key}. Remaining path: ${rest}`);
-        }
-      }
-    };
-    exports.Collection = Collection;
-    exports.collectionFromPath = collectionFromPath;
-    exports.isEmptyPath = isEmptyPath;
-  }
-});
-
-// node_modules/yaml/dist/stringify/stringifyComment.js
-var require_stringifyComment = __commonJS({
-  "node_modules/yaml/dist/stringify/stringifyComment.js"(exports) {
-    "use strict";
-    var stringifyComment = (str) => str.replace(/^(?!$)(?: $)?/gm, "#");
-    function indentComment(comment, indent) {
-      if (/^\n+$/.test(comment))
-        return comment.substring(1);
-      return indent ? comment.replace(/^(?! *$)/gm, indent) : comment;
-    }
-    var lineComment = (str, indent, comment) => str.endsWith("\n") ? indentComment(comment, indent) : comment.includes("\n") ? "\n" + indentComment(comment, indent) : (str.endsWith(" ") ? "" : " ") + comment;
-    exports.indentComment = indentComment;
-    exports.lineComment = lineComment;
-    exports.stringifyComment = stringifyComment;
-  }
-});
-
-// node_modules/yaml/dist/stringify/foldFlowLines.js
-var require_foldFlowLines = __commonJS({
-  "node_modules/yaml/dist/stringify/foldFlowLines.js"(exports) {
-    "use strict";
-    var FOLD_FLOW = "flow";
-    var FOLD_BLOCK = "block";
-    var FOLD_QUOTED = "quoted";
-    function foldFlowLines(text, indent, mode = "flow", { indentAtStart, lineWidth = 80, minContentWidth = 20, onFold, onOverflow } = {}) {
-      if (!lineWidth || lineWidth < 0)
-        return text;
-      if (lineWidth < minContentWidth)
-        minContentWidth = 0;
-      const endStep = Math.max(1 + minContentWidth, 1 + lineWidth - indent.length);
-      if (text.length <= endStep)
-        return text;
-      const folds = [];
-      const escapedFolds = {};
-      let end = lineWidth - indent.length;
-      if (typeof indentAtStart === "number") {
-        if (indentAtStart > lineWidth - Math.max(2, minContentWidth))
-          folds.push(0);
-        else
-          end = lineWidth - indentAtStart;
-      }
-      let split = void 0;
-      let prev = void 0;
-      let overflow = false;
-      let i = -1;
-      let escStart = -1;
-      let escEnd = -1;
-      if (mode === FOLD_BLOCK) {
-        i = consumeMoreIndentedLines(text, i, indent.length);
-        if (i !== -1)
-          end = i + endStep;
-      }
-      for (let ch; ch = text[i += 1]; ) {
-        if (mode === FOLD_QUOTED && ch === "\\") {
-          escStart = i;
-          switch (text[i + 1]) {
-            case "x":
-              i += 3;
-              break;
-            case "u":
-              i += 5;
-              break;
-            case "U":
-              i += 9;
-              break;
-            default:
-              i += 1;
-          }
-          escEnd = i;
-        }
-        if (ch === "\n") {
-          if (mode === FOLD_BLOCK)
-            i = consumeMoreIndentedLines(text, i, indent.length);
-          end = i + indent.length + endStep;
-          split = void 0;
-        } else {
-          if (ch === " " && prev && prev !== " " && prev !== "\n" && prev !== "	") {
-            const next = text[i + 1];
-            if (next && next !== " " && next !== "\n" && next !== "	")
-              split = i;
-          }
-          if (i >= end) {
-            if (split) {
-              folds.push(split);
-              end = split + endStep;
-              split = void 0;
-            } else if (mode === FOLD_QUOTED) {
-              while (prev === " " || prev === "	") {
-                prev = ch;
-                ch = text[i += 1];
-                overflow = true;
-              }
-              const j = i > escEnd + 1 ? i - 2 : escStart - 1;
-              if (escapedFolds[j])
-                return text;
-              folds.push(j);
-              escapedFolds[j] = true;
-              end = j + endStep;
-              split = void 0;
-            } else {
-              overflow = true;
-            }
-          }
-        }
-        prev = ch;
-      }
-      if (overflow && onOverflow)
-        onOverflow();
-      if (folds.length === 0)
-        return text;
-      if (onFold)
-        onFold();
-      let res = text.slice(0, folds[0]);
-      for (let i2 = 0; i2 < folds.length; ++i2) {
-        const fold = folds[i2];
-        const end2 = folds[i2 + 1] || text.length;
-        if (fold === 0)
-          res = `
-${indent}${text.slice(0, end2)}`;
-        else {
-          if (mode === FOLD_QUOTED && escapedFolds[fold])
-            res += `${text[fold]}\\`;
-          res += `
-${indent}${text.slice(fold + 1, end2)}`;
-        }
-      }
-      return res;
-    }
-    function consumeMoreIndentedLines(text, i, indent) {
-      let end = i;
-      let start = i + 1;
-      let ch = text[start];
-      while (ch === " " || ch === "	") {
-        if (i < start + indent) {
-          ch = text[++i];
-        } else {
-          do {
-            ch = text[++i];
-          } while (ch && ch !== "\n");
-          end = i;
-          start = i + 1;
-          ch = text[start];
-        }
-      }
-      return end;
-    }
-    exports.FOLD_BLOCK = FOLD_BLOCK;
-    exports.FOLD_FLOW = FOLD_FLOW;
-    exports.FOLD_QUOTED = FOLD_QUOTED;
-    exports.foldFlowLines = foldFlowLines;
-  }
-});
-
-// node_modules/yaml/dist/stringify/stringifyString.js
-var require_stringifyString = __commonJS({
-  "node_modules/yaml/dist/stringify/stringifyString.js"(exports) {
-    "use strict";
-    var Scalar = require_Scalar();
-    var foldFlowLines = require_foldFlowLines();
-    var getFoldOptions = (ctx, isBlock) => ({
-      indentAtStart: isBlock ? ctx.indent.length : ctx.indentAtStart,
-      lineWidth: ctx.options.lineWidth,
-      minContentWidth: ctx.options.minContentWidth
-    });
-    var containsDocumentMarker = (str) => /^(%|---|\.\.\.)/m.test(str);
-    function lineLengthOverLimit(str, lineWidth, indentLength) {
-      if (!lineWidth || lineWidth < 0)
-        return false;
-      const limit = lineWidth - indentLength;
-      const strLen = str.length;
-      if (strLen <= limit)
-        return false;
-      for (let i = 0, start = 0; i < strLen; ++i) {
-        if (str[i] === "\n") {
-          if (i - start > limit)
-            return true;
-          start = i + 1;
-          if (strLen - start <= limit)
-            return false;
-        }
-      }
-      return true;
-    }
-    function doubleQuotedString(value, ctx) {
-      const json3 = JSON.stringify(value);
-      if (ctx.options.doubleQuotedAsJSON)
-        return json3;
-      const { implicitKey } = ctx;
-      const minMultiLineLength = ctx.options.doubleQuotedMinMultiLineLength;
-      const indent = ctx.indent || (containsDocumentMarker(value) ? "  " : "");
-      let str = "";
-      let start = 0;
-      for (let i = 0, ch = json3[i]; ch; ch = json3[++i]) {
-        if (ch === " " && json3[i + 1] === "\\" && json3[i + 2] === "n") {
-          str += json3.slice(start, i) + "\\ ";
-          i += 1;
-          start = i;
-          ch = "\\";
-        }
-        if (ch === "\\")
-          switch (json3[i + 1]) {
-            case "u":
-              {
-                str += json3.slice(start, i);
-                const code2 = json3.substr(i + 2, 4);
-                switch (code2) {
-                  case "0000":
-                    str += "\\0";
-                    break;
-                  case "0007":
-                    str += "\\a";
-                    break;
-                  case "000b":
-                    str += "\\v";
-                    break;
-                  case "001b":
-                    str += "\\e";
-                    break;
-                  case "0085":
-                    str += "\\N";
-                    break;
-                  case "00a0":
-                    str += "\\_";
-                    break;
-                  case "2028":
-                    str += "\\L";
-                    break;
-                  case "2029":
-                    str += "\\P";
-                    break;
-                  default:
-                    if (code2.substr(0, 2) === "00")
-                      str += "\\x" + code2.substr(2);
-                    else
-                      str += json3.substr(i, 6);
-                }
-                i += 5;
-                start = i + 1;
-              }
-              break;
-            case "n":
-              if (implicitKey || json3[i + 2] === '"' || json3.length < minMultiLineLength) {
-                i += 1;
-              } else {
-                str += json3.slice(start, i) + "\n\n";
-                while (json3[i + 2] === "\\" && json3[i + 3] === "n" && json3[i + 4] !== '"') {
-                  str += "\n";
-                  i += 2;
-                }
-                str += indent;
-                if (json3[i + 2] === " ")
-                  str += "\\";
-                i += 1;
-                start = i + 1;
-              }
-              break;
-            default:
-              i += 1;
-          }
-      }
-      str = start ? str + json3.slice(start) : json3;
-      return implicitKey ? str : foldFlowLines.foldFlowLines(str, indent, foldFlowLines.FOLD_QUOTED, getFoldOptions(ctx, false));
-    }
-    function singleQuotedString(value, ctx) {
-      if (ctx.options.singleQuote === false || ctx.implicitKey && value.includes("\n") || /[ \t]\n|\n[ \t]/.test(value))
-        return doubleQuotedString(value, ctx);
-      const indent = ctx.indent || (containsDocumentMarker(value) ? "  " : "");
-      const res = "'" + value.replace(/'/g, "''").replace(/\n+/g, `$&
-${indent}`) + "'";
-      return ctx.implicitKey ? res : foldFlowLines.foldFlowLines(res, indent, foldFlowLines.FOLD_FLOW, getFoldOptions(ctx, false));
-    }
-    function quotedString(value, ctx) {
-      const { singleQuote } = ctx.options;
-      let qs;
-      if (singleQuote === false)
-        qs = doubleQuotedString;
-      else {
-        const hasDouble = value.includes('"');
-        const hasSingle = value.includes("'");
-        if (hasDouble && !hasSingle)
-          qs = singleQuotedString;
-        else if (hasSingle && !hasDouble)
-          qs = doubleQuotedString;
-        else
-          qs = singleQuote ? singleQuotedString : doubleQuotedString;
-      }
-      return qs(value, ctx);
-    }
-    var blockEndNewlines;
-    try {
-      blockEndNewlines = new RegExp("(^|(?<!\n))\n+(?!\n|$)", "g");
-    } catch {
-      blockEndNewlines = /\n+(?!\n|$)/g;
-    }
-    function blockString({ comment, type, value }, ctx, onComment, onChompKeep) {
-      const { blockQuote, commentString, lineWidth } = ctx.options;
-      if (!blockQuote || /\n[\t ]+$/.test(value)) {
-        return quotedString(value, ctx);
-      }
-      const indent = ctx.indent || (ctx.forceBlockIndent || containsDocumentMarker(value) ? "  " : "");
-      const literal2 = blockQuote === "literal" ? true : blockQuote === "folded" || type === Scalar.Scalar.BLOCK_FOLDED ? false : type === Scalar.Scalar.BLOCK_LITERAL ? true : !lineLengthOverLimit(value, lineWidth, indent.length);
-      if (!value)
-        return literal2 ? "|\n" : ">\n";
-      let chomp;
-      let endStart;
-      for (endStart = value.length; endStart > 0; --endStart) {
-        const ch = value[endStart - 1];
-        if (ch !== "\n" && ch !== "	" && ch !== " ")
-          break;
-      }
-      let end = value.substring(endStart);
-      const endNlPos = end.indexOf("\n");
-      if (endNlPos === -1) {
-        chomp = "-";
-      } else if (value === end || endNlPos !== end.length - 1) {
-        chomp = "+";
-        if (onChompKeep)
-          onChompKeep();
-      } else {
-        chomp = "";
-      }
-      if (end) {
-        value = value.slice(0, -end.length);
-        if (end[end.length - 1] === "\n")
-          end = end.slice(0, -1);
-        end = end.replace(blockEndNewlines, `$&${indent}`);
-      }
-      let startWithSpace = false;
-      let startEnd;
-      let startNlPos = -1;
-      for (startEnd = 0; startEnd < value.length; ++startEnd) {
-        const ch = value[startEnd];
-        if (ch === " ")
-          startWithSpace = true;
-        else if (ch === "\n")
-          startNlPos = startEnd;
-        else
-          break;
-      }
-      let start = value.substring(0, startNlPos < startEnd ? startNlPos + 1 : startEnd);
-      if (start) {
-        value = value.substring(start.length);
-        start = start.replace(/\n+/g, `$&${indent}`);
-      }
-      const indentSize = indent ? "2" : "1";
-      let header = (startWithSpace ? indentSize : "") + chomp;
-      if (comment) {
-        header += " " + commentString(comment.replace(/ ?[\r\n]+/g, " "));
-        if (onComment)
-          onComment();
-      }
-      if (!literal2) {
-        const foldedValue = value.replace(/\n+/g, "\n$&").replace(/(?:^|\n)([\t ].*)(?:([\n\t ]*)\n(?![\n\t ]))?/g, "$1$2").replace(/\n+/g, `$&${indent}`);
-        let literalFallback = false;
-        const foldOptions = getFoldOptions(ctx, true);
-        if (blockQuote !== "folded" && type !== Scalar.Scalar.BLOCK_FOLDED) {
-          foldOptions.onOverflow = () => {
-            literalFallback = true;
-          };
-        }
-        const body = foldFlowLines.foldFlowLines(`${start}${foldedValue}${end}`, indent, foldFlowLines.FOLD_BLOCK, foldOptions);
-        if (!literalFallback)
-          return `>${header}
-${indent}${body}`;
-      }
-      value = value.replace(/\n+/g, `$&${indent}`);
-      return `|${header}
-${indent}${start}${value}${end}`;
-    }
-    function plainString(item, ctx, onComment, onChompKeep) {
-      const { type, value } = item;
-      const { actualString, implicitKey, indent, indentStep, inFlow } = ctx;
-      if (implicitKey && value.includes("\n") || inFlow && /[[\]{},]/.test(value)) {
-        return quotedString(value, ctx);
-      }
-      if (/^[\n\t ,[\]{}#&*!|>'"%@`]|^[?-]$|^[?-][ \t]|[\n:][ \t]|[ \t]\n|[\n\t ]#|[\n\t :]$/.test(value)) {
-        return implicitKey || inFlow || !value.includes("\n") ? quotedString(value, ctx) : blockString(item, ctx, onComment, onChompKeep);
-      }
-      if (!implicitKey && !inFlow && type !== Scalar.Scalar.PLAIN && value.includes("\n")) {
-        return blockString(item, ctx, onComment, onChompKeep);
-      }
-      if (containsDocumentMarker(value)) {
-        if (indent === "") {
-          ctx.forceBlockIndent = true;
-          return blockString(item, ctx, onComment, onChompKeep);
-        } else if (implicitKey && indent === indentStep) {
-          return quotedString(value, ctx);
-        }
-      }
-      const str = value.replace(/\n+/g, `$&
-${indent}`);
-      if (actualString) {
-        const test = (tag) => tag.default && tag.tag !== "tag:yaml.org,2002:str" && tag.test?.test(str);
-        const { compat, tags } = ctx.doc.schema;
-        if (tags.some(test) || compat?.some(test))
-          return quotedString(value, ctx);
-      }
-      return implicitKey ? str : foldFlowLines.foldFlowLines(str, indent, foldFlowLines.FOLD_FLOW, getFoldOptions(ctx, false));
-    }
-    function stringifyString(item, ctx, onComment, onChompKeep) {
-      const { implicitKey, inFlow } = ctx;
-      const ss = typeof item.value === "string" ? item : Object.assign({}, item, { value: String(item.value) });
-      let { type } = item;
-      if (type !== Scalar.Scalar.QUOTE_DOUBLE) {
-        if (/[\x00-\x08\x0b-\x1f\x7f-\x9f\u{D800}-\u{DFFF}]/u.test(ss.value))
-          type = Scalar.Scalar.QUOTE_DOUBLE;
-      }
-      const _stringify = (_type) => {
-        switch (_type) {
-          case Scalar.Scalar.BLOCK_FOLDED:
-          case Scalar.Scalar.BLOCK_LITERAL:
-            return implicitKey || inFlow ? quotedString(ss.value, ctx) : blockString(ss, ctx, onComment, onChompKeep);
-          case Scalar.Scalar.QUOTE_DOUBLE:
-            return doubleQuotedString(ss.value, ctx);
-          case Scalar.Scalar.QUOTE_SINGLE:
-            return singleQuotedString(ss.value, ctx);
-          case Scalar.Scalar.PLAIN:
-            return plainString(ss, ctx, onComment, onChompKeep);
-          default:
-            return null;
-        }
-      };
-      let res = _stringify(type);
-      if (res === null) {
-        const { defaultKeyType, defaultStringType } = ctx.options;
-        const t2 = implicitKey && defaultKeyType || defaultStringType;
-        res = _stringify(t2);
-        if (res === null)
-          throw new Error(`Unsupported default string type ${t2}`);
-      }
-      return res;
-    }
-    exports.stringifyString = stringifyString;
-  }
-});
-
-// node_modules/yaml/dist/stringify/stringify.js
-var require_stringify = __commonJS({
-  "node_modules/yaml/dist/stringify/stringify.js"(exports) {
-    "use strict";
-    var anchors = require_anchors();
-    var identity = require_identity();
-    var stringifyComment = require_stringifyComment();
-    var stringifyString = require_stringifyString();
-    function createStringifyContext(doc, options) {
-      const opt = Object.assign({
-        blockQuote: true,
-        commentString: stringifyComment.stringifyComment,
-        defaultKeyType: null,
-        defaultStringType: "PLAIN",
-        directives: null,
-        doubleQuotedAsJSON: false,
-        doubleQuotedMinMultiLineLength: 40,
-        falseStr: "false",
-        flowCollectionPadding: true,
-        indentSeq: true,
-        lineWidth: 80,
-        minContentWidth: 20,
-        nullStr: "null",
-        simpleKeys: false,
-        singleQuote: null,
-        trailingComma: false,
-        trueStr: "true",
-        verifyAliasOrder: true
-      }, doc.schema.toStringOptions, options);
-      let inFlow;
-      switch (opt.collectionStyle) {
-        case "block":
-          inFlow = false;
-          break;
-        case "flow":
-          inFlow = true;
-          break;
-        default:
-          inFlow = null;
-      }
-      return {
-        anchors: /* @__PURE__ */ new Set(),
-        doc,
-        flowCollectionPadding: opt.flowCollectionPadding ? " " : "",
-        indent: "",
-        indentStep: typeof opt.indent === "number" ? " ".repeat(opt.indent) : "  ",
-        inFlow,
-        options: opt
-      };
-    }
-    function getTagObject(tags, item) {
-      if (item.tag) {
-        const match2 = tags.filter((t2) => t2.tag === item.tag);
-        if (match2.length > 0)
-          return match2.find((t2) => t2.format === item.format) ?? match2[0];
-      }
-      let tagObj = void 0;
-      let obj;
-      if (identity.isScalar(item)) {
-        obj = item.value;
-        let match2 = tags.filter((t2) => t2.identify?.(obj));
-        if (match2.length > 1) {
-          const testMatch = match2.filter((t2) => t2.test);
-          if (testMatch.length > 0)
-            match2 = testMatch;
-        }
-        tagObj = match2.find((t2) => t2.format === item.format) ?? match2.find((t2) => !t2.format);
-      } else {
-        obj = item;
-        tagObj = tags.find((t2) => t2.nodeClass && obj instanceof t2.nodeClass);
-      }
-      if (!tagObj) {
-        const name = obj?.constructor?.name ?? (obj === null ? "null" : typeof obj);
-        throw new Error(`Tag not resolved for ${name} value`);
-      }
-      return tagObj;
-    }
-    function stringifyProps(node2, tagObj, { anchors: anchors$1, doc }) {
-      if (!doc.directives)
-        return "";
-      const props = [];
-      const anchor2 = (identity.isScalar(node2) || identity.isCollection(node2)) && node2.anchor;
-      if (anchor2 && anchors.anchorIsValid(anchor2)) {
-        anchors$1.add(anchor2);
-        props.push(`&${anchor2}`);
-      }
-      const tag = node2.tag ?? (tagObj.default ? null : tagObj.tag);
-      if (tag)
-        props.push(doc.directives.tagString(tag));
-      return props.join(" ");
-    }
-    function stringify(item, ctx, onComment, onChompKeep) {
-      if (identity.isPair(item))
-        return item.toString(ctx, onComment, onChompKeep);
-      if (identity.isAlias(item)) {
-        if (ctx.doc.directives)
-          return item.toString(ctx);
-        if (ctx.resolvedAliases?.has(item)) {
-          throw new TypeError(`Cannot stringify circular structure without alias nodes`);
-        } else {
-          if (ctx.resolvedAliases)
-            ctx.resolvedAliases.add(item);
-          else
-            ctx.resolvedAliases = /* @__PURE__ */ new Set([item]);
-          item = item.resolve(ctx.doc);
-        }
-      }
-      let tagObj = void 0;
-      const node2 = identity.isNode(item) ? item : ctx.doc.createNode(item, { onTagObj: (o) => tagObj = o });
-      tagObj ?? (tagObj = getTagObject(ctx.doc.schema.tags, node2));
-      const props = stringifyProps(node2, tagObj, ctx);
-      if (props.length > 0)
-        ctx.indentAtStart = (ctx.indentAtStart ?? 0) + props.length + 1;
-      const str = typeof tagObj.stringify === "function" ? tagObj.stringify(node2, ctx, onComment, onChompKeep) : identity.isScalar(node2) ? stringifyString.stringifyString(node2, ctx, onComment, onChompKeep) : node2.toString(ctx, onComment, onChompKeep);
-      if (!props)
-        return str;
-      return identity.isScalar(node2) || str[0] === "{" || str[0] === "[" ? `${props} ${str}` : `${props}
-${ctx.indent}${str}`;
-    }
-    exports.createStringifyContext = createStringifyContext;
-    exports.stringify = stringify;
-  }
-});
-
-// node_modules/yaml/dist/stringify/stringifyPair.js
-var require_stringifyPair = __commonJS({
-  "node_modules/yaml/dist/stringify/stringifyPair.js"(exports) {
-    "use strict";
-    var identity = require_identity();
-    var Scalar = require_Scalar();
-    var stringify = require_stringify();
-    var stringifyComment = require_stringifyComment();
-    function stringifyPair({ key, value }, ctx, onComment, onChompKeep) {
-      const { allNullValues, doc, indent, indentStep, options: { commentString, indentSeq, simpleKeys } } = ctx;
-      let keyComment = identity.isNode(key) && key.comment || null;
-      if (simpleKeys) {
-        if (keyComment) {
-          throw new Error("With simple keys, key nodes cannot have comments");
-        }
-        if (identity.isCollection(key) || !identity.isNode(key) && typeof key === "object") {
-          const msg = "With simple keys, collection cannot be used as a key value";
-          throw new Error(msg);
-        }
-      }
-      let explicitKey = !simpleKeys && (!key || keyComment && value == null && !ctx.inFlow || identity.isCollection(key) || (identity.isScalar(key) ? key.type === Scalar.Scalar.BLOCK_FOLDED || key.type === Scalar.Scalar.BLOCK_LITERAL : typeof key === "object"));
-      ctx = Object.assign({}, ctx, {
-        allNullValues: false,
-        implicitKey: !explicitKey && (simpleKeys || !allNullValues),
-        indent: indent + indentStep
-      });
-      let keyCommentDone = false;
-      let chompKeep = false;
-      let str = stringify.stringify(key, ctx, () => keyCommentDone = true, () => chompKeep = true);
-      if (!explicitKey && !ctx.inFlow && str.length > 1024) {
-        if (simpleKeys)
-          throw new Error("With simple keys, single line scalar must not span more than 1024 characters");
-        explicitKey = true;
-      }
-      if (ctx.inFlow) {
-        if (allNullValues || value == null) {
-          if (keyCommentDone && onComment)
-            onComment();
-          return str === "" ? "?" : explicitKey ? `? ${str}` : str;
-        }
-      } else if (allNullValues && !simpleKeys || value == null && explicitKey) {
-        str = `? ${str}`;
-        if (keyComment && !keyCommentDone) {
-          str += stringifyComment.lineComment(str, ctx.indent, commentString(keyComment));
-        } else if (chompKeep && onChompKeep)
-          onChompKeep();
-        return str;
-      }
-      if (keyCommentDone)
-        keyComment = null;
-      if (explicitKey) {
-        if (keyComment)
-          str += stringifyComment.lineComment(str, ctx.indent, commentString(keyComment));
-        str = `? ${str}
-${indent}:`;
-      } else {
-        str = `${str}:`;
-        if (keyComment)
-          str += stringifyComment.lineComment(str, ctx.indent, commentString(keyComment));
-      }
-      let vsb, vcb, valueComment;
-      if (identity.isNode(value)) {
-        vsb = !!value.spaceBefore;
-        vcb = value.commentBefore;
-        valueComment = value.comment;
-      } else {
-        vsb = false;
-        vcb = null;
-        valueComment = null;
-        if (value && typeof value === "object")
-          value = doc.createNode(value);
-      }
-      ctx.implicitKey = false;
-      if (!explicitKey && !keyComment && identity.isScalar(value))
-        ctx.indentAtStart = str.length + 1;
-      chompKeep = false;
-      if (!indentSeq && indentStep.length >= 2 && !ctx.inFlow && !explicitKey && identity.isSeq(value) && !value.flow && !value.tag && !value.anchor) {
-        ctx.indent = ctx.indent.substring(2);
-      }
-      let valueCommentDone = false;
-      const valueStr = stringify.stringify(value, ctx, () => valueCommentDone = true, () => chompKeep = true);
-      let ws = " ";
-      if (keyComment || vsb || vcb) {
-        ws = vsb ? "\n" : "";
-        if (vcb) {
-          const cs = commentString(vcb);
-          ws += `
-${stringifyComment.indentComment(cs, ctx.indent)}`;
-        }
-        if (valueStr === "" && !ctx.inFlow) {
-          if (ws === "\n" && valueComment)
-            ws = "\n\n";
-        } else {
-          ws += `
-${ctx.indent}`;
-        }
-      } else if (!explicitKey && identity.isCollection(value)) {
-        const vs0 = valueStr[0];
-        const nl0 = valueStr.indexOf("\n");
-        const hasNewline = nl0 !== -1;
-        const flow = ctx.inFlow ?? value.flow ?? value.items.length === 0;
-        if (hasNewline || !flow) {
-          let hasPropsLine = false;
-          if (hasNewline && (vs0 === "&" || vs0 === "!")) {
-            let sp0 = valueStr.indexOf(" ");
-            if (vs0 === "&" && sp0 !== -1 && sp0 < nl0 && valueStr[sp0 + 1] === "!") {
-              sp0 = valueStr.indexOf(" ", sp0 + 1);
-            }
-            if (sp0 === -1 || nl0 < sp0)
-              hasPropsLine = true;
-          }
-          if (!hasPropsLine)
-            ws = `
-${ctx.indent}`;
-        }
-      } else if (valueStr === "" || valueStr[0] === "\n") {
-        ws = "";
-      }
-      str += ws + valueStr;
-      if (ctx.inFlow) {
-        if (valueCommentDone && onComment)
-          onComment();
-      } else if (valueComment && !valueCommentDone) {
-        str += stringifyComment.lineComment(str, ctx.indent, commentString(valueComment));
-      } else if (chompKeep && onChompKeep) {
-        onChompKeep();
-      }
-      return str;
-    }
-    exports.stringifyPair = stringifyPair;
-  }
-});
-
-// node_modules/yaml/dist/log.js
-var require_log = __commonJS({
-  "node_modules/yaml/dist/log.js"(exports) {
-    "use strict";
-    var node_process = __require("process");
-    function debug(logLevel, ...messages) {
-      if (logLevel === "debug")
-        console.log(...messages);
-    }
-    function warn(logLevel, warning) {
-      if (logLevel === "debug" || logLevel === "warn") {
-        if (typeof node_process.emitWarning === "function")
-          node_process.emitWarning(warning);
-        else
-          console.warn(warning);
-      }
-    }
-    exports.debug = debug;
-    exports.warn = warn;
-  }
-});
-
-// node_modules/yaml/dist/schema/yaml-1.1/merge.js
-var require_merge = __commonJS({
-  "node_modules/yaml/dist/schema/yaml-1.1/merge.js"(exports) {
-    "use strict";
-    var identity = require_identity();
-    var Scalar = require_Scalar();
-    var MERGE_KEY = "<<";
-    var merge2 = {
-      identify: (value) => value === MERGE_KEY || typeof value === "symbol" && value.description === MERGE_KEY,
-      default: "key",
-      tag: "tag:yaml.org,2002:merge",
-      test: /^<<$/,
-      resolve: () => Object.assign(new Scalar.Scalar(Symbol(MERGE_KEY)), {
-        addToJSMap: addMergeToJSMap
-      }),
-      stringify: () => MERGE_KEY
-    };
-    var isMergeKey = (ctx, key) => (merge2.identify(key) || identity.isScalar(key) && (!key.type || key.type === Scalar.Scalar.PLAIN) && merge2.identify(key.value)) && ctx?.doc.schema.tags.some((tag) => tag.tag === merge2.tag && tag.default);
-    function addMergeToJSMap(ctx, map2, value) {
-      const source = resolveAliasValue(ctx, value);
-      if (identity.isSeq(source))
-        for (const it of source.items)
-          mergeValue(ctx, map2, it);
-      else if (Array.isArray(source))
-        for (const it of source)
-          mergeValue(ctx, map2, it);
-      else
-        mergeValue(ctx, map2, source);
-    }
-    function mergeValue(ctx, map2, value) {
-      const source = resolveAliasValue(ctx, value);
-      if (!identity.isMap(source))
-        throw new Error("Merge sources must be maps or map aliases");
-      const srcMap = source.toJSON(null, ctx, Map);
-      for (const [key, value2] of srcMap) {
-        if (map2 instanceof Map) {
-          if (!map2.has(key))
-            map2.set(key, value2);
-        } else if (map2 instanceof Set) {
-          map2.add(key);
-        } else if (!Object.prototype.hasOwnProperty.call(map2, key)) {
-          Object.defineProperty(map2, key, {
-            value: value2,
-            writable: true,
-            enumerable: true,
-            configurable: true
-          });
-        }
-      }
-      return map2;
-    }
-    function resolveAliasValue(ctx, value) {
-      return ctx && identity.isAlias(value) ? value.resolve(ctx.doc, ctx) : value;
-    }
-    exports.addMergeToJSMap = addMergeToJSMap;
-    exports.isMergeKey = isMergeKey;
-    exports.merge = merge2;
-  }
-});
-
-// node_modules/yaml/dist/nodes/addPairToJSMap.js
-var require_addPairToJSMap = __commonJS({
-  "node_modules/yaml/dist/nodes/addPairToJSMap.js"(exports) {
-    "use strict";
-    var log7 = require_log();
-    var merge2 = require_merge();
-    var stringify = require_stringify();
-    var identity = require_identity();
-    var toJS = require_toJS();
-    function addPairToJSMap(ctx, map2, { key, value }) {
-      if (identity.isNode(key) && key.addToJSMap)
-        key.addToJSMap(ctx, map2, value);
-      else if (merge2.isMergeKey(ctx, key))
-        merge2.addMergeToJSMap(ctx, map2, value);
-      else {
-        const jsKey = toJS.toJS(key, "", ctx);
-        if (map2 instanceof Map) {
-          map2.set(jsKey, toJS.toJS(value, jsKey, ctx));
-        } else if (map2 instanceof Set) {
-          map2.add(jsKey);
-        } else {
-          const stringKey = stringifyKey(key, jsKey, ctx);
-          const jsValue = toJS.toJS(value, stringKey, ctx);
-          if (stringKey in map2)
-            Object.defineProperty(map2, stringKey, {
-              value: jsValue,
-              writable: true,
-              enumerable: true,
-              configurable: true
-            });
-          else
-            map2[stringKey] = jsValue;
-        }
-      }
-      return map2;
-    }
-    function stringifyKey(key, jsKey, ctx) {
-      if (jsKey === null)
-        return "";
-      if (typeof jsKey !== "object")
-        return String(jsKey);
-      if (identity.isNode(key) && ctx?.doc) {
-        const strCtx = stringify.createStringifyContext(ctx.doc, {});
-        strCtx.anchors = /* @__PURE__ */ new Set();
-        for (const node2 of ctx.anchors.keys())
-          strCtx.anchors.add(node2.anchor);
-        strCtx.inFlow = true;
-        strCtx.inStringifyKey = true;
-        const strKey = key.toString(strCtx);
-        if (!ctx.mapKeyWarned) {
-          let jsonStr = JSON.stringify(strKey);
-          if (jsonStr.length > 40)
-            jsonStr = jsonStr.substring(0, 36) + '..."';
-          log7.warn(ctx.doc.options.logLevel, `Keys with collection values will be stringified due to JS Object restrictions: ${jsonStr}. Set mapAsMap: true to use object keys.`);
-          ctx.mapKeyWarned = true;
-        }
-        return strKey;
-      }
-      return JSON.stringify(jsKey);
-    }
-    exports.addPairToJSMap = addPairToJSMap;
-  }
-});
-
-// node_modules/yaml/dist/nodes/Pair.js
-var require_Pair = __commonJS({
-  "node_modules/yaml/dist/nodes/Pair.js"(exports) {
-    "use strict";
-    var createNode = require_createNode();
-    var stringifyPair = require_stringifyPair();
-    var addPairToJSMap = require_addPairToJSMap();
-    var identity = require_identity();
-    function createPair(key, value, ctx) {
-      const k = createNode.createNode(key, void 0, ctx);
-      const v = createNode.createNode(value, void 0, ctx);
-      return new Pair(k, v);
-    }
-    var Pair = class _Pair {
-      constructor(key, value = null) {
-        Object.defineProperty(this, identity.NODE_TYPE, { value: identity.PAIR });
-        this.key = key;
-        this.value = value;
-      }
-      clone(schema) {
-        let { key, value } = this;
-        if (identity.isNode(key))
-          key = key.clone(schema);
-        if (identity.isNode(value))
-          value = value.clone(schema);
-        return new _Pair(key, value);
-      }
-      toJSON(_, ctx) {
-        const pair = ctx?.mapAsMap ? /* @__PURE__ */ new Map() : {};
-        return addPairToJSMap.addPairToJSMap(ctx, pair, this);
-      }
-      toString(ctx, onComment, onChompKeep) {
-        return ctx?.doc ? stringifyPair.stringifyPair(this, ctx, onComment, onChompKeep) : JSON.stringify(this);
-      }
-    };
-    exports.Pair = Pair;
-    exports.createPair = createPair;
-  }
-});
-
-// node_modules/yaml/dist/stringify/stringifyCollection.js
-var require_stringifyCollection = __commonJS({
-  "node_modules/yaml/dist/stringify/stringifyCollection.js"(exports) {
-    "use strict";
-    var identity = require_identity();
-    var stringify = require_stringify();
-    var stringifyComment = require_stringifyComment();
-    function stringifyCollection(collection, ctx, options) {
-      const flow = ctx.inFlow ?? collection.flow;
-      const stringify2 = flow ? stringifyFlowCollection : stringifyBlockCollection;
-      return stringify2(collection, ctx, options);
-    }
-    function stringifyBlockCollection({ comment, items }, ctx, { blockItemPrefix, flowChars, itemIndent, onChompKeep, onComment }) {
-      const { indent, options: { commentString } } = ctx;
-      const itemCtx = Object.assign({}, ctx, { indent: itemIndent, type: null });
-      let chompKeep = false;
-      const lines2 = [];
-      for (let i = 0; i < items.length; ++i) {
-        const item = items[i];
-        let comment2 = null;
-        if (identity.isNode(item)) {
-          if (!chompKeep && item.spaceBefore)
-            lines2.push("");
-          addCommentBefore(ctx, lines2, item.commentBefore, chompKeep);
-          if (item.comment)
-            comment2 = item.comment;
-        } else if (identity.isPair(item)) {
-          const ik = identity.isNode(item.key) ? item.key : null;
-          if (ik) {
-            if (!chompKeep && ik.spaceBefore)
-              lines2.push("");
-            addCommentBefore(ctx, lines2, ik.commentBefore, chompKeep);
-          }
-        }
-        chompKeep = false;
-        let str2 = stringify.stringify(item, itemCtx, () => comment2 = null, () => chompKeep = true);
-        if (comment2)
-          str2 += stringifyComment.lineComment(str2, itemIndent, commentString(comment2));
-        if (chompKeep && comment2)
-          chompKeep = false;
-        lines2.push(blockItemPrefix + str2);
-      }
-      let str;
-      if (lines2.length === 0) {
-        str = flowChars.start + flowChars.end;
-      } else {
-        str = lines2[0];
-        for (let i = 1; i < lines2.length; ++i) {
-          const line = lines2[i];
-          str += line ? `
-${indent}${line}` : "\n";
-        }
-      }
-      if (comment) {
-        str += "\n" + stringifyComment.indentComment(commentString(comment), indent);
-        if (onComment)
-          onComment();
-      } else if (chompKeep && onChompKeep)
-        onChompKeep();
-      return str;
-    }
-    function stringifyFlowCollection({ items }, ctx, { flowChars, itemIndent }) {
-      const { indent, indentStep, flowCollectionPadding: fcPadding, options: { commentString } } = ctx;
-      itemIndent += indentStep;
-      const itemCtx = Object.assign({}, ctx, {
-        indent: itemIndent,
-        inFlow: true,
-        type: null
-      });
-      let reqNewline = false;
-      let linesAtValue = 0;
-      const lines2 = [];
-      for (let i = 0; i < items.length; ++i) {
-        const item = items[i];
-        let comment = null;
-        if (identity.isNode(item)) {
-          if (item.spaceBefore)
-            lines2.push("");
-          addCommentBefore(ctx, lines2, item.commentBefore, false);
-          if (item.comment)
-            comment = item.comment;
-        } else if (identity.isPair(item)) {
-          const ik = identity.isNode(item.key) ? item.key : null;
-          if (ik) {
-            if (ik.spaceBefore)
-              lines2.push("");
-            addCommentBefore(ctx, lines2, ik.commentBefore, false);
-            if (ik.comment)
-              reqNewline = true;
-          }
-          const iv = identity.isNode(item.value) ? item.value : null;
-          if (iv) {
-            if (iv.comment)
-              comment = iv.comment;
-            if (iv.commentBefore)
-              reqNewline = true;
-          } else if (item.value == null && ik?.comment) {
-            comment = ik.comment;
-          }
-        }
-        if (comment)
-          reqNewline = true;
-        let str = stringify.stringify(item, itemCtx, () => comment = null);
-        reqNewline || (reqNewline = lines2.length > linesAtValue || str.includes("\n"));
-        if (i < items.length - 1) {
-          str += ",";
-        } else if (ctx.options.trailingComma) {
-          if (ctx.options.lineWidth > 0) {
-            reqNewline || (reqNewline = lines2.reduce((sum, line) => sum + line.length + 2, 2) + (str.length + 2) > ctx.options.lineWidth);
-          }
-          if (reqNewline) {
-            str += ",";
-          }
-        }
-        if (comment)
-          str += stringifyComment.lineComment(str, itemIndent, commentString(comment));
-        lines2.push(str);
-        linesAtValue = lines2.length;
-      }
-      const { start, end } = flowChars;
-      if (lines2.length === 0) {
-        return start + end;
-      } else {
-        if (!reqNewline) {
-          const len = lines2.reduce((sum, line) => sum + line.length + 2, 2);
-          reqNewline = ctx.options.lineWidth > 0 && len > ctx.options.lineWidth;
-        }
-        if (reqNewline) {
-          let str = start;
-          for (const line of lines2)
-            str += line ? `
-${indentStep}${indent}${line}` : "\n";
-          return `${str}
-${indent}${end}`;
-        } else {
-          return `${start}${fcPadding}${lines2.join(" ")}${fcPadding}${end}`;
-        }
-      }
-    }
-    function addCommentBefore({ indent, options: { commentString } }, lines2, comment, chompKeep) {
-      if (comment && chompKeep)
-        comment = comment.replace(/^\n+/, "");
-      if (comment) {
-        const ic = stringifyComment.indentComment(commentString(comment), indent);
-        lines2.push(ic.trimStart());
-      }
-    }
-    exports.stringifyCollection = stringifyCollection;
-  }
-});
-
-// node_modules/yaml/dist/nodes/YAMLMap.js
-var require_YAMLMap = __commonJS({
-  "node_modules/yaml/dist/nodes/YAMLMap.js"(exports) {
-    "use strict";
-    var stringifyCollection = require_stringifyCollection();
-    var addPairToJSMap = require_addPairToJSMap();
-    var Collection = require_Collection();
-    var identity = require_identity();
-    var Pair = require_Pair();
-    var Scalar = require_Scalar();
-    function findPair(items, key) {
-      const k = identity.isScalar(key) ? key.value : key;
-      for (const it of items) {
-        if (identity.isPair(it)) {
-          if (it.key === key || it.key === k)
-            return it;
-          if (identity.isScalar(it.key) && it.key.value === k)
-            return it;
-        }
-      }
-      return void 0;
-    }
-    var YAMLMap = class extends Collection.Collection {
-      static get tagName() {
-        return "tag:yaml.org,2002:map";
-      }
-      constructor(schema) {
-        super(identity.MAP, schema);
-        this.items = [];
-      }
-      /**
-       * A generic collection parsing method that can be extended
-       * to other node classes that inherit from YAMLMap
-       */
-      static from(schema, obj, ctx) {
-        const { keepUndefined, replacer } = ctx;
-        const map2 = new this(schema);
-        const add = (key, value) => {
-          if (typeof replacer === "function")
-            value = replacer.call(obj, key, value);
-          else if (Array.isArray(replacer) && !replacer.includes(key))
-            return;
-          if (value !== void 0 || keepUndefined)
-            map2.items.push(Pair.createPair(key, value, ctx));
-        };
-        if (obj instanceof Map) {
-          for (const [key, value] of obj)
-            add(key, value);
-        } else if (obj && typeof obj === "object") {
-          for (const key of Object.keys(obj))
-            add(key, obj[key]);
-        }
-        if (typeof schema.sortMapEntries === "function") {
-          map2.items.sort(schema.sortMapEntries);
-        }
-        return map2;
-      }
-      /**
-       * Adds a value to the collection.
-       *
-       * @param overwrite - If not set `true`, using a key that is already in the
-       *   collection will throw. Otherwise, overwrites the previous value.
-       */
-      add(pair, overwrite) {
-        let _pair;
-        if (identity.isPair(pair))
-          _pair = pair;
-        else if (!pair || typeof pair !== "object" || !("key" in pair)) {
-          _pair = new Pair.Pair(pair, pair?.value);
-        } else
-          _pair = new Pair.Pair(pair.key, pair.value);
-        const prev = findPair(this.items, _pair.key);
-        const sortEntries = this.schema?.sortMapEntries;
-        if (prev) {
-          if (!overwrite)
-            throw new Error(`Key ${_pair.key} already set`);
-          if (identity.isScalar(prev.value) && Scalar.isScalarValue(_pair.value))
-            prev.value.value = _pair.value;
-          else
-            prev.value = _pair.value;
-        } else if (sortEntries) {
-          const i = this.items.findIndex((item) => sortEntries(_pair, item) < 0);
-          if (i === -1)
-            this.items.push(_pair);
-          else
-            this.items.splice(i, 0, _pair);
-        } else {
-          this.items.push(_pair);
-        }
-      }
-      delete(key) {
-        const it = findPair(this.items, key);
-        if (!it)
-          return false;
-        const del = this.items.splice(this.items.indexOf(it), 1);
-        return del.length > 0;
-      }
-      get(key, keepScalar) {
-        const it = findPair(this.items, key);
-        const node2 = it?.value;
-        return (!keepScalar && identity.isScalar(node2) ? node2.value : node2) ?? void 0;
-      }
-      has(key) {
-        return !!findPair(this.items, key);
-      }
-      set(key, value) {
-        this.add(new Pair.Pair(key, value), true);
-      }
-      /**
-       * @param ctx - Conversion context, originally set in Document#toJS()
-       * @param {Class} Type - If set, forces the returned collection type
-       * @returns Instance of Type, Map, or Object
-       */
-      toJSON(_, ctx, Type) {
-        const map2 = Type ? new Type() : ctx?.mapAsMap ? /* @__PURE__ */ new Map() : {};
-        if (ctx?.onCreate)
-          ctx.onCreate(map2);
-        for (const item of this.items)
-          addPairToJSMap.addPairToJSMap(ctx, map2, item);
-        return map2;
-      }
-      toString(ctx, onComment, onChompKeep) {
-        if (!ctx)
-          return JSON.stringify(this);
-        for (const item of this.items) {
-          if (!identity.isPair(item))
-            throw new Error(`Map items must all be pairs; found ${JSON.stringify(item)} instead`);
-        }
-        if (!ctx.allNullValues && this.hasAllNullValues(false))
-          ctx = Object.assign({}, ctx, { allNullValues: true });
-        return stringifyCollection.stringifyCollection(this, ctx, {
-          blockItemPrefix: "",
-          flowChars: { start: "{", end: "}" },
-          itemIndent: ctx.indent || "",
-          onChompKeep,
-          onComment
-        });
-      }
-    };
-    exports.YAMLMap = YAMLMap;
-    exports.findPair = findPair;
-  }
-});
-
-// node_modules/yaml/dist/schema/common/map.js
-var require_map = __commonJS({
-  "node_modules/yaml/dist/schema/common/map.js"(exports) {
-    "use strict";
-    var identity = require_identity();
-    var YAMLMap = require_YAMLMap();
-    var map2 = {
-      collection: "map",
-      default: true,
-      nodeClass: YAMLMap.YAMLMap,
-      tag: "tag:yaml.org,2002:map",
-      resolve(map3, onError) {
-        if (!identity.isMap(map3))
-          onError("Expected a mapping for this tag");
-        return map3;
-      },
-      createNode: (schema, obj, ctx) => YAMLMap.YAMLMap.from(schema, obj, ctx)
-    };
-    exports.map = map2;
-  }
-});
-
-// node_modules/yaml/dist/nodes/YAMLSeq.js
-var require_YAMLSeq = __commonJS({
-  "node_modules/yaml/dist/nodes/YAMLSeq.js"(exports) {
-    "use strict";
-    var createNode = require_createNode();
-    var stringifyCollection = require_stringifyCollection();
-    var Collection = require_Collection();
-    var identity = require_identity();
-    var Scalar = require_Scalar();
-    var toJS = require_toJS();
-    var YAMLSeq = class extends Collection.Collection {
-      static get tagName() {
-        return "tag:yaml.org,2002:seq";
-      }
-      constructor(schema) {
-        super(identity.SEQ, schema);
-        this.items = [];
-      }
-      add(value) {
-        this.items.push(value);
-      }
-      /**
-       * Removes a value from the collection.
-       *
-       * `key` must contain a representation of an integer for this to succeed.
-       * It may be wrapped in a `Scalar`.
-       *
-       * @returns `true` if the item was found and removed.
-       */
-      delete(key) {
-        const idx = asItemIndex(key);
-        if (typeof idx !== "number")
-          return false;
-        const del = this.items.splice(idx, 1);
-        return del.length > 0;
-      }
-      get(key, keepScalar) {
-        const idx = asItemIndex(key);
-        if (typeof idx !== "number")
-          return void 0;
-        const it = this.items[idx];
-        return !keepScalar && identity.isScalar(it) ? it.value : it;
-      }
-      /**
-       * Checks if the collection includes a value with the key `key`.
-       *
-       * `key` must contain a representation of an integer for this to succeed.
-       * It may be wrapped in a `Scalar`.
-       */
-      has(key) {
-        const idx = asItemIndex(key);
-        return typeof idx === "number" && idx < this.items.length;
-      }
-      /**
-       * Sets a value in this collection. For `!!set`, `value` needs to be a
-       * boolean to add/remove the item from the set.
-       *
-       * If `key` does not contain a representation of an integer, this will throw.
-       * It may be wrapped in a `Scalar`.
-       */
-      set(key, value) {
-        const idx = asItemIndex(key);
-        if (typeof idx !== "number")
-          throw new Error(`Expected a valid index, not ${key}.`);
-        const prev = this.items[idx];
-        if (identity.isScalar(prev) && Scalar.isScalarValue(value))
-          prev.value = value;
-        else
-          this.items[idx] = value;
-      }
-      toJSON(_, ctx) {
-        const seq = [];
-        if (ctx?.onCreate)
-          ctx.onCreate(seq);
-        let i = 0;
-        for (const item of this.items)
-          seq.push(toJS.toJS(item, String(i++), ctx));
-        return seq;
-      }
-      toString(ctx, onComment, onChompKeep) {
-        if (!ctx)
-          return JSON.stringify(this);
-        return stringifyCollection.stringifyCollection(this, ctx, {
-          blockItemPrefix: "- ",
-          flowChars: { start: "[", end: "]" },
-          itemIndent: (ctx.indent || "") + "  ",
-          onChompKeep,
-          onComment
-        });
-      }
-      static from(schema, obj, ctx) {
-        const { replacer } = ctx;
-        const seq = new this(schema);
-        if (obj && Symbol.iterator in Object(obj)) {
-          let i = 0;
-          for (let it of obj) {
-            if (typeof replacer === "function") {
-              const key = obj instanceof Set ? it : String(i++);
-              it = replacer.call(obj, key, it);
-            }
-            seq.items.push(createNode.createNode(it, void 0, ctx));
-          }
-        }
-        return seq;
-      }
-    };
-    function asItemIndex(key) {
-      let idx = identity.isScalar(key) ? key.value : key;
-      if (idx && typeof idx === "string")
-        idx = Number(idx);
-      return typeof idx === "number" && Number.isInteger(idx) && idx >= 0 ? idx : null;
-    }
-    exports.YAMLSeq = YAMLSeq;
-  }
-});
-
-// node_modules/yaml/dist/schema/common/seq.js
-var require_seq = __commonJS({
-  "node_modules/yaml/dist/schema/common/seq.js"(exports) {
-    "use strict";
-    var identity = require_identity();
-    var YAMLSeq = require_YAMLSeq();
-    var seq = {
-      collection: "seq",
-      default: true,
-      nodeClass: YAMLSeq.YAMLSeq,
-      tag: "tag:yaml.org,2002:seq",
-      resolve(seq2, onError) {
-        if (!identity.isSeq(seq2))
-          onError("Expected a sequence for this tag");
-        return seq2;
-      },
-      createNode: (schema, obj, ctx) => YAMLSeq.YAMLSeq.from(schema, obj, ctx)
-    };
-    exports.seq = seq;
-  }
-});
-
-// node_modules/yaml/dist/schema/common/string.js
-var require_string = __commonJS({
-  "node_modules/yaml/dist/schema/common/string.js"(exports) {
-    "use strict";
-    var stringifyString = require_stringifyString();
-    var string4 = {
-      identify: (value) => typeof value === "string",
-      default: true,
-      tag: "tag:yaml.org,2002:str",
-      resolve: (str) => str,
-      stringify(item, ctx, onComment, onChompKeep) {
-        ctx = Object.assign({ actualString: true }, ctx);
-        return stringifyString.stringifyString(item, ctx, onComment, onChompKeep);
-      }
-    };
-    exports.string = string4;
-  }
-});
-
-// node_modules/yaml/dist/schema/common/null.js
-var require_null = __commonJS({
-  "node_modules/yaml/dist/schema/common/null.js"(exports) {
-    "use strict";
-    var Scalar = require_Scalar();
-    var nullTag = {
-      identify: (value) => value == null,
-      createNode: () => new Scalar.Scalar(null),
-      default: true,
-      tag: "tag:yaml.org,2002:null",
-      test: /^(?:~|[Nn]ull|NULL)?$/,
-      resolve: () => new Scalar.Scalar(null),
-      stringify: ({ source }, ctx) => typeof source === "string" && nullTag.test.test(source) ? source : ctx.options.nullStr
-    };
-    exports.nullTag = nullTag;
-  }
-});
-
-// node_modules/yaml/dist/schema/core/bool.js
-var require_bool = __commonJS({
-  "node_modules/yaml/dist/schema/core/bool.js"(exports) {
-    "use strict";
-    var Scalar = require_Scalar();
-    var boolTag = {
-      identify: (value) => typeof value === "boolean",
-      default: true,
-      tag: "tag:yaml.org,2002:bool",
-      test: /^(?:[Tt]rue|TRUE|[Ff]alse|FALSE)$/,
-      resolve: (str) => new Scalar.Scalar(str[0] === "t" || str[0] === "T"),
-      stringify({ source, value }, ctx) {
-        if (source && boolTag.test.test(source)) {
-          const sv = source[0] === "t" || source[0] === "T";
-          if (value === sv)
-            return source;
-        }
-        return value ? ctx.options.trueStr : ctx.options.falseStr;
-      }
-    };
-    exports.boolTag = boolTag;
-  }
-});
-
-// node_modules/yaml/dist/stringify/stringifyNumber.js
-var require_stringifyNumber = __commonJS({
-  "node_modules/yaml/dist/stringify/stringifyNumber.js"(exports) {
-    "use strict";
-    function stringifyNumber({ format, minFractionDigits, tag, value }) {
-      if (typeof value === "bigint")
-        return String(value);
-      const num = typeof value === "number" ? value : Number(value);
-      if (!isFinite(num))
-        return isNaN(num) ? ".nan" : num < 0 ? "-.inf" : ".inf";
-      let n = Object.is(value, -0) ? "-0" : JSON.stringify(value);
-      if (!format && minFractionDigits && (!tag || tag === "tag:yaml.org,2002:float") && /^-?\d/.test(n) && !n.includes("e")) {
-        let i = n.indexOf(".");
-        if (i < 0) {
-          i = n.length;
-          n += ".";
-        }
-        let d = minFractionDigits - (n.length - i - 1);
-        while (d-- > 0)
-          n += "0";
-      }
-      return n;
-    }
-    exports.stringifyNumber = stringifyNumber;
-  }
-});
-
-// node_modules/yaml/dist/schema/core/float.js
-var require_float = __commonJS({
-  "node_modules/yaml/dist/schema/core/float.js"(exports) {
-    "use strict";
-    var Scalar = require_Scalar();
-    var stringifyNumber = require_stringifyNumber();
-    var floatNaN = {
-      identify: (value) => typeof value === "number",
-      default: true,
-      tag: "tag:yaml.org,2002:float",
-      test: /^(?:[-+]?\.(?:inf|Inf|INF)|\.nan|\.NaN|\.NAN)$/,
-      resolve: (str) => str.slice(-3).toLowerCase() === "nan" ? NaN : str[0] === "-" ? Number.NEGATIVE_INFINITY : Number.POSITIVE_INFINITY,
-      stringify: stringifyNumber.stringifyNumber
-    };
-    var floatExp = {
-      identify: (value) => typeof value === "number",
-      default: true,
-      tag: "tag:yaml.org,2002:float",
-      format: "EXP",
-      test: /^[-+]?(?:\.[0-9]+|[0-9]+(?:\.[0-9]*)?)[eE][-+]?[0-9]+$/,
-      resolve: (str) => parseFloat(str),
-      stringify(node2) {
-        const num = Number(node2.value);
-        return isFinite(num) ? num.toExponential() : stringifyNumber.stringifyNumber(node2);
-      }
-    };
-    var float = {
-      identify: (value) => typeof value === "number",
-      default: true,
-      tag: "tag:yaml.org,2002:float",
-      test: /^[-+]?(?:\.[0-9]+|[0-9]+\.[0-9]*)$/,
-      resolve(str) {
-        const node2 = new Scalar.Scalar(parseFloat(str));
-        const dot = str.indexOf(".");
-        if (dot !== -1 && str[str.length - 1] === "0")
-          node2.minFractionDigits = str.length - dot - 1;
-        return node2;
-      },
-      stringify: stringifyNumber.stringifyNumber
-    };
-    exports.float = float;
-    exports.floatExp = floatExp;
-    exports.floatNaN = floatNaN;
-  }
-});
-
-// node_modules/yaml/dist/schema/core/int.js
-var require_int = __commonJS({
-  "node_modules/yaml/dist/schema/core/int.js"(exports) {
-    "use strict";
-    var stringifyNumber = require_stringifyNumber();
-    var intIdentify = (value) => typeof value === "bigint" || Number.isInteger(value);
-    var intResolve = (str, offset, radix, { intAsBigInt }) => intAsBigInt ? BigInt(str) : parseInt(str.substring(offset), radix);
-    function intStringify(node2, radix, prefix) {
-      const { value } = node2;
-      if (intIdentify(value) && value >= 0)
-        return prefix + value.toString(radix);
-      return stringifyNumber.stringifyNumber(node2);
-    }
-    var intOct = {
-      identify: (value) => intIdentify(value) && value >= 0,
-      default: true,
-      tag: "tag:yaml.org,2002:int",
-      format: "OCT",
-      test: /^0o[0-7]+$/,
-      resolve: (str, _onError, opt) => intResolve(str, 2, 8, opt),
-      stringify: (node2) => intStringify(node2, 8, "0o")
-    };
-    var int2 = {
-      identify: intIdentify,
-      default: true,
-      tag: "tag:yaml.org,2002:int",
-      test: /^[-+]?[0-9]+$/,
-      resolve: (str, _onError, opt) => intResolve(str, 0, 10, opt),
-      stringify: stringifyNumber.stringifyNumber
-    };
-    var intHex = {
-      identify: (value) => intIdentify(value) && value >= 0,
-      default: true,
-      tag: "tag:yaml.org,2002:int",
-      format: "HEX",
-      test: /^0x[0-9a-fA-F]+$/,
-      resolve: (str, _onError, opt) => intResolve(str, 2, 16, opt),
-      stringify: (node2) => intStringify(node2, 16, "0x")
-    };
-    exports.int = int2;
-    exports.intHex = intHex;
-    exports.intOct = intOct;
-  }
-});
-
-// node_modules/yaml/dist/schema/core/schema.js
-var require_schema = __commonJS({
-  "node_modules/yaml/dist/schema/core/schema.js"(exports) {
-    "use strict";
-    var map2 = require_map();
-    var _null4 = require_null();
-    var seq = require_seq();
-    var string4 = require_string();
-    var bool = require_bool();
-    var float = require_float();
-    var int2 = require_int();
-    var schema = [
-      map2.map,
-      seq.seq,
-      string4.string,
-      _null4.nullTag,
-      bool.boolTag,
-      int2.intOct,
-      int2.int,
-      int2.intHex,
-      float.floatNaN,
-      float.floatExp,
-      float.float
-    ];
-    exports.schema = schema;
-  }
-});
-
-// node_modules/yaml/dist/schema/json/schema.js
-var require_schema2 = __commonJS({
-  "node_modules/yaml/dist/schema/json/schema.js"(exports) {
-    "use strict";
-    var Scalar = require_Scalar();
-    var map2 = require_map();
-    var seq = require_seq();
-    function intIdentify(value) {
-      return typeof value === "bigint" || Number.isInteger(value);
-    }
-    var stringifyJSON = ({ value }) => JSON.stringify(value);
-    var jsonScalars = [
-      {
-        identify: (value) => typeof value === "string",
-        default: true,
-        tag: "tag:yaml.org,2002:str",
-        resolve: (str) => str,
-        stringify: stringifyJSON
-      },
-      {
-        identify: (value) => value == null,
-        createNode: () => new Scalar.Scalar(null),
-        default: true,
-        tag: "tag:yaml.org,2002:null",
-        test: /^null$/,
-        resolve: () => null,
-        stringify: stringifyJSON
-      },
-      {
-        identify: (value) => typeof value === "boolean",
-        default: true,
-        tag: "tag:yaml.org,2002:bool",
-        test: /^true$|^false$/,
-        resolve: (str) => str === "true",
-        stringify: stringifyJSON
-      },
-      {
-        identify: intIdentify,
-        default: true,
-        tag: "tag:yaml.org,2002:int",
-        test: /^-?(?:0|[1-9][0-9]*)$/,
-        resolve: (str, _onError, { intAsBigInt }) => intAsBigInt ? BigInt(str) : parseInt(str, 10),
-        stringify: ({ value }) => intIdentify(value) ? value.toString() : JSON.stringify(value)
-      },
-      {
-        identify: (value) => typeof value === "number",
-        default: true,
-        tag: "tag:yaml.org,2002:float",
-        test: /^-?(?:0|[1-9][0-9]*)(?:\.[0-9]*)?(?:[eE][-+]?[0-9]+)?$/,
-        resolve: (str) => parseFloat(str),
-        stringify: stringifyJSON
-      }
-    ];
-    var jsonError = {
-      default: true,
-      tag: "",
-      test: /^/,
-      resolve(str, onError) {
-        onError(`Unresolved plain scalar ${JSON.stringify(str)}`);
-        return str;
-      }
-    };
-    var schema = [map2.map, seq.seq].concat(jsonScalars, jsonError);
-    exports.schema = schema;
-  }
-});
-
-// node_modules/yaml/dist/schema/yaml-1.1/binary.js
-var require_binary = __commonJS({
-  "node_modules/yaml/dist/schema/yaml-1.1/binary.js"(exports) {
-    "use strict";
-    var node_buffer = __require("buffer");
-    var Scalar = require_Scalar();
-    var stringifyString = require_stringifyString();
-    var binary = {
-      identify: (value) => value instanceof Uint8Array,
-      // Buffer inherits from Uint8Array
-      default: false,
-      tag: "tag:yaml.org,2002:binary",
-      /**
-       * Returns a Buffer in node and an Uint8Array in browsers
-       *
-       * To use the resulting buffer as an image, you'll want to do something like:
-       *
-       *   const blob = new Blob([buffer], { type: 'image/jpeg' })
-       *   document.querySelector('#photo').src = URL.createObjectURL(blob)
-       */
-      resolve(src, onError) {
-        if (typeof node_buffer.Buffer === "function") {
-          return node_buffer.Buffer.from(src, "base64");
-        } else if (typeof atob === "function") {
-          const str = atob(src.replace(/[\n\r]/g, ""));
-          const buffer = new Uint8Array(str.length);
-          for (let i = 0; i < str.length; ++i)
-            buffer[i] = str.charCodeAt(i);
-          return buffer;
-        } else {
-          onError("This environment does not support reading binary tags; either Buffer or atob is required");
-          return src;
-        }
-      },
-      stringify({ comment, type, value }, ctx, onComment, onChompKeep) {
-        if (!value)
-          return "";
-        const buf = value;
-        let str;
-        if (typeof node_buffer.Buffer === "function") {
-          str = buf instanceof node_buffer.Buffer ? buf.toString("base64") : node_buffer.Buffer.from(buf.buffer).toString("base64");
-        } else if (typeof btoa === "function") {
-          let s = "";
-          for (let i = 0; i < buf.length; ++i)
-            s += String.fromCharCode(buf[i]);
-          str = btoa(s);
-        } else {
-          throw new Error("This environment does not support writing binary tags; either Buffer or btoa is required");
-        }
-        type ?? (type = Scalar.Scalar.BLOCK_LITERAL);
-        if (type !== Scalar.Scalar.QUOTE_DOUBLE) {
-          const lineWidth = Math.max(ctx.options.lineWidth - ctx.indent.length, ctx.options.minContentWidth);
-          const n = Math.ceil(str.length / lineWidth);
-          const lines2 = new Array(n);
-          for (let i = 0, o = 0; i < n; ++i, o += lineWidth) {
-            lines2[i] = str.substr(o, lineWidth);
-          }
-          str = lines2.join(type === Scalar.Scalar.BLOCK_LITERAL ? "\n" : " ");
-        }
-        return stringifyString.stringifyString({ comment, type, value: str }, ctx, onComment, onChompKeep);
-      }
-    };
-    exports.binary = binary;
-  }
-});
-
-// node_modules/yaml/dist/schema/yaml-1.1/pairs.js
-var require_pairs = __commonJS({
-  "node_modules/yaml/dist/schema/yaml-1.1/pairs.js"(exports) {
-    "use strict";
-    var identity = require_identity();
-    var Pair = require_Pair();
-    var Scalar = require_Scalar();
-    var YAMLSeq = require_YAMLSeq();
-    function resolvePairs(seq, onError) {
-      if (identity.isSeq(seq)) {
-        for (let i = 0; i < seq.items.length; ++i) {
-          let item = seq.items[i];
-          if (identity.isPair(item))
-            continue;
-          else if (identity.isMap(item)) {
-            if (item.items.length > 1)
-              onError("Each pair must have its own sequence indicator");
-            const pair = item.items[0] || new Pair.Pair(new Scalar.Scalar(null));
-            if (item.commentBefore)
-              pair.key.commentBefore = pair.key.commentBefore ? `${item.commentBefore}
-${pair.key.commentBefore}` : item.commentBefore;
-            if (item.comment) {
-              const cn = pair.value ?? pair.key;
-              cn.comment = cn.comment ? `${item.comment}
-${cn.comment}` : item.comment;
-            }
-            item = pair;
-          }
-          seq.items[i] = identity.isPair(item) ? item : new Pair.Pair(item);
-        }
-      } else
-        onError("Expected a sequence for this tag");
-      return seq;
-    }
-    function createPairs(schema, iterable, ctx) {
-      const { replacer } = ctx;
-      const pairs2 = new YAMLSeq.YAMLSeq(schema);
-      pairs2.tag = "tag:yaml.org,2002:pairs";
-      let i = 0;
-      if (iterable && Symbol.iterator in Object(iterable))
-        for (let it of iterable) {
-          if (typeof replacer === "function")
-            it = replacer.call(iterable, String(i++), it);
-          let key, value;
-          if (Array.isArray(it)) {
-            if (it.length === 2) {
-              key = it[0];
-              value = it[1];
-            } else
-              throw new TypeError(`Expected [key, value] tuple: ${it}`);
-          } else if (it && it instanceof Object) {
-            const keys = Object.keys(it);
-            if (keys.length === 1) {
-              key = keys[0];
-              value = it[key];
-            } else {
-              throw new TypeError(`Expected tuple with one key, not ${keys.length} keys`);
-            }
-          } else {
-            key = it;
-          }
-          pairs2.items.push(Pair.createPair(key, value, ctx));
-        }
-      return pairs2;
-    }
-    var pairs = {
-      collection: "seq",
-      default: false,
-      tag: "tag:yaml.org,2002:pairs",
-      resolve: resolvePairs,
-      createNode: createPairs
-    };
-    exports.createPairs = createPairs;
-    exports.pairs = pairs;
-    exports.resolvePairs = resolvePairs;
-  }
-});
-
-// node_modules/yaml/dist/schema/yaml-1.1/omap.js
-var require_omap = __commonJS({
-  "node_modules/yaml/dist/schema/yaml-1.1/omap.js"(exports) {
-    "use strict";
-    var identity = require_identity();
-    var toJS = require_toJS();
-    var YAMLMap = require_YAMLMap();
-    var YAMLSeq = require_YAMLSeq();
-    var pairs = require_pairs();
-    var YAMLOMap = class _YAMLOMap extends YAMLSeq.YAMLSeq {
-      constructor() {
-        super();
-        this.add = YAMLMap.YAMLMap.prototype.add.bind(this);
-        this.delete = YAMLMap.YAMLMap.prototype.delete.bind(this);
-        this.get = YAMLMap.YAMLMap.prototype.get.bind(this);
-        this.has = YAMLMap.YAMLMap.prototype.has.bind(this);
-        this.set = YAMLMap.YAMLMap.prototype.set.bind(this);
-        this.tag = _YAMLOMap.tag;
-      }
-      /**
-       * If `ctx` is given, the return type is actually `Map<unknown, unknown>`,
-       * but TypeScript won't allow widening the signature of a child method.
-       */
-      toJSON(_, ctx) {
-        if (!ctx)
-          return super.toJSON(_);
-        const map2 = /* @__PURE__ */ new Map();
-        if (ctx?.onCreate)
-          ctx.onCreate(map2);
-        for (const pair of this.items) {
-          let key, value;
-          if (identity.isPair(pair)) {
-            key = toJS.toJS(pair.key, "", ctx);
-            value = toJS.toJS(pair.value, key, ctx);
-          } else {
-            key = toJS.toJS(pair, "", ctx);
-          }
-          if (map2.has(key))
-            throw new Error("Ordered maps must not include duplicate keys");
-          map2.set(key, value);
-        }
-        return map2;
-      }
-      static from(schema, iterable, ctx) {
-        const pairs$1 = pairs.createPairs(schema, iterable, ctx);
-        const omap2 = new this();
-        omap2.items = pairs$1.items;
-        return omap2;
-      }
-    };
-    YAMLOMap.tag = "tag:yaml.org,2002:omap";
-    var omap = {
-      collection: "seq",
-      identify: (value) => value instanceof Map,
-      nodeClass: YAMLOMap,
-      default: false,
-      tag: "tag:yaml.org,2002:omap",
-      resolve(seq, onError) {
-        const pairs$1 = pairs.resolvePairs(seq, onError);
-        const seenKeys = [];
-        for (const { key } of pairs$1.items) {
-          if (identity.isScalar(key)) {
-            if (seenKeys.includes(key.value)) {
-              onError(`Ordered maps must not include duplicate keys: ${key.value}`);
-            } else {
-              seenKeys.push(key.value);
-            }
-          }
-        }
-        return Object.assign(new YAMLOMap(), pairs$1);
-      },
-      createNode: (schema, iterable, ctx) => YAMLOMap.from(schema, iterable, ctx)
-    };
-    exports.YAMLOMap = YAMLOMap;
-    exports.omap = omap;
-  }
-});
-
-// node_modules/yaml/dist/schema/yaml-1.1/bool.js
-var require_bool2 = __commonJS({
-  "node_modules/yaml/dist/schema/yaml-1.1/bool.js"(exports) {
-    "use strict";
-    var Scalar = require_Scalar();
-    function boolStringify({ value, source }, ctx) {
-      const boolObj = value ? trueTag : falseTag;
-      if (source && boolObj.test.test(source))
-        return source;
-      return value ? ctx.options.trueStr : ctx.options.falseStr;
-    }
-    var trueTag = {
-      identify: (value) => value === true,
-      default: true,
-      tag: "tag:yaml.org,2002:bool",
-      test: /^(?:Y|y|[Yy]es|YES|[Tt]rue|TRUE|[Oo]n|ON)$/,
-      resolve: () => new Scalar.Scalar(true),
-      stringify: boolStringify
-    };
-    var falseTag = {
-      identify: (value) => value === false,
-      default: true,
-      tag: "tag:yaml.org,2002:bool",
-      test: /^(?:N|n|[Nn]o|NO|[Ff]alse|FALSE|[Oo]ff|OFF)$/,
-      resolve: () => new Scalar.Scalar(false),
-      stringify: boolStringify
-    };
-    exports.falseTag = falseTag;
-    exports.trueTag = trueTag;
-  }
-});
-
-// node_modules/yaml/dist/schema/yaml-1.1/float.js
-var require_float2 = __commonJS({
-  "node_modules/yaml/dist/schema/yaml-1.1/float.js"(exports) {
-    "use strict";
-    var Scalar = require_Scalar();
-    var stringifyNumber = require_stringifyNumber();
-    var floatNaN = {
-      identify: (value) => typeof value === "number",
-      default: true,
-      tag: "tag:yaml.org,2002:float",
-      test: /^(?:[-+]?\.(?:inf|Inf|INF)|\.nan|\.NaN|\.NAN)$/,
-      resolve: (str) => str.slice(-3).toLowerCase() === "nan" ? NaN : str[0] === "-" ? Number.NEGATIVE_INFINITY : Number.POSITIVE_INFINITY,
-      stringify: stringifyNumber.stringifyNumber
-    };
-    var floatExp = {
-      identify: (value) => typeof value === "number",
-      default: true,
-      tag: "tag:yaml.org,2002:float",
-      format: "EXP",
-      test: /^[-+]?(?:[0-9][0-9_]*)?(?:\.[0-9_]*)?[eE][-+]?[0-9]+$/,
-      resolve: (str) => parseFloat(str.replace(/_/g, "")),
-      stringify(node2) {
-        const num = Number(node2.value);
-        return isFinite(num) ? num.toExponential() : stringifyNumber.stringifyNumber(node2);
-      }
-    };
-    var float = {
-      identify: (value) => typeof value === "number",
-      default: true,
-      tag: "tag:yaml.org,2002:float",
-      test: /^[-+]?(?:[0-9][0-9_]*)?\.[0-9_]*$/,
-      resolve(str) {
-        const node2 = new Scalar.Scalar(parseFloat(str.replace(/_/g, "")));
-        const dot = str.indexOf(".");
-        if (dot !== -1) {
-          const f = str.substring(dot + 1).replace(/_/g, "");
-          if (f[f.length - 1] === "0")
-            node2.minFractionDigits = f.length;
-        }
-        return node2;
-      },
-      stringify: stringifyNumber.stringifyNumber
-    };
-    exports.float = float;
-    exports.floatExp = floatExp;
-    exports.floatNaN = floatNaN;
-  }
-});
-
-// node_modules/yaml/dist/schema/yaml-1.1/int.js
-var require_int2 = __commonJS({
-  "node_modules/yaml/dist/schema/yaml-1.1/int.js"(exports) {
-    "use strict";
-    var stringifyNumber = require_stringifyNumber();
-    var intIdentify = (value) => typeof value === "bigint" || Number.isInteger(value);
-    function intResolve(str, offset, radix, { intAsBigInt }) {
-      const sign = str[0];
-      if (sign === "-" || sign === "+")
-        offset += 1;
-      str = str.substring(offset).replace(/_/g, "");
-      if (intAsBigInt) {
-        switch (radix) {
-          case 2:
-            str = `0b${str}`;
-            break;
-          case 8:
-            str = `0o${str}`;
-            break;
-          case 16:
-            str = `0x${str}`;
-            break;
-        }
-        const n2 = BigInt(str);
-        return sign === "-" ? BigInt(-1) * n2 : n2;
-      }
-      const n = parseInt(str, radix);
-      return sign === "-" ? -1 * n : n;
-    }
-    function intStringify(node2, radix, prefix) {
-      const { value } = node2;
-      if (intIdentify(value)) {
-        const str = value.toString(radix);
-        return value < 0 ? "-" + prefix + str.substr(1) : prefix + str;
-      }
-      return stringifyNumber.stringifyNumber(node2);
-    }
-    var intBin = {
-      identify: intIdentify,
-      default: true,
-      tag: "tag:yaml.org,2002:int",
-      format: "BIN",
-      test: /^[-+]?0b[0-1_]+$/,
-      resolve: (str, _onError, opt) => intResolve(str, 2, 2, opt),
-      stringify: (node2) => intStringify(node2, 2, "0b")
-    };
-    var intOct = {
-      identify: intIdentify,
-      default: true,
-      tag: "tag:yaml.org,2002:int",
-      format: "OCT",
-      test: /^[-+]?0[0-7_]+$/,
-      resolve: (str, _onError, opt) => intResolve(str, 1, 8, opt),
-      stringify: (node2) => intStringify(node2, 8, "0")
-    };
-    var int2 = {
-      identify: intIdentify,
-      default: true,
-      tag: "tag:yaml.org,2002:int",
-      test: /^[-+]?[0-9][0-9_]*$/,
-      resolve: (str, _onError, opt) => intResolve(str, 0, 10, opt),
-      stringify: stringifyNumber.stringifyNumber
-    };
-    var intHex = {
-      identify: intIdentify,
-      default: true,
-      tag: "tag:yaml.org,2002:int",
-      format: "HEX",
-      test: /^[-+]?0x[0-9a-fA-F_]+$/,
-      resolve: (str, _onError, opt) => intResolve(str, 2, 16, opt),
-      stringify: (node2) => intStringify(node2, 16, "0x")
-    };
-    exports.int = int2;
-    exports.intBin = intBin;
-    exports.intHex = intHex;
-    exports.intOct = intOct;
-  }
-});
-
-// node_modules/yaml/dist/schema/yaml-1.1/set.js
-var require_set = __commonJS({
-  "node_modules/yaml/dist/schema/yaml-1.1/set.js"(exports) {
-    "use strict";
-    var identity = require_identity();
-    var Pair = require_Pair();
-    var YAMLMap = require_YAMLMap();
-    var YAMLSet = class _YAMLSet extends YAMLMap.YAMLMap {
-      constructor(schema) {
-        super(schema);
-        this.tag = _YAMLSet.tag;
-      }
-      add(key) {
-        let pair;
-        if (identity.isPair(key))
-          pair = key;
-        else if (key && typeof key === "object" && "key" in key && "value" in key && key.value === null)
-          pair = new Pair.Pair(key.key, null);
-        else
-          pair = new Pair.Pair(key, null);
-        const prev = YAMLMap.findPair(this.items, pair.key);
-        if (!prev)
-          this.items.push(pair);
-      }
-      /**
-       * If `keepPair` is `true`, returns the Pair matching `key`.
-       * Otherwise, returns the value of that Pair's key.
-       */
-      get(key, keepPair) {
-        const pair = YAMLMap.findPair(this.items, key);
-        return !keepPair && identity.isPair(pair) ? identity.isScalar(pair.key) ? pair.key.value : pair.key : pair;
-      }
-      set(key, value) {
-        if (typeof value !== "boolean")
-          throw new Error(`Expected boolean value for set(key, value) in a YAML set, not ${typeof value}`);
-        const prev = YAMLMap.findPair(this.items, key);
-        if (prev && !value) {
-          this.items.splice(this.items.indexOf(prev), 1);
-        } else if (!prev && value) {
-          this.items.push(new Pair.Pair(key));
-        }
-      }
-      toJSON(_, ctx) {
-        return super.toJSON(_, ctx, Set);
-      }
-      toString(ctx, onComment, onChompKeep) {
-        if (!ctx)
-          return JSON.stringify(this);
-        if (this.hasAllNullValues(true))
-          return super.toString(Object.assign({}, ctx, { allNullValues: true }), onComment, onChompKeep);
-        else
-          throw new Error("Set items must all have null values");
-      }
-      static from(schema, iterable, ctx) {
-        const { replacer } = ctx;
-        const set3 = new this(schema);
-        if (iterable && Symbol.iterator in Object(iterable))
-          for (let value of iterable) {
-            if (typeof replacer === "function")
-              value = replacer.call(iterable, value, value);
-            set3.items.push(Pair.createPair(value, null, ctx));
-          }
-        return set3;
-      }
-    };
-    YAMLSet.tag = "tag:yaml.org,2002:set";
-    var set2 = {
-      collection: "map",
-      identify: (value) => value instanceof Set,
-      nodeClass: YAMLSet,
-      default: false,
-      tag: "tag:yaml.org,2002:set",
-      createNode: (schema, iterable, ctx) => YAMLSet.from(schema, iterable, ctx),
-      resolve(map2, onError) {
-        if (identity.isMap(map2)) {
-          if (map2.hasAllNullValues(true))
-            return Object.assign(new YAMLSet(), map2);
-          else
-            onError("Set items must all have null values");
-        } else
-          onError("Expected a mapping for this tag");
-        return map2;
-      }
-    };
-    exports.YAMLSet = YAMLSet;
-    exports.set = set2;
-  }
-});
-
-// node_modules/yaml/dist/schema/yaml-1.1/timestamp.js
-var require_timestamp = __commonJS({
-  "node_modules/yaml/dist/schema/yaml-1.1/timestamp.js"(exports) {
-    "use strict";
-    var stringifyNumber = require_stringifyNumber();
-    function parseSexagesimal(str, asBigInt) {
-      const sign = str[0];
-      const parts = sign === "-" || sign === "+" ? str.substring(1) : str;
-      const num = (n) => asBigInt ? BigInt(n) : Number(n);
-      const res = parts.replace(/_/g, "").split(":").reduce((res2, p) => res2 * num(60) + num(p), num(0));
-      return sign === "-" ? num(-1) * res : res;
-    }
-    function stringifySexagesimal(node2) {
-      let { value } = node2;
-      let num = (n) => n;
-      if (typeof value === "bigint")
-        num = (n) => BigInt(n);
-      else if (isNaN(value) || !isFinite(value))
-        return stringifyNumber.stringifyNumber(node2);
-      let sign = "";
-      if (value < 0) {
-        sign = "-";
-        value *= num(-1);
-      }
-      const _60 = num(60);
-      const parts = [value % _60];
-      if (value < 60) {
-        parts.unshift(0);
-      } else {
-        value = (value - parts[0]) / _60;
-        parts.unshift(value % _60);
-        if (value >= 60) {
-          value = (value - parts[0]) / _60;
-          parts.unshift(value);
-        }
-      }
-      return sign + parts.map((n) => String(n).padStart(2, "0")).join(":").replace(/000000\d*$/, "");
-    }
-    var intTime = {
-      identify: (value) => typeof value === "bigint" || Number.isInteger(value),
-      default: true,
-      tag: "tag:yaml.org,2002:int",
-      format: "TIME",
-      test: /^[-+]?[0-9][0-9_]*(?::[0-5]?[0-9])+$/,
-      resolve: (str, _onError, { intAsBigInt }) => parseSexagesimal(str, intAsBigInt),
-      stringify: stringifySexagesimal
-    };
-    var floatTime = {
-      identify: (value) => typeof value === "number",
-      default: true,
-      tag: "tag:yaml.org,2002:float",
-      format: "TIME",
-      test: /^[-+]?[0-9][0-9_]*(?::[0-5]?[0-9])+\.[0-9_]*$/,
-      resolve: (str) => parseSexagesimal(str, false),
-      stringify: stringifySexagesimal
-    };
-    var timestamp = {
-      identify: (value) => value instanceof Date,
-      default: true,
-      tag: "tag:yaml.org,2002:timestamp",
-      // If the time zone is omitted, the timestamp is assumed to be specified in UTC. The time part
-      // may be omitted altogether, resulting in a date format. In such a case, the time part is
-      // assumed to be 00:00:00Z (start of day, UTC).
-      test: RegExp("^([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})(?:(?:t|T|[ \\t]+)([0-9]{1,2}):([0-9]{1,2}):([0-9]{1,2}(\\.[0-9]+)?)(?:[ \\t]*(Z|[-+][012]?[0-9](?::[0-9]{2})?))?)?$"),
-      resolve(str) {
-        const match2 = str.match(timestamp.test);
-        if (!match2)
-          throw new Error("!!timestamp expects a date, starting with yyyy-mm-dd");
-        const [, year, month, day, hour, minute, second] = match2.map(Number);
-        const millisec = match2[7] ? Number((match2[7] + "00").substr(1, 3)) : 0;
-        let date5 = Date.UTC(year, month - 1, day, hour || 0, minute || 0, second || 0, millisec);
-        const tz = match2[8];
-        if (tz && tz !== "Z") {
-          let d = parseSexagesimal(tz, false);
-          if (Math.abs(d) < 30)
-            d *= 60;
-          date5 -= 6e4 * d;
-        }
-        return new Date(date5);
-      },
-      stringify: ({ value }) => value?.toISOString().replace(/(T00:00:00)?\.000Z$/, "") ?? ""
-    };
-    exports.floatTime = floatTime;
-    exports.intTime = intTime;
-    exports.timestamp = timestamp;
-  }
-});
-
-// node_modules/yaml/dist/schema/yaml-1.1/schema.js
-var require_schema3 = __commonJS({
-  "node_modules/yaml/dist/schema/yaml-1.1/schema.js"(exports) {
-    "use strict";
-    var map2 = require_map();
-    var _null4 = require_null();
-    var seq = require_seq();
-    var string4 = require_string();
-    var binary = require_binary();
-    var bool = require_bool2();
-    var float = require_float2();
-    var int2 = require_int2();
-    var merge2 = require_merge();
-    var omap = require_omap();
-    var pairs = require_pairs();
-    var set2 = require_set();
-    var timestamp = require_timestamp();
-    var schema = [
-      map2.map,
-      seq.seq,
-      string4.string,
-      _null4.nullTag,
-      bool.trueTag,
-      bool.falseTag,
-      int2.intBin,
-      int2.intOct,
-      int2.int,
-      int2.intHex,
-      float.floatNaN,
-      float.floatExp,
-      float.float,
-      binary.binary,
-      merge2.merge,
-      omap.omap,
-      pairs.pairs,
-      set2.set,
-      timestamp.intTime,
-      timestamp.floatTime,
-      timestamp.timestamp
-    ];
-    exports.schema = schema;
-  }
-});
-
-// node_modules/yaml/dist/schema/tags.js
-var require_tags = __commonJS({
-  "node_modules/yaml/dist/schema/tags.js"(exports) {
-    "use strict";
-    var map2 = require_map();
-    var _null4 = require_null();
-    var seq = require_seq();
-    var string4 = require_string();
-    var bool = require_bool();
-    var float = require_float();
-    var int2 = require_int();
-    var schema = require_schema();
-    var schema$1 = require_schema2();
-    var binary = require_binary();
-    var merge2 = require_merge();
-    var omap = require_omap();
-    var pairs = require_pairs();
-    var schema$2 = require_schema3();
-    var set2 = require_set();
-    var timestamp = require_timestamp();
-    var schemas = /* @__PURE__ */ new Map([
-      ["core", schema.schema],
-      ["failsafe", [map2.map, seq.seq, string4.string]],
-      ["json", schema$1.schema],
-      ["yaml11", schema$2.schema],
-      ["yaml-1.1", schema$2.schema]
-    ]);
-    var tagsByName = {
-      binary: binary.binary,
-      bool: bool.boolTag,
-      float: float.float,
-      floatExp: float.floatExp,
-      floatNaN: float.floatNaN,
-      floatTime: timestamp.floatTime,
-      int: int2.int,
-      intHex: int2.intHex,
-      intOct: int2.intOct,
-      intTime: timestamp.intTime,
-      map: map2.map,
-      merge: merge2.merge,
-      null: _null4.nullTag,
-      omap: omap.omap,
-      pairs: pairs.pairs,
-      seq: seq.seq,
-      set: set2.set,
-      timestamp: timestamp.timestamp
-    };
-    var coreKnownTags = {
-      "tag:yaml.org,2002:binary": binary.binary,
-      "tag:yaml.org,2002:merge": merge2.merge,
-      "tag:yaml.org,2002:omap": omap.omap,
-      "tag:yaml.org,2002:pairs": pairs.pairs,
-      "tag:yaml.org,2002:set": set2.set,
-      "tag:yaml.org,2002:timestamp": timestamp.timestamp
-    };
-    function getTags(customTags, schemaName, addMergeTag) {
-      const schemaTags = schemas.get(schemaName);
-      if (schemaTags && !customTags) {
-        return addMergeTag && !schemaTags.includes(merge2.merge) ? schemaTags.concat(merge2.merge) : schemaTags.slice();
-      }
-      let tags = schemaTags;
-      if (!tags) {
-        if (Array.isArray(customTags))
-          tags = [];
-        else {
-          const keys = Array.from(schemas.keys()).filter((key) => key !== "yaml11").map((key) => JSON.stringify(key)).join(", ");
-          throw new Error(`Unknown schema "${schemaName}"; use one of ${keys} or define customTags array`);
-        }
-      }
-      if (Array.isArray(customTags)) {
-        for (const tag of customTags)
-          tags = tags.concat(tag);
-      } else if (typeof customTags === "function") {
-        tags = customTags(tags.slice());
-      }
-      if (addMergeTag)
-        tags = tags.concat(merge2.merge);
-      return tags.reduce((tags2, tag) => {
-        const tagObj = typeof tag === "string" ? tagsByName[tag] : tag;
-        if (!tagObj) {
-          const tagName = JSON.stringify(tag);
-          const keys = Object.keys(tagsByName).map((key) => JSON.stringify(key)).join(", ");
-          throw new Error(`Unknown custom tag ${tagName}; use one of ${keys}`);
-        }
-        if (!tags2.includes(tagObj))
-          tags2.push(tagObj);
-        return tags2;
-      }, []);
-    }
-    exports.coreKnownTags = coreKnownTags;
-    exports.getTags = getTags;
-  }
-});
-
-// node_modules/yaml/dist/schema/Schema.js
-var require_Schema = __commonJS({
-  "node_modules/yaml/dist/schema/Schema.js"(exports) {
-    "use strict";
-    var identity = require_identity();
-    var map2 = require_map();
-    var seq = require_seq();
-    var string4 = require_string();
-    var tags = require_tags();
-    var sortMapEntriesByKey = (a, b) => a.key < b.key ? -1 : a.key > b.key ? 1 : 0;
-    var Schema = class _Schema {
-      constructor({ compat, customTags, merge: merge2, resolveKnownTags, schema, sortMapEntries, toStringDefaults }) {
-        this.compat = Array.isArray(compat) ? tags.getTags(compat, "compat") : compat ? tags.getTags(null, compat) : null;
-        this.name = typeof schema === "string" && schema || "core";
-        this.knownTags = resolveKnownTags ? tags.coreKnownTags : {};
-        this.tags = tags.getTags(customTags, this.name, merge2);
-        this.toStringOptions = toStringDefaults ?? null;
-        Object.defineProperty(this, identity.MAP, { value: map2.map });
-        Object.defineProperty(this, identity.SCALAR, { value: string4.string });
-        Object.defineProperty(this, identity.SEQ, { value: seq.seq });
-        this.sortMapEntries = typeof sortMapEntries === "function" ? sortMapEntries : sortMapEntries === true ? sortMapEntriesByKey : null;
-      }
-      clone() {
-        const copy = Object.create(_Schema.prototype, Object.getOwnPropertyDescriptors(this));
-        copy.tags = this.tags.slice();
-        return copy;
-      }
-    };
-    exports.Schema = Schema;
-  }
-});
-
-// node_modules/yaml/dist/stringify/stringifyDocument.js
-var require_stringifyDocument = __commonJS({
-  "node_modules/yaml/dist/stringify/stringifyDocument.js"(exports) {
-    "use strict";
-    var identity = require_identity();
-    var stringify = require_stringify();
-    var stringifyComment = require_stringifyComment();
-    function stringifyDocument(doc, options) {
-      const lines2 = [];
-      let hasDirectives = options.directives === true;
-      if (options.directives !== false && doc.directives) {
-        const dir = doc.directives.toString(doc);
-        if (dir) {
-          lines2.push(dir);
-          hasDirectives = true;
-        } else if (doc.directives.docStart)
-          hasDirectives = true;
-      }
-      if (hasDirectives)
-        lines2.push("---");
-      const ctx = stringify.createStringifyContext(doc, options);
-      const { commentString } = ctx.options;
-      if (doc.commentBefore) {
-        if (lines2.length !== 1)
-          lines2.unshift("");
-        const cs = commentString(doc.commentBefore);
-        lines2.unshift(stringifyComment.indentComment(cs, ""));
-      }
-      let chompKeep = false;
-      let contentComment = null;
-      if (doc.contents) {
-        if (identity.isNode(doc.contents)) {
-          if (doc.contents.spaceBefore && hasDirectives)
-            lines2.push("");
-          if (doc.contents.commentBefore) {
-            const cs = commentString(doc.contents.commentBefore);
-            lines2.push(stringifyComment.indentComment(cs, ""));
-          }
-          ctx.forceBlockIndent = !!doc.comment;
-          contentComment = doc.contents.comment;
-        }
-        const onChompKeep = contentComment ? void 0 : () => chompKeep = true;
-        let body = stringify.stringify(doc.contents, ctx, () => contentComment = null, onChompKeep);
-        if (contentComment)
-          body += stringifyComment.lineComment(body, "", commentString(contentComment));
-        if ((body[0] === "|" || body[0] === ">") && lines2[lines2.length - 1] === "---") {
-          lines2[lines2.length - 1] = `--- ${body}`;
-        } else
-          lines2.push(body);
-      } else {
-        lines2.push(stringify.stringify(doc.contents, ctx));
-      }
-      if (doc.directives?.docEnd) {
-        if (doc.comment) {
-          const cs = commentString(doc.comment);
-          if (cs.includes("\n")) {
-            lines2.push("...");
-            lines2.push(stringifyComment.indentComment(cs, ""));
-          } else {
-            lines2.push(`... ${cs}`);
-          }
-        } else {
-          lines2.push("...");
-        }
-      } else {
-        let dc = doc.comment;
-        if (dc && chompKeep)
-          dc = dc.replace(/^\n+/, "");
-        if (dc) {
-          if ((!chompKeep || contentComment) && lines2[lines2.length - 1] !== "")
-            lines2.push("");
-          lines2.push(stringifyComment.indentComment(commentString(dc), ""));
-        }
-      }
-      return lines2.join("\n") + "\n";
-    }
-    exports.stringifyDocument = stringifyDocument;
-  }
-});
-
-// node_modules/yaml/dist/doc/Document.js
-var require_Document = __commonJS({
-  "node_modules/yaml/dist/doc/Document.js"(exports) {
-    "use strict";
-    var Alias = require_Alias();
-    var Collection = require_Collection();
-    var identity = require_identity();
-    var Pair = require_Pair();
-    var toJS = require_toJS();
-    var Schema = require_Schema();
-    var stringifyDocument = require_stringifyDocument();
-    var anchors = require_anchors();
-    var applyReviver = require_applyReviver();
-    var createNode = require_createNode();
-    var directives = require_directives();
-    var Document = class _Document {
-      constructor(value, replacer, options) {
-        this.commentBefore = null;
-        this.comment = null;
-        this.errors = [];
-        this.warnings = [];
-        Object.defineProperty(this, identity.NODE_TYPE, { value: identity.DOC });
-        let _replacer = null;
-        if (typeof replacer === "function" || Array.isArray(replacer)) {
-          _replacer = replacer;
-        } else if (options === void 0 && replacer) {
-          options = replacer;
-          replacer = void 0;
-        }
-        const opt = Object.assign({
-          intAsBigInt: false,
-          keepSourceTokens: false,
-          logLevel: "warn",
-          prettyErrors: true,
-          strict: true,
-          stringKeys: false,
-          uniqueKeys: true,
-          version: "1.2"
-        }, options);
-        this.options = opt;
-        let { version: version2 } = opt;
-        if (options?._directives) {
-          this.directives = options._directives.atDocument();
-          if (this.directives.yaml.explicit)
-            version2 = this.directives.yaml.version;
-        } else
-          this.directives = new directives.Directives({ version: version2 });
-        this.setSchema(version2, options);
-        this.contents = value === void 0 ? null : this.createNode(value, _replacer, options);
-      }
-      /**
-       * Create a deep copy of this Document and its contents.
-       *
-       * Custom Node values that inherit from `Object` still refer to their original instances.
-       */
-      clone() {
-        const copy = Object.create(_Document.prototype, {
-          [identity.NODE_TYPE]: { value: identity.DOC }
-        });
-        copy.commentBefore = this.commentBefore;
-        copy.comment = this.comment;
-        copy.errors = this.errors.slice();
-        copy.warnings = this.warnings.slice();
-        copy.options = Object.assign({}, this.options);
-        if (this.directives)
-          copy.directives = this.directives.clone();
-        copy.schema = this.schema.clone();
-        copy.contents = identity.isNode(this.contents) ? this.contents.clone(copy.schema) : this.contents;
-        if (this.range)
-          copy.range = this.range.slice();
-        return copy;
-      }
-      /** Adds a value to the document. */
-      add(value) {
-        if (assertCollection(this.contents))
-          this.contents.add(value);
-      }
-      /** Adds a value to the document. */
-      addIn(path, value) {
-        if (assertCollection(this.contents))
-          this.contents.addIn(path, value);
-      }
-      /**
-       * Create a new `Alias` node, ensuring that the target `node` has the required anchor.
-       *
-       * If `node` already has an anchor, `name` is ignored.
-       * Otherwise, the `node.anchor` value will be set to `name`,
-       * or if an anchor with that name is already present in the document,
-       * `name` will be used as a prefix for a new unique anchor.
-       * If `name` is undefined, the generated anchor will use 'a' as a prefix.
-       */
-      createAlias(node2, name) {
-        if (!node2.anchor) {
-          const prev = anchors.anchorNames(this);
-          node2.anchor = // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-          !name || prev.has(name) ? anchors.findNewAnchor(name || "a", prev) : name;
-        }
-        return new Alias.Alias(node2.anchor);
-      }
-      createNode(value, replacer, options) {
-        let _replacer = void 0;
-        if (typeof replacer === "function") {
-          value = replacer.call({ "": value }, "", value);
-          _replacer = replacer;
-        } else if (Array.isArray(replacer)) {
-          const keyToStr = (v) => typeof v === "number" || v instanceof String || v instanceof Number;
-          const asStr = replacer.filter(keyToStr).map(String);
-          if (asStr.length > 0)
-            replacer = replacer.concat(asStr);
-          _replacer = replacer;
-        } else if (options === void 0 && replacer) {
-          options = replacer;
-          replacer = void 0;
-        }
-        const { aliasDuplicateObjects, anchorPrefix, flow, keepUndefined, onTagObj, tag } = options ?? {};
-        const { onAnchor, setAnchors, sourceObjects } = anchors.createNodeAnchors(
-          this,
-          // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-          anchorPrefix || "a"
-        );
-        const ctx = {
-          aliasDuplicateObjects: aliasDuplicateObjects ?? true,
-          keepUndefined: keepUndefined ?? false,
-          onAnchor,
-          onTagObj,
-          replacer: _replacer,
-          schema: this.schema,
-          sourceObjects
-        };
-        const node2 = createNode.createNode(value, tag, ctx);
-        if (flow && identity.isCollection(node2))
-          node2.flow = true;
-        setAnchors();
-        return node2;
-      }
-      /**
-       * Convert a key and a value into a `Pair` using the current schema,
-       * recursively wrapping all values as `Scalar` or `Collection` nodes.
-       */
-      createPair(key, value, options = {}) {
-        const k = this.createNode(key, null, options);
-        const v = this.createNode(value, null, options);
-        return new Pair.Pair(k, v);
-      }
-      /**
-       * Removes a value from the document.
-       * @returns `true` if the item was found and removed.
-       */
-      delete(key) {
-        return assertCollection(this.contents) ? this.contents.delete(key) : false;
-      }
-      /**
-       * Removes a value from the document.
-       * @returns `true` if the item was found and removed.
-       */
-      deleteIn(path) {
-        if (Collection.isEmptyPath(path)) {
-          if (this.contents == null)
-            return false;
-          this.contents = null;
-          return true;
-        }
-        return assertCollection(this.contents) ? this.contents.deleteIn(path) : false;
-      }
-      /**
-       * Returns item at `key`, or `undefined` if not found. By default unwraps
-       * scalar values from their surrounding node; to disable set `keepScalar` to
-       * `true` (collections are always returned intact).
-       */
-      get(key, keepScalar) {
-        return identity.isCollection(this.contents) ? this.contents.get(key, keepScalar) : void 0;
-      }
-      /**
-       * Returns item at `path`, or `undefined` if not found. By default unwraps
-       * scalar values from their surrounding node; to disable set `keepScalar` to
-       * `true` (collections are always returned intact).
-       */
-      getIn(path, keepScalar) {
-        if (Collection.isEmptyPath(path))
-          return !keepScalar && identity.isScalar(this.contents) ? this.contents.value : this.contents;
-        return identity.isCollection(this.contents) ? this.contents.getIn(path, keepScalar) : void 0;
-      }
-      /**
-       * Checks if the document includes a value with the key `key`.
-       */
-      has(key) {
-        return identity.isCollection(this.contents) ? this.contents.has(key) : false;
-      }
-      /**
-       * Checks if the document includes a value at `path`.
-       */
-      hasIn(path) {
-        if (Collection.isEmptyPath(path))
-          return this.contents !== void 0;
-        return identity.isCollection(this.contents) ? this.contents.hasIn(path) : false;
-      }
-      /**
-       * Sets a value in this document. For `!!set`, `value` needs to be a
-       * boolean to add/remove the item from the set.
-       */
-      set(key, value) {
-        if (this.contents == null) {
-          this.contents = Collection.collectionFromPath(this.schema, [key], value);
-        } else if (assertCollection(this.contents)) {
-          this.contents.set(key, value);
-        }
-      }
-      /**
-       * Sets a value in this document. For `!!set`, `value` needs to be a
-       * boolean to add/remove the item from the set.
-       */
-      setIn(path, value) {
-        if (Collection.isEmptyPath(path)) {
-          this.contents = value;
-        } else if (this.contents == null) {
-          this.contents = Collection.collectionFromPath(this.schema, Array.from(path), value);
-        } else if (assertCollection(this.contents)) {
-          this.contents.setIn(path, value);
-        }
-      }
-      /**
-       * Change the YAML version and schema used by the document.
-       * A `null` version disables support for directives, explicit tags, anchors, and aliases.
-       * It also requires the `schema` option to be given as a `Schema` instance value.
-       *
-       * Overrides all previously set schema options.
-       */
-      setSchema(version2, options = {}) {
-        if (typeof version2 === "number")
-          version2 = String(version2);
-        let opt;
-        switch (version2) {
-          case "1.1":
-            if (this.directives)
-              this.directives.yaml.version = "1.1";
-            else
-              this.directives = new directives.Directives({ version: "1.1" });
-            opt = { resolveKnownTags: false, schema: "yaml-1.1" };
-            break;
-          case "1.2":
-          case "next":
-            if (this.directives)
-              this.directives.yaml.version = version2;
-            else
-              this.directives = new directives.Directives({ version: version2 });
-            opt = { resolveKnownTags: true, schema: "core" };
-            break;
-          case null:
-            if (this.directives)
-              delete this.directives;
-            opt = null;
-            break;
-          default: {
-            const sv = JSON.stringify(version2);
-            throw new Error(`Expected '1.1', '1.2' or null as first argument, but found: ${sv}`);
-          }
-        }
-        if (options.schema instanceof Object)
-          this.schema = options.schema;
-        else if (opt)
-          this.schema = new Schema.Schema(Object.assign(opt, options));
-        else
-          throw new Error(`With a null YAML version, the { schema: Schema } option is required`);
-      }
-      // json & jsonArg are only used from toJSON()
-      toJS({ json: json3, jsonArg, mapAsMap, maxAliasCount, onAnchor, reviver } = {}) {
-        const ctx = {
-          anchors: /* @__PURE__ */ new Map(),
-          doc: this,
-          keep: !json3,
-          mapAsMap: mapAsMap === true,
-          mapKeyWarned: false,
-          maxAliasCount: typeof maxAliasCount === "number" ? maxAliasCount : 100
-        };
-        const res = toJS.toJS(this.contents, jsonArg ?? "", ctx);
-        if (typeof onAnchor === "function")
-          for (const { count, res: res2 } of ctx.anchors.values())
-            onAnchor(res2, count);
-        return typeof reviver === "function" ? applyReviver.applyReviver(reviver, { "": res }, "", res) : res;
-      }
-      /**
-       * A JSON representation of the document `contents`.
-       *
-       * @param jsonArg Used by `JSON.stringify` to indicate the array index or
-       *   property name.
-       */
-      toJSON(jsonArg, onAnchor) {
-        return this.toJS({ json: true, jsonArg, mapAsMap: false, onAnchor });
-      }
-      /** A YAML representation of the document. */
-      toString(options = {}) {
-        if (this.errors.length > 0)
-          throw new Error("Document with errors cannot be stringified");
-        if ("indent" in options && (!Number.isInteger(options.indent) || Number(options.indent) <= 0)) {
-          const s = JSON.stringify(options.indent);
-          throw new Error(`"indent" option must be a positive integer, not ${s}`);
-        }
-        return stringifyDocument.stringifyDocument(this, options);
-      }
-    };
-    function assertCollection(contents) {
-      if (identity.isCollection(contents))
-        return true;
-      throw new Error("Expected a YAML collection as document contents");
-    }
-    exports.Document = Document;
-  }
-});
-
-// node_modules/yaml/dist/errors.js
-var require_errors = __commonJS({
-  "node_modules/yaml/dist/errors.js"(exports) {
-    "use strict";
-    var YAMLError = class extends Error {
-      constructor(name, pos, code2, message) {
-        super();
-        this.name = name;
-        this.code = code2;
-        this.message = message;
-        this.pos = pos;
-      }
-    };
-    var YAMLParseError = class extends YAMLError {
-      constructor(pos, code2, message) {
-        super("YAMLParseError", pos, code2, message);
-      }
-    };
-    var YAMLWarning = class extends YAMLError {
-      constructor(pos, code2, message) {
-        super("YAMLWarning", pos, code2, message);
-      }
-    };
-    var prettifyError2 = (src, lc) => (error62) => {
-      if (error62.pos[0] === -1)
-        return;
-      error62.linePos = error62.pos.map((pos) => lc.linePos(pos));
-      const { line, col } = error62.linePos[0];
-      error62.message += ` at line ${line}, column ${col}`;
-      let ci = col - 1;
-      let lineStr = src.substring(lc.lineStarts[line - 1], lc.lineStarts[line]).replace(/[\n\r]+$/, "");
-      if (ci >= 60 && lineStr.length > 80) {
-        const trimStart = Math.min(ci - 39, lineStr.length - 79);
-        lineStr = "\u2026" + lineStr.substring(trimStart);
-        ci -= trimStart - 1;
-      }
-      if (lineStr.length > 80)
-        lineStr = lineStr.substring(0, 79) + "\u2026";
-      if (line > 1 && /^ *$/.test(lineStr.substring(0, ci))) {
-        let prev = src.substring(lc.lineStarts[line - 2], lc.lineStarts[line - 1]);
-        if (prev.length > 80)
-          prev = prev.substring(0, 79) + "\u2026\n";
-        lineStr = prev + lineStr;
-      }
-      if (/[^ ]/.test(lineStr)) {
-        let count = 1;
-        const end = error62.linePos[1];
-        if (end?.line === line && end.col > col) {
-          count = Math.max(1, Math.min(end.col - col, 80 - ci));
-        }
-        const pointer = " ".repeat(ci) + "^".repeat(count);
-        error62.message += `:
-
-${lineStr}
-${pointer}
-`;
-      }
-    };
-    exports.YAMLError = YAMLError;
-    exports.YAMLParseError = YAMLParseError;
-    exports.YAMLWarning = YAMLWarning;
-    exports.prettifyError = prettifyError2;
-  }
-});
-
-// node_modules/yaml/dist/compose/resolve-props.js
-var require_resolve_props = __commonJS({
-  "node_modules/yaml/dist/compose/resolve-props.js"(exports) {
-    "use strict";
-    function resolveProps(tokens, { flow, indicator, next, offset, onError, parentIndent, startOnNewline }) {
-      let spaceBefore = false;
-      let atNewline = startOnNewline;
-      let hasSpace = startOnNewline;
-      let comment = "";
-      let commentSep = "";
-      let hasNewline = false;
-      let reqSpace = false;
-      let tab = null;
-      let anchor2 = null;
-      let tag = null;
-      let newlineAfterProp = null;
-      let comma = null;
-      let found = null;
-      let start = null;
-      for (const token of tokens) {
-        if (reqSpace) {
-          if (token.type !== "space" && token.type !== "newline" && token.type !== "comma")
-            onError(token.offset, "MISSING_CHAR", "Tags and anchors must be separated from the next token by white space");
-          reqSpace = false;
-        }
-        if (tab) {
-          if (atNewline && token.type !== "comment" && token.type !== "newline") {
-            onError(tab, "TAB_AS_INDENT", "Tabs are not allowed as indentation");
-          }
-          tab = null;
-        }
-        switch (token.type) {
-          case "space":
-            if (!flow && (indicator !== "doc-start" || next?.type !== "flow-collection") && token.source.includes("	")) {
-              tab = token;
-            }
-            hasSpace = true;
-            break;
-          case "comment": {
-            if (!hasSpace)
-              onError(token, "MISSING_CHAR", "Comments must be separated from other tokens by white space characters");
-            const cb = token.source.substring(1) || " ";
-            if (!comment)
-              comment = cb;
-            else
-              comment += commentSep + cb;
-            commentSep = "";
-            atNewline = false;
-            break;
-          }
-          case "newline":
-            if (atNewline) {
-              if (comment)
-                comment += token.source;
-              else if (!found || indicator !== "seq-item-ind")
-                spaceBefore = true;
-            } else
-              commentSep += token.source;
-            atNewline = true;
-            hasNewline = true;
-            if (anchor2 || tag)
-              newlineAfterProp = token;
-            hasSpace = true;
-            break;
-          case "anchor":
-            if (anchor2)
-              onError(token, "MULTIPLE_ANCHORS", "A node can have at most one anchor");
-            if (token.source.endsWith(":"))
-              onError(token.offset + token.source.length - 1, "BAD_ALIAS", "Anchor ending in : is ambiguous", true);
-            anchor2 = token;
-            start ?? (start = token.offset);
-            atNewline = false;
-            hasSpace = false;
-            reqSpace = true;
-            break;
-          case "tag": {
-            if (tag)
-              onError(token, "MULTIPLE_TAGS", "A node can have at most one tag");
-            tag = token;
-            start ?? (start = token.offset);
-            atNewline = false;
-            hasSpace = false;
-            reqSpace = true;
-            break;
-          }
-          case indicator:
-            if (anchor2 || tag)
-              onError(token, "BAD_PROP_ORDER", `Anchors and tags must be after the ${token.source} indicator`);
-            if (found)
-              onError(token, "UNEXPECTED_TOKEN", `Unexpected ${token.source} in ${flow ?? "collection"}`);
-            found = token;
-            atNewline = indicator === "seq-item-ind" || indicator === "explicit-key-ind";
-            hasSpace = false;
-            break;
-          case "comma":
-            if (flow) {
-              if (comma)
-                onError(token, "UNEXPECTED_TOKEN", `Unexpected , in ${flow}`);
-              comma = token;
-              atNewline = false;
-              hasSpace = false;
-              break;
-            }
-          // else fallthrough
-          default:
-            onError(token, "UNEXPECTED_TOKEN", `Unexpected ${token.type} token`);
-            atNewline = false;
-            hasSpace = false;
-        }
-      }
-      const last = tokens[tokens.length - 1];
-      const end = last ? last.offset + last.source.length : offset;
-      if (reqSpace && next && next.type !== "space" && next.type !== "newline" && next.type !== "comma" && (next.type !== "scalar" || next.source !== "")) {
-        onError(next.offset, "MISSING_CHAR", "Tags and anchors must be separated from the next token by white space");
-      }
-      if (tab && (atNewline && tab.indent <= parentIndent || next?.type === "block-map" || next?.type === "block-seq"))
-        onError(tab, "TAB_AS_INDENT", "Tabs are not allowed as indentation");
-      return {
-        comma,
-        found,
-        spaceBefore,
-        comment,
-        hasNewline,
-        anchor: anchor2,
-        tag,
-        newlineAfterProp,
-        end,
-        start: start ?? end
-      };
-    }
-    exports.resolveProps = resolveProps;
-  }
-});
-
-// node_modules/yaml/dist/compose/util-contains-newline.js
-var require_util_contains_newline = __commonJS({
-  "node_modules/yaml/dist/compose/util-contains-newline.js"(exports) {
-    "use strict";
-    function containsNewline(key) {
-      if (!key)
-        return null;
-      switch (key.type) {
-        case "alias":
-        case "scalar":
-        case "double-quoted-scalar":
-        case "single-quoted-scalar":
-          if (key.source.includes("\n"))
-            return true;
-          if (key.end) {
-            for (const st of key.end)
-              if (st.type === "newline")
-                return true;
-          }
-          return false;
-        case "flow-collection":
-          for (const it of key.items) {
-            for (const st of it.start)
-              if (st.type === "newline")
-                return true;
-            if (it.sep) {
-              for (const st of it.sep)
-                if (st.type === "newline")
-                  return true;
-            }
-            if (containsNewline(it.key) || containsNewline(it.value))
-              return true;
-          }
-          return false;
-        default:
-          return true;
-      }
-    }
-    exports.containsNewline = containsNewline;
-  }
-});
-
-// node_modules/yaml/dist/compose/util-flow-indent-check.js
-var require_util_flow_indent_check = __commonJS({
-  "node_modules/yaml/dist/compose/util-flow-indent-check.js"(exports) {
-    "use strict";
-    var utilContainsNewline = require_util_contains_newline();
-    function flowIndentCheck(indent, fc, onError) {
-      if (fc?.type === "flow-collection") {
-        const end = fc.end[0];
-        if (end.indent === indent && (end.source === "]" || end.source === "}") && utilContainsNewline.containsNewline(fc)) {
-          const msg = "Flow end indicator should be more indented than parent";
-          onError(end, "BAD_INDENT", msg, true);
-        }
-      }
-    }
-    exports.flowIndentCheck = flowIndentCheck;
-  }
-});
-
-// node_modules/yaml/dist/compose/util-map-includes.js
-var require_util_map_includes = __commonJS({
-  "node_modules/yaml/dist/compose/util-map-includes.js"(exports) {
-    "use strict";
-    var identity = require_identity();
-    function mapIncludes(ctx, items, search) {
-      const { uniqueKeys } = ctx.options;
-      if (uniqueKeys === false)
-        return false;
-      const isEqual = typeof uniqueKeys === "function" ? uniqueKeys : (a, b) => a === b || identity.isScalar(a) && identity.isScalar(b) && a.value === b.value;
-      return items.some((pair) => isEqual(pair.key, search));
-    }
-    exports.mapIncludes = mapIncludes;
-  }
-});
-
-// node_modules/yaml/dist/compose/resolve-block-map.js
-var require_resolve_block_map = __commonJS({
-  "node_modules/yaml/dist/compose/resolve-block-map.js"(exports) {
-    "use strict";
-    var Pair = require_Pair();
-    var YAMLMap = require_YAMLMap();
-    var resolveProps = require_resolve_props();
-    var utilContainsNewline = require_util_contains_newline();
-    var utilFlowIndentCheck = require_util_flow_indent_check();
-    var utilMapIncludes = require_util_map_includes();
-    var startColMsg = "All mapping items must start at the same column";
-    function resolveBlockMap({ composeNode, composeEmptyNode }, ctx, bm, onError, tag) {
-      const NodeClass = tag?.nodeClass ?? YAMLMap.YAMLMap;
-      const map2 = new NodeClass(ctx.schema);
-      if (ctx.atRoot)
-        ctx.atRoot = false;
-      let offset = bm.offset;
-      let commentEnd = null;
-      for (const collItem of bm.items) {
-        const { start, key, sep: sep2, value } = collItem;
-        const keyProps = resolveProps.resolveProps(start, {
-          indicator: "explicit-key-ind",
-          next: key ?? sep2?.[0],
-          offset,
-          onError,
-          parentIndent: bm.indent,
-          startOnNewline: true
-        });
-        const implicitKey = !keyProps.found;
-        if (implicitKey) {
-          if (key) {
-            if (key.type === "block-seq")
-              onError(offset, "BLOCK_AS_IMPLICIT_KEY", "A block sequence may not be used as an implicit map key");
-            else if ("indent" in key && key.indent !== bm.indent)
-              onError(offset, "BAD_INDENT", startColMsg);
-          }
-          if (!keyProps.anchor && !keyProps.tag && !sep2) {
-            commentEnd = keyProps.end;
-            if (keyProps.comment) {
-              if (map2.comment)
-                map2.comment += "\n" + keyProps.comment;
-              else
-                map2.comment = keyProps.comment;
-            }
-            continue;
-          }
-          if (keyProps.newlineAfterProp || utilContainsNewline.containsNewline(key)) {
-            onError(key ?? start[start.length - 1], "MULTILINE_IMPLICIT_KEY", "Implicit keys need to be on a single line");
-          }
-        } else if (keyProps.found?.indent !== bm.indent) {
-          onError(offset, "BAD_INDENT", startColMsg);
-        }
-        ctx.atKey = true;
-        const keyStart = keyProps.end;
-        const keyNode = key ? composeNode(ctx, key, keyProps, onError) : composeEmptyNode(ctx, keyStart, start, null, keyProps, onError);
-        if (ctx.schema.compat)
-          utilFlowIndentCheck.flowIndentCheck(bm.indent, key, onError);
-        ctx.atKey = false;
-        if (utilMapIncludes.mapIncludes(ctx, map2.items, keyNode))
-          onError(keyStart, "DUPLICATE_KEY", "Map keys must be unique");
-        const valueProps = resolveProps.resolveProps(sep2 ?? [], {
-          indicator: "map-value-ind",
-          next: value,
-          offset: keyNode.range[2],
-          onError,
-          parentIndent: bm.indent,
-          startOnNewline: !key || key.type === "block-scalar"
-        });
-        offset = valueProps.end;
-        if (valueProps.found) {
-          if (implicitKey) {
-            if (value?.type === "block-map" && !valueProps.hasNewline)
-              onError(offset, "BLOCK_AS_IMPLICIT_KEY", "Nested mappings are not allowed in compact mappings");
-            if (ctx.options.strict && keyProps.start < valueProps.found.offset - 1024)
-              onError(keyNode.range, "KEY_OVER_1024_CHARS", "The : indicator must be at most 1024 chars after the start of an implicit block mapping key");
-          }
-          const valueNode = value ? composeNode(ctx, value, valueProps, onError) : composeEmptyNode(ctx, offset, sep2, null, valueProps, onError);
-          if (ctx.schema.compat)
-            utilFlowIndentCheck.flowIndentCheck(bm.indent, value, onError);
-          offset = valueNode.range[2];
-          const pair = new Pair.Pair(keyNode, valueNode);
-          if (ctx.options.keepSourceTokens)
-            pair.srcToken = collItem;
-          map2.items.push(pair);
-        } else {
-          if (implicitKey)
-            onError(keyNode.range, "MISSING_CHAR", "Implicit map keys need to be followed by map values");
-          if (valueProps.comment) {
-            if (keyNode.comment)
-              keyNode.comment += "\n" + valueProps.comment;
-            else
-              keyNode.comment = valueProps.comment;
-          }
-          const pair = new Pair.Pair(keyNode);
-          if (ctx.options.keepSourceTokens)
-            pair.srcToken = collItem;
-          map2.items.push(pair);
-        }
-      }
-      if (commentEnd && commentEnd < offset)
-        onError(commentEnd, "IMPOSSIBLE", "Map comment with trailing content");
-      map2.range = [bm.offset, offset, commentEnd ?? offset];
-      return map2;
-    }
-    exports.resolveBlockMap = resolveBlockMap;
-  }
-});
-
-// node_modules/yaml/dist/compose/resolve-block-seq.js
-var require_resolve_block_seq = __commonJS({
-  "node_modules/yaml/dist/compose/resolve-block-seq.js"(exports) {
-    "use strict";
-    var YAMLSeq = require_YAMLSeq();
-    var resolveProps = require_resolve_props();
-    var utilFlowIndentCheck = require_util_flow_indent_check();
-    function resolveBlockSeq({ composeNode, composeEmptyNode }, ctx, bs, onError, tag) {
-      const NodeClass = tag?.nodeClass ?? YAMLSeq.YAMLSeq;
-      const seq = new NodeClass(ctx.schema);
-      if (ctx.atRoot)
-        ctx.atRoot = false;
-      if (ctx.atKey)
-        ctx.atKey = false;
-      let offset = bs.offset;
-      let commentEnd = null;
-      for (const { start, value } of bs.items) {
-        const props = resolveProps.resolveProps(start, {
-          indicator: "seq-item-ind",
-          next: value,
-          offset,
-          onError,
-          parentIndent: bs.indent,
-          startOnNewline: true
-        });
-        if (!props.found) {
-          if (props.anchor || props.tag || value) {
-            if (value?.type === "block-seq")
-              onError(props.end, "BAD_INDENT", "All sequence items must start at the same column");
-            else
-              onError(offset, "MISSING_CHAR", "Sequence item without - indicator");
-          } else {
-            commentEnd = props.end;
-            if (props.comment)
-              seq.comment = props.comment;
-            continue;
-          }
-        }
-        const node2 = value ? composeNode(ctx, value, props, onError) : composeEmptyNode(ctx, props.end, start, null, props, onError);
-        if (ctx.schema.compat)
-          utilFlowIndentCheck.flowIndentCheck(bs.indent, value, onError);
-        offset = node2.range[2];
-        seq.items.push(node2);
-      }
-      seq.range = [bs.offset, offset, commentEnd ?? offset];
-      return seq;
-    }
-    exports.resolveBlockSeq = resolveBlockSeq;
-  }
-});
-
-// node_modules/yaml/dist/compose/resolve-end.js
-var require_resolve_end = __commonJS({
-  "node_modules/yaml/dist/compose/resolve-end.js"(exports) {
-    "use strict";
-    function resolveEnd(end, offset, reqSpace, onError) {
-      let comment = "";
-      if (end) {
-        let hasSpace = false;
-        let sep2 = "";
-        for (const token of end) {
-          const { source, type } = token;
-          switch (type) {
-            case "space":
-              hasSpace = true;
-              break;
-            case "comment": {
-              if (reqSpace && !hasSpace)
-                onError(token, "MISSING_CHAR", "Comments must be separated from other tokens by white space characters");
-              const cb = source.substring(1) || " ";
-              if (!comment)
-                comment = cb;
-              else
-                comment += sep2 + cb;
-              sep2 = "";
-              break;
-            }
-            case "newline":
-              if (comment)
-                sep2 += source;
-              hasSpace = true;
-              break;
-            default:
-              onError(token, "UNEXPECTED_TOKEN", `Unexpected ${type} at node end`);
-          }
-          offset += source.length;
-        }
-      }
-      return { comment, offset };
-    }
-    exports.resolveEnd = resolveEnd;
-  }
-});
-
-// node_modules/yaml/dist/compose/resolve-flow-collection.js
-var require_resolve_flow_collection = __commonJS({
-  "node_modules/yaml/dist/compose/resolve-flow-collection.js"(exports) {
-    "use strict";
-    var identity = require_identity();
-    var Pair = require_Pair();
-    var YAMLMap = require_YAMLMap();
-    var YAMLSeq = require_YAMLSeq();
-    var resolveEnd = require_resolve_end();
-    var resolveProps = require_resolve_props();
-    var utilContainsNewline = require_util_contains_newline();
-    var utilMapIncludes = require_util_map_includes();
-    var blockMsg = "Block collections are not allowed within flow collections";
-    var isBlock = (token) => token && (token.type === "block-map" || token.type === "block-seq");
-    function resolveFlowCollection({ composeNode, composeEmptyNode }, ctx, fc, onError, tag) {
-      const isMap = fc.start.source === "{";
-      const fcName = isMap ? "flow map" : "flow sequence";
-      const NodeClass = tag?.nodeClass ?? (isMap ? YAMLMap.YAMLMap : YAMLSeq.YAMLSeq);
-      const coll = new NodeClass(ctx.schema);
-      coll.flow = true;
-      const atRoot = ctx.atRoot;
-      if (atRoot)
-        ctx.atRoot = false;
-      if (ctx.atKey)
-        ctx.atKey = false;
-      let offset = fc.offset + fc.start.source.length;
-      for (let i = 0; i < fc.items.length; ++i) {
-        const collItem = fc.items[i];
-        const { start, key, sep: sep2, value } = collItem;
-        const props = resolveProps.resolveProps(start, {
-          flow: fcName,
-          indicator: "explicit-key-ind",
-          next: key ?? sep2?.[0],
-          offset,
-          onError,
-          parentIndent: fc.indent,
-          startOnNewline: false
-        });
-        if (!props.found) {
-          if (!props.anchor && !props.tag && !sep2 && !value) {
-            if (i === 0 && props.comma)
-              onError(props.comma, "UNEXPECTED_TOKEN", `Unexpected , in ${fcName}`);
-            else if (i < fc.items.length - 1)
-              onError(props.start, "UNEXPECTED_TOKEN", `Unexpected empty item in ${fcName}`);
-            if (props.comment) {
-              if (coll.comment)
-                coll.comment += "\n" + props.comment;
-              else
-                coll.comment = props.comment;
-            }
-            offset = props.end;
-            continue;
-          }
-          if (!isMap && ctx.options.strict && utilContainsNewline.containsNewline(key))
-            onError(
-              key,
-              // checked by containsNewline()
-              "MULTILINE_IMPLICIT_KEY",
-              "Implicit keys of flow sequence pairs need to be on a single line"
-            );
-        }
-        if (i === 0) {
-          if (props.comma)
-            onError(props.comma, "UNEXPECTED_TOKEN", `Unexpected , in ${fcName}`);
-        } else {
-          if (!props.comma)
-            onError(props.start, "MISSING_CHAR", `Missing , between ${fcName} items`);
-          if (props.comment) {
-            let prevItemComment = "";
-            loop: for (const st of start) {
-              switch (st.type) {
-                case "comma":
-                case "space":
-                  break;
-                case "comment":
-                  prevItemComment = st.source.substring(1);
-                  break loop;
-                default:
-                  break loop;
-              }
-            }
-            if (prevItemComment) {
-              let prev = coll.items[coll.items.length - 1];
-              if (identity.isPair(prev))
-                prev = prev.value ?? prev.key;
-              if (prev.comment)
-                prev.comment += "\n" + prevItemComment;
-              else
-                prev.comment = prevItemComment;
-              props.comment = props.comment.substring(prevItemComment.length + 1);
-            }
-          }
-        }
-        if (!isMap && !sep2 && !props.found) {
-          const valueNode = value ? composeNode(ctx, value, props, onError) : composeEmptyNode(ctx, props.end, sep2, null, props, onError);
-          coll.items.push(valueNode);
-          offset = valueNode.range[2];
-          if (isBlock(value))
-            onError(valueNode.range, "BLOCK_IN_FLOW", blockMsg);
-        } else {
-          ctx.atKey = true;
-          const keyStart = props.end;
-          const keyNode = key ? composeNode(ctx, key, props, onError) : composeEmptyNode(ctx, keyStart, start, null, props, onError);
-          if (isBlock(key))
-            onError(keyNode.range, "BLOCK_IN_FLOW", blockMsg);
-          ctx.atKey = false;
-          const valueProps = resolveProps.resolveProps(sep2 ?? [], {
-            flow: fcName,
-            indicator: "map-value-ind",
-            next: value,
-            offset: keyNode.range[2],
-            onError,
-            parentIndent: fc.indent,
-            startOnNewline: false
-          });
-          if (valueProps.found) {
-            if (!isMap && !props.found && ctx.options.strict) {
-              if (sep2)
-                for (const st of sep2) {
-                  if (st === valueProps.found)
-                    break;
-                  if (st.type === "newline") {
-                    onError(st, "MULTILINE_IMPLICIT_KEY", "Implicit keys of flow sequence pairs need to be on a single line");
-                    break;
-                  }
-                }
-              if (props.start < valueProps.found.offset - 1024)
-                onError(valueProps.found, "KEY_OVER_1024_CHARS", "The : indicator must be at most 1024 chars after the start of an implicit flow sequence key");
-            }
-          } else if (value) {
-            if ("source" in value && value.source?.[0] === ":")
-              onError(value, "MISSING_CHAR", `Missing space after : in ${fcName}`);
-            else
-              onError(valueProps.start, "MISSING_CHAR", `Missing , or : between ${fcName} items`);
-          }
-          const valueNode = value ? composeNode(ctx, value, valueProps, onError) : valueProps.found ? composeEmptyNode(ctx, valueProps.end, sep2, null, valueProps, onError) : null;
-          if (valueNode) {
-            if (isBlock(value))
-              onError(valueNode.range, "BLOCK_IN_FLOW", blockMsg);
-          } else if (valueProps.comment) {
-            if (keyNode.comment)
-              keyNode.comment += "\n" + valueProps.comment;
-            else
-              keyNode.comment = valueProps.comment;
-          }
-          const pair = new Pair.Pair(keyNode, valueNode);
-          if (ctx.options.keepSourceTokens)
-            pair.srcToken = collItem;
-          if (isMap) {
-            const map2 = coll;
-            if (utilMapIncludes.mapIncludes(ctx, map2.items, keyNode))
-              onError(keyStart, "DUPLICATE_KEY", "Map keys must be unique");
-            map2.items.push(pair);
-          } else {
-            const map2 = new YAMLMap.YAMLMap(ctx.schema);
-            map2.flow = true;
-            map2.items.push(pair);
-            const endRange = (valueNode ?? keyNode).range;
-            map2.range = [keyNode.range[0], endRange[1], endRange[2]];
-            coll.items.push(map2);
-          }
-          offset = valueNode ? valueNode.range[2] : valueProps.end;
-        }
-      }
-      const expectedEnd = isMap ? "}" : "]";
-      const [ce, ...ee] = fc.end;
-      let cePos = offset;
-      if (ce?.source === expectedEnd)
-        cePos = ce.offset + ce.source.length;
-      else {
-        const name = fcName[0].toUpperCase() + fcName.substring(1);
-        const msg = atRoot ? `${name} must end with a ${expectedEnd}` : `${name} in block collection must be sufficiently indented and end with a ${expectedEnd}`;
-        onError(offset, atRoot ? "MISSING_CHAR" : "BAD_INDENT", msg);
-        if (ce && ce.source.length !== 1)
-          ee.unshift(ce);
-      }
-      if (ee.length > 0) {
-        const end = resolveEnd.resolveEnd(ee, cePos, ctx.options.strict, onError);
-        if (end.comment) {
-          if (coll.comment)
-            coll.comment += "\n" + end.comment;
-          else
-            coll.comment = end.comment;
-        }
-        coll.range = [fc.offset, cePos, end.offset];
-      } else {
-        coll.range = [fc.offset, cePos, cePos];
-      }
-      return coll;
-    }
-    exports.resolveFlowCollection = resolveFlowCollection;
-  }
-});
-
-// node_modules/yaml/dist/compose/compose-collection.js
-var require_compose_collection = __commonJS({
-  "node_modules/yaml/dist/compose/compose-collection.js"(exports) {
-    "use strict";
-    var identity = require_identity();
-    var Scalar = require_Scalar();
-    var YAMLMap = require_YAMLMap();
-    var YAMLSeq = require_YAMLSeq();
-    var resolveBlockMap = require_resolve_block_map();
-    var resolveBlockSeq = require_resolve_block_seq();
-    var resolveFlowCollection = require_resolve_flow_collection();
-    function resolveCollection(CN, ctx, token, onError, tagName, tag) {
-      const coll = token.type === "block-map" ? resolveBlockMap.resolveBlockMap(CN, ctx, token, onError, tag) : token.type === "block-seq" ? resolveBlockSeq.resolveBlockSeq(CN, ctx, token, onError, tag) : resolveFlowCollection.resolveFlowCollection(CN, ctx, token, onError, tag);
-      const Coll = coll.constructor;
-      if (tagName === "!" || tagName === Coll.tagName) {
-        coll.tag = Coll.tagName;
-        return coll;
-      }
-      if (tagName)
-        coll.tag = tagName;
-      return coll;
-    }
-    function composeCollection(CN, ctx, token, props, onError) {
-      const tagToken = props.tag;
-      const tagName = !tagToken ? null : ctx.directives.tagName(tagToken.source, (msg) => onError(tagToken, "TAG_RESOLVE_FAILED", msg));
-      if (token.type === "block-seq") {
-        const { anchor: anchor2, newlineAfterProp: nl } = props;
-        const lastProp = anchor2 && tagToken ? anchor2.offset > tagToken.offset ? anchor2 : tagToken : anchor2 ?? tagToken;
-        if (lastProp && (!nl || nl.offset < lastProp.offset)) {
-          const message = "Missing newline after block sequence props";
-          onError(lastProp, "MISSING_CHAR", message);
-        }
-      }
-      const expType = token.type === "block-map" ? "map" : token.type === "block-seq" ? "seq" : token.start.source === "{" ? "map" : "seq";
-      if (!tagToken || !tagName || tagName === "!" || tagName === YAMLMap.YAMLMap.tagName && expType === "map" || tagName === YAMLSeq.YAMLSeq.tagName && expType === "seq") {
-        return resolveCollection(CN, ctx, token, onError, tagName);
-      }
-      let tag = ctx.schema.tags.find((t2) => t2.tag === tagName && t2.collection === expType);
-      if (!tag) {
-        const kt = ctx.schema.knownTags[tagName];
-        if (kt?.collection === expType) {
-          ctx.schema.tags.push(Object.assign({}, kt, { default: false }));
-          tag = kt;
-        } else {
-          if (kt) {
-            onError(tagToken, "BAD_COLLECTION_TYPE", `${kt.tag} used for ${expType} collection, but expects ${kt.collection ?? "scalar"}`, true);
-          } else {
-            onError(tagToken, "TAG_RESOLVE_FAILED", `Unresolved tag: ${tagName}`, true);
-          }
-          return resolveCollection(CN, ctx, token, onError, tagName);
-        }
-      }
-      const coll = resolveCollection(CN, ctx, token, onError, tagName, tag);
-      const res = tag.resolve?.(coll, (msg) => onError(tagToken, "TAG_RESOLVE_FAILED", msg), ctx.options) ?? coll;
-      const node2 = identity.isNode(res) ? res : new Scalar.Scalar(res);
-      node2.range = coll.range;
-      node2.tag = tagName;
-      if (tag?.format)
-        node2.format = tag.format;
-      return node2;
-    }
-    exports.composeCollection = composeCollection;
-  }
-});
-
-// node_modules/yaml/dist/compose/resolve-block-scalar.js
-var require_resolve_block_scalar = __commonJS({
-  "node_modules/yaml/dist/compose/resolve-block-scalar.js"(exports) {
-    "use strict";
-    var Scalar = require_Scalar();
-    function resolveBlockScalar(ctx, scalar, onError) {
-      const start = scalar.offset;
-      const header = parseBlockScalarHeader(scalar, ctx.options.strict, onError);
-      if (!header)
-        return { value: "", type: null, comment: "", range: [start, start, start] };
-      const type = header.mode === ">" ? Scalar.Scalar.BLOCK_FOLDED : Scalar.Scalar.BLOCK_LITERAL;
-      const lines2 = scalar.source ? splitLines(scalar.source) : [];
-      let chompStart = lines2.length;
-      for (let i = lines2.length - 1; i >= 0; --i) {
-        const content = lines2[i][1];
-        if (content === "" || content === "\r")
-          chompStart = i;
-        else
-          break;
-      }
-      if (chompStart === 0) {
-        const value2 = header.chomp === "+" && lines2.length > 0 ? "\n".repeat(Math.max(1, lines2.length - 1)) : "";
-        let end2 = start + header.length;
-        if (scalar.source)
-          end2 += scalar.source.length;
-        return { value: value2, type, comment: header.comment, range: [start, end2, end2] };
-      }
-      let trimIndent = scalar.indent + header.indent;
-      let offset = scalar.offset + header.length;
-      let contentStart = 0;
-      for (let i = 0; i < chompStart; ++i) {
-        const [indent, content] = lines2[i];
-        if (content === "" || content === "\r") {
-          if (header.indent === 0 && indent.length > trimIndent)
-            trimIndent = indent.length;
-        } else {
-          if (indent.length < trimIndent) {
-            const message = "Block scalars with more-indented leading empty lines must use an explicit indentation indicator";
-            onError(offset + indent.length, "MISSING_CHAR", message);
-          }
-          if (header.indent === 0)
-            trimIndent = indent.length;
-          contentStart = i;
-          if (trimIndent === 0 && !ctx.atRoot) {
-            const message = "Block scalar values in collections must be indented";
-            onError(offset, "BAD_INDENT", message);
-          }
-          break;
-        }
-        offset += indent.length + content.length + 1;
-      }
-      for (let i = lines2.length - 1; i >= chompStart; --i) {
-        if (lines2[i][0].length > trimIndent)
-          chompStart = i + 1;
-      }
-      let value = "";
-      let sep2 = "";
-      let prevMoreIndented = false;
-      for (let i = 0; i < contentStart; ++i)
-        value += lines2[i][0].slice(trimIndent) + "\n";
-      for (let i = contentStart; i < chompStart; ++i) {
-        let [indent, content] = lines2[i];
-        offset += indent.length + content.length + 1;
-        const crlf = content[content.length - 1] === "\r";
-        if (crlf)
-          content = content.slice(0, -1);
-        if (content && indent.length < trimIndent) {
-          const src = header.indent ? "explicit indentation indicator" : "first line";
-          const message = `Block scalar lines must not be less indented than their ${src}`;
-          onError(offset - content.length - (crlf ? 2 : 1), "BAD_INDENT", message);
-          indent = "";
-        }
-        if (type === Scalar.Scalar.BLOCK_LITERAL) {
-          value += sep2 + indent.slice(trimIndent) + content;
-          sep2 = "\n";
-        } else if (indent.length > trimIndent || content[0] === "	") {
-          if (sep2 === " ")
-            sep2 = "\n";
-          else if (!prevMoreIndented && sep2 === "\n")
-            sep2 = "\n\n";
-          value += sep2 + indent.slice(trimIndent) + content;
-          sep2 = "\n";
-          prevMoreIndented = true;
-        } else if (content === "") {
-          if (sep2 === "\n")
-            value += "\n";
-          else
-            sep2 = "\n";
-        } else {
-          value += sep2 + content;
-          sep2 = " ";
-          prevMoreIndented = false;
-        }
-      }
-      switch (header.chomp) {
-        case "-":
-          break;
-        case "+":
-          for (let i = chompStart; i < lines2.length; ++i)
-            value += "\n" + lines2[i][0].slice(trimIndent);
-          if (value[value.length - 1] !== "\n")
-            value += "\n";
-          break;
-        default:
-          value += "\n";
-      }
-      const end = start + header.length + scalar.source.length;
-      return { value, type, comment: header.comment, range: [start, end, end] };
-    }
-    function parseBlockScalarHeader({ offset, props }, strict, onError) {
-      if (props[0].type !== "block-scalar-header") {
-        onError(props[0], "IMPOSSIBLE", "Block scalar header not found");
-        return null;
-      }
-      const { source } = props[0];
-      const mode = source[0];
-      let indent = 0;
-      let chomp = "";
-      let error62 = -1;
-      for (let i = 1; i < source.length; ++i) {
-        const ch = source[i];
-        if (!chomp && (ch === "-" || ch === "+"))
-          chomp = ch;
-        else {
-          const n = Number(ch);
-          if (!indent && n)
-            indent = n;
-          else if (error62 === -1)
-            error62 = offset + i;
-        }
-      }
-      if (error62 !== -1)
-        onError(error62, "UNEXPECTED_TOKEN", `Block scalar header includes extra characters: ${source}`);
-      let hasSpace = false;
-      let comment = "";
-      let length = source.length;
-      for (let i = 1; i < props.length; ++i) {
-        const token = props[i];
-        switch (token.type) {
-          case "space":
-            hasSpace = true;
-          // fallthrough
-          case "newline":
-            length += token.source.length;
-            break;
-          case "comment":
-            if (strict && !hasSpace) {
-              const message = "Comments must be separated from other tokens by white space characters";
-              onError(token, "MISSING_CHAR", message);
-            }
-            length += token.source.length;
-            comment = token.source.substring(1);
-            break;
-          case "error":
-            onError(token, "UNEXPECTED_TOKEN", token.message);
-            length += token.source.length;
-            break;
-          /* istanbul ignore next should not happen */
-          default: {
-            const message = `Unexpected token in block scalar header: ${token.type}`;
-            onError(token, "UNEXPECTED_TOKEN", message);
-            const ts = token.source;
-            if (ts && typeof ts === "string")
-              length += ts.length;
-          }
-        }
-      }
-      return { mode, indent, chomp, comment, length };
-    }
-    function splitLines(source) {
-      const split = source.split(/\n( *)/);
-      const first = split[0];
-      const m = first.match(/^( *)/);
-      const line0 = m?.[1] ? [m[1], first.slice(m[1].length)] : ["", first];
-      const lines2 = [line0];
-      for (let i = 1; i < split.length; i += 2)
-        lines2.push([split[i], split[i + 1]]);
-      return lines2;
-    }
-    exports.resolveBlockScalar = resolveBlockScalar;
-  }
-});
-
-// node_modules/yaml/dist/compose/resolve-flow-scalar.js
-var require_resolve_flow_scalar = __commonJS({
-  "node_modules/yaml/dist/compose/resolve-flow-scalar.js"(exports) {
-    "use strict";
-    var Scalar = require_Scalar();
-    var resolveEnd = require_resolve_end();
-    function resolveFlowScalar(scalar, strict, onError) {
-      const { offset, type, source, end } = scalar;
-      let _type;
-      let value;
-      const _onError = (rel, code2, msg) => onError(offset + rel, code2, msg);
-      switch (type) {
-        case "scalar":
-          _type = Scalar.Scalar.PLAIN;
-          value = plainValue(source, _onError);
-          break;
-        case "single-quoted-scalar":
-          _type = Scalar.Scalar.QUOTE_SINGLE;
-          value = singleQuotedValue(source, _onError);
-          break;
-        case "double-quoted-scalar":
-          _type = Scalar.Scalar.QUOTE_DOUBLE;
-          value = doubleQuotedValue(source, _onError);
-          break;
-        /* istanbul ignore next should not happen */
-        default:
-          onError(scalar, "UNEXPECTED_TOKEN", `Expected a flow scalar value, but found: ${type}`);
-          return {
-            value: "",
-            type: null,
-            comment: "",
-            range: [offset, offset + source.length, offset + source.length]
-          };
-      }
-      const valueEnd = offset + source.length;
-      const re = resolveEnd.resolveEnd(end, valueEnd, strict, onError);
-      return {
-        value,
-        type: _type,
-        comment: re.comment,
-        range: [offset, valueEnd, re.offset]
-      };
-    }
-    function plainValue(source, onError) {
-      let badChar = "";
-      switch (source[0]) {
-        /* istanbul ignore next should not happen */
-        case "	":
-          badChar = "a tab character";
-          break;
-        case ",":
-          badChar = "flow indicator character ,";
-          break;
-        case "%":
-          badChar = "directive indicator character %";
-          break;
-        case "|":
-        case ">": {
-          badChar = `block scalar indicator ${source[0]}`;
-          break;
-        }
-        case "@":
-        case "`": {
-          badChar = `reserved character ${source[0]}`;
-          break;
-        }
-      }
-      if (badChar)
-        onError(0, "BAD_SCALAR_START", `Plain value cannot start with ${badChar}`);
-      return unfoldLines(source);
-    }
-    function singleQuotedValue(source, onError) {
-      if (source[source.length - 1] !== "'" || source.length === 1)
-        onError(source.length, "MISSING_CHAR", "Missing closing 'quote");
-      return unfoldLines(source.slice(1, -1)).replace(/''/g, "'");
-    }
-    function unfoldLines(source) {
-      const line = /(.*?)\r?\n/sy;
-      let match2 = line.exec(source);
-      if (!match2)
-        return source;
-      let trimEnd, trimBoth;
-      try {
-        trimEnd = new RegExp("(?<![ 	])[ 	]+$");
-        trimBoth = new RegExp("^[ 	]+|(?<![ 	])[ 	]+$", "g");
-      } catch {
-        trimEnd = /[ \t]+$/;
-        trimBoth = /^[ \t]+|[ \t]+$/g;
-      }
-      let res = match2[1].replace(trimEnd, "");
-      let sep2 = " ";
-      let pos = line.lastIndex;
-      while (match2 = line.exec(source)) {
-        const lm = match2[1].replace(trimBoth, "");
-        if (lm === "") {
-          if (sep2 === "\n")
-            res += sep2;
-          else
-            sep2 = "\n";
-        } else {
-          res += sep2 + lm;
-          sep2 = " ";
-        }
-        pos = line.lastIndex;
-      }
-      const last = /[ \t]*(.*)/sy;
-      last.lastIndex = pos;
-      match2 = last.exec(source);
-      return res + sep2 + (match2?.[1] ?? "");
-    }
-    function doubleQuotedValue(source, onError) {
-      let res = "";
-      for (let i = 1; i < source.length - 1; ++i) {
-        const ch = source[i];
-        if (ch === "\r" && source[i + 1] === "\n")
-          continue;
-        if (ch === "\n") {
-          const { fold, offset } = foldNewline(source, i);
-          res += fold;
-          i = offset;
-        } else if (ch === "\\") {
-          let next = source[++i];
-          const cc = escapeCodes[next];
-          if (cc)
-            res += cc;
-          else if (next === "\n") {
-            next = source[i + 1];
-            while (next === " " || next === "	")
-              next = source[++i + 1];
-          } else if (next === "\r" && source[i + 1] === "\n") {
-            next = source[++i + 1];
-            while (next === " " || next === "	")
-              next = source[++i + 1];
-          } else if (next === "x" || next === "u" || next === "U") {
-            const length = next === "x" ? 2 : next === "u" ? 4 : 8;
-            res += parseCharCode(source, i + 1, length, onError);
-            i += length;
-          } else {
-            const raw2 = source.substr(i - 1, 2);
-            onError(i - 1, "BAD_DQ_ESCAPE", `Invalid escape sequence ${raw2}`);
-            res += raw2;
-          }
-        } else if (ch === " " || ch === "	") {
-          const wsStart = i;
-          let next = source[i + 1];
-          while (next === " " || next === "	")
-            next = source[++i + 1];
-          if (next !== "\n" && !(next === "\r" && source[i + 2] === "\n"))
-            res += i > wsStart ? source.slice(wsStart, i + 1) : ch;
-        } else {
-          res += ch;
-        }
-      }
-      if (source[source.length - 1] !== '"' || source.length === 1)
-        onError(source.length, "MISSING_CHAR", 'Missing closing "quote');
-      return res;
-    }
-    function foldNewline(source, offset) {
-      let fold = "";
-      let ch = source[offset + 1];
-      while (ch === " " || ch === "	" || ch === "\n" || ch === "\r") {
-        if (ch === "\r" && source[offset + 2] !== "\n")
-          break;
-        if (ch === "\n")
-          fold += "\n";
-        offset += 1;
-        ch = source[offset + 1];
-      }
-      if (!fold)
-        fold = " ";
-      return { fold, offset };
-    }
-    var escapeCodes = {
-      "0": "\0",
-      // null character
-      a: "\x07",
-      // bell character
-      b: "\b",
-      // backspace
-      e: "\x1B",
-      // escape character
-      f: "\f",
-      // form feed
-      n: "\n",
-      // line feed
-      r: "\r",
-      // carriage return
-      t: "	",
-      // horizontal tab
-      v: "\v",
-      // vertical tab
-      N: "\x85",
-      // Unicode next line
-      _: "\xA0",
-      // Unicode non-breaking space
-      L: "\u2028",
-      // Unicode line separator
-      P: "\u2029",
-      // Unicode paragraph separator
-      " ": " ",
-      '"': '"',
-      "/": "/",
-      "\\": "\\",
-      "	": "	"
-    };
-    function parseCharCode(source, offset, length, onError) {
-      const cc = source.substr(offset, length);
-      const ok = cc.length === length && /^[0-9a-fA-F]+$/.test(cc);
-      const code2 = ok ? parseInt(cc, 16) : NaN;
-      try {
-        return String.fromCodePoint(code2);
-      } catch {
-        const raw2 = source.substr(offset - 2, length + 2);
-        onError(offset - 2, "BAD_DQ_ESCAPE", `Invalid escape sequence ${raw2}`);
-        return raw2;
-      }
-    }
-    exports.resolveFlowScalar = resolveFlowScalar;
-  }
-});
-
-// node_modules/yaml/dist/compose/compose-scalar.js
-var require_compose_scalar = __commonJS({
-  "node_modules/yaml/dist/compose/compose-scalar.js"(exports) {
-    "use strict";
-    var identity = require_identity();
-    var Scalar = require_Scalar();
-    var resolveBlockScalar = require_resolve_block_scalar();
-    var resolveFlowScalar = require_resolve_flow_scalar();
-    function composeScalar(ctx, token, tagToken, onError) {
-      const { value, type, comment, range } = token.type === "block-scalar" ? resolveBlockScalar.resolveBlockScalar(ctx, token, onError) : resolveFlowScalar.resolveFlowScalar(token, ctx.options.strict, onError);
-      const tagName = tagToken ? ctx.directives.tagName(tagToken.source, (msg) => onError(tagToken, "TAG_RESOLVE_FAILED", msg)) : null;
-      let tag;
-      if (ctx.options.stringKeys && ctx.atKey) {
-        tag = ctx.schema[identity.SCALAR];
-      } else if (tagName)
-        tag = findScalarTagByName(ctx.schema, value, tagName, tagToken, onError);
-      else if (token.type === "scalar")
-        tag = findScalarTagByTest(ctx, value, token, onError);
-      else
-        tag = ctx.schema[identity.SCALAR];
-      let scalar;
-      try {
-        const res = tag.resolve(value, (msg) => onError(tagToken ?? token, "TAG_RESOLVE_FAILED", msg), ctx.options);
-        scalar = identity.isScalar(res) ? res : new Scalar.Scalar(res);
-      } catch (error62) {
-        const msg = error62 instanceof Error ? error62.message : String(error62);
-        onError(tagToken ?? token, "TAG_RESOLVE_FAILED", msg);
-        scalar = new Scalar.Scalar(value);
-      }
-      scalar.range = range;
-      scalar.source = value;
-      if (type)
-        scalar.type = type;
-      if (tagName)
-        scalar.tag = tagName;
-      if (tag.format)
-        scalar.format = tag.format;
-      if (comment)
-        scalar.comment = comment;
-      return scalar;
-    }
-    function findScalarTagByName(schema, value, tagName, tagToken, onError) {
-      if (tagName === "!")
-        return schema[identity.SCALAR];
-      const matchWithTest = [];
-      for (const tag of schema.tags) {
-        if (!tag.collection && tag.tag === tagName) {
-          if (tag.default && tag.test)
-            matchWithTest.push(tag);
-          else
-            return tag;
-        }
-      }
-      for (const tag of matchWithTest)
-        if (tag.test?.test(value))
-          return tag;
-      const kt = schema.knownTags[tagName];
-      if (kt && !kt.collection) {
-        schema.tags.push(Object.assign({}, kt, { default: false, test: void 0 }));
-        return kt;
-      }
-      onError(tagToken, "TAG_RESOLVE_FAILED", `Unresolved tag: ${tagName}`, tagName !== "tag:yaml.org,2002:str");
-      return schema[identity.SCALAR];
-    }
-    function findScalarTagByTest({ atKey, directives, schema }, value, token, onError) {
-      const tag = schema.tags.find((tag2) => (tag2.default === true || atKey && tag2.default === "key") && tag2.test?.test(value)) || schema[identity.SCALAR];
-      if (schema.compat) {
-        const compat = schema.compat.find((tag2) => tag2.default && tag2.test?.test(value)) ?? schema[identity.SCALAR];
-        if (tag.tag !== compat.tag) {
-          const ts = directives.tagString(tag.tag);
-          const cs = directives.tagString(compat.tag);
-          const msg = `Value may be parsed as either ${ts} or ${cs}`;
-          onError(token, "TAG_RESOLVE_FAILED", msg, true);
-        }
-      }
-      return tag;
-    }
-    exports.composeScalar = composeScalar;
-  }
-});
-
-// node_modules/yaml/dist/compose/util-empty-scalar-position.js
-var require_util_empty_scalar_position = __commonJS({
-  "node_modules/yaml/dist/compose/util-empty-scalar-position.js"(exports) {
-    "use strict";
-    function emptyScalarPosition(offset, before, pos) {
-      if (before) {
-        pos ?? (pos = before.length);
-        for (let i = pos - 1; i >= 0; --i) {
-          let st = before[i];
-          switch (st.type) {
-            case "space":
-            case "comment":
-            case "newline":
-              offset -= st.source.length;
-              continue;
-          }
-          st = before[++i];
-          while (st?.type === "space") {
-            offset += st.source.length;
-            st = before[++i];
-          }
-          break;
-        }
-      }
-      return offset;
-    }
-    exports.emptyScalarPosition = emptyScalarPosition;
-  }
-});
-
-// node_modules/yaml/dist/compose/compose-node.js
-var require_compose_node = __commonJS({
-  "node_modules/yaml/dist/compose/compose-node.js"(exports) {
-    "use strict";
-    var Alias = require_Alias();
-    var identity = require_identity();
-    var composeCollection = require_compose_collection();
-    var composeScalar = require_compose_scalar();
-    var resolveEnd = require_resolve_end();
-    var utilEmptyScalarPosition = require_util_empty_scalar_position();
-    var CN = { composeNode, composeEmptyNode };
-    function composeNode(ctx, token, props, onError) {
-      const atKey = ctx.atKey;
-      const { spaceBefore, comment, anchor: anchor2, tag } = props;
-      let node2;
-      let isSrcToken = true;
-      switch (token.type) {
-        case "alias":
-          node2 = composeAlias(ctx, token, onError);
-          if (anchor2 || tag)
-            onError(token, "ALIAS_PROPS", "An alias node must not specify any properties");
-          break;
-        case "scalar":
-        case "single-quoted-scalar":
-        case "double-quoted-scalar":
-        case "block-scalar":
-          node2 = composeScalar.composeScalar(ctx, token, tag, onError);
-          if (anchor2)
-            node2.anchor = anchor2.source.substring(1);
-          break;
-        case "block-map":
-        case "block-seq":
-        case "flow-collection":
-          try {
-            node2 = composeCollection.composeCollection(CN, ctx, token, props, onError);
-            if (anchor2)
-              node2.anchor = anchor2.source.substring(1);
-          } catch (error62) {
-            const message = error62 instanceof Error ? error62.message : String(error62);
-            onError(token, "RESOURCE_EXHAUSTION", message);
-          }
-          break;
-        default: {
-          const message = token.type === "error" ? token.message : `Unsupported token (type: ${token.type})`;
-          onError(token, "UNEXPECTED_TOKEN", message);
-          isSrcToken = false;
-        }
-      }
-      node2 ?? (node2 = composeEmptyNode(ctx, token.offset, void 0, null, props, onError));
-      if (anchor2 && node2.anchor === "")
-        onError(anchor2, "BAD_ALIAS", "Anchor cannot be an empty string");
-      if (atKey && ctx.options.stringKeys && (!identity.isScalar(node2) || typeof node2.value !== "string" || node2.tag && node2.tag !== "tag:yaml.org,2002:str")) {
-        const msg = "With stringKeys, all keys must be strings";
-        onError(tag ?? token, "NON_STRING_KEY", msg);
-      }
-      if (spaceBefore)
-        node2.spaceBefore = true;
-      if (comment) {
-        if (token.type === "scalar" && token.source === "")
-          node2.comment = comment;
-        else
-          node2.commentBefore = comment;
-      }
-      if (ctx.options.keepSourceTokens && isSrcToken)
-        node2.srcToken = token;
-      return node2;
-    }
-    function composeEmptyNode(ctx, offset, before, pos, { spaceBefore, comment, anchor: anchor2, tag, end }, onError) {
-      const token = {
-        type: "scalar",
-        offset: utilEmptyScalarPosition.emptyScalarPosition(offset, before, pos),
-        indent: -1,
-        source: ""
-      };
-      const node2 = composeScalar.composeScalar(ctx, token, tag, onError);
-      if (anchor2) {
-        node2.anchor = anchor2.source.substring(1);
-        if (node2.anchor === "")
-          onError(anchor2, "BAD_ALIAS", "Anchor cannot be an empty string");
-      }
-      if (spaceBefore)
-        node2.spaceBefore = true;
-      if (comment) {
-        node2.comment = comment;
-        node2.range[2] = end;
-      }
-      return node2;
-    }
-    function composeAlias({ options }, { offset, source, end }, onError) {
-      const alias = new Alias.Alias(source.substring(1));
-      if (alias.source === "")
-        onError(offset, "BAD_ALIAS", "Alias cannot be an empty string");
-      if (alias.source.endsWith(":"))
-        onError(offset + source.length - 1, "BAD_ALIAS", "Alias ending in : is ambiguous", true);
-      const valueEnd = offset + source.length;
-      const re = resolveEnd.resolveEnd(end, valueEnd, options.strict, onError);
-      alias.range = [offset, valueEnd, re.offset];
-      if (re.comment)
-        alias.comment = re.comment;
-      return alias;
-    }
-    exports.composeEmptyNode = composeEmptyNode;
-    exports.composeNode = composeNode;
-  }
-});
-
-// node_modules/yaml/dist/compose/compose-doc.js
-var require_compose_doc = __commonJS({
-  "node_modules/yaml/dist/compose/compose-doc.js"(exports) {
-    "use strict";
-    var Document = require_Document();
-    var composeNode = require_compose_node();
-    var resolveEnd = require_resolve_end();
-    var resolveProps = require_resolve_props();
-    function composeDoc(options, directives, { offset, start, value, end }, onError) {
-      const opts2 = Object.assign({ _directives: directives }, options);
-      const doc = new Document.Document(void 0, opts2);
-      const ctx = {
-        atKey: false,
-        atRoot: true,
-        directives: doc.directives,
-        options: doc.options,
-        schema: doc.schema
-      };
-      const props = resolveProps.resolveProps(start, {
-        indicator: "doc-start",
-        next: value ?? end?.[0],
-        offset,
-        onError,
-        parentIndent: 0,
-        startOnNewline: true
-      });
-      if (props.found) {
-        doc.directives.docStart = true;
-        if (value && (value.type === "block-map" || value.type === "block-seq") && !props.hasNewline)
-          onError(props.end, "MISSING_CHAR", "Block collection cannot start on same line with directives-end marker");
-      }
-      doc.contents = value ? composeNode.composeNode(ctx, value, props, onError) : composeNode.composeEmptyNode(ctx, props.end, start, null, props, onError);
-      const contentEnd = doc.contents.range[2];
-      const re = resolveEnd.resolveEnd(end, contentEnd, false, onError);
-      if (re.comment)
-        doc.comment = re.comment;
-      doc.range = [offset, contentEnd, re.offset];
-      return doc;
-    }
-    exports.composeDoc = composeDoc;
-  }
-});
-
-// node_modules/yaml/dist/compose/composer.js
-var require_composer = __commonJS({
-  "node_modules/yaml/dist/compose/composer.js"(exports) {
-    "use strict";
-    var node_process = __require("process");
-    var directives = require_directives();
-    var Document = require_Document();
-    var errors = require_errors();
-    var identity = require_identity();
-    var composeDoc = require_compose_doc();
-    var resolveEnd = require_resolve_end();
-    function getErrorPos(src) {
-      if (typeof src === "number")
-        return [src, src + 1];
-      if (Array.isArray(src))
-        return src.length === 2 ? src : [src[0], src[1]];
-      const { offset, source } = src;
-      return [offset, offset + (typeof source === "string" ? source.length : 1)];
-    }
-    function parsePrelude(prelude) {
-      let comment = "";
-      let atComment = false;
-      let afterEmptyLine = false;
-      for (let i = 0; i < prelude.length; ++i) {
-        const source = prelude[i];
-        switch (source[0]) {
-          case "#":
-            comment += (comment === "" ? "" : afterEmptyLine ? "\n\n" : "\n") + (source.substring(1) || " ");
-            atComment = true;
-            afterEmptyLine = false;
-            break;
-          case "%":
-            if (prelude[i + 1]?.[0] !== "#")
-              i += 1;
-            atComment = false;
-            break;
-          default:
-            if (!atComment)
-              afterEmptyLine = true;
-            atComment = false;
-        }
-      }
-      return { comment, afterEmptyLine };
-    }
-    var Composer = class {
-      constructor(options = {}) {
-        this.doc = null;
-        this.atDirectives = false;
-        this.prelude = [];
-        this.errors = [];
-        this.warnings = [];
-        this.onError = (source, code2, message, warning) => {
-          const pos = getErrorPos(source);
-          if (warning)
-            this.warnings.push(new errors.YAMLWarning(pos, code2, message));
-          else
-            this.errors.push(new errors.YAMLParseError(pos, code2, message));
-        };
-        this.directives = new directives.Directives({ version: options.version || "1.2" });
-        this.options = options;
-      }
-      decorate(doc, afterDoc) {
-        const { comment, afterEmptyLine } = parsePrelude(this.prelude);
-        if (comment) {
-          const dc = doc.contents;
-          if (afterDoc) {
-            doc.comment = doc.comment ? `${doc.comment}
-${comment}` : comment;
-          } else if (afterEmptyLine || doc.directives.docStart || !dc) {
-            doc.commentBefore = comment;
-          } else if (identity.isCollection(dc) && !dc.flow && dc.items.length > 0) {
-            let it = dc.items[0];
-            if (identity.isPair(it))
-              it = it.key;
-            const cb = it.commentBefore;
-            it.commentBefore = cb ? `${comment}
-${cb}` : comment;
-          } else {
-            const cb = dc.commentBefore;
-            dc.commentBefore = cb ? `${comment}
-${cb}` : comment;
-          }
-        }
-        if (afterDoc) {
-          for (let i = 0; i < this.errors.length; ++i)
-            doc.errors.push(this.errors[i]);
-          for (let i = 0; i < this.warnings.length; ++i)
-            doc.warnings.push(this.warnings[i]);
-        } else {
-          doc.errors = this.errors;
-          doc.warnings = this.warnings;
-        }
-        this.prelude = [];
-        this.errors = [];
-        this.warnings = [];
-      }
-      /**
-       * Current stream status information.
-       *
-       * Mostly useful at the end of input for an empty stream.
-       */
-      streamInfo() {
-        return {
-          comment: parsePrelude(this.prelude).comment,
-          directives: this.directives,
-          errors: this.errors,
-          warnings: this.warnings
-        };
-      }
-      /**
-       * Compose tokens into documents.
-       *
-       * @param forceDoc - If the stream contains no document, still emit a final document including any comments and directives that would be applied to a subsequent document.
-       * @param endOffset - Should be set if `forceDoc` is also set, to set the document range end and to indicate errors correctly.
-       */
-      *compose(tokens, forceDoc = false, endOffset = -1) {
-        for (const token of tokens)
-          yield* this.next(token);
-        yield* this.end(forceDoc, endOffset);
-      }
-      /** Advance the composer by one CST token. */
-      *next(token) {
-        if (node_process.env.LOG_STREAM)
-          console.dir(token, { depth: null });
-        switch (token.type) {
-          case "directive":
-            this.directives.add(token.source, (offset, message, warning) => {
-              const pos = getErrorPos(token);
-              pos[0] += offset;
-              this.onError(pos, "BAD_DIRECTIVE", message, warning);
-            });
-            this.prelude.push(token.source);
-            this.atDirectives = true;
-            break;
-          case "document": {
-            const doc = composeDoc.composeDoc(this.options, this.directives, token, this.onError);
-            if (this.atDirectives && !doc.directives.docStart)
-              this.onError(token, "MISSING_CHAR", "Missing directives-end/doc-start indicator line");
-            this.decorate(doc, false);
-            if (this.doc)
-              yield this.doc;
-            this.doc = doc;
-            this.atDirectives = false;
-            break;
-          }
-          case "byte-order-mark":
-          case "space":
-            break;
-          case "comment":
-          case "newline":
-            this.prelude.push(token.source);
-            break;
-          case "error": {
-            const msg = token.source ? `${token.message}: ${JSON.stringify(token.source)}` : token.message;
-            const error62 = new errors.YAMLParseError(getErrorPos(token), "UNEXPECTED_TOKEN", msg);
-            if (this.atDirectives || !this.doc)
-              this.errors.push(error62);
-            else
-              this.doc.errors.push(error62);
-            break;
-          }
-          case "doc-end": {
-            if (!this.doc) {
-              const msg = "Unexpected doc-end without preceding document";
-              this.errors.push(new errors.YAMLParseError(getErrorPos(token), "UNEXPECTED_TOKEN", msg));
-              break;
-            }
-            this.doc.directives.docEnd = true;
-            const end = resolveEnd.resolveEnd(token.end, token.offset + token.source.length, this.doc.options.strict, this.onError);
-            this.decorate(this.doc, true);
-            if (end.comment) {
-              const dc = this.doc.comment;
-              this.doc.comment = dc ? `${dc}
-${end.comment}` : end.comment;
-            }
-            this.doc.range[2] = end.offset;
-            break;
-          }
-          default:
-            this.errors.push(new errors.YAMLParseError(getErrorPos(token), "UNEXPECTED_TOKEN", `Unsupported token ${token.type}`));
-        }
-      }
-      /**
-       * Call at end of input to yield any remaining document.
-       *
-       * @param forceDoc - If the stream contains no document, still emit a final document including any comments and directives that would be applied to a subsequent document.
-       * @param endOffset - Should be set if `forceDoc` is also set, to set the document range end and to indicate errors correctly.
-       */
-      *end(forceDoc = false, endOffset = -1) {
-        if (this.doc) {
-          this.decorate(this.doc, true);
-          yield this.doc;
-          this.doc = null;
-        } else if (forceDoc) {
-          const opts2 = Object.assign({ _directives: this.directives }, this.options);
-          const doc = new Document.Document(void 0, opts2);
-          if (this.atDirectives)
-            this.onError(endOffset, "MISSING_CHAR", "Missing directives-end indicator line");
-          doc.range = [0, endOffset, endOffset];
-          this.decorate(doc, false);
-          yield doc;
-        }
-      }
-    };
-    exports.Composer = Composer;
-  }
-});
-
-// node_modules/yaml/dist/parse/cst-scalar.js
-var require_cst_scalar = __commonJS({
-  "node_modules/yaml/dist/parse/cst-scalar.js"(exports) {
-    "use strict";
-    var resolveBlockScalar = require_resolve_block_scalar();
-    var resolveFlowScalar = require_resolve_flow_scalar();
-    var errors = require_errors();
-    var stringifyString = require_stringifyString();
-    function resolveAsScalar(token, strict = true, onError) {
-      if (token) {
-        const _onError = (pos, code2, message) => {
-          const offset = typeof pos === "number" ? pos : Array.isArray(pos) ? pos[0] : pos.offset;
-          if (onError)
-            onError(offset, code2, message);
-          else
-            throw new errors.YAMLParseError([offset, offset + 1], code2, message);
-        };
-        switch (token.type) {
-          case "scalar":
-          case "single-quoted-scalar":
-          case "double-quoted-scalar":
-            return resolveFlowScalar.resolveFlowScalar(token, strict, _onError);
-          case "block-scalar":
-            return resolveBlockScalar.resolveBlockScalar({ options: { strict } }, token, _onError);
-        }
-      }
-      return null;
-    }
-    function createScalarToken(value, context) {
-      const { implicitKey = false, indent, inFlow = false, offset = -1, type = "PLAIN" } = context;
-      const source = stringifyString.stringifyString({ type, value }, {
-        implicitKey,
-        indent: indent > 0 ? " ".repeat(indent) : "",
-        inFlow,
-        options: { blockQuote: true, lineWidth: -1 }
-      });
-      const end = context.end ?? [
-        { type: "newline", offset: -1, indent, source: "\n" }
-      ];
-      switch (source[0]) {
-        case "|":
-        case ">": {
-          const he = source.indexOf("\n");
-          const head = source.substring(0, he);
-          const body = source.substring(he + 1) + "\n";
-          const props = [
-            { type: "block-scalar-header", offset, indent, source: head }
-          ];
-          if (!addEndtoBlockProps(props, end))
-            props.push({ type: "newline", offset: -1, indent, source: "\n" });
-          return { type: "block-scalar", offset, indent, props, source: body };
-        }
-        case '"':
-          return { type: "double-quoted-scalar", offset, indent, source, end };
-        case "'":
-          return { type: "single-quoted-scalar", offset, indent, source, end };
-        default:
-          return { type: "scalar", offset, indent, source, end };
-      }
-    }
-    function setScalarValue(token, value, context = {}) {
-      let { afterKey = false, implicitKey = false, inFlow = false, type } = context;
-      let indent = "indent" in token ? token.indent : null;
-      if (afterKey && typeof indent === "number")
-        indent += 2;
-      if (!type)
-        switch (token.type) {
-          case "single-quoted-scalar":
-            type = "QUOTE_SINGLE";
-            break;
-          case "double-quoted-scalar":
-            type = "QUOTE_DOUBLE";
-            break;
-          case "block-scalar": {
-            const header = token.props[0];
-            if (header.type !== "block-scalar-header")
-              throw new Error("Invalid block scalar header");
-            type = header.source[0] === ">" ? "BLOCK_FOLDED" : "BLOCK_LITERAL";
-            break;
-          }
-          default:
-            type = "PLAIN";
-        }
-      const source = stringifyString.stringifyString({ type, value }, {
-        implicitKey: implicitKey || indent === null,
-        indent: indent !== null && indent > 0 ? " ".repeat(indent) : "",
-        inFlow,
-        options: { blockQuote: true, lineWidth: -1 }
-      });
-      switch (source[0]) {
-        case "|":
-        case ">":
-          setBlockScalarValue(token, source);
-          break;
-        case '"':
-          setFlowScalarValue(token, source, "double-quoted-scalar");
-          break;
-        case "'":
-          setFlowScalarValue(token, source, "single-quoted-scalar");
-          break;
-        default:
-          setFlowScalarValue(token, source, "scalar");
-      }
-    }
-    function setBlockScalarValue(token, source) {
-      const he = source.indexOf("\n");
-      const head = source.substring(0, he);
-      const body = source.substring(he + 1) + "\n";
-      if (token.type === "block-scalar") {
-        const header = token.props[0];
-        if (header.type !== "block-scalar-header")
-          throw new Error("Invalid block scalar header");
-        header.source = head;
-        token.source = body;
-      } else {
-        const { offset } = token;
-        const indent = "indent" in token ? token.indent : -1;
-        const props = [
-          { type: "block-scalar-header", offset, indent, source: head }
-        ];
-        if (!addEndtoBlockProps(props, "end" in token ? token.end : void 0))
-          props.push({ type: "newline", offset: -1, indent, source: "\n" });
-        for (const key of Object.keys(token))
-          if (key !== "type" && key !== "offset")
-            delete token[key];
-        Object.assign(token, { type: "block-scalar", indent, props, source: body });
-      }
-    }
-    function addEndtoBlockProps(props, end) {
-      if (end)
-        for (const st of end)
-          switch (st.type) {
-            case "space":
-            case "comment":
-              props.push(st);
-              break;
-            case "newline":
-              props.push(st);
-              return true;
-          }
-      return false;
-    }
-    function setFlowScalarValue(token, source, type) {
-      switch (token.type) {
-        case "scalar":
-        case "double-quoted-scalar":
-        case "single-quoted-scalar":
-          token.type = type;
-          token.source = source;
-          break;
-        case "block-scalar": {
-          const end = token.props.slice(1);
-          let oa = source.length;
-          if (token.props[0].type === "block-scalar-header")
-            oa -= token.props[0].source.length;
-          for (const tok of end)
-            tok.offset += oa;
-          delete token.props;
-          Object.assign(token, { type, source, end });
-          break;
-        }
-        case "block-map":
-        case "block-seq": {
-          const offset = token.offset + source.length;
-          const nl = { type: "newline", offset, indent: token.indent, source: "\n" };
-          delete token.items;
-          Object.assign(token, { type, source, end: [nl] });
-          break;
-        }
-        default: {
-          const indent = "indent" in token ? token.indent : -1;
-          const end = "end" in token && Array.isArray(token.end) ? token.end.filter((st) => st.type === "space" || st.type === "comment" || st.type === "newline") : [];
-          for (const key of Object.keys(token))
-            if (key !== "type" && key !== "offset")
-              delete token[key];
-          Object.assign(token, { type, indent, source, end });
-        }
-      }
-    }
-    exports.createScalarToken = createScalarToken;
-    exports.resolveAsScalar = resolveAsScalar;
-    exports.setScalarValue = setScalarValue;
-  }
-});
-
-// node_modules/yaml/dist/parse/cst-stringify.js
-var require_cst_stringify = __commonJS({
-  "node_modules/yaml/dist/parse/cst-stringify.js"(exports) {
-    "use strict";
-    var stringify = (cst) => "type" in cst ? stringifyToken(cst) : stringifyItem(cst);
-    function stringifyToken(token) {
-      switch (token.type) {
-        case "block-scalar": {
-          let res = "";
-          for (const tok of token.props)
-            res += stringifyToken(tok);
-          return res + token.source;
-        }
-        case "block-map":
-        case "block-seq": {
-          let res = "";
-          for (const item of token.items)
-            res += stringifyItem(item);
-          return res;
-        }
-        case "flow-collection": {
-          let res = token.start.source;
-          for (const item of token.items)
-            res += stringifyItem(item);
-          for (const st of token.end)
-            res += st.source;
-          return res;
-        }
-        case "document": {
-          let res = stringifyItem(token);
-          if (token.end)
-            for (const st of token.end)
-              res += st.source;
-          return res;
-        }
-        default: {
-          let res = token.source;
-          if ("end" in token && token.end)
-            for (const st of token.end)
-              res += st.source;
-          return res;
-        }
-      }
-    }
-    function stringifyItem({ start, key, sep: sep2, value }) {
-      let res = "";
-      for (const st of start)
-        res += st.source;
-      if (key)
-        res += stringifyToken(key);
-      if (sep2)
-        for (const st of sep2)
-          res += st.source;
-      if (value)
-        res += stringifyToken(value);
-      return res;
-    }
-    exports.stringify = stringify;
-  }
-});
-
-// node_modules/yaml/dist/parse/cst-visit.js
-var require_cst_visit = __commonJS({
-  "node_modules/yaml/dist/parse/cst-visit.js"(exports) {
-    "use strict";
-    var BREAK = Symbol("break visit");
-    var SKIP2 = Symbol("skip children");
-    var REMOVE = Symbol("remove item");
-    function visit2(cst, visitor) {
-      if ("type" in cst && cst.type === "document")
-        cst = { start: cst.start, value: cst.value };
-      _visit(Object.freeze([]), cst, visitor);
-    }
-    visit2.BREAK = BREAK;
-    visit2.SKIP = SKIP2;
-    visit2.REMOVE = REMOVE;
-    visit2.itemAtPath = (cst, path) => {
-      let item = cst;
-      for (const [field, index] of path) {
-        const tok = item?.[field];
-        if (tok && "items" in tok) {
-          item = tok.items[index];
-        } else
-          return void 0;
-      }
-      return item;
-    };
-    visit2.parentCollection = (cst, path) => {
-      const parent = visit2.itemAtPath(cst, path.slice(0, -1));
-      const field = path[path.length - 1][0];
-      const coll = parent?.[field];
-      if (coll && "items" in coll)
-        return coll;
-      throw new Error("Parent collection not found");
-    };
-    function _visit(path, item, visitor) {
-      let ctrl = visitor(item, path);
-      if (typeof ctrl === "symbol")
-        return ctrl;
-      for (const field of ["key", "value"]) {
-        const token = item[field];
-        if (token && "items" in token) {
-          for (let i = 0; i < token.items.length; ++i) {
-            const ci = _visit(Object.freeze(path.concat([[field, i]])), token.items[i], visitor);
-            if (typeof ci === "number")
-              i = ci - 1;
-            else if (ci === BREAK)
-              return BREAK;
-            else if (ci === REMOVE) {
-              token.items.splice(i, 1);
-              i -= 1;
-            }
-          }
-          if (typeof ctrl === "function" && field === "key")
-            ctrl = ctrl(item, path);
-        }
-      }
-      return typeof ctrl === "function" ? ctrl(item, path) : ctrl;
-    }
-    exports.visit = visit2;
-  }
-});
-
-// node_modules/yaml/dist/parse/cst.js
-var require_cst = __commonJS({
-  "node_modules/yaml/dist/parse/cst.js"(exports) {
-    "use strict";
-    var cstScalar = require_cst_scalar();
-    var cstStringify = require_cst_stringify();
-    var cstVisit = require_cst_visit();
-    var BOM = "\uFEFF";
-    var DOCUMENT = "";
-    var FLOW_END = "";
-    var SCALAR = "";
-    var isCollection = (token) => !!token && "items" in token;
-    var isScalar = (token) => !!token && (token.type === "scalar" || token.type === "single-quoted-scalar" || token.type === "double-quoted-scalar" || token.type === "block-scalar");
-    function prettyToken(token) {
-      switch (token) {
-        case BOM:
-          return "<BOM>";
-        case DOCUMENT:
-          return "<DOC>";
-        case FLOW_END:
-          return "<FLOW_END>";
-        case SCALAR:
-          return "<SCALAR>";
-        default:
-          return JSON.stringify(token);
-      }
-    }
-    function tokenType(source) {
-      switch (source) {
-        case BOM:
-          return "byte-order-mark";
-        case DOCUMENT:
-          return "doc-mode";
-        case FLOW_END:
-          return "flow-error-end";
-        case SCALAR:
-          return "scalar";
-        case "---":
-          return "doc-start";
-        case "...":
-          return "doc-end";
-        case "":
-        case "\n":
-        case "\r\n":
-          return "newline";
-        case "-":
-          return "seq-item-ind";
-        case "?":
-          return "explicit-key-ind";
-        case ":":
-          return "map-value-ind";
-        case "{":
-          return "flow-map-start";
-        case "}":
-          return "flow-map-end";
-        case "[":
-          return "flow-seq-start";
-        case "]":
-          return "flow-seq-end";
-        case ",":
-          return "comma";
-      }
-      switch (source[0]) {
-        case " ":
-        case "	":
-          return "space";
-        case "#":
-          return "comment";
-        case "%":
-          return "directive-line";
-        case "*":
-          return "alias";
-        case "&":
-          return "anchor";
-        case "!":
-          return "tag";
-        case "'":
-          return "single-quoted-scalar";
-        case '"':
-          return "double-quoted-scalar";
-        case "|":
-        case ">":
-          return "block-scalar-header";
-      }
-      return null;
-    }
-    exports.createScalarToken = cstScalar.createScalarToken;
-    exports.resolveAsScalar = cstScalar.resolveAsScalar;
-    exports.setScalarValue = cstScalar.setScalarValue;
-    exports.stringify = cstStringify.stringify;
-    exports.visit = cstVisit.visit;
-    exports.BOM = BOM;
-    exports.DOCUMENT = DOCUMENT;
-    exports.FLOW_END = FLOW_END;
-    exports.SCALAR = SCALAR;
-    exports.isCollection = isCollection;
-    exports.isScalar = isScalar;
-    exports.prettyToken = prettyToken;
-    exports.tokenType = tokenType;
-  }
-});
-
-// node_modules/yaml/dist/parse/lexer.js
-var require_lexer = __commonJS({
-  "node_modules/yaml/dist/parse/lexer.js"(exports) {
-    "use strict";
-    var cst = require_cst();
-    function isEmpty(ch) {
-      switch (ch) {
-        case void 0:
-        case " ":
-        case "\n":
-        case "\r":
-        case "	":
-          return true;
-        default:
-          return false;
-      }
-    }
-    var hexDigits = new Set("0123456789ABCDEFabcdef");
-    var tagChars = new Set("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-#;/?:@&=+$_.!~*'()");
-    var flowIndicatorChars = new Set(",[]{}");
-    var invalidAnchorChars = new Set(" ,[]{}\n\r	");
-    var isNotAnchorChar = (ch) => !ch || invalidAnchorChars.has(ch);
-    var Lexer = class {
-      constructor() {
-        this.atEnd = false;
-        this.blockScalarIndent = -1;
-        this.blockScalarKeep = false;
-        this.buffer = "";
-        this.flowKey = false;
-        this.flowLevel = 0;
-        this.indentNext = 0;
-        this.indentValue = 0;
-        this.lineEndPos = null;
-        this.next = null;
-        this.pos = 0;
-      }
-      /**
-       * Generate YAML tokens from the `source` string. If `incomplete`,
-       * a part of the last line may be left as a buffer for the next call.
-       *
-       * @returns A generator of lexical tokens
-       */
-      *lex(source, incomplete = false) {
-        if (source) {
-          if (typeof source !== "string")
-            throw TypeError("source is not a string");
-          this.buffer = this.buffer ? this.buffer + source : source;
-          this.lineEndPos = null;
-        }
-        this.atEnd = !incomplete;
-        let next = this.next ?? "stream";
-        while (next && (incomplete || this.hasChars(1)))
-          next = yield* this.parseNext(next);
-      }
-      atLineEnd() {
-        let i = this.pos;
-        let ch = this.buffer[i];
-        while (ch === " " || ch === "	")
-          ch = this.buffer[++i];
-        if (!ch || ch === "#" || ch === "\n")
-          return true;
-        if (ch === "\r")
-          return this.buffer[i + 1] === "\n";
-        return false;
-      }
-      charAt(n) {
-        return this.buffer[this.pos + n];
-      }
-      continueScalar(offset) {
-        let ch = this.buffer[offset];
-        if (this.indentNext > 0) {
-          let indent = 0;
-          while (ch === " ")
-            ch = this.buffer[++indent + offset];
-          if (ch === "\r") {
-            const next = this.buffer[indent + offset + 1];
-            if (next === "\n" || !next && !this.atEnd)
-              return offset + indent + 1;
-          }
-          return ch === "\n" || indent >= this.indentNext || !ch && !this.atEnd ? offset + indent : -1;
-        }
-        if (ch === "-" || ch === ".") {
-          const dt = this.buffer.substr(offset, 3);
-          if ((dt === "---" || dt === "...") && isEmpty(this.buffer[offset + 3]))
-            return -1;
-        }
-        return offset;
-      }
-      getLine() {
-        let end = this.lineEndPos;
-        if (typeof end !== "number" || end !== -1 && end < this.pos) {
-          end = this.buffer.indexOf("\n", this.pos);
-          this.lineEndPos = end;
-        }
-        if (end === -1)
-          return this.atEnd ? this.buffer.substring(this.pos) : null;
-        if (this.buffer[end - 1] === "\r")
-          end -= 1;
-        return this.buffer.substring(this.pos, end);
-      }
-      hasChars(n) {
-        return this.pos + n <= this.buffer.length;
-      }
-      setNext(state) {
-        this.buffer = this.buffer.substring(this.pos);
-        this.pos = 0;
-        this.lineEndPos = null;
-        this.next = state;
-        return null;
-      }
-      peek(n) {
-        return this.buffer.substr(this.pos, n);
-      }
-      *parseNext(next) {
-        switch (next) {
-          case "stream":
-            return yield* this.parseStream();
-          case "line-start":
-            return yield* this.parseLineStart();
-          case "block-start":
-            return yield* this.parseBlockStart();
-          case "doc":
-            return yield* this.parseDocument();
-          case "flow":
-            return yield* this.parseFlowCollection();
-          case "quoted-scalar":
-            return yield* this.parseQuotedScalar();
-          case "block-scalar":
-            return yield* this.parseBlockScalar();
-          case "plain-scalar":
-            return yield* this.parsePlainScalar();
-        }
-      }
-      *parseStream() {
-        let line = this.getLine();
-        if (line === null)
-          return this.setNext("stream");
-        if (line[0] === cst.BOM) {
-          yield* this.pushCount(1);
-          line = line.substring(1);
-        }
-        if (line[0] === "%") {
-          let dirEnd = line.length;
-          let cs = line.indexOf("#");
-          while (cs !== -1) {
-            const ch = line[cs - 1];
-            if (ch === " " || ch === "	") {
-              dirEnd = cs - 1;
-              break;
-            } else {
-              cs = line.indexOf("#", cs + 1);
-            }
-          }
-          while (true) {
-            const ch = line[dirEnd - 1];
-            if (ch === " " || ch === "	")
-              dirEnd -= 1;
-            else
-              break;
-          }
-          const n = (yield* this.pushCount(dirEnd)) + (yield* this.pushSpaces(true));
-          yield* this.pushCount(line.length - n);
-          this.pushNewline();
-          return "stream";
-        }
-        if (this.atLineEnd()) {
-          const sp = yield* this.pushSpaces(true);
-          yield* this.pushCount(line.length - sp);
-          yield* this.pushNewline();
-          return "stream";
-        }
-        yield cst.DOCUMENT;
-        return yield* this.parseLineStart();
-      }
-      *parseLineStart() {
-        const ch = this.charAt(0);
-        if (!ch && !this.atEnd)
-          return this.setNext("line-start");
-        if (ch === "-" || ch === ".") {
-          if (!this.atEnd && !this.hasChars(4))
-            return this.setNext("line-start");
-          const s = this.peek(3);
-          if ((s === "---" || s === "...") && isEmpty(this.charAt(3))) {
-            yield* this.pushCount(3);
-            this.indentValue = 0;
-            this.indentNext = 0;
-            return s === "---" ? "doc" : "stream";
-          }
-        }
-        this.indentValue = yield* this.pushSpaces(false);
-        if (this.indentNext > this.indentValue && !isEmpty(this.charAt(1)))
-          this.indentNext = this.indentValue;
-        return yield* this.parseBlockStart();
-      }
-      *parseBlockStart() {
-        const [ch0, ch1] = this.peek(2);
-        if (!ch1 && !this.atEnd)
-          return this.setNext("block-start");
-        if ((ch0 === "-" || ch0 === "?" || ch0 === ":") && isEmpty(ch1)) {
-          const n = (yield* this.pushCount(1)) + (yield* this.pushSpaces(true));
-          this.indentNext = this.indentValue + 1;
-          this.indentValue += n;
-          return "block-start";
-        }
-        return "doc";
-      }
-      *parseDocument() {
-        yield* this.pushSpaces(true);
-        const line = this.getLine();
-        if (line === null)
-          return this.setNext("doc");
-        let n = yield* this.pushIndicators();
-        switch (line[n]) {
-          case "#":
-            yield* this.pushCount(line.length - n);
-          // fallthrough
-          case void 0:
-            yield* this.pushNewline();
-            return yield* this.parseLineStart();
-          case "{":
-          case "[":
-            yield* this.pushCount(1);
-            this.flowKey = false;
-            this.flowLevel = 1;
-            return "flow";
-          case "}":
-          case "]":
-            yield* this.pushCount(1);
-            return "doc";
-          case "*":
-            yield* this.pushUntil(isNotAnchorChar);
-            return "doc";
-          case '"':
-          case "'":
-            return yield* this.parseQuotedScalar();
-          case "|":
-          case ">":
-            n += yield* this.parseBlockScalarHeader();
-            n += yield* this.pushSpaces(true);
-            yield* this.pushCount(line.length - n);
-            yield* this.pushNewline();
-            return yield* this.parseBlockScalar();
-          default:
-            return yield* this.parsePlainScalar();
-        }
-      }
-      *parseFlowCollection() {
-        let nl, sp;
-        let indent = -1;
-        do {
-          nl = yield* this.pushNewline();
-          if (nl > 0) {
-            sp = yield* this.pushSpaces(false);
-            this.indentValue = indent = sp;
-          } else {
-            sp = 0;
-          }
-          sp += yield* this.pushSpaces(true);
-        } while (nl + sp > 0);
-        const line = this.getLine();
-        if (line === null)
-          return this.setNext("flow");
-        if (indent !== -1 && indent < this.indentNext && line[0] !== "#" || indent === 0 && (line.startsWith("---") || line.startsWith("...")) && isEmpty(line[3])) {
-          const atFlowEndMarker = indent === this.indentNext - 1 && this.flowLevel === 1 && (line[0] === "]" || line[0] === "}");
-          if (!atFlowEndMarker) {
-            this.flowLevel = 0;
-            yield cst.FLOW_END;
-            return yield* this.parseLineStart();
-          }
-        }
-        let n = 0;
-        while (line[n] === ",") {
-          n += yield* this.pushCount(1);
-          n += yield* this.pushSpaces(true);
-          this.flowKey = false;
-        }
-        n += yield* this.pushIndicators();
-        switch (line[n]) {
-          case void 0:
-            return "flow";
-          case "#":
-            yield* this.pushCount(line.length - n);
-            return "flow";
-          case "{":
-          case "[":
-            yield* this.pushCount(1);
-            this.flowKey = false;
-            this.flowLevel += 1;
-            return "flow";
-          case "}":
-          case "]":
-            yield* this.pushCount(1);
-            this.flowKey = true;
-            this.flowLevel -= 1;
-            return this.flowLevel ? "flow" : "doc";
-          case "*":
-            yield* this.pushUntil(isNotAnchorChar);
-            return "flow";
-          case '"':
-          case "'":
-            this.flowKey = true;
-            return yield* this.parseQuotedScalar();
-          case ":": {
-            const next = this.charAt(1);
-            if (this.flowKey || isEmpty(next) || next === ",") {
-              this.flowKey = false;
-              yield* this.pushCount(1);
-              yield* this.pushSpaces(true);
-              return "flow";
-            }
-          }
-          // fallthrough
-          default:
-            this.flowKey = false;
-            return yield* this.parsePlainScalar();
-        }
-      }
-      *parseQuotedScalar() {
-        const quote = this.charAt(0);
-        let end = this.buffer.indexOf(quote, this.pos + 1);
-        if (quote === "'") {
-          while (end !== -1 && this.buffer[end + 1] === "'")
-            end = this.buffer.indexOf("'", end + 2);
-        } else {
-          while (end !== -1) {
-            let n = 0;
-            while (this.buffer[end - 1 - n] === "\\")
-              n += 1;
-            if (n % 2 === 0)
-              break;
-            end = this.buffer.indexOf('"', end + 1);
-          }
-        }
-        const qb = this.buffer.substring(0, end);
-        let nl = qb.indexOf("\n", this.pos);
-        if (nl !== -1) {
-          while (nl !== -1) {
-            const cs = this.continueScalar(nl + 1);
-            if (cs === -1)
-              break;
-            nl = qb.indexOf("\n", cs);
-          }
-          if (nl !== -1) {
-            end = nl - (qb[nl - 1] === "\r" ? 2 : 1);
-          }
-        }
-        if (end === -1) {
-          if (!this.atEnd)
-            return this.setNext("quoted-scalar");
-          end = this.buffer.length;
-        }
-        yield* this.pushToIndex(end + 1, false);
-        return this.flowLevel ? "flow" : "doc";
-      }
-      *parseBlockScalarHeader() {
-        this.blockScalarIndent = -1;
-        this.blockScalarKeep = false;
-        let i = this.pos;
-        while (true) {
-          const ch = this.buffer[++i];
-          if (ch === "+")
-            this.blockScalarKeep = true;
-          else if (ch > "0" && ch <= "9")
-            this.blockScalarIndent = Number(ch) - 1;
-          else if (ch !== "-")
-            break;
-        }
-        return yield* this.pushUntil((ch) => isEmpty(ch) || ch === "#");
-      }
-      *parseBlockScalar() {
-        let nl = this.pos - 1;
-        let indent = 0;
-        let ch;
-        loop: for (let i2 = this.pos; ch = this.buffer[i2]; ++i2) {
-          switch (ch) {
-            case " ":
-              indent += 1;
-              break;
-            case "\n":
-              nl = i2;
-              indent = 0;
-              break;
-            case "\r": {
-              const next = this.buffer[i2 + 1];
-              if (!next && !this.atEnd)
-                return this.setNext("block-scalar");
-              if (next === "\n")
-                break;
-            }
-            // fallthrough
-            default:
-              break loop;
-          }
-        }
-        if (!ch && !this.atEnd)
-          return this.setNext("block-scalar");
-        if (indent >= this.indentNext) {
-          if (this.blockScalarIndent === -1)
-            this.indentNext = indent;
-          else {
-            this.indentNext = this.blockScalarIndent + (this.indentNext === 0 ? 1 : this.indentNext);
-          }
-          do {
-            const cs = this.continueScalar(nl + 1);
-            if (cs === -1)
-              break;
-            nl = this.buffer.indexOf("\n", cs);
-          } while (nl !== -1);
-          if (nl === -1) {
-            if (!this.atEnd)
-              return this.setNext("block-scalar");
-            nl = this.buffer.length;
-          }
-        }
-        let i = nl + 1;
-        ch = this.buffer[i];
-        while (ch === " ")
-          ch = this.buffer[++i];
-        if (ch === "	") {
-          while (ch === "	" || ch === " " || ch === "\r" || ch === "\n")
-            ch = this.buffer[++i];
-          nl = i - 1;
-        } else if (!this.blockScalarKeep) {
-          do {
-            let i2 = nl - 1;
-            let ch2 = this.buffer[i2];
-            if (ch2 === "\r")
-              ch2 = this.buffer[--i2];
-            const lastChar = i2;
-            while (ch2 === " ")
-              ch2 = this.buffer[--i2];
-            if (ch2 === "\n" && i2 >= this.pos && i2 + 1 + indent > lastChar)
-              nl = i2;
-            else
-              break;
-          } while (true);
-        }
-        yield cst.SCALAR;
-        yield* this.pushToIndex(nl + 1, true);
-        return yield* this.parseLineStart();
-      }
-      *parsePlainScalar() {
-        const inFlow = this.flowLevel > 0;
-        let end = this.pos - 1;
-        let i = this.pos - 1;
-        let ch;
-        while (ch = this.buffer[++i]) {
-          if (ch === ":") {
-            const next = this.buffer[i + 1];
-            if (isEmpty(next) || inFlow && flowIndicatorChars.has(next))
-              break;
-            end = i;
-          } else if (isEmpty(ch)) {
-            let next = this.buffer[i + 1];
-            if (ch === "\r") {
-              if (next === "\n") {
-                i += 1;
-                ch = "\n";
-                next = this.buffer[i + 1];
-              } else
-                end = i;
-            }
-            if (next === "#" || inFlow && flowIndicatorChars.has(next))
-              break;
-            if (ch === "\n") {
-              const cs = this.continueScalar(i + 1);
-              if (cs === -1)
-                break;
-              i = Math.max(i, cs - 2);
-            }
-          } else {
-            if (inFlow && flowIndicatorChars.has(ch))
-              break;
-            end = i;
-          }
-        }
-        if (!ch && !this.atEnd)
-          return this.setNext("plain-scalar");
-        yield cst.SCALAR;
-        yield* this.pushToIndex(end + 1, true);
-        return inFlow ? "flow" : "doc";
-      }
-      *pushCount(n) {
-        if (n > 0) {
-          yield this.buffer.substr(this.pos, n);
-          this.pos += n;
-          return n;
-        }
-        return 0;
-      }
-      *pushToIndex(i, allowEmpty) {
-        const s = this.buffer.slice(this.pos, i);
-        if (s) {
-          yield s;
-          this.pos += s.length;
-          return s.length;
-        } else if (allowEmpty)
-          yield "";
-        return 0;
-      }
-      *pushIndicators() {
-        let n = 0;
-        loop: while (true) {
-          switch (this.charAt(0)) {
-            case "!":
-              n += yield* this.pushTag();
-              n += yield* this.pushSpaces(true);
-              continue loop;
-            case "&":
-              n += yield* this.pushUntil(isNotAnchorChar);
-              n += yield* this.pushSpaces(true);
-              continue loop;
-            case "-":
-            // this is an error
-            case "?":
-            // this is an error outside flow collections
-            case ":": {
-              const inFlow = this.flowLevel > 0;
-              const ch1 = this.charAt(1);
-              if (isEmpty(ch1) || inFlow && flowIndicatorChars.has(ch1)) {
-                if (!inFlow)
-                  this.indentNext = this.indentValue + 1;
-                else if (this.flowKey)
-                  this.flowKey = false;
-                n += yield* this.pushCount(1);
-                n += yield* this.pushSpaces(true);
-                continue loop;
-              }
-            }
-          }
-          break loop;
-        }
-        return n;
-      }
-      *pushTag() {
-        if (this.charAt(1) === "<") {
-          let i = this.pos + 2;
-          let ch = this.buffer[i];
-          while (!isEmpty(ch) && ch !== ">")
-            ch = this.buffer[++i];
-          return yield* this.pushToIndex(ch === ">" ? i + 1 : i, false);
-        } else {
-          let i = this.pos + 1;
-          let ch = this.buffer[i];
-          while (ch) {
-            if (tagChars.has(ch))
-              ch = this.buffer[++i];
-            else if (ch === "%" && hexDigits.has(this.buffer[i + 1]) && hexDigits.has(this.buffer[i + 2])) {
-              ch = this.buffer[i += 3];
-            } else
-              break;
-          }
-          return yield* this.pushToIndex(i, false);
-        }
-      }
-      *pushNewline() {
-        const ch = this.buffer[this.pos];
-        if (ch === "\n")
-          return yield* this.pushCount(1);
-        else if (ch === "\r" && this.charAt(1) === "\n")
-          return yield* this.pushCount(2);
-        else
-          return 0;
-      }
-      *pushSpaces(allowTabs) {
-        let i = this.pos - 1;
-        let ch;
-        do {
-          ch = this.buffer[++i];
-        } while (ch === " " || allowTabs && ch === "	");
-        const n = i - this.pos;
-        if (n > 0) {
-          yield this.buffer.substr(this.pos, n);
-          this.pos = i;
-        }
-        return n;
-      }
-      *pushUntil(test) {
-        let i = this.pos;
-        let ch = this.buffer[i];
-        while (!test(ch))
-          ch = this.buffer[++i];
-        return yield* this.pushToIndex(i, false);
-      }
-    };
-    exports.Lexer = Lexer;
-  }
-});
-
-// node_modules/yaml/dist/parse/line-counter.js
-var require_line_counter = __commonJS({
-  "node_modules/yaml/dist/parse/line-counter.js"(exports) {
-    "use strict";
-    var LineCounter = class {
-      constructor() {
-        this.lineStarts = [];
-        this.addNewLine = (offset) => this.lineStarts.push(offset);
-        this.linePos = (offset) => {
-          let low = 0;
-          let high = this.lineStarts.length;
-          while (low < high) {
-            const mid = low + high >> 1;
-            if (this.lineStarts[mid] < offset)
-              low = mid + 1;
-            else
-              high = mid;
-          }
-          if (this.lineStarts[low] === offset)
-            return { line: low + 1, col: 1 };
-          if (low === 0)
-            return { line: 0, col: offset };
-          const start = this.lineStarts[low - 1];
-          return { line: low, col: offset - start + 1 };
-        };
-      }
-    };
-    exports.LineCounter = LineCounter;
-  }
-});
-
-// node_modules/yaml/dist/parse/parser.js
-var require_parser = __commonJS({
-  "node_modules/yaml/dist/parse/parser.js"(exports) {
-    "use strict";
-    var node_process = __require("process");
-    var cst = require_cst();
-    var lexer = require_lexer();
-    function includesToken(list, type) {
-      for (let i = 0; i < list.length; ++i)
-        if (list[i].type === type)
-          return true;
-      return false;
-    }
-    function findNonEmptyIndex(list) {
-      for (let i = 0; i < list.length; ++i) {
-        switch (list[i].type) {
-          case "space":
-          case "comment":
-          case "newline":
-            break;
-          default:
-            return i;
-        }
-      }
-      return -1;
-    }
-    function isFlowToken(token) {
-      switch (token?.type) {
-        case "alias":
-        case "scalar":
-        case "single-quoted-scalar":
-        case "double-quoted-scalar":
-        case "flow-collection":
-          return true;
-        default:
-          return false;
-      }
-    }
-    function getPrevProps(parent) {
-      switch (parent.type) {
-        case "document":
-          return parent.start;
-        case "block-map": {
-          const it = parent.items[parent.items.length - 1];
-          return it.sep ?? it.start;
-        }
-        case "block-seq":
-          return parent.items[parent.items.length - 1].start;
-        /* istanbul ignore next should not happen */
-        default:
-          return [];
-      }
-    }
-    function getFirstKeyStartProps(prev) {
-      if (prev.length === 0)
-        return [];
-      let i = prev.length;
-      loop: while (--i >= 0) {
-        switch (prev[i].type) {
-          case "doc-start":
-          case "explicit-key-ind":
-          case "map-value-ind":
-          case "seq-item-ind":
-          case "newline":
-            break loop;
-        }
-      }
-      while (prev[++i]?.type === "space") {
-      }
-      return prev.splice(i, prev.length);
-    }
-    function arrayPushArray(target, source) {
-      if (source.length < 1e5)
-        Array.prototype.push.apply(target, source);
-      else
-        for (let i = 0; i < source.length; ++i)
-          target.push(source[i]);
-    }
-    function fixFlowSeqItems(fc) {
-      if (fc.start.type === "flow-seq-start") {
-        for (const it of fc.items) {
-          if (it.sep && !it.value && !includesToken(it.start, "explicit-key-ind") && !includesToken(it.sep, "map-value-ind")) {
-            if (it.key)
-              it.value = it.key;
-            delete it.key;
-            if (isFlowToken(it.value)) {
-              if (it.value.end)
-                arrayPushArray(it.value.end, it.sep);
-              else
-                it.value.end = it.sep;
-            } else
-              arrayPushArray(it.start, it.sep);
-            delete it.sep;
-          }
-        }
-      }
-    }
-    var Parser = class {
-      /**
-       * @param onNewLine - If defined, called separately with the start position of
-       *   each new line (in `parse()`, including the start of input).
-       */
-      constructor(onNewLine) {
-        this.atNewLine = true;
-        this.atScalar = false;
-        this.indent = 0;
-        this.offset = 0;
-        this.onKeyLine = false;
-        this.stack = [];
-        this.source = "";
-        this.type = "";
-        this.lexer = new lexer.Lexer();
-        this.onNewLine = onNewLine;
-      }
-      /**
-       * Parse `source` as a YAML stream.
-       * If `incomplete`, a part of the last line may be left as a buffer for the next call.
-       *
-       * Errors are not thrown, but yielded as `{ type: 'error', message }` tokens.
-       *
-       * @returns A generator of tokens representing each directive, document, and other structure.
-       */
-      *parse(source, incomplete = false) {
-        if (this.onNewLine && this.offset === 0)
-          this.onNewLine(0);
-        for (const lexeme of this.lexer.lex(source, incomplete))
-          yield* this.next(lexeme);
-        if (!incomplete)
-          yield* this.end();
-      }
-      /**
-       * Advance the parser by the `source` of one lexical token.
-       */
-      *next(source) {
-        this.source = source;
-        if (node_process.env.LOG_TOKENS)
-          console.log("|", cst.prettyToken(source));
-        if (this.atScalar) {
-          this.atScalar = false;
-          yield* this.step();
-          this.offset += source.length;
-          return;
-        }
-        const type = cst.tokenType(source);
-        if (!type) {
-          const message = `Not a YAML token: ${source}`;
-          yield* this.pop({ type: "error", offset: this.offset, message, source });
-          this.offset += source.length;
-        } else if (type === "scalar") {
-          this.atNewLine = false;
-          this.atScalar = true;
-          this.type = "scalar";
-        } else {
-          this.type = type;
-          yield* this.step();
-          switch (type) {
-            case "newline":
-              this.atNewLine = true;
-              this.indent = 0;
-              if (this.onNewLine)
-                this.onNewLine(this.offset + source.length);
-              break;
-            case "space":
-              if (this.atNewLine && source[0] === " ")
-                this.indent += source.length;
-              break;
-            case "explicit-key-ind":
-            case "map-value-ind":
-            case "seq-item-ind":
-              if (this.atNewLine)
-                this.indent += source.length;
-              break;
-            case "doc-mode":
-            case "flow-error-end":
-              return;
-            default:
-              this.atNewLine = false;
-          }
-          this.offset += source.length;
-        }
-      }
-      /** Call at end of input to push out any remaining constructions */
-      *end() {
-        while (this.stack.length > 0)
-          yield* this.pop();
-      }
-      get sourceToken() {
-        const st = {
-          type: this.type,
-          offset: this.offset,
-          indent: this.indent,
-          source: this.source
-        };
-        return st;
-      }
-      *step() {
-        const top = this.peek(1);
-        if (this.type === "doc-end" && top?.type !== "doc-end") {
-          while (this.stack.length > 0)
-            yield* this.pop();
-          this.stack.push({
-            type: "doc-end",
-            offset: this.offset,
-            source: this.source
-          });
-          return;
-        }
-        if (!top)
-          return yield* this.stream();
-        switch (top.type) {
-          case "document":
-            return yield* this.document(top);
-          case "alias":
-          case "scalar":
-          case "single-quoted-scalar":
-          case "double-quoted-scalar":
-            return yield* this.scalar(top);
-          case "block-scalar":
-            return yield* this.blockScalar(top);
-          case "block-map":
-            return yield* this.blockMap(top);
-          case "block-seq":
-            return yield* this.blockSequence(top);
-          case "flow-collection":
-            return yield* this.flowCollection(top);
-          case "doc-end":
-            return yield* this.documentEnd(top);
-        }
-        yield* this.pop();
-      }
-      peek(n) {
-        return this.stack[this.stack.length - n];
-      }
-      *pop(error62) {
-        const token = error62 ?? this.stack.pop();
-        if (!token) {
-          const message = "Tried to pop an empty stack";
-          yield { type: "error", offset: this.offset, source: "", message };
-        } else if (this.stack.length === 0) {
-          yield token;
-        } else {
-          const top = this.peek(1);
-          if (token.type === "block-scalar") {
-            token.indent = "indent" in top ? top.indent : 0;
-          } else if (token.type === "flow-collection" && top.type === "document") {
-            token.indent = 0;
-          }
-          if (token.type === "flow-collection")
-            fixFlowSeqItems(token);
-          switch (top.type) {
-            case "document":
-              top.value = token;
-              break;
-            case "block-scalar":
-              top.props.push(token);
-              break;
-            case "block-map": {
-              const it = top.items[top.items.length - 1];
-              if (it.value) {
-                top.items.push({ start: [], key: token, sep: [] });
-                this.onKeyLine = true;
-                return;
-              } else if (it.sep) {
-                it.value = token;
-              } else {
-                Object.assign(it, { key: token, sep: [] });
-                this.onKeyLine = !it.explicitKey;
-                return;
-              }
-              break;
-            }
-            case "block-seq": {
-              const it = top.items[top.items.length - 1];
-              if (it.value)
-                top.items.push({ start: [], value: token });
-              else
-                it.value = token;
-              break;
-            }
-            case "flow-collection": {
-              const it = top.items[top.items.length - 1];
-              if (!it || it.value)
-                top.items.push({ start: [], key: token, sep: [] });
-              else if (it.sep)
-                it.value = token;
-              else
-                Object.assign(it, { key: token, sep: [] });
-              return;
-            }
-            /* istanbul ignore next should not happen */
-            default:
-              yield* this.pop();
-              yield* this.pop(token);
-          }
-          if ((top.type === "document" || top.type === "block-map" || top.type === "block-seq") && (token.type === "block-map" || token.type === "block-seq")) {
-            const last = token.items[token.items.length - 1];
-            if (last && !last.sep && !last.value && last.start.length > 0 && findNonEmptyIndex(last.start) === -1 && (token.indent === 0 || last.start.every((st) => st.type !== "comment" || st.indent < token.indent))) {
-              if (top.type === "document")
-                top.end = last.start;
-              else
-                top.items.push({ start: last.start });
-              token.items.splice(-1, 1);
-            }
-          }
-        }
-      }
-      *stream() {
-        switch (this.type) {
-          case "directive-line":
-            yield { type: "directive", offset: this.offset, source: this.source };
-            return;
-          case "byte-order-mark":
-          case "space":
-          case "comment":
-          case "newline":
-            yield this.sourceToken;
-            return;
-          case "doc-mode":
-          case "doc-start": {
-            const doc = {
-              type: "document",
-              offset: this.offset,
-              start: []
-            };
-            if (this.type === "doc-start")
-              doc.start.push(this.sourceToken);
-            this.stack.push(doc);
-            return;
-          }
-        }
-        yield {
-          type: "error",
-          offset: this.offset,
-          message: `Unexpected ${this.type} token in YAML stream`,
-          source: this.source
-        };
-      }
-      *document(doc) {
-        if (doc.value)
-          return yield* this.lineEnd(doc);
-        switch (this.type) {
-          case "doc-start": {
-            if (findNonEmptyIndex(doc.start) !== -1) {
-              yield* this.pop();
-              yield* this.step();
-            } else
-              doc.start.push(this.sourceToken);
-            return;
-          }
-          case "anchor":
-          case "tag":
-          case "space":
-          case "comment":
-          case "newline":
-            doc.start.push(this.sourceToken);
-            return;
-        }
-        const bv = this.startBlockValue(doc);
-        if (bv)
-          this.stack.push(bv);
-        else {
-          yield {
-            type: "error",
-            offset: this.offset,
-            message: `Unexpected ${this.type} token in YAML document`,
-            source: this.source
-          };
-        }
-      }
-      *scalar(scalar) {
-        if (this.type === "map-value-ind") {
-          const prev = getPrevProps(this.peek(2));
-          const start = getFirstKeyStartProps(prev);
-          let sep2;
-          if (scalar.end) {
-            sep2 = scalar.end;
-            sep2.push(this.sourceToken);
-            delete scalar.end;
-          } else
-            sep2 = [this.sourceToken];
-          const map2 = {
-            type: "block-map",
-            offset: scalar.offset,
-            indent: scalar.indent,
-            items: [{ start, key: scalar, sep: sep2 }]
-          };
-          this.onKeyLine = true;
-          this.stack[this.stack.length - 1] = map2;
-        } else
-          yield* this.lineEnd(scalar);
-      }
-      *blockScalar(scalar) {
-        switch (this.type) {
-          case "space":
-          case "comment":
-          case "newline":
-            scalar.props.push(this.sourceToken);
-            return;
-          case "scalar":
-            scalar.source = this.source;
-            this.atNewLine = true;
-            this.indent = 0;
-            if (this.onNewLine) {
-              let nl = this.source.indexOf("\n") + 1;
-              while (nl !== 0) {
-                this.onNewLine(this.offset + nl);
-                nl = this.source.indexOf("\n", nl) + 1;
-              }
-            }
-            yield* this.pop();
-            break;
-          /* istanbul ignore next should not happen */
-          default:
-            yield* this.pop();
-            yield* this.step();
-        }
-      }
-      *blockMap(map2) {
-        const it = map2.items[map2.items.length - 1];
-        switch (this.type) {
-          case "newline":
-            this.onKeyLine = false;
-            if (it.value) {
-              const end = "end" in it.value ? it.value.end : void 0;
-              const last = Array.isArray(end) ? end[end.length - 1] : void 0;
-              if (last?.type === "comment")
-                end?.push(this.sourceToken);
-              else
-                map2.items.push({ start: [this.sourceToken] });
-            } else if (it.sep) {
-              it.sep.push(this.sourceToken);
-            } else {
-              it.start.push(this.sourceToken);
-            }
-            return;
-          case "space":
-          case "comment":
-            if (it.value) {
-              map2.items.push({ start: [this.sourceToken] });
-            } else if (it.sep) {
-              it.sep.push(this.sourceToken);
-            } else {
-              if (this.atIndentedComment(it.start, map2.indent)) {
-                const prev = map2.items[map2.items.length - 2];
-                const end = prev?.value?.end;
-                if (Array.isArray(end)) {
-                  arrayPushArray(end, it.start);
-                  end.push(this.sourceToken);
-                  map2.items.pop();
-                  return;
-                }
-              }
-              it.start.push(this.sourceToken);
-            }
-            return;
-        }
-        if (this.indent >= map2.indent) {
-          const atMapIndent = !this.onKeyLine && this.indent === map2.indent;
-          const atNextItem = atMapIndent && (it.sep || it.explicitKey) && this.type !== "seq-item-ind";
-          let start = [];
-          if (atNextItem && it.sep && !it.value) {
-            const nl = [];
-            for (let i = 0; i < it.sep.length; ++i) {
-              const st = it.sep[i];
-              switch (st.type) {
-                case "newline":
-                  nl.push(i);
-                  break;
-                case "space":
-                  break;
-                case "comment":
-                  if (st.indent > map2.indent)
-                    nl.length = 0;
-                  break;
-                default:
-                  nl.length = 0;
-              }
-            }
-            if (nl.length >= 2)
-              start = it.sep.splice(nl[1]);
-          }
-          switch (this.type) {
-            case "anchor":
-            case "tag":
-              if (atNextItem || it.value) {
-                start.push(this.sourceToken);
-                map2.items.push({ start });
-                this.onKeyLine = true;
-              } else if (it.sep) {
-                it.sep.push(this.sourceToken);
-              } else {
-                it.start.push(this.sourceToken);
-              }
-              return;
-            case "explicit-key-ind":
-              if (!it.sep && !it.explicitKey) {
-                it.start.push(this.sourceToken);
-                it.explicitKey = true;
-              } else if (atNextItem || it.value) {
-                start.push(this.sourceToken);
-                map2.items.push({ start, explicitKey: true });
-              } else {
-                this.stack.push({
-                  type: "block-map",
-                  offset: this.offset,
-                  indent: this.indent,
-                  items: [{ start: [this.sourceToken], explicitKey: true }]
-                });
-              }
-              this.onKeyLine = true;
-              return;
-            case "map-value-ind":
-              if (it.explicitKey) {
-                if (!it.sep) {
-                  if (includesToken(it.start, "newline")) {
-                    Object.assign(it, { key: null, sep: [this.sourceToken] });
-                  } else {
-                    const start2 = getFirstKeyStartProps(it.start);
-                    this.stack.push({
-                      type: "block-map",
-                      offset: this.offset,
-                      indent: this.indent,
-                      items: [{ start: start2, key: null, sep: [this.sourceToken] }]
-                    });
-                  }
-                } else if (it.value) {
-                  map2.items.push({ start: [], key: null, sep: [this.sourceToken] });
-                } else if (includesToken(it.sep, "map-value-ind")) {
-                  this.stack.push({
-                    type: "block-map",
-                    offset: this.offset,
-                    indent: this.indent,
-                    items: [{ start, key: null, sep: [this.sourceToken] }]
-                  });
-                } else if (isFlowToken(it.key) && !includesToken(it.sep, "newline")) {
-                  const start2 = getFirstKeyStartProps(it.start);
-                  const key = it.key;
-                  const sep2 = it.sep;
-                  sep2.push(this.sourceToken);
-                  delete it.key;
-                  delete it.sep;
-                  this.stack.push({
-                    type: "block-map",
-                    offset: this.offset,
-                    indent: this.indent,
-                    items: [{ start: start2, key, sep: sep2 }]
-                  });
-                } else if (start.length > 0) {
-                  it.sep = it.sep.concat(start, this.sourceToken);
-                } else {
-                  it.sep.push(this.sourceToken);
-                }
-              } else {
-                if (!it.sep) {
-                  Object.assign(it, { key: null, sep: [this.sourceToken] });
-                } else if (it.value || atNextItem) {
-                  map2.items.push({ start, key: null, sep: [this.sourceToken] });
-                } else if (includesToken(it.sep, "map-value-ind")) {
-                  this.stack.push({
-                    type: "block-map",
-                    offset: this.offset,
-                    indent: this.indent,
-                    items: [{ start: [], key: null, sep: [this.sourceToken] }]
-                  });
-                } else {
-                  it.sep.push(this.sourceToken);
-                }
-              }
-              this.onKeyLine = true;
-              return;
-            case "alias":
-            case "scalar":
-            case "single-quoted-scalar":
-            case "double-quoted-scalar": {
-              const fs = this.flowScalar(this.type);
-              if (atNextItem || it.value) {
-                map2.items.push({ start, key: fs, sep: [] });
-                this.onKeyLine = true;
-              } else if (it.sep) {
-                this.stack.push(fs);
-              } else {
-                Object.assign(it, { key: fs, sep: [] });
-                this.onKeyLine = true;
-              }
-              return;
-            }
-            default: {
-              const bv = this.startBlockValue(map2);
-              if (bv) {
-                if (bv.type === "block-seq") {
-                  if (!it.explicitKey && it.sep && !includesToken(it.sep, "newline")) {
-                    yield* this.pop({
-                      type: "error",
-                      offset: this.offset,
-                      message: "Unexpected block-seq-ind on same line with key",
-                      source: this.source
-                    });
-                    return;
-                  }
-                } else if (atMapIndent) {
-                  map2.items.push({ start });
-                }
-                this.stack.push(bv);
-                return;
-              }
-            }
-          }
-        }
-        yield* this.pop();
-        yield* this.step();
-      }
-      *blockSequence(seq) {
-        const it = seq.items[seq.items.length - 1];
-        switch (this.type) {
-          case "newline":
-            if (it.value) {
-              const end = "end" in it.value ? it.value.end : void 0;
-              const last = Array.isArray(end) ? end[end.length - 1] : void 0;
-              if (last?.type === "comment")
-                end?.push(this.sourceToken);
-              else
-                seq.items.push({ start: [this.sourceToken] });
-            } else
-              it.start.push(this.sourceToken);
-            return;
-          case "space":
-          case "comment":
-            if (it.value)
-              seq.items.push({ start: [this.sourceToken] });
-            else {
-              if (this.atIndentedComment(it.start, seq.indent)) {
-                const prev = seq.items[seq.items.length - 2];
-                const end = prev?.value?.end;
-                if (Array.isArray(end)) {
-                  arrayPushArray(end, it.start);
-                  end.push(this.sourceToken);
-                  seq.items.pop();
-                  return;
-                }
-              }
-              it.start.push(this.sourceToken);
-            }
-            return;
-          case "anchor":
-          case "tag":
-            if (it.value || this.indent <= seq.indent)
-              break;
-            it.start.push(this.sourceToken);
-            return;
-          case "seq-item-ind":
-            if (this.indent !== seq.indent)
-              break;
-            if (it.value || includesToken(it.start, "seq-item-ind"))
-              seq.items.push({ start: [this.sourceToken] });
-            else
-              it.start.push(this.sourceToken);
-            return;
-        }
-        if (this.indent > seq.indent) {
-          const bv = this.startBlockValue(seq);
-          if (bv) {
-            this.stack.push(bv);
-            return;
-          }
-        }
-        yield* this.pop();
-        yield* this.step();
-      }
-      *flowCollection(fc) {
-        const it = fc.items[fc.items.length - 1];
-        if (this.type === "flow-error-end") {
-          let top;
-          do {
-            yield* this.pop();
-            top = this.peek(1);
-          } while (top?.type === "flow-collection");
-        } else if (fc.end.length === 0) {
-          switch (this.type) {
-            case "comma":
-            case "explicit-key-ind":
-              if (!it || it.sep)
-                fc.items.push({ start: [this.sourceToken] });
-              else
-                it.start.push(this.sourceToken);
-              return;
-            case "map-value-ind":
-              if (!it || it.value)
-                fc.items.push({ start: [], key: null, sep: [this.sourceToken] });
-              else if (it.sep)
-                it.sep.push(this.sourceToken);
-              else
-                Object.assign(it, { key: null, sep: [this.sourceToken] });
-              return;
-            case "space":
-            case "comment":
-            case "newline":
-            case "anchor":
-            case "tag":
-              if (!it || it.value)
-                fc.items.push({ start: [this.sourceToken] });
-              else if (it.sep)
-                it.sep.push(this.sourceToken);
-              else
-                it.start.push(this.sourceToken);
-              return;
-            case "alias":
-            case "scalar":
-            case "single-quoted-scalar":
-            case "double-quoted-scalar": {
-              const fs = this.flowScalar(this.type);
-              if (!it || it.value)
-                fc.items.push({ start: [], key: fs, sep: [] });
-              else if (it.sep)
-                this.stack.push(fs);
-              else
-                Object.assign(it, { key: fs, sep: [] });
-              return;
-            }
-            case "flow-map-end":
-            case "flow-seq-end":
-              fc.end.push(this.sourceToken);
-              return;
-          }
-          const bv = this.startBlockValue(fc);
-          if (bv)
-            this.stack.push(bv);
-          else {
-            yield* this.pop();
-            yield* this.step();
-          }
-        } else {
-          const parent = this.peek(2);
-          if (parent.type === "block-map" && (this.type === "map-value-ind" && parent.indent === fc.indent || this.type === "newline" && !parent.items[parent.items.length - 1].sep)) {
-            yield* this.pop();
-            yield* this.step();
-          } else if (this.type === "map-value-ind" && parent.type !== "flow-collection") {
-            const prev = getPrevProps(parent);
-            const start = getFirstKeyStartProps(prev);
-            fixFlowSeqItems(fc);
-            const sep2 = fc.end.splice(1, fc.end.length);
-            sep2.push(this.sourceToken);
-            const map2 = {
-              type: "block-map",
-              offset: fc.offset,
-              indent: fc.indent,
-              items: [{ start, key: fc, sep: sep2 }]
-            };
-            this.onKeyLine = true;
-            this.stack[this.stack.length - 1] = map2;
-          } else {
-            yield* this.lineEnd(fc);
-          }
-        }
-      }
-      flowScalar(type) {
-        if (this.onNewLine) {
-          let nl = this.source.indexOf("\n") + 1;
-          while (nl !== 0) {
-            this.onNewLine(this.offset + nl);
-            nl = this.source.indexOf("\n", nl) + 1;
-          }
-        }
-        return {
-          type,
-          offset: this.offset,
-          indent: this.indent,
-          source: this.source
-        };
-      }
-      startBlockValue(parent) {
-        switch (this.type) {
-          case "alias":
-          case "scalar":
-          case "single-quoted-scalar":
-          case "double-quoted-scalar":
-            return this.flowScalar(this.type);
-          case "block-scalar-header":
-            return {
-              type: "block-scalar",
-              offset: this.offset,
-              indent: this.indent,
-              props: [this.sourceToken],
-              source: ""
-            };
-          case "flow-map-start":
-          case "flow-seq-start":
-            return {
-              type: "flow-collection",
-              offset: this.offset,
-              indent: this.indent,
-              start: this.sourceToken,
-              items: [],
-              end: []
-            };
-          case "seq-item-ind":
-            return {
-              type: "block-seq",
-              offset: this.offset,
-              indent: this.indent,
-              items: [{ start: [this.sourceToken] }]
-            };
-          case "explicit-key-ind": {
-            this.onKeyLine = true;
-            const prev = getPrevProps(parent);
-            const start = getFirstKeyStartProps(prev);
-            start.push(this.sourceToken);
-            return {
-              type: "block-map",
-              offset: this.offset,
-              indent: this.indent,
-              items: [{ start, explicitKey: true }]
-            };
-          }
-          case "map-value-ind": {
-            this.onKeyLine = true;
-            const prev = getPrevProps(parent);
-            const start = getFirstKeyStartProps(prev);
-            return {
-              type: "block-map",
-              offset: this.offset,
-              indent: this.indent,
-              items: [{ start, key: null, sep: [this.sourceToken] }]
-            };
-          }
-        }
-        return null;
-      }
-      atIndentedComment(start, indent) {
-        if (this.type !== "comment")
-          return false;
-        if (this.indent <= indent)
-          return false;
-        return start.every((st) => st.type === "newline" || st.type === "space");
-      }
-      *documentEnd(docEnd) {
-        if (this.type !== "doc-mode") {
-          if (docEnd.end)
-            docEnd.end.push(this.sourceToken);
-          else
-            docEnd.end = [this.sourceToken];
-          if (this.type === "newline")
-            yield* this.pop();
-        }
-      }
-      *lineEnd(token) {
-        switch (this.type) {
-          case "comma":
-          case "doc-start":
-          case "doc-end":
-          case "flow-seq-end":
-          case "flow-map-end":
-          case "map-value-ind":
-            yield* this.pop();
-            yield* this.step();
-            break;
-          case "newline":
-            this.onKeyLine = false;
-          // fallthrough
-          case "space":
-          case "comment":
-          default:
-            if (token.end)
-              token.end.push(this.sourceToken);
-            else
-              token.end = [this.sourceToken];
-            if (this.type === "newline")
-              yield* this.pop();
-        }
-      }
-    };
-    exports.Parser = Parser;
-  }
-});
-
-// node_modules/yaml/dist/public-api.js
-var require_public_api = __commonJS({
-  "node_modules/yaml/dist/public-api.js"(exports) {
-    "use strict";
-    var composer = require_composer();
-    var Document = require_Document();
-    var errors = require_errors();
-    var log7 = require_log();
-    var identity = require_identity();
-    var lineCounter = require_line_counter();
-    var parser = require_parser();
-    function parseOptions(options) {
-      const prettyErrors = options.prettyErrors !== false;
-      const lineCounter$1 = options.lineCounter || prettyErrors && new lineCounter.LineCounter() || null;
-      return { lineCounter: lineCounter$1, prettyErrors };
-    }
-    function parseAllDocuments(source, options = {}) {
-      const { lineCounter: lineCounter2, prettyErrors } = parseOptions(options);
-      const parser$1 = new parser.Parser(lineCounter2?.addNewLine);
-      const composer$1 = new composer.Composer(options);
-      const docs = Array.from(composer$1.compose(parser$1.parse(source)));
-      if (prettyErrors && lineCounter2)
-        for (const doc of docs) {
-          doc.errors.forEach(errors.prettifyError(source, lineCounter2));
-          doc.warnings.forEach(errors.prettifyError(source, lineCounter2));
-        }
-      if (docs.length > 0)
-        return docs;
-      return Object.assign([], { empty: true }, composer$1.streamInfo());
-    }
-    function parseDocument(source, options = {}) {
-      const { lineCounter: lineCounter2, prettyErrors } = parseOptions(options);
-      const parser$1 = new parser.Parser(lineCounter2?.addNewLine);
-      const composer$1 = new composer.Composer(options);
-      let doc = null;
-      for (const _doc of composer$1.compose(parser$1.parse(source), true, source.length)) {
-        if (!doc)
-          doc = _doc;
-        else if (doc.options.logLevel !== "silent") {
-          doc.errors.push(new errors.YAMLParseError(_doc.range.slice(0, 2), "MULTIPLE_DOCS", "Source contains multiple documents; please use YAML.parseAllDocuments()"));
-          break;
-        }
-      }
-      if (prettyErrors && lineCounter2) {
-        doc.errors.forEach(errors.prettifyError(source, lineCounter2));
-        doc.warnings.forEach(errors.prettifyError(source, lineCounter2));
-      }
-      return doc;
-    }
-    function parse3(src, reviver, options) {
-      let _reviver = void 0;
-      if (typeof reviver === "function") {
-        _reviver = reviver;
-      } else if (options === void 0 && reviver && typeof reviver === "object") {
-        options = reviver;
-      }
-      const doc = parseDocument(src, options);
-      if (!doc)
-        return null;
-      doc.warnings.forEach((warning) => log7.warn(doc.options.logLevel, warning));
-      if (doc.errors.length > 0) {
-        if (doc.options.logLevel !== "silent")
-          throw doc.errors[0];
-        else
-          doc.errors = [];
-      }
-      return doc.toJS(Object.assign({ reviver: _reviver }, options));
-    }
-    function stringify(value, replacer, options) {
-      let _replacer = null;
-      if (typeof replacer === "function" || Array.isArray(replacer)) {
-        _replacer = replacer;
-      } else if (options === void 0 && replacer) {
-        options = replacer;
-      }
-      if (typeof options === "string")
-        options = options.length;
-      if (typeof options === "number") {
-        const indent = Math.round(options);
-        options = indent < 1 ? void 0 : indent > 8 ? { indent: 8 } : { indent };
-      }
-      if (value === void 0) {
-        const { keepUndefined } = options ?? replacer ?? {};
-        if (!keepUndefined)
-          return void 0;
-      }
-      if (identity.isDocument(value) && !_replacer)
-        return value.toString(options);
-      return new Document.Document(value, _replacer, options).toString(options);
-    }
-    exports.parse = parse3;
-    exports.parseAllDocuments = parseAllDocuments;
-    exports.parseDocument = parseDocument;
-    exports.stringify = stringify;
-  }
-});
-
-// node_modules/yaml/dist/index.js
-var require_dist = __commonJS({
-  "node_modules/yaml/dist/index.js"(exports) {
-    "use strict";
-    var composer = require_composer();
-    var Document = require_Document();
-    var Schema = require_Schema();
-    var errors = require_errors();
-    var Alias = require_Alias();
-    var identity = require_identity();
-    var Pair = require_Pair();
-    var Scalar = require_Scalar();
-    var YAMLMap = require_YAMLMap();
-    var YAMLSeq = require_YAMLSeq();
-    var cst = require_cst();
-    var lexer = require_lexer();
-    var lineCounter = require_line_counter();
-    var parser = require_parser();
-    var publicApi = require_public_api();
-    var visit2 = require_visit();
-    exports.Composer = composer.Composer;
-    exports.Document = Document.Document;
-    exports.Schema = Schema.Schema;
-    exports.YAMLError = errors.YAMLError;
-    exports.YAMLParseError = errors.YAMLParseError;
-    exports.YAMLWarning = errors.YAMLWarning;
-    exports.Alias = Alias.Alias;
-    exports.isAlias = identity.isAlias;
-    exports.isCollection = identity.isCollection;
-    exports.isDocument = identity.isDocument;
-    exports.isMap = identity.isMap;
-    exports.isNode = identity.isNode;
-    exports.isPair = identity.isPair;
-    exports.isScalar = identity.isScalar;
-    exports.isSeq = identity.isSeq;
-    exports.Pair = Pair.Pair;
-    exports.Scalar = Scalar.Scalar;
-    exports.YAMLMap = YAMLMap.YAMLMap;
-    exports.YAMLSeq = YAMLSeq.YAMLSeq;
-    exports.CST = cst;
-    exports.Lexer = lexer.Lexer;
-    exports.LineCounter = lineCounter.LineCounter;
-    exports.Parser = parser.Parser;
-    exports.parse = publicApi.parse;
-    exports.parseAllDocuments = publicApi.parseAllDocuments;
-    exports.parseDocument = publicApi.parseDocument;
-    exports.stringify = publicApi.stringify;
-    exports.visit = visit2.visit;
-    exports.visitAsync = visit2.visitAsync;
-  }
-});
-
 // node_modules/zod/v4/core/util.js
 var util_exports = {};
 __export(util_exports, {
@@ -7609,14 +279,14 @@ function promiseAllObject(promisesObj) {
 }
 function randomString(length = 10) {
   const chars = "abcdefghijklmnopqrstuvwxyz";
-  let str = "";
+  let str2 = "";
   for (let i = 0; i < length; i++) {
-    str += chars[Math.floor(Math.random() * chars.length)];
+    str2 += chars[Math.floor(Math.random() * chars.length)];
   }
-  return str;
+  return str2;
 }
-function esc(str) {
-  return JSON.stringify(str);
+function esc(str2) {
+  return JSON.stringify(str2);
 }
 function slugify(input2) {
   return input2.toLowerCase().trim().replace(/[^\w\s-]/g, "").replace(/[\s_-]+/g, "-").replace(/^-+|-+$/g, "");
@@ -7660,8 +330,8 @@ function numKeys(data) {
   }
   return keyCount;
 }
-function escapeRegex(str) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+function escapeRegex(str2) {
+  return str2.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 function clone(inst, def, params) {
   const cl = new inst._zod.constr(def ?? inst._zod.def);
@@ -7915,18 +585,18 @@ function getSizableOrigin(input2) {
     return "file";
   return "unknown";
 }
-function codePointLength(str) {
-  const units = str.length;
-  if (!highSurrogate.test(str))
+function codePointLength(str2) {
+  const units = str2.length;
+  if (!highSurrogate.test(str2))
     return units;
-  let count = units;
+  let count2 = units;
   for (let i = 0; i < units - 1; i++) {
-    if ((str.charCodeAt(i) & 64512) === 55296 && (str.charCodeAt(i + 1) & 64512) === 56320) {
-      count--;
+    if ((str2.charCodeAt(i) & 64512) === 55296 && (str2.charCodeAt(i + 1) & 64512) === 56320) {
+      count2--;
       i++;
     }
   }
-  return count;
+  return count2;
 }
 function getLengthableOrigin(input2) {
   if (Array.isArray(input2))
@@ -12417,8 +5087,8 @@ var init_az = __esm({
 });
 
 // node_modules/zod/v4/locales/be.js
-function getBelarusianPlural(count, one, few, many) {
-  const absCount = Math.abs(count);
+function getBelarusianPlural(count2, one, few, many) {
+  const absCount = Math.abs(count2);
   const lastDigit = absCount % 10;
   const lastTwoDigits = absCount % 100;
   if (lastTwoDigits >= 11 && lastTwoDigits <= 19) {
@@ -15191,8 +7861,8 @@ var init_hu = __esm({
 });
 
 // node_modules/zod/v4/locales/hy.js
-function getArmenianPlural(count, one, many) {
-  return Math.abs(count) === 1 ? one : many;
+function getArmenianPlural(count2, one, many) {
+  return Math.abs(count2) === 1 ? one : many;
 }
 function withDefiniteArticle(word) {
   if (!word)
@@ -18067,8 +10737,8 @@ var init_ro = __esm({
 });
 
 // node_modules/zod/v4/locales/ru.js
-function getRussianPlural(count, one, few, many) {
-  const absCount = Math.abs(count);
+function getRussianPlural(count2, one, few, many) {
+  const absCount = Math.abs(count2);
   const lastDigit = absCount % 10;
   const lastTwoDigits = absCount % 100;
   if (lastTwoDigits >= 11 && lastTwoDigits <= 19) {
@@ -27777,42 +20447,157 @@ var init_zod = __esm({
   }
 });
 
-// packages/core/src/events.ts
-import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
-function ensureSdlcDir(root) {
-  const dir = join(root, ".sdlc");
-  mkdirSync(dir, { recursive: true });
-  const gi = join(dir, ".gitignore");
-  if (!existsSync(gi)) writeFileSync(gi, LOCAL_FILES.join("\n") + "\n");
-  return dir;
+// packages/core/src/config.ts
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+function configPath(root) {
+  if (existsSync(join(root, CONFIG_PATH))) return { path: CONFIG_PATH, legacy: false };
+  if (existsSync(join(root, LEGACY_CONFIG_PATH))) return { path: LEGACY_CONFIG_PATH, legacy: true };
+  return void 0;
 }
-function recordEvent(root, event) {
+function loadConfig(root) {
+  const found = configPath(root);
+  if (!found) return void 0;
+  let raw2;
   try {
-    ensureSdlcDir(root);
-    appendFileSync(join(root, EVENTS_PATH), JSON.stringify({ ts: (/* @__PURE__ */ new Date()).toISOString(), ...event }) + "\n");
-  } catch {
+    raw2 = JSON.parse(readFileSync(join(root, found.path), "utf8"));
+  } catch (e) {
+    return { config: { version: 1 }, ...found, issues: [`invalid JSON: ${e.message}`] };
   }
+  const parsed = ConfigSchema.safeParse(raw2);
+  if (parsed.success) return { config: parsed.data, ...found, issues: [] };
+  return { config: raw2, ...found, issues: formatIssues(parsed.error) };
 }
-function readEvents(root, limit = 500) {
-  const p = join(root, EVENTS_PATH);
-  if (!existsSync(p)) return [];
-  const out = [];
-  for (const line of readFileSync(p, "utf8").split("\n").slice(-limit - 1)) {
-    if (!line) continue;
-    try {
-      out.push(JSON.parse(line));
-    } catch {
-    }
-  }
-  return out.reverse();
+function validateConfig(raw2) {
+  const parsed = ConfigSchema.safeParse(raw2);
+  return parsed.success ? { ok: true, config: parsed.data } : { ok: false, issues: formatIssues(parsed.error) };
 }
-var EVENTS_PATH, LOCAL_FILES;
-var init_events = __esm({
-  "packages/core/src/events.ts"() {
+function formatIssues(err) {
+  return err.issues.map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`);
+}
+function writeConfig(root, config2, path = CONFIG_PATH) {
+  const full = join(root, path);
+  mkdirSync(dirname(full), { recursive: true });
+  writeFileSync(full, JSON.stringify(config2, null, 2) + "\n");
+}
+function localeOf(loaded) {
+  return loaded?.config.locale ?? (loaded?.legacy ? "es" : "en");
+}
+function configJsonSchema() {
+  return external_exports.toJSONSchema(ConfigSchema, { io: "input" });
+}
+var AGENTS, ARTIFACTS, CI_AGENTS, NOTIFY_EVENTS, RISK_PROFILES, commandMap, ConfigSchema, CONFIG_PATH, LEGACY_CONFIG_PATH;
+var init_config = __esm({
+  "packages/core/src/config.ts"() {
     "use strict";
-    EVENTS_PATH = ".sdlc/events.jsonl";
-    LOCAL_FILES = ["events.jsonl", "fix-lock", "ui-token", "bands/", "risk-floor.json", "pr-stats.json"];
+    init_zod();
+    AGENTS = ["claude", "cursor", "agents-md"];
+    ARTIFACTS = ["intent", "spec", "plan"];
+    CI_AGENTS = ["claude", "codex", "cursor"];
+    NOTIFY_EVENTS = ["gate.pending", "gate.decided", "spec.ready", "review.done", "change.merged", "risk.raised"];
+    RISK_PROFILES = ["strict", "graded"];
+    commandMap = external_exports.record(external_exports.string(), external_exports.string());
+    ConfigSchema = external_exports.looseObject({
+      version: external_exports.literal(1),
+      locale: external_exports.enum(["en", "es"]).optional(),
+      agents: external_exports.array(external_exports.enum(AGENTS)).optional(),
+      vcs: external_exports.looseObject({
+        provider: external_exports.enum(["github", "gitlab", "bitbucket"]).optional(),
+        host: external_exports.string().optional(),
+        workspace: external_exports.string().optional(),
+        repo: external_exports.string().optional(),
+        default_branch: external_exports.string().optional()
+      }).optional(),
+      tracker: external_exports.looseObject({
+        provider: external_exports.enum(["jira", "github", "linear", "none"]).optional(),
+        /** `jira-sot`: the tracker (Jira, GitHub Issues or Linear) is the source of truth; the name is historical. */
+        mode: external_exports.enum(["linkage", "jira-sot", "repo-sot"]).optional(),
+        base_url: external_exports.string().optional(),
+        project_key: external_exports.string().optional(),
+        /** Linear: team key (`ENG` in `ENG-123`). */
+        team_key: external_exports.string().optional(),
+        /** GitHub Issues: `owner/repo` when the issues live in another repository than the code. */
+        repo: external_exports.string().optional(),
+        default_issue_type: external_exports.string().optional(),
+        incident_issue_type: external_exports.string().optional(),
+        /** `sdlc roadmap apply`: issue type for epics (Jira; default `Epic`). */
+        epic_issue_type: external_exports.string().optional(),
+        /** Jira Data Center/Server: the "Epic Link" custom field (e.g. `customfield_10014`); Cloud uses `parent`. */
+        epic_link_field: external_exports.string().optional(),
+        transitions: external_exports.record(external_exports.string(), external_exports.string()).optional()
+      }).optional(),
+      stack: external_exports.looseObject({ language: external_exports.string().optional(), package_manager: external_exports.string().optional(), project_type: external_exports.string().optional() }).optional(),
+      commands: external_exports.looseObject({
+        build: external_exports.string().optional(),
+        test: external_exports.string().optional(),
+        lint: external_exports.string().optional(),
+        format: external_exports.string().optional(),
+        run: external_exports.string().optional()
+      }).optional(),
+      format_on_edit: commandMap.optional(),
+      protected_paths: external_exports.array(external_exports.string()).optional(),
+      append_only_paths: external_exports.array(external_exports.string()).optional(),
+      test_globs: external_exports.array(external_exports.string()).optional(),
+      secret_patterns_extra: external_exports.array(external_exports.string()).optional(),
+      risk: external_exports.looseObject({
+        high_risk_paths: external_exports.array(external_exports.string()).optional(),
+        /** Paths that are never low risk (default: CI workflows, `.sdlc/**`, REVIEW.md). */
+        always_human_paths: external_exports.array(external_exports.string()).optional(),
+        /** `strict` (default): every gate needs a person. `graded`: human approvals scale with the tier. */
+        profile: external_exports.enum(RISK_PROFILES).optional(),
+        /** Human approvals per tier; defaults depend on `profile`. */
+        tiers: external_exports.partialRecord(external_exports.enum(["low", "medium", "high"]), external_exports.looseObject({ approvals: external_exports.number().int().min(0).max(5) })).optional(),
+        /** Authors (git name, email or `@login`) who get the lighter paths; everyone else needs another person. */
+        trusted_authors: external_exports.array(external_exports.string()).optional(),
+        size: external_exports.looseObject({ low_max_lines: external_exports.number().int().min(0).optional(), high_min_lines: external_exports.number().int().positive().optional() }).optional(),
+        /** `sdlc ci risk`: also ask the agent whether this change needs another person (it can only raise the tier). */
+        agent_escalation: external_exports.boolean().optional()
+      }).optional(),
+      production_gate: external_exports.looseObject({ patterns: external_exports.array(external_exports.string()).optional(), approval_env: external_exports.string().optional() }).optional(),
+      /** Who may approve each artifact: role names, resolved through `roles`. Empty → anyone but an agent. */
+      gates: external_exports.partialRecord(external_exports.enum([...ARTIFACTS, "roadmap"]), external_exports.array(external_exports.string())).optional(),
+      /** Solo projects: the author may approve their own spec and plan (agents still cannot). */
+      gates_self_approval: external_exports.boolean().optional(),
+      /** Role → git emails (or names, or `@login` on the forge) of the people holding it. */
+      roles: external_exports.record(external_exports.string(), external_exports.array(external_exports.string())).optional(),
+      plugin: external_exports.looseObject({ marketplace_repo: external_exports.string().optional() }).optional(),
+      /** `sdlc quick`: small changes without spec and plan, limited on every push. */
+      quick_lane: external_exports.looseObject({
+        enabled: external_exports.boolean().optional(),
+        max_files: external_exports.number().int().positive().optional(),
+        forbid_paths: external_exports.array(external_exports.string()).optional()
+      }).optional(),
+      /** `sdlc notify`: loop events to Slack or any webhook (Teams, Discord, …). Off while the webhook env var is unset. */
+      notify: external_exports.looseObject({
+        webhook_env: external_exports.string().optional(),
+        format: external_exports.enum(["slack", "generic"]).optional(),
+        events: external_exports.array(external_exports.enum(NOTIFY_EVENTS)).optional(),
+        /** `@login`, email or git name → Slack member ID, to mention whoever has to act. */
+        people: external_exports.record(external_exports.string(), external_exports.string()).optional()
+      }).optional(),
+      /** Headless runs in CI (`sdlc ci …`): which agent CLI to drive. */
+      ci: external_exports.looseObject({
+        agent: external_exports.enum(CI_AGENTS).optional(),
+        model: external_exports.string().optional(),
+        min_pass_rate: external_exports.number().min(0).max(1).optional(),
+        /** `sdlc ci mention`: answer only (read) or also commit requested changes to the PR branch (edit). */
+        mention_mode: external_exports.enum(["read", "edit"]).optional(),
+        /** Headings every PR/MR description needs before sdlc/gates turns green ([] turns the check off). */
+        pr_sections: external_exports.array(external_exports.string()).optional(),
+        /** `sdlc ci review`: depth (auto follows the risk tier: low quick, medium standard, high deep) and the round cap. */
+        review: external_exports.looseObject({
+          depth: external_exports.enum(["auto", "quick", "standard", "deep"]).optional(),
+          max_rounds: external_exports.number().int().min(1).max(10).optional()
+        }).optional(),
+        /** `sdlc ci nightly-review`: the modules it rotates through (one per night) and how many intents a night may open. */
+        nightly: external_exports.looseObject({
+          modules: external_exports.array(external_exports.string()).optional(),
+          max_intents: external_exports.number().int().min(0).max(20).optional()
+        }).optional()
+      }).optional()
+    });
+    CONFIG_PATH = ".sdlc/config.json";
+    LEGACY_CONFIG_PATH = ".claude/sdlc.json";
   }
 });
 
@@ -27866,16 +20651,7477 @@ var init_http = __esm({
   }
 });
 
+// packages/core/src/agent.ts
+import { spawn, spawnSync } from "node:child_process";
+import { mkdtempSync, readFileSync as readFileSync2, rmSync } from "node:fs";
+import { homedir, tmpdir } from "node:os";
+import { join as join2 } from "node:path";
+function pickAgent(flag, loaded, env = process.env) {
+  const a = flag || env.SDLC_CI_AGENT || loaded?.config.ci?.agent || "claude";
+  if (!CI_AGENTS.includes(a)) throw new SdlcError(`unknown agent '${a}' (one of: ${CI_AGENTS.join(", ")})`);
+  return a;
+}
+function agentBin(agent, env = process.env) {
+  if (agent !== "cursor") return AGENT_BIN[agent];
+  const local = join2(env.HOME ?? homedir(), ".local/bin");
+  return ["cursor-agent", "agent", join2(local, "cursor-agent"), join2(local, "agent")].find((b) => hasTool(b, env)) ?? AGENT_BIN.cursor;
+}
+function skillRef(agent, name) {
+  return agent === "claude" ? `the ${name} skill` : `the skill in .agents/skills/${name}/SKILL.md`;
+}
+function invocation(agent, task, model, env) {
+  const tmp = mkdtempSync(join2(tmpdir(), "sdlc-agent-"));
+  let args;
+  let lastMessage;
+  switch (agent) {
+    case "claude":
+      args = ["-p", task.prompt, "--allowedTools", task.allowedTools ?? READ_TOOLS];
+      if (task.mode === "edit") args.push("--permission-mode", "acceptEdits");
+      if (model) args.push("--model", model);
+      break;
+    case "codex":
+      lastMessage = join2(tmp, "last.md");
+      args = ["exec", "--sandbox", task.mode !== "edit" ? "read-only" : env.CI ? "danger-full-access" : "workspace-write", "--output-last-message", lastMessage];
+      if (model) args.push("-m", model);
+      args.push(task.prompt);
+      break;
+    case "cursor":
+      args = ["-p", "--output-format", "text", "--trust", "--workspace", task.cwd];
+      args.push(...task.mode === "edit" ? ["--force"] : ["--mode", "ask"]);
+      if (model) args.push("--model", model);
+      args.push(task.prompt);
+      break;
+  }
+  if (agent === "codex" && !env.CODEX_API_KEY && env.OPENAI_API_KEY) env = { ...env, CODEX_API_KEY: env.OPENAI_API_KEY };
+  return { bin: agentBin(agent, env), args, env, tmp, lastMessage };
+}
+function answer(inv, stdout) {
+  if (inv.lastMessage) {
+    try {
+      return readFileSync2(inv.lastMessage, "utf8").trim();
+    } catch {
+    }
+  }
+  return stdout.trim();
+}
+function runAgent(agent, task, model, env = process.env) {
+  const inv = invocation(agent, task, model, env);
+  try {
+    const r = spawnSync(inv.bin, inv.args, { cwd: task.cwd, env: inv.env, encoding: "utf8", stdio: ["ignore", "pipe", "inherit"], maxBuffer: 64 * 1024 * 1024 });
+    const err = failure2(inv.bin, r.error, r.status);
+    if (err) throw err;
+    return answer(inv, r.stdout);
+  } finally {
+    rmSync(inv.tmp, { recursive: true, force: true });
+  }
+}
+function runAgentAsync(agent, task, model, env = process.env) {
+  const inv = invocation(agent, task, model, env);
+  return new Promise((resolve4, reject) => {
+    const child = spawn(inv.bin, inv.args, { cwd: task.cwd, env: inv.env, stdio: ["ignore", "pipe", task.log ? "pipe" : "inherit"], signal: task.signal });
+    let stdout = "";
+    if (task.log) child.stderr?.setEncoding("utf8").on("data", task.log);
+    let spawnError;
+    child.stdout?.setEncoding("utf8").on("data", (d) => stdout += d);
+    child.on("error", (e) => spawnError = e);
+    child.on("close", (status) => {
+      const err = failure2(inv.bin, spawnError, spawnError ? null : status);
+      if (err) reject(err);
+      else resolve4(answer(inv, stdout));
+    });
+  }).finally(() => rmSync(inv.tmp, { recursive: true, force: true }));
+}
+var READ_TOOLS, AGENT_BIN, failure2;
+var init_agent = __esm({
+  "packages/core/src/agent.ts"() {
+    "use strict";
+    init_config();
+    init_http();
+    READ_TOOLS = "Read,Grep,Glob,Bash(git diff:*),Bash(git log:*),Bash(git show:*)";
+    AGENT_BIN = { claude: "claude", codex: "codex", cursor: "cursor-agent" };
+    failure2 = (bin, error62, status) => error62 ? new SdlcError(`${bin}: ${error62.code === "ENOENT" ? "not installed (run: sdlc ci bootstrap)" : error62.message}`) : status !== 0 ? new SdlcError(`${bin} exited with ${status}`) : void 0;
+  }
+});
+
+// node_modules/yaml/dist/nodes/identity.js
+var require_identity = __commonJS({
+  "node_modules/yaml/dist/nodes/identity.js"(exports) {
+    "use strict";
+    var ALIAS = Symbol.for("yaml.alias");
+    var DOC = Symbol.for("yaml.document");
+    var MAP = Symbol.for("yaml.map");
+    var PAIR = Symbol.for("yaml.pair");
+    var SCALAR = Symbol.for("yaml.scalar");
+    var SEQ = Symbol.for("yaml.seq");
+    var NODE_TYPE = Symbol.for("yaml.node.type");
+    var isAlias = (node2) => !!node2 && typeof node2 === "object" && node2[NODE_TYPE] === ALIAS;
+    var isDocument = (node2) => !!node2 && typeof node2 === "object" && node2[NODE_TYPE] === DOC;
+    var isMap = (node2) => !!node2 && typeof node2 === "object" && node2[NODE_TYPE] === MAP;
+    var isPair = (node2) => !!node2 && typeof node2 === "object" && node2[NODE_TYPE] === PAIR;
+    var isScalar = (node2) => !!node2 && typeof node2 === "object" && node2[NODE_TYPE] === SCALAR;
+    var isSeq = (node2) => !!node2 && typeof node2 === "object" && node2[NODE_TYPE] === SEQ;
+    function isCollection(node2) {
+      if (node2 && typeof node2 === "object")
+        switch (node2[NODE_TYPE]) {
+          case MAP:
+          case SEQ:
+            return true;
+        }
+      return false;
+    }
+    function isNode(node2) {
+      if (node2 && typeof node2 === "object")
+        switch (node2[NODE_TYPE]) {
+          case ALIAS:
+          case MAP:
+          case SCALAR:
+          case SEQ:
+            return true;
+        }
+      return false;
+    }
+    var hasAnchor = (node2) => (isScalar(node2) || isCollection(node2)) && !!node2.anchor;
+    exports.ALIAS = ALIAS;
+    exports.DOC = DOC;
+    exports.MAP = MAP;
+    exports.NODE_TYPE = NODE_TYPE;
+    exports.PAIR = PAIR;
+    exports.SCALAR = SCALAR;
+    exports.SEQ = SEQ;
+    exports.hasAnchor = hasAnchor;
+    exports.isAlias = isAlias;
+    exports.isCollection = isCollection;
+    exports.isDocument = isDocument;
+    exports.isMap = isMap;
+    exports.isNode = isNode;
+    exports.isPair = isPair;
+    exports.isScalar = isScalar;
+    exports.isSeq = isSeq;
+  }
+});
+
+// node_modules/yaml/dist/visit.js
+var require_visit = __commonJS({
+  "node_modules/yaml/dist/visit.js"(exports) {
+    "use strict";
+    var identity = require_identity();
+    var BREAK = Symbol("break visit");
+    var SKIP2 = Symbol("skip children");
+    var REMOVE = Symbol("remove node");
+    function visit2(node2, visitor) {
+      const visitor_ = initVisitor(visitor);
+      if (identity.isDocument(node2)) {
+        const cd = visit_(null, node2.contents, visitor_, Object.freeze([node2]));
+        if (cd === REMOVE)
+          node2.contents = null;
+      } else
+        visit_(null, node2, visitor_, Object.freeze([]));
+    }
+    visit2.BREAK = BREAK;
+    visit2.SKIP = SKIP2;
+    visit2.REMOVE = REMOVE;
+    function visit_(key, node2, visitor, path) {
+      const ctrl = callVisitor(key, node2, visitor, path);
+      if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
+        replaceNode(key, path, ctrl);
+        return visit_(key, ctrl, visitor, path);
+      }
+      if (typeof ctrl !== "symbol") {
+        if (identity.isCollection(node2)) {
+          path = Object.freeze(path.concat(node2));
+          for (let i = 0; i < node2.items.length; ++i) {
+            const ci = visit_(i, node2.items[i], visitor, path);
+            if (typeof ci === "number")
+              i = ci - 1;
+            else if (ci === BREAK)
+              return BREAK;
+            else if (ci === REMOVE) {
+              node2.items.splice(i, 1);
+              i -= 1;
+            }
+          }
+        } else if (identity.isPair(node2)) {
+          path = Object.freeze(path.concat(node2));
+          const ck = visit_("key", node2.key, visitor, path);
+          if (ck === BREAK)
+            return BREAK;
+          else if (ck === REMOVE)
+            node2.key = null;
+          const cv = visit_("value", node2.value, visitor, path);
+          if (cv === BREAK)
+            return BREAK;
+          else if (cv === REMOVE)
+            node2.value = null;
+        }
+      }
+      return ctrl;
+    }
+    async function visitAsync(node2, visitor) {
+      const visitor_ = initVisitor(visitor);
+      if (identity.isDocument(node2)) {
+        const cd = await visitAsync_(null, node2.contents, visitor_, Object.freeze([node2]));
+        if (cd === REMOVE)
+          node2.contents = null;
+      } else
+        await visitAsync_(null, node2, visitor_, Object.freeze([]));
+    }
+    visitAsync.BREAK = BREAK;
+    visitAsync.SKIP = SKIP2;
+    visitAsync.REMOVE = REMOVE;
+    async function visitAsync_(key, node2, visitor, path) {
+      const ctrl = await callVisitor(key, node2, visitor, path);
+      if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
+        replaceNode(key, path, ctrl);
+        return visitAsync_(key, ctrl, visitor, path);
+      }
+      if (typeof ctrl !== "symbol") {
+        if (identity.isCollection(node2)) {
+          path = Object.freeze(path.concat(node2));
+          for (let i = 0; i < node2.items.length; ++i) {
+            const ci = await visitAsync_(i, node2.items[i], visitor, path);
+            if (typeof ci === "number")
+              i = ci - 1;
+            else if (ci === BREAK)
+              return BREAK;
+            else if (ci === REMOVE) {
+              node2.items.splice(i, 1);
+              i -= 1;
+            }
+          }
+        } else if (identity.isPair(node2)) {
+          path = Object.freeze(path.concat(node2));
+          const ck = await visitAsync_("key", node2.key, visitor, path);
+          if (ck === BREAK)
+            return BREAK;
+          else if (ck === REMOVE)
+            node2.key = null;
+          const cv = await visitAsync_("value", node2.value, visitor, path);
+          if (cv === BREAK)
+            return BREAK;
+          else if (cv === REMOVE)
+            node2.value = null;
+        }
+      }
+      return ctrl;
+    }
+    function initVisitor(visitor) {
+      if (typeof visitor === "object" && (visitor.Collection || visitor.Node || visitor.Value)) {
+        return Object.assign({
+          Alias: visitor.Node,
+          Map: visitor.Node,
+          Scalar: visitor.Node,
+          Seq: visitor.Node
+        }, visitor.Value && {
+          Map: visitor.Value,
+          Scalar: visitor.Value,
+          Seq: visitor.Value
+        }, visitor.Collection && {
+          Map: visitor.Collection,
+          Seq: visitor.Collection
+        }, visitor);
+      }
+      return visitor;
+    }
+    function callVisitor(key, node2, visitor, path) {
+      if (typeof visitor === "function")
+        return visitor(key, node2, path);
+      if (identity.isMap(node2))
+        return visitor.Map?.(key, node2, path);
+      if (identity.isSeq(node2))
+        return visitor.Seq?.(key, node2, path);
+      if (identity.isPair(node2))
+        return visitor.Pair?.(key, node2, path);
+      if (identity.isScalar(node2))
+        return visitor.Scalar?.(key, node2, path);
+      if (identity.isAlias(node2))
+        return visitor.Alias?.(key, node2, path);
+      return void 0;
+    }
+    function replaceNode(key, path, node2) {
+      const parent = path[path.length - 1];
+      if (identity.isCollection(parent)) {
+        parent.items[key] = node2;
+      } else if (identity.isPair(parent)) {
+        if (key === "key")
+          parent.key = node2;
+        else
+          parent.value = node2;
+      } else if (identity.isDocument(parent)) {
+        parent.contents = node2;
+      } else {
+        const pt = identity.isAlias(parent) ? "alias" : "scalar";
+        throw new Error(`Cannot replace node with ${pt} parent`);
+      }
+    }
+    exports.visit = visit2;
+    exports.visitAsync = visitAsync;
+  }
+});
+
+// node_modules/yaml/dist/doc/directives.js
+var require_directives = __commonJS({
+  "node_modules/yaml/dist/doc/directives.js"(exports) {
+    "use strict";
+    var identity = require_identity();
+    var visit2 = require_visit();
+    var escapeChars = {
+      "!": "%21",
+      ",": "%2C",
+      "[": "%5B",
+      "]": "%5D",
+      "{": "%7B",
+      "}": "%7D"
+    };
+    var escapeTagName = (tn) => tn.replace(/[!,[\]{}]/g, (ch) => escapeChars[ch]);
+    var Directives = class _Directives {
+      constructor(yaml, tags) {
+        this.docStart = null;
+        this.docEnd = false;
+        this.yaml = Object.assign({}, _Directives.defaultYaml, yaml);
+        this.tags = Object.assign({}, _Directives.defaultTags, tags);
+      }
+      clone() {
+        const copy = new _Directives(this.yaml, this.tags);
+        copy.docStart = this.docStart;
+        return copy;
+      }
+      /**
+       * During parsing, get a Directives instance for the current document and
+       * update the stream state according to the current version's spec.
+       */
+      atDocument() {
+        const res = new _Directives(this.yaml, this.tags);
+        switch (this.yaml.version) {
+          case "1.1":
+            this.atNextDocument = true;
+            break;
+          case "1.2":
+            this.atNextDocument = false;
+            this.yaml = {
+              explicit: _Directives.defaultYaml.explicit,
+              version: "1.2"
+            };
+            this.tags = Object.assign({}, _Directives.defaultTags);
+            break;
+        }
+        return res;
+      }
+      /**
+       * @param onError - May be called even if the action was successful
+       * @returns `true` on success
+       */
+      add(line, onError) {
+        if (this.atNextDocument) {
+          this.yaml = { explicit: _Directives.defaultYaml.explicit, version: "1.1" };
+          this.tags = Object.assign({}, _Directives.defaultTags);
+          this.atNextDocument = false;
+        }
+        const parts = line.trim().split(/[ \t]+/);
+        const name = parts.shift();
+        switch (name) {
+          case "%TAG": {
+            if (parts.length !== 2) {
+              onError(0, "%TAG directive should contain exactly two parts");
+              if (parts.length < 2)
+                return false;
+            }
+            const [handle, prefix] = parts;
+            this.tags[handle] = prefix;
+            return true;
+          }
+          case "%YAML": {
+            this.yaml.explicit = true;
+            if (parts.length !== 1) {
+              onError(0, "%YAML directive should contain exactly one part");
+              return false;
+            }
+            const [version2] = parts;
+            if (version2 === "1.1" || version2 === "1.2") {
+              this.yaml.version = version2;
+              return true;
+            } else {
+              const isValid = /^\d+\.\d+$/.test(version2);
+              onError(6, `Unsupported YAML version ${version2}`, isValid);
+              return false;
+            }
+          }
+          default:
+            onError(0, `Unknown directive ${name}`, true);
+            return false;
+        }
+      }
+      /**
+       * Resolves a tag, matching handles to those defined in %TAG directives.
+       *
+       * @returns Resolved tag, which may also be the non-specific tag `'!'` or a
+       *   `'!local'` tag, or `null` if unresolvable.
+       */
+      tagName(source, onError) {
+        if (source === "!")
+          return "!";
+        if (source[0] !== "!") {
+          onError(`Not a valid tag: ${source}`);
+          return null;
+        }
+        if (source[1] === "<") {
+          const verbatim = source.slice(2, -1);
+          if (verbatim === "!" || verbatim === "!!") {
+            onError(`Verbatim tags aren't resolved, so ${source} is invalid.`);
+            return null;
+          }
+          if (source[source.length - 1] !== ">")
+            onError("Verbatim tags must end with a >");
+          return verbatim;
+        }
+        const [, handle, suffix] = source.match(/^(.*!)([^!]*)$/s);
+        if (!suffix)
+          onError(`The ${source} tag has no suffix`);
+        const prefix = this.tags[handle];
+        if (prefix) {
+          try {
+            return prefix + decodeURIComponent(suffix);
+          } catch (error62) {
+            onError(String(error62));
+            return null;
+          }
+        }
+        if (handle === "!")
+          return source;
+        onError(`Could not resolve tag: ${source}`);
+        return null;
+      }
+      /**
+       * Given a fully resolved tag, returns its printable string form,
+       * taking into account current tag prefixes and defaults.
+       */
+      tagString(tag) {
+        for (const [handle, prefix] of Object.entries(this.tags)) {
+          if (tag.startsWith(prefix))
+            return handle + escapeTagName(tag.substring(prefix.length));
+        }
+        return tag[0] === "!" ? tag : `!<${tag}>`;
+      }
+      toString(doc) {
+        const lines2 = this.yaml.explicit ? [`%YAML ${this.yaml.version || "1.2"}`] : [];
+        const tagEntries = Object.entries(this.tags);
+        let tagNames;
+        if (doc && tagEntries.length > 0 && identity.isNode(doc.contents)) {
+          const tags = {};
+          visit2.visit(doc.contents, (_key, node2) => {
+            if (identity.isNode(node2) && node2.tag)
+              tags[node2.tag] = true;
+          });
+          tagNames = Object.keys(tags);
+        } else
+          tagNames = [];
+        for (const [handle, prefix] of tagEntries) {
+          if (handle === "!!" && prefix === "tag:yaml.org,2002:")
+            continue;
+          if (!doc || tagNames.some((tn) => tn.startsWith(prefix)))
+            lines2.push(`%TAG ${handle} ${prefix}`);
+        }
+        return lines2.join("\n");
+      }
+    };
+    Directives.defaultYaml = { explicit: false, version: "1.2" };
+    Directives.defaultTags = { "!!": "tag:yaml.org,2002:" };
+    exports.Directives = Directives;
+  }
+});
+
+// node_modules/yaml/dist/doc/anchors.js
+var require_anchors = __commonJS({
+  "node_modules/yaml/dist/doc/anchors.js"(exports) {
+    "use strict";
+    var identity = require_identity();
+    var visit2 = require_visit();
+    function anchorIsValid(anchor2) {
+      if (/[\x00-\x19\s,[\]{}]/.test(anchor2)) {
+        const sa = JSON.stringify(anchor2);
+        const msg = `Anchor must not contain whitespace or control characters: ${sa}`;
+        throw new Error(msg);
+      }
+      return true;
+    }
+    function anchorNames(root) {
+      const anchors = /* @__PURE__ */ new Set();
+      visit2.visit(root, {
+        Value(_key, node2) {
+          if (node2.anchor)
+            anchors.add(node2.anchor);
+        }
+      });
+      return anchors;
+    }
+    function findNewAnchor(prefix, exclude) {
+      for (let i = 1; true; ++i) {
+        const name = `${prefix}${i}`;
+        if (!exclude.has(name))
+          return name;
+      }
+    }
+    function createNodeAnchors(doc, prefix) {
+      const aliasObjects = [];
+      const sourceObjects = /* @__PURE__ */ new Map();
+      let prevAnchors = null;
+      return {
+        onAnchor: (source) => {
+          aliasObjects.push(source);
+          prevAnchors ?? (prevAnchors = anchorNames(doc));
+          const anchor2 = findNewAnchor(prefix, prevAnchors);
+          prevAnchors.add(anchor2);
+          return anchor2;
+        },
+        /**
+         * With circular references, the source node is only resolved after all
+         * of its child nodes are. This is why anchors are set only after all of
+         * the nodes have been created.
+         */
+        setAnchors: () => {
+          for (const source of aliasObjects) {
+            const ref = sourceObjects.get(source);
+            if (typeof ref === "object" && ref.anchor && (identity.isScalar(ref.node) || identity.isCollection(ref.node))) {
+              ref.node.anchor = ref.anchor;
+            } else {
+              const error62 = new Error("Failed to resolve repeated object (this should not happen)");
+              error62.source = source;
+              throw error62;
+            }
+          }
+        },
+        sourceObjects
+      };
+    }
+    exports.anchorIsValid = anchorIsValid;
+    exports.anchorNames = anchorNames;
+    exports.createNodeAnchors = createNodeAnchors;
+    exports.findNewAnchor = findNewAnchor;
+  }
+});
+
+// node_modules/yaml/dist/doc/applyReviver.js
+var require_applyReviver = __commonJS({
+  "node_modules/yaml/dist/doc/applyReviver.js"(exports) {
+    "use strict";
+    function applyReviver(reviver, obj, key, val) {
+      if (val && typeof val === "object") {
+        if (Array.isArray(val)) {
+          for (let i = 0, len = val.length; i < len; ++i) {
+            const v0 = val[i];
+            const v1 = applyReviver(reviver, val, String(i), v0);
+            if (v1 === void 0)
+              delete val[i];
+            else if (v1 !== v0)
+              val[i] = v1;
+          }
+        } else if (val instanceof Map) {
+          for (const k of Array.from(val.keys())) {
+            const v0 = val.get(k);
+            const v1 = applyReviver(reviver, val, k, v0);
+            if (v1 === void 0)
+              val.delete(k);
+            else if (v1 !== v0)
+              val.set(k, v1);
+          }
+        } else if (val instanceof Set) {
+          for (const v0 of Array.from(val)) {
+            const v1 = applyReviver(reviver, val, v0, v0);
+            if (v1 === void 0)
+              val.delete(v0);
+            else if (v1 !== v0) {
+              val.delete(v0);
+              val.add(v1);
+            }
+          }
+        } else {
+          for (const [k, v0] of Object.entries(val)) {
+            const v1 = applyReviver(reviver, val, k, v0);
+            if (v1 === void 0)
+              delete val[k];
+            else if (v1 !== v0)
+              val[k] = v1;
+          }
+        }
+      }
+      return reviver.call(obj, key, val);
+    }
+    exports.applyReviver = applyReviver;
+  }
+});
+
+// node_modules/yaml/dist/nodes/toJS.js
+var require_toJS = __commonJS({
+  "node_modules/yaml/dist/nodes/toJS.js"(exports) {
+    "use strict";
+    var identity = require_identity();
+    function toJS(value, arg, ctx) {
+      if (Array.isArray(value))
+        return value.map((v, i) => toJS(v, String(i), ctx));
+      if (value && typeof value.toJSON === "function") {
+        if (!ctx || !identity.hasAnchor(value))
+          return value.toJSON(arg, ctx);
+        const data = { aliasCount: 0, count: 1, res: void 0 };
+        ctx.anchors.set(value, data);
+        ctx.onCreate = (res2) => {
+          data.res = res2;
+          delete ctx.onCreate;
+        };
+        const res = value.toJSON(arg, ctx);
+        if (ctx.onCreate)
+          ctx.onCreate(res);
+        return res;
+      }
+      if (typeof value === "bigint" && !ctx?.keep)
+        return Number(value);
+      return value;
+    }
+    exports.toJS = toJS;
+  }
+});
+
+// node_modules/yaml/dist/nodes/Node.js
+var require_Node = __commonJS({
+  "node_modules/yaml/dist/nodes/Node.js"(exports) {
+    "use strict";
+    var applyReviver = require_applyReviver();
+    var identity = require_identity();
+    var toJS = require_toJS();
+    var NodeBase = class {
+      constructor(type) {
+        Object.defineProperty(this, identity.NODE_TYPE, { value: type });
+      }
+      /** Create a copy of this node.  */
+      clone() {
+        const copy = Object.create(Object.getPrototypeOf(this), Object.getOwnPropertyDescriptors(this));
+        if (this.range)
+          copy.range = this.range.slice();
+        return copy;
+      }
+      /** A plain JavaScript representation of this node. */
+      toJS(doc, { mapAsMap, maxAliasCount, onAnchor, reviver } = {}) {
+        if (!identity.isDocument(doc))
+          throw new TypeError("A document argument is required");
+        const ctx = {
+          anchors: /* @__PURE__ */ new Map(),
+          doc,
+          keep: true,
+          mapAsMap: mapAsMap === true,
+          mapKeyWarned: false,
+          maxAliasCount: typeof maxAliasCount === "number" ? maxAliasCount : 100
+        };
+        const res = toJS.toJS(this, "", ctx);
+        if (typeof onAnchor === "function")
+          for (const { count: count2, res: res2 } of ctx.anchors.values())
+            onAnchor(res2, count2);
+        return typeof reviver === "function" ? applyReviver.applyReviver(reviver, { "": res }, "", res) : res;
+      }
+    };
+    exports.NodeBase = NodeBase;
+  }
+});
+
+// node_modules/yaml/dist/nodes/Alias.js
+var require_Alias = __commonJS({
+  "node_modules/yaml/dist/nodes/Alias.js"(exports) {
+    "use strict";
+    var anchors = require_anchors();
+    var visit2 = require_visit();
+    var identity = require_identity();
+    var Node5 = require_Node();
+    var toJS = require_toJS();
+    var Alias = class extends Node5.NodeBase {
+      constructor(source) {
+        super(identity.ALIAS);
+        this.source = source;
+        Object.defineProperty(this, "tag", {
+          set() {
+            throw new Error("Alias nodes cannot have tags");
+          }
+        });
+      }
+      /**
+       * Resolve the value of this alias within `doc`, finding the last
+       * instance of the `source` anchor before this node.
+       */
+      resolve(doc, ctx) {
+        if (ctx?.maxAliasCount === 0)
+          throw new ReferenceError("Alias resolution is disabled");
+        let nodes;
+        if (ctx?.aliasResolveCache) {
+          nodes = ctx.aliasResolveCache;
+        } else {
+          nodes = [];
+          visit2.visit(doc, {
+            Node: (_key, node2) => {
+              if (identity.isAlias(node2) || identity.hasAnchor(node2))
+                nodes.push(node2);
+            }
+          });
+          if (ctx)
+            ctx.aliasResolveCache = nodes;
+        }
+        let found = void 0;
+        for (const node2 of nodes) {
+          if (node2 === this)
+            break;
+          if (node2.anchor === this.source)
+            found = node2;
+        }
+        if (found && ctx) {
+          const { anchors: anchors2, doc: doc2, maxAliasCount } = ctx;
+          let data = anchors2.get(found);
+          if (!data) {
+            toJS.toJS(found, null, ctx);
+            data = anchors2.get(found);
+          }
+          if (data?.res === void 0) {
+            const msg = "This should not happen: Alias anchor was not resolved?";
+            throw new ReferenceError(msg);
+          }
+          if (maxAliasCount >= 0) {
+            data.count += 1;
+            if (data.aliasCount === 0)
+              data.aliasCount = getAliasCount(doc2, found, anchors2);
+            if (data.count * data.aliasCount > maxAliasCount) {
+              const msg = "Excessive alias count indicates a resource exhaustion attack";
+              throw new ReferenceError(msg);
+            }
+          }
+        }
+        return found;
+      }
+      toJSON(_arg, ctx) {
+        if (!ctx)
+          return { source: this.source };
+        const source = this.resolve(ctx.doc, ctx);
+        if (!source) {
+          const msg = `Unresolved alias (the anchor must be set before the alias): ${this.source}`;
+          throw new ReferenceError(msg);
+        }
+        return ctx.anchors.get(source).res;
+      }
+      toString(ctx, _onComment, _onChompKeep) {
+        const src = `*${this.source}`;
+        if (ctx) {
+          anchors.anchorIsValid(this.source);
+          if (ctx.options.verifyAliasOrder && !ctx.anchors.has(this.source)) {
+            const msg = `Unresolved alias (the anchor must be set before the alias): ${this.source}`;
+            throw new Error(msg);
+          }
+          if (ctx.implicitKey)
+            return `${src} `;
+        }
+        return src;
+      }
+    };
+    function getAliasCount(doc, node2, anchors2) {
+      if (identity.isAlias(node2)) {
+        const source = node2.resolve(doc);
+        const anchor2 = anchors2 && source && anchors2.get(source);
+        return anchor2 ? anchor2.count * anchor2.aliasCount : 0;
+      } else if (identity.isCollection(node2)) {
+        let count2 = 0;
+        for (const item of node2.items) {
+          const c = getAliasCount(doc, item, anchors2);
+          if (c > count2)
+            count2 = c;
+        }
+        return count2;
+      } else if (identity.isPair(node2)) {
+        const kc = getAliasCount(doc, node2.key, anchors2);
+        const vc = getAliasCount(doc, node2.value, anchors2);
+        return Math.max(kc, vc);
+      }
+      return 1;
+    }
+    exports.Alias = Alias;
+  }
+});
+
+// node_modules/yaml/dist/nodes/Scalar.js
+var require_Scalar = __commonJS({
+  "node_modules/yaml/dist/nodes/Scalar.js"(exports) {
+    "use strict";
+    var identity = require_identity();
+    var Node5 = require_Node();
+    var toJS = require_toJS();
+    var isScalarValue = (value) => !value || typeof value !== "function" && typeof value !== "object";
+    var Scalar = class extends Node5.NodeBase {
+      constructor(value) {
+        super(identity.SCALAR);
+        this.value = value;
+      }
+      toJSON(arg, ctx) {
+        return ctx?.keep ? this.value : toJS.toJS(this.value, arg, ctx);
+      }
+      toString() {
+        return String(this.value);
+      }
+    };
+    Scalar.BLOCK_FOLDED = "BLOCK_FOLDED";
+    Scalar.BLOCK_LITERAL = "BLOCK_LITERAL";
+    Scalar.PLAIN = "PLAIN";
+    Scalar.QUOTE_DOUBLE = "QUOTE_DOUBLE";
+    Scalar.QUOTE_SINGLE = "QUOTE_SINGLE";
+    exports.Scalar = Scalar;
+    exports.isScalarValue = isScalarValue;
+  }
+});
+
+// node_modules/yaml/dist/doc/createNode.js
+var require_createNode = __commonJS({
+  "node_modules/yaml/dist/doc/createNode.js"(exports) {
+    "use strict";
+    var Alias = require_Alias();
+    var identity = require_identity();
+    var Scalar = require_Scalar();
+    var defaultTagPrefix = "tag:yaml.org,2002:";
+    function findTagObject(value, tagName, tags) {
+      if (tagName) {
+        const match2 = tags.filter((t2) => t2.tag === tagName);
+        const tagObj = match2.find((t2) => !t2.format) ?? match2[0];
+        if (!tagObj)
+          throw new Error(`Tag ${tagName} not found`);
+        return tagObj;
+      }
+      return tags.find((t2) => t2.identify?.(value) && !t2.format);
+    }
+    function createNode(value, tagName, ctx) {
+      if (identity.isDocument(value))
+        value = value.contents;
+      if (identity.isNode(value))
+        return value;
+      if (identity.isPair(value)) {
+        const map2 = ctx.schema[identity.MAP].createNode?.(ctx.schema, null, ctx);
+        map2.items.push(value);
+        return map2;
+      }
+      if (value instanceof String || value instanceof Number || value instanceof Boolean || typeof BigInt !== "undefined" && value instanceof BigInt) {
+        value = value.valueOf();
+      }
+      const { aliasDuplicateObjects, onAnchor, onTagObj, schema, sourceObjects } = ctx;
+      let ref = void 0;
+      if (aliasDuplicateObjects && value && typeof value === "object") {
+        ref = sourceObjects.get(value);
+        if (ref) {
+          ref.anchor ?? (ref.anchor = onAnchor(value));
+          return new Alias.Alias(ref.anchor);
+        } else {
+          ref = { anchor: null, node: null };
+          sourceObjects.set(value, ref);
+        }
+      }
+      if (tagName?.startsWith("!!"))
+        tagName = defaultTagPrefix + tagName.slice(2);
+      let tagObj = findTagObject(value, tagName, schema.tags);
+      if (!tagObj) {
+        if (value && typeof value.toJSON === "function") {
+          value = value.toJSON();
+        }
+        if (!value || typeof value !== "object") {
+          const node3 = new Scalar.Scalar(value);
+          if (ref)
+            ref.node = node3;
+          return node3;
+        }
+        tagObj = value instanceof Map ? schema[identity.MAP] : Symbol.iterator in Object(value) ? schema[identity.SEQ] : schema[identity.MAP];
+      }
+      if (onTagObj) {
+        onTagObj(tagObj);
+        delete ctx.onTagObj;
+      }
+      const node2 = tagObj?.createNode ? tagObj.createNode(ctx.schema, value, ctx) : typeof tagObj?.nodeClass?.from === "function" ? tagObj.nodeClass.from(ctx.schema, value, ctx) : new Scalar.Scalar(value);
+      if (tagName)
+        node2.tag = tagName;
+      else if (!tagObj.default)
+        node2.tag = tagObj.tag;
+      if (ref)
+        ref.node = node2;
+      return node2;
+    }
+    exports.createNode = createNode;
+  }
+});
+
+// node_modules/yaml/dist/nodes/Collection.js
+var require_Collection = __commonJS({
+  "node_modules/yaml/dist/nodes/Collection.js"(exports) {
+    "use strict";
+    var createNode = require_createNode();
+    var identity = require_identity();
+    var Node5 = require_Node();
+    function collectionFromPath(schema, path, value) {
+      let v = value;
+      for (let i = path.length - 1; i >= 0; --i) {
+        const k = path[i];
+        if (typeof k === "number" && Number.isInteger(k) && k >= 0) {
+          const a = [];
+          a[k] = v;
+          v = a;
+        } else {
+          v = /* @__PURE__ */ new Map([[k, v]]);
+        }
+      }
+      return createNode.createNode(v, void 0, {
+        aliasDuplicateObjects: false,
+        keepUndefined: false,
+        onAnchor: () => {
+          throw new Error("This should not happen, please report a bug.");
+        },
+        schema,
+        sourceObjects: /* @__PURE__ */ new Map()
+      });
+    }
+    var isEmptyPath = (path) => path == null || typeof path === "object" && !!path[Symbol.iterator]().next().done;
+    var Collection = class extends Node5.NodeBase {
+      constructor(type, schema) {
+        super(type);
+        Object.defineProperty(this, "schema", {
+          value: schema,
+          configurable: true,
+          enumerable: false,
+          writable: true
+        });
+      }
+      /**
+       * Create a copy of this collection.
+       *
+       * @param schema - If defined, overwrites the original's schema
+       */
+      clone(schema) {
+        const copy = Object.create(Object.getPrototypeOf(this), Object.getOwnPropertyDescriptors(this));
+        if (schema)
+          copy.schema = schema;
+        copy.items = copy.items.map((it) => identity.isNode(it) || identity.isPair(it) ? it.clone(schema) : it);
+        if (this.range)
+          copy.range = this.range.slice();
+        return copy;
+      }
+      /**
+       * Adds a value to the collection. For `!!map` and `!!omap` the value must
+       * be a Pair instance or a `{ key, value }` object, which may not have a key
+       * that already exists in the map.
+       */
+      addIn(path, value) {
+        if (isEmptyPath(path))
+          this.add(value);
+        else {
+          const [key, ...rest] = path;
+          const node2 = this.get(key, true);
+          if (identity.isCollection(node2))
+            node2.addIn(rest, value);
+          else if (node2 === void 0 && this.schema)
+            this.set(key, collectionFromPath(this.schema, rest, value));
+          else
+            throw new Error(`Expected YAML collection at ${key}. Remaining path: ${rest}`);
+        }
+      }
+      /**
+       * Removes a value from the collection.
+       * @returns `true` if the item was found and removed.
+       */
+      deleteIn(path) {
+        const [key, ...rest] = path;
+        if (rest.length === 0)
+          return this.delete(key);
+        const node2 = this.get(key, true);
+        if (identity.isCollection(node2))
+          return node2.deleteIn(rest);
+        else
+          throw new Error(`Expected YAML collection at ${key}. Remaining path: ${rest}`);
+      }
+      /**
+       * Returns item at `key`, or `undefined` if not found. By default unwraps
+       * scalar values from their surrounding node; to disable set `keepScalar` to
+       * `true` (collections are always returned intact).
+       */
+      getIn(path, keepScalar) {
+        const [key, ...rest] = path;
+        const node2 = this.get(key, true);
+        if (rest.length === 0)
+          return !keepScalar && identity.isScalar(node2) ? node2.value : node2;
+        else
+          return identity.isCollection(node2) ? node2.getIn(rest, keepScalar) : void 0;
+      }
+      hasAllNullValues(allowScalar) {
+        return this.items.every((node2) => {
+          if (!identity.isPair(node2))
+            return false;
+          const n = node2.value;
+          return n == null || allowScalar && identity.isScalar(n) && n.value == null && !n.commentBefore && !n.comment && !n.tag;
+        });
+      }
+      /**
+       * Checks if the collection includes a value with the key `key`.
+       */
+      hasIn(path) {
+        const [key, ...rest] = path;
+        if (rest.length === 0)
+          return this.has(key);
+        const node2 = this.get(key, true);
+        return identity.isCollection(node2) ? node2.hasIn(rest) : false;
+      }
+      /**
+       * Sets a value in this collection. For `!!set`, `value` needs to be a
+       * boolean to add/remove the item from the set.
+       */
+      setIn(path, value) {
+        const [key, ...rest] = path;
+        if (rest.length === 0) {
+          this.set(key, value);
+        } else {
+          const node2 = this.get(key, true);
+          if (identity.isCollection(node2))
+            node2.setIn(rest, value);
+          else if (node2 === void 0 && this.schema)
+            this.set(key, collectionFromPath(this.schema, rest, value));
+          else
+            throw new Error(`Expected YAML collection at ${key}. Remaining path: ${rest}`);
+        }
+      }
+    };
+    exports.Collection = Collection;
+    exports.collectionFromPath = collectionFromPath;
+    exports.isEmptyPath = isEmptyPath;
+  }
+});
+
+// node_modules/yaml/dist/stringify/stringifyComment.js
+var require_stringifyComment = __commonJS({
+  "node_modules/yaml/dist/stringify/stringifyComment.js"(exports) {
+    "use strict";
+    var stringifyComment = (str2) => str2.replace(/^(?!$)(?: $)?/gm, "#");
+    function indentComment(comment, indent) {
+      if (/^\n+$/.test(comment))
+        return comment.substring(1);
+      return indent ? comment.replace(/^(?! *$)/gm, indent) : comment;
+    }
+    var lineComment = (str2, indent, comment) => str2.endsWith("\n") ? indentComment(comment, indent) : comment.includes("\n") ? "\n" + indentComment(comment, indent) : (str2.endsWith(" ") ? "" : " ") + comment;
+    exports.indentComment = indentComment;
+    exports.lineComment = lineComment;
+    exports.stringifyComment = stringifyComment;
+  }
+});
+
+// node_modules/yaml/dist/stringify/foldFlowLines.js
+var require_foldFlowLines = __commonJS({
+  "node_modules/yaml/dist/stringify/foldFlowLines.js"(exports) {
+    "use strict";
+    var FOLD_FLOW = "flow";
+    var FOLD_BLOCK = "block";
+    var FOLD_QUOTED = "quoted";
+    function foldFlowLines(text, indent, mode = "flow", { indentAtStart, lineWidth = 80, minContentWidth = 20, onFold, onOverflow } = {}) {
+      if (!lineWidth || lineWidth < 0)
+        return text;
+      if (lineWidth < minContentWidth)
+        minContentWidth = 0;
+      const endStep = Math.max(1 + minContentWidth, 1 + lineWidth - indent.length);
+      if (text.length <= endStep)
+        return text;
+      const folds = [];
+      const escapedFolds = {};
+      let end = lineWidth - indent.length;
+      if (typeof indentAtStart === "number") {
+        if (indentAtStart > lineWidth - Math.max(2, minContentWidth))
+          folds.push(0);
+        else
+          end = lineWidth - indentAtStart;
+      }
+      let split = void 0;
+      let prev = void 0;
+      let overflow = false;
+      let i = -1;
+      let escStart = -1;
+      let escEnd = -1;
+      if (mode === FOLD_BLOCK) {
+        i = consumeMoreIndentedLines(text, i, indent.length);
+        if (i !== -1)
+          end = i + endStep;
+      }
+      for (let ch; ch = text[i += 1]; ) {
+        if (mode === FOLD_QUOTED && ch === "\\") {
+          escStart = i;
+          switch (text[i + 1]) {
+            case "x":
+              i += 3;
+              break;
+            case "u":
+              i += 5;
+              break;
+            case "U":
+              i += 9;
+              break;
+            default:
+              i += 1;
+          }
+          escEnd = i;
+        }
+        if (ch === "\n") {
+          if (mode === FOLD_BLOCK)
+            i = consumeMoreIndentedLines(text, i, indent.length);
+          end = i + indent.length + endStep;
+          split = void 0;
+        } else {
+          if (ch === " " && prev && prev !== " " && prev !== "\n" && prev !== "	") {
+            const next = text[i + 1];
+            if (next && next !== " " && next !== "\n" && next !== "	")
+              split = i;
+          }
+          if (i >= end) {
+            if (split) {
+              folds.push(split);
+              end = split + endStep;
+              split = void 0;
+            } else if (mode === FOLD_QUOTED) {
+              while (prev === " " || prev === "	") {
+                prev = ch;
+                ch = text[i += 1];
+                overflow = true;
+              }
+              const j = i > escEnd + 1 ? i - 2 : escStart - 1;
+              if (escapedFolds[j])
+                return text;
+              folds.push(j);
+              escapedFolds[j] = true;
+              end = j + endStep;
+              split = void 0;
+            } else {
+              overflow = true;
+            }
+          }
+        }
+        prev = ch;
+      }
+      if (overflow && onOverflow)
+        onOverflow();
+      if (folds.length === 0)
+        return text;
+      if (onFold)
+        onFold();
+      let res = text.slice(0, folds[0]);
+      for (let i2 = 0; i2 < folds.length; ++i2) {
+        const fold = folds[i2];
+        const end2 = folds[i2 + 1] || text.length;
+        if (fold === 0)
+          res = `
+${indent}${text.slice(0, end2)}`;
+        else {
+          if (mode === FOLD_QUOTED && escapedFolds[fold])
+            res += `${text[fold]}\\`;
+          res += `
+${indent}${text.slice(fold + 1, end2)}`;
+        }
+      }
+      return res;
+    }
+    function consumeMoreIndentedLines(text, i, indent) {
+      let end = i;
+      let start = i + 1;
+      let ch = text[start];
+      while (ch === " " || ch === "	") {
+        if (i < start + indent) {
+          ch = text[++i];
+        } else {
+          do {
+            ch = text[++i];
+          } while (ch && ch !== "\n");
+          end = i;
+          start = i + 1;
+          ch = text[start];
+        }
+      }
+      return end;
+    }
+    exports.FOLD_BLOCK = FOLD_BLOCK;
+    exports.FOLD_FLOW = FOLD_FLOW;
+    exports.FOLD_QUOTED = FOLD_QUOTED;
+    exports.foldFlowLines = foldFlowLines;
+  }
+});
+
+// node_modules/yaml/dist/stringify/stringifyString.js
+var require_stringifyString = __commonJS({
+  "node_modules/yaml/dist/stringify/stringifyString.js"(exports) {
+    "use strict";
+    var Scalar = require_Scalar();
+    var foldFlowLines = require_foldFlowLines();
+    var getFoldOptions = (ctx, isBlock) => ({
+      indentAtStart: isBlock ? ctx.indent.length : ctx.indentAtStart,
+      lineWidth: ctx.options.lineWidth,
+      minContentWidth: ctx.options.minContentWidth
+    });
+    var containsDocumentMarker = (str2) => /^(%|---|\.\.\.)/m.test(str2);
+    function lineLengthOverLimit(str2, lineWidth, indentLength) {
+      if (!lineWidth || lineWidth < 0)
+        return false;
+      const limit = lineWidth - indentLength;
+      const strLen = str2.length;
+      if (strLen <= limit)
+        return false;
+      for (let i = 0, start = 0; i < strLen; ++i) {
+        if (str2[i] === "\n") {
+          if (i - start > limit)
+            return true;
+          start = i + 1;
+          if (strLen - start <= limit)
+            return false;
+        }
+      }
+      return true;
+    }
+    function doubleQuotedString(value, ctx) {
+      const json3 = JSON.stringify(value);
+      if (ctx.options.doubleQuotedAsJSON)
+        return json3;
+      const { implicitKey } = ctx;
+      const minMultiLineLength = ctx.options.doubleQuotedMinMultiLineLength;
+      const indent = ctx.indent || (containsDocumentMarker(value) ? "  " : "");
+      let str2 = "";
+      let start = 0;
+      for (let i = 0, ch = json3[i]; ch; ch = json3[++i]) {
+        if (ch === " " && json3[i + 1] === "\\" && json3[i + 2] === "n") {
+          str2 += json3.slice(start, i) + "\\ ";
+          i += 1;
+          start = i;
+          ch = "\\";
+        }
+        if (ch === "\\")
+          switch (json3[i + 1]) {
+            case "u":
+              {
+                str2 += json3.slice(start, i);
+                const code2 = json3.substr(i + 2, 4);
+                switch (code2) {
+                  case "0000":
+                    str2 += "\\0";
+                    break;
+                  case "0007":
+                    str2 += "\\a";
+                    break;
+                  case "000b":
+                    str2 += "\\v";
+                    break;
+                  case "001b":
+                    str2 += "\\e";
+                    break;
+                  case "0085":
+                    str2 += "\\N";
+                    break;
+                  case "00a0":
+                    str2 += "\\_";
+                    break;
+                  case "2028":
+                    str2 += "\\L";
+                    break;
+                  case "2029":
+                    str2 += "\\P";
+                    break;
+                  default:
+                    if (code2.substr(0, 2) === "00")
+                      str2 += "\\x" + code2.substr(2);
+                    else
+                      str2 += json3.substr(i, 6);
+                }
+                i += 5;
+                start = i + 1;
+              }
+              break;
+            case "n":
+              if (implicitKey || json3[i + 2] === '"' || json3.length < minMultiLineLength) {
+                i += 1;
+              } else {
+                str2 += json3.slice(start, i) + "\n\n";
+                while (json3[i + 2] === "\\" && json3[i + 3] === "n" && json3[i + 4] !== '"') {
+                  str2 += "\n";
+                  i += 2;
+                }
+                str2 += indent;
+                if (json3[i + 2] === " ")
+                  str2 += "\\";
+                i += 1;
+                start = i + 1;
+              }
+              break;
+            default:
+              i += 1;
+          }
+      }
+      str2 = start ? str2 + json3.slice(start) : json3;
+      return implicitKey ? str2 : foldFlowLines.foldFlowLines(str2, indent, foldFlowLines.FOLD_QUOTED, getFoldOptions(ctx, false));
+    }
+    function singleQuotedString(value, ctx) {
+      if (ctx.options.singleQuote === false || ctx.implicitKey && value.includes("\n") || /[ \t]\n|\n[ \t]/.test(value))
+        return doubleQuotedString(value, ctx);
+      const indent = ctx.indent || (containsDocumentMarker(value) ? "  " : "");
+      const res = "'" + value.replace(/'/g, "''").replace(/\n+/g, `$&
+${indent}`) + "'";
+      return ctx.implicitKey ? res : foldFlowLines.foldFlowLines(res, indent, foldFlowLines.FOLD_FLOW, getFoldOptions(ctx, false));
+    }
+    function quotedString(value, ctx) {
+      const { singleQuote } = ctx.options;
+      let qs;
+      if (singleQuote === false)
+        qs = doubleQuotedString;
+      else {
+        const hasDouble = value.includes('"');
+        const hasSingle = value.includes("'");
+        if (hasDouble && !hasSingle)
+          qs = singleQuotedString;
+        else if (hasSingle && !hasDouble)
+          qs = doubleQuotedString;
+        else
+          qs = singleQuote ? singleQuotedString : doubleQuotedString;
+      }
+      return qs(value, ctx);
+    }
+    var blockEndNewlines;
+    try {
+      blockEndNewlines = new RegExp("(^|(?<!\n))\n+(?!\n|$)", "g");
+    } catch {
+      blockEndNewlines = /\n+(?!\n|$)/g;
+    }
+    function blockString({ comment, type, value }, ctx, onComment, onChompKeep) {
+      const { blockQuote, commentString, lineWidth } = ctx.options;
+      if (!blockQuote || /\n[\t ]+$/.test(value)) {
+        return quotedString(value, ctx);
+      }
+      const indent = ctx.indent || (ctx.forceBlockIndent || containsDocumentMarker(value) ? "  " : "");
+      const literal2 = blockQuote === "literal" ? true : blockQuote === "folded" || type === Scalar.Scalar.BLOCK_FOLDED ? false : type === Scalar.Scalar.BLOCK_LITERAL ? true : !lineLengthOverLimit(value, lineWidth, indent.length);
+      if (!value)
+        return literal2 ? "|\n" : ">\n";
+      let chomp;
+      let endStart;
+      for (endStart = value.length; endStart > 0; --endStart) {
+        const ch = value[endStart - 1];
+        if (ch !== "\n" && ch !== "	" && ch !== " ")
+          break;
+      }
+      let end = value.substring(endStart);
+      const endNlPos = end.indexOf("\n");
+      if (endNlPos === -1) {
+        chomp = "-";
+      } else if (value === end || endNlPos !== end.length - 1) {
+        chomp = "+";
+        if (onChompKeep)
+          onChompKeep();
+      } else {
+        chomp = "";
+      }
+      if (end) {
+        value = value.slice(0, -end.length);
+        if (end[end.length - 1] === "\n")
+          end = end.slice(0, -1);
+        end = end.replace(blockEndNewlines, `$&${indent}`);
+      }
+      let startWithSpace = false;
+      let startEnd;
+      let startNlPos = -1;
+      for (startEnd = 0; startEnd < value.length; ++startEnd) {
+        const ch = value[startEnd];
+        if (ch === " ")
+          startWithSpace = true;
+        else if (ch === "\n")
+          startNlPos = startEnd;
+        else
+          break;
+      }
+      let start = value.substring(0, startNlPos < startEnd ? startNlPos + 1 : startEnd);
+      if (start) {
+        value = value.substring(start.length);
+        start = start.replace(/\n+/g, `$&${indent}`);
+      }
+      const indentSize = indent ? "2" : "1";
+      let header = (startWithSpace ? indentSize : "") + chomp;
+      if (comment) {
+        header += " " + commentString(comment.replace(/ ?[\r\n]+/g, " "));
+        if (onComment)
+          onComment();
+      }
+      if (!literal2) {
+        const foldedValue = value.replace(/\n+/g, "\n$&").replace(/(?:^|\n)([\t ].*)(?:([\n\t ]*)\n(?![\n\t ]))?/g, "$1$2").replace(/\n+/g, `$&${indent}`);
+        let literalFallback = false;
+        const foldOptions = getFoldOptions(ctx, true);
+        if (blockQuote !== "folded" && type !== Scalar.Scalar.BLOCK_FOLDED) {
+          foldOptions.onOverflow = () => {
+            literalFallback = true;
+          };
+        }
+        const body = foldFlowLines.foldFlowLines(`${start}${foldedValue}${end}`, indent, foldFlowLines.FOLD_BLOCK, foldOptions);
+        if (!literalFallback)
+          return `>${header}
+${indent}${body}`;
+      }
+      value = value.replace(/\n+/g, `$&${indent}`);
+      return `|${header}
+${indent}${start}${value}${end}`;
+    }
+    function plainString(item, ctx, onComment, onChompKeep) {
+      const { type, value } = item;
+      const { actualString, implicitKey, indent, indentStep, inFlow } = ctx;
+      if (implicitKey && value.includes("\n") || inFlow && /[[\]{},]/.test(value)) {
+        return quotedString(value, ctx);
+      }
+      if (/^[\n\t ,[\]{}#&*!|>'"%@`]|^[?-]$|^[?-][ \t]|[\n:][ \t]|[ \t]\n|[\n\t ]#|[\n\t :]$/.test(value)) {
+        return implicitKey || inFlow || !value.includes("\n") ? quotedString(value, ctx) : blockString(item, ctx, onComment, onChompKeep);
+      }
+      if (!implicitKey && !inFlow && type !== Scalar.Scalar.PLAIN && value.includes("\n")) {
+        return blockString(item, ctx, onComment, onChompKeep);
+      }
+      if (containsDocumentMarker(value)) {
+        if (indent === "") {
+          ctx.forceBlockIndent = true;
+          return blockString(item, ctx, onComment, onChompKeep);
+        } else if (implicitKey && indent === indentStep) {
+          return quotedString(value, ctx);
+        }
+      }
+      const str2 = value.replace(/\n+/g, `$&
+${indent}`);
+      if (actualString) {
+        const test = (tag) => tag.default && tag.tag !== "tag:yaml.org,2002:str" && tag.test?.test(str2);
+        const { compat, tags } = ctx.doc.schema;
+        if (tags.some(test) || compat?.some(test))
+          return quotedString(value, ctx);
+      }
+      return implicitKey ? str2 : foldFlowLines.foldFlowLines(str2, indent, foldFlowLines.FOLD_FLOW, getFoldOptions(ctx, false));
+    }
+    function stringifyString(item, ctx, onComment, onChompKeep) {
+      const { implicitKey, inFlow } = ctx;
+      const ss = typeof item.value === "string" ? item : Object.assign({}, item, { value: String(item.value) });
+      let { type } = item;
+      if (type !== Scalar.Scalar.QUOTE_DOUBLE) {
+        if (/[\x00-\x08\x0b-\x1f\x7f-\x9f\u{D800}-\u{DFFF}]/u.test(ss.value))
+          type = Scalar.Scalar.QUOTE_DOUBLE;
+      }
+      const _stringify = (_type) => {
+        switch (_type) {
+          case Scalar.Scalar.BLOCK_FOLDED:
+          case Scalar.Scalar.BLOCK_LITERAL:
+            return implicitKey || inFlow ? quotedString(ss.value, ctx) : blockString(ss, ctx, onComment, onChompKeep);
+          case Scalar.Scalar.QUOTE_DOUBLE:
+            return doubleQuotedString(ss.value, ctx);
+          case Scalar.Scalar.QUOTE_SINGLE:
+            return singleQuotedString(ss.value, ctx);
+          case Scalar.Scalar.PLAIN:
+            return plainString(ss, ctx, onComment, onChompKeep);
+          default:
+            return null;
+        }
+      };
+      let res = _stringify(type);
+      if (res === null) {
+        const { defaultKeyType, defaultStringType } = ctx.options;
+        const t2 = implicitKey && defaultKeyType || defaultStringType;
+        res = _stringify(t2);
+        if (res === null)
+          throw new Error(`Unsupported default string type ${t2}`);
+      }
+      return res;
+    }
+    exports.stringifyString = stringifyString;
+  }
+});
+
+// node_modules/yaml/dist/stringify/stringify.js
+var require_stringify = __commonJS({
+  "node_modules/yaml/dist/stringify/stringify.js"(exports) {
+    "use strict";
+    var anchors = require_anchors();
+    var identity = require_identity();
+    var stringifyComment = require_stringifyComment();
+    var stringifyString = require_stringifyString();
+    function createStringifyContext(doc, options) {
+      const opt = Object.assign({
+        blockQuote: true,
+        commentString: stringifyComment.stringifyComment,
+        defaultKeyType: null,
+        defaultStringType: "PLAIN",
+        directives: null,
+        doubleQuotedAsJSON: false,
+        doubleQuotedMinMultiLineLength: 40,
+        falseStr: "false",
+        flowCollectionPadding: true,
+        indentSeq: true,
+        lineWidth: 80,
+        minContentWidth: 20,
+        nullStr: "null",
+        simpleKeys: false,
+        singleQuote: null,
+        trailingComma: false,
+        trueStr: "true",
+        verifyAliasOrder: true
+      }, doc.schema.toStringOptions, options);
+      let inFlow;
+      switch (opt.collectionStyle) {
+        case "block":
+          inFlow = false;
+          break;
+        case "flow":
+          inFlow = true;
+          break;
+        default:
+          inFlow = null;
+      }
+      return {
+        anchors: /* @__PURE__ */ new Set(),
+        doc,
+        flowCollectionPadding: opt.flowCollectionPadding ? " " : "",
+        indent: "",
+        indentStep: typeof opt.indent === "number" ? " ".repeat(opt.indent) : "  ",
+        inFlow,
+        options: opt
+      };
+    }
+    function getTagObject(tags, item) {
+      if (item.tag) {
+        const match2 = tags.filter((t2) => t2.tag === item.tag);
+        if (match2.length > 0)
+          return match2.find((t2) => t2.format === item.format) ?? match2[0];
+      }
+      let tagObj = void 0;
+      let obj;
+      if (identity.isScalar(item)) {
+        obj = item.value;
+        let match2 = tags.filter((t2) => t2.identify?.(obj));
+        if (match2.length > 1) {
+          const testMatch = match2.filter((t2) => t2.test);
+          if (testMatch.length > 0)
+            match2 = testMatch;
+        }
+        tagObj = match2.find((t2) => t2.format === item.format) ?? match2.find((t2) => !t2.format);
+      } else {
+        obj = item;
+        tagObj = tags.find((t2) => t2.nodeClass && obj instanceof t2.nodeClass);
+      }
+      if (!tagObj) {
+        const name = obj?.constructor?.name ?? (obj === null ? "null" : typeof obj);
+        throw new Error(`Tag not resolved for ${name} value`);
+      }
+      return tagObj;
+    }
+    function stringifyProps(node2, tagObj, { anchors: anchors$1, doc }) {
+      if (!doc.directives)
+        return "";
+      const props = [];
+      const anchor2 = (identity.isScalar(node2) || identity.isCollection(node2)) && node2.anchor;
+      if (anchor2 && anchors.anchorIsValid(anchor2)) {
+        anchors$1.add(anchor2);
+        props.push(`&${anchor2}`);
+      }
+      const tag = node2.tag ?? (tagObj.default ? null : tagObj.tag);
+      if (tag)
+        props.push(doc.directives.tagString(tag));
+      return props.join(" ");
+    }
+    function stringify(item, ctx, onComment, onChompKeep) {
+      if (identity.isPair(item))
+        return item.toString(ctx, onComment, onChompKeep);
+      if (identity.isAlias(item)) {
+        if (ctx.doc.directives)
+          return item.toString(ctx);
+        if (ctx.resolvedAliases?.has(item)) {
+          throw new TypeError(`Cannot stringify circular structure without alias nodes`);
+        } else {
+          if (ctx.resolvedAliases)
+            ctx.resolvedAliases.add(item);
+          else
+            ctx.resolvedAliases = /* @__PURE__ */ new Set([item]);
+          item = item.resolve(ctx.doc);
+        }
+      }
+      let tagObj = void 0;
+      const node2 = identity.isNode(item) ? item : ctx.doc.createNode(item, { onTagObj: (o) => tagObj = o });
+      tagObj ?? (tagObj = getTagObject(ctx.doc.schema.tags, node2));
+      const props = stringifyProps(node2, tagObj, ctx);
+      if (props.length > 0)
+        ctx.indentAtStart = (ctx.indentAtStart ?? 0) + props.length + 1;
+      const str2 = typeof tagObj.stringify === "function" ? tagObj.stringify(node2, ctx, onComment, onChompKeep) : identity.isScalar(node2) ? stringifyString.stringifyString(node2, ctx, onComment, onChompKeep) : node2.toString(ctx, onComment, onChompKeep);
+      if (!props)
+        return str2;
+      return identity.isScalar(node2) || str2[0] === "{" || str2[0] === "[" ? `${props} ${str2}` : `${props}
+${ctx.indent}${str2}`;
+    }
+    exports.createStringifyContext = createStringifyContext;
+    exports.stringify = stringify;
+  }
+});
+
+// node_modules/yaml/dist/stringify/stringifyPair.js
+var require_stringifyPair = __commonJS({
+  "node_modules/yaml/dist/stringify/stringifyPair.js"(exports) {
+    "use strict";
+    var identity = require_identity();
+    var Scalar = require_Scalar();
+    var stringify = require_stringify();
+    var stringifyComment = require_stringifyComment();
+    function stringifyPair({ key, value }, ctx, onComment, onChompKeep) {
+      const { allNullValues, doc, indent, indentStep, options: { commentString, indentSeq, simpleKeys } } = ctx;
+      let keyComment = identity.isNode(key) && key.comment || null;
+      if (simpleKeys) {
+        if (keyComment) {
+          throw new Error("With simple keys, key nodes cannot have comments");
+        }
+        if (identity.isCollection(key) || !identity.isNode(key) && typeof key === "object") {
+          const msg = "With simple keys, collection cannot be used as a key value";
+          throw new Error(msg);
+        }
+      }
+      let explicitKey = !simpleKeys && (!key || keyComment && value == null && !ctx.inFlow || identity.isCollection(key) || (identity.isScalar(key) ? key.type === Scalar.Scalar.BLOCK_FOLDED || key.type === Scalar.Scalar.BLOCK_LITERAL : typeof key === "object"));
+      ctx = Object.assign({}, ctx, {
+        allNullValues: false,
+        implicitKey: !explicitKey && (simpleKeys || !allNullValues),
+        indent: indent + indentStep
+      });
+      let keyCommentDone = false;
+      let chompKeep = false;
+      let str2 = stringify.stringify(key, ctx, () => keyCommentDone = true, () => chompKeep = true);
+      if (!explicitKey && !ctx.inFlow && str2.length > 1024) {
+        if (simpleKeys)
+          throw new Error("With simple keys, single line scalar must not span more than 1024 characters");
+        explicitKey = true;
+      }
+      if (ctx.inFlow) {
+        if (allNullValues || value == null) {
+          if (keyCommentDone && onComment)
+            onComment();
+          return str2 === "" ? "?" : explicitKey ? `? ${str2}` : str2;
+        }
+      } else if (allNullValues && !simpleKeys || value == null && explicitKey) {
+        str2 = `? ${str2}`;
+        if (keyComment && !keyCommentDone) {
+          str2 += stringifyComment.lineComment(str2, ctx.indent, commentString(keyComment));
+        } else if (chompKeep && onChompKeep)
+          onChompKeep();
+        return str2;
+      }
+      if (keyCommentDone)
+        keyComment = null;
+      if (explicitKey) {
+        if (keyComment)
+          str2 += stringifyComment.lineComment(str2, ctx.indent, commentString(keyComment));
+        str2 = `? ${str2}
+${indent}:`;
+      } else {
+        str2 = `${str2}:`;
+        if (keyComment)
+          str2 += stringifyComment.lineComment(str2, ctx.indent, commentString(keyComment));
+      }
+      let vsb, vcb, valueComment;
+      if (identity.isNode(value)) {
+        vsb = !!value.spaceBefore;
+        vcb = value.commentBefore;
+        valueComment = value.comment;
+      } else {
+        vsb = false;
+        vcb = null;
+        valueComment = null;
+        if (value && typeof value === "object")
+          value = doc.createNode(value);
+      }
+      ctx.implicitKey = false;
+      if (!explicitKey && !keyComment && identity.isScalar(value))
+        ctx.indentAtStart = str2.length + 1;
+      chompKeep = false;
+      if (!indentSeq && indentStep.length >= 2 && !ctx.inFlow && !explicitKey && identity.isSeq(value) && !value.flow && !value.tag && !value.anchor) {
+        ctx.indent = ctx.indent.substring(2);
+      }
+      let valueCommentDone = false;
+      const valueStr = stringify.stringify(value, ctx, () => valueCommentDone = true, () => chompKeep = true);
+      let ws = " ";
+      if (keyComment || vsb || vcb) {
+        ws = vsb ? "\n" : "";
+        if (vcb) {
+          const cs = commentString(vcb);
+          ws += `
+${stringifyComment.indentComment(cs, ctx.indent)}`;
+        }
+        if (valueStr === "" && !ctx.inFlow) {
+          if (ws === "\n" && valueComment)
+            ws = "\n\n";
+        } else {
+          ws += `
+${ctx.indent}`;
+        }
+      } else if (!explicitKey && identity.isCollection(value)) {
+        const vs0 = valueStr[0];
+        const nl0 = valueStr.indexOf("\n");
+        const hasNewline = nl0 !== -1;
+        const flow = ctx.inFlow ?? value.flow ?? value.items.length === 0;
+        if (hasNewline || !flow) {
+          let hasPropsLine = false;
+          if (hasNewline && (vs0 === "&" || vs0 === "!")) {
+            let sp0 = valueStr.indexOf(" ");
+            if (vs0 === "&" && sp0 !== -1 && sp0 < nl0 && valueStr[sp0 + 1] === "!") {
+              sp0 = valueStr.indexOf(" ", sp0 + 1);
+            }
+            if (sp0 === -1 || nl0 < sp0)
+              hasPropsLine = true;
+          }
+          if (!hasPropsLine)
+            ws = `
+${ctx.indent}`;
+        }
+      } else if (valueStr === "" || valueStr[0] === "\n") {
+        ws = "";
+      }
+      str2 += ws + valueStr;
+      if (ctx.inFlow) {
+        if (valueCommentDone && onComment)
+          onComment();
+      } else if (valueComment && !valueCommentDone) {
+        str2 += stringifyComment.lineComment(str2, ctx.indent, commentString(valueComment));
+      } else if (chompKeep && onChompKeep) {
+        onChompKeep();
+      }
+      return str2;
+    }
+    exports.stringifyPair = stringifyPair;
+  }
+});
+
+// node_modules/yaml/dist/log.js
+var require_log = __commonJS({
+  "node_modules/yaml/dist/log.js"(exports) {
+    "use strict";
+    var node_process = __require("process");
+    function debug(logLevel, ...messages) {
+      if (logLevel === "debug")
+        console.log(...messages);
+    }
+    function warn(logLevel, warning) {
+      if (logLevel === "debug" || logLevel === "warn") {
+        if (typeof node_process.emitWarning === "function")
+          node_process.emitWarning(warning);
+        else
+          console.warn(warning);
+      }
+    }
+    exports.debug = debug;
+    exports.warn = warn;
+  }
+});
+
+// node_modules/yaml/dist/schema/yaml-1.1/merge.js
+var require_merge = __commonJS({
+  "node_modules/yaml/dist/schema/yaml-1.1/merge.js"(exports) {
+    "use strict";
+    var identity = require_identity();
+    var Scalar = require_Scalar();
+    var MERGE_KEY = "<<";
+    var merge2 = {
+      identify: (value) => value === MERGE_KEY || typeof value === "symbol" && value.description === MERGE_KEY,
+      default: "key",
+      tag: "tag:yaml.org,2002:merge",
+      test: /^<<$/,
+      resolve: () => Object.assign(new Scalar.Scalar(Symbol(MERGE_KEY)), {
+        addToJSMap: addMergeToJSMap
+      }),
+      stringify: () => MERGE_KEY
+    };
+    var isMergeKey = (ctx, key) => (merge2.identify(key) || identity.isScalar(key) && (!key.type || key.type === Scalar.Scalar.PLAIN) && merge2.identify(key.value)) && ctx?.doc.schema.tags.some((tag) => tag.tag === merge2.tag && tag.default);
+    function addMergeToJSMap(ctx, map2, value) {
+      const source = resolveAliasValue(ctx, value);
+      if (identity.isSeq(source))
+        for (const it of source.items)
+          mergeValue(ctx, map2, it);
+      else if (Array.isArray(source))
+        for (const it of source)
+          mergeValue(ctx, map2, it);
+      else
+        mergeValue(ctx, map2, source);
+    }
+    function mergeValue(ctx, map2, value) {
+      const source = resolveAliasValue(ctx, value);
+      if (!identity.isMap(source))
+        throw new Error("Merge sources must be maps or map aliases");
+      const srcMap = source.toJSON(null, ctx, Map);
+      for (const [key, value2] of srcMap) {
+        if (map2 instanceof Map) {
+          if (!map2.has(key))
+            map2.set(key, value2);
+        } else if (map2 instanceof Set) {
+          map2.add(key);
+        } else if (!Object.prototype.hasOwnProperty.call(map2, key)) {
+          Object.defineProperty(map2, key, {
+            value: value2,
+            writable: true,
+            enumerable: true,
+            configurable: true
+          });
+        }
+      }
+      return map2;
+    }
+    function resolveAliasValue(ctx, value) {
+      return ctx && identity.isAlias(value) ? value.resolve(ctx.doc, ctx) : value;
+    }
+    exports.addMergeToJSMap = addMergeToJSMap;
+    exports.isMergeKey = isMergeKey;
+    exports.merge = merge2;
+  }
+});
+
+// node_modules/yaml/dist/nodes/addPairToJSMap.js
+var require_addPairToJSMap = __commonJS({
+  "node_modules/yaml/dist/nodes/addPairToJSMap.js"(exports) {
+    "use strict";
+    var log7 = require_log();
+    var merge2 = require_merge();
+    var stringify = require_stringify();
+    var identity = require_identity();
+    var toJS = require_toJS();
+    function addPairToJSMap(ctx, map2, { key, value }) {
+      if (identity.isNode(key) && key.addToJSMap)
+        key.addToJSMap(ctx, map2, value);
+      else if (merge2.isMergeKey(ctx, key))
+        merge2.addMergeToJSMap(ctx, map2, value);
+      else {
+        const jsKey = toJS.toJS(key, "", ctx);
+        if (map2 instanceof Map) {
+          map2.set(jsKey, toJS.toJS(value, jsKey, ctx));
+        } else if (map2 instanceof Set) {
+          map2.add(jsKey);
+        } else {
+          const stringKey = stringifyKey(key, jsKey, ctx);
+          const jsValue = toJS.toJS(value, stringKey, ctx);
+          if (stringKey in map2)
+            Object.defineProperty(map2, stringKey, {
+              value: jsValue,
+              writable: true,
+              enumerable: true,
+              configurable: true
+            });
+          else
+            map2[stringKey] = jsValue;
+        }
+      }
+      return map2;
+    }
+    function stringifyKey(key, jsKey, ctx) {
+      if (jsKey === null)
+        return "";
+      if (typeof jsKey !== "object")
+        return String(jsKey);
+      if (identity.isNode(key) && ctx?.doc) {
+        const strCtx = stringify.createStringifyContext(ctx.doc, {});
+        strCtx.anchors = /* @__PURE__ */ new Set();
+        for (const node2 of ctx.anchors.keys())
+          strCtx.anchors.add(node2.anchor);
+        strCtx.inFlow = true;
+        strCtx.inStringifyKey = true;
+        const strKey = key.toString(strCtx);
+        if (!ctx.mapKeyWarned) {
+          let jsonStr = JSON.stringify(strKey);
+          if (jsonStr.length > 40)
+            jsonStr = jsonStr.substring(0, 36) + '..."';
+          log7.warn(ctx.doc.options.logLevel, `Keys with collection values will be stringified due to JS Object restrictions: ${jsonStr}. Set mapAsMap: true to use object keys.`);
+          ctx.mapKeyWarned = true;
+        }
+        return strKey;
+      }
+      return JSON.stringify(jsKey);
+    }
+    exports.addPairToJSMap = addPairToJSMap;
+  }
+});
+
+// node_modules/yaml/dist/nodes/Pair.js
+var require_Pair = __commonJS({
+  "node_modules/yaml/dist/nodes/Pair.js"(exports) {
+    "use strict";
+    var createNode = require_createNode();
+    var stringifyPair = require_stringifyPair();
+    var addPairToJSMap = require_addPairToJSMap();
+    var identity = require_identity();
+    function createPair(key, value, ctx) {
+      const k = createNode.createNode(key, void 0, ctx);
+      const v = createNode.createNode(value, void 0, ctx);
+      return new Pair(k, v);
+    }
+    var Pair = class _Pair {
+      constructor(key, value = null) {
+        Object.defineProperty(this, identity.NODE_TYPE, { value: identity.PAIR });
+        this.key = key;
+        this.value = value;
+      }
+      clone(schema) {
+        let { key, value } = this;
+        if (identity.isNode(key))
+          key = key.clone(schema);
+        if (identity.isNode(value))
+          value = value.clone(schema);
+        return new _Pair(key, value);
+      }
+      toJSON(_, ctx) {
+        const pair = ctx?.mapAsMap ? /* @__PURE__ */ new Map() : {};
+        return addPairToJSMap.addPairToJSMap(ctx, pair, this);
+      }
+      toString(ctx, onComment, onChompKeep) {
+        return ctx?.doc ? stringifyPair.stringifyPair(this, ctx, onComment, onChompKeep) : JSON.stringify(this);
+      }
+    };
+    exports.Pair = Pair;
+    exports.createPair = createPair;
+  }
+});
+
+// node_modules/yaml/dist/stringify/stringifyCollection.js
+var require_stringifyCollection = __commonJS({
+  "node_modules/yaml/dist/stringify/stringifyCollection.js"(exports) {
+    "use strict";
+    var identity = require_identity();
+    var stringify = require_stringify();
+    var stringifyComment = require_stringifyComment();
+    function stringifyCollection(collection, ctx, options) {
+      const flow = ctx.inFlow ?? collection.flow;
+      const stringify2 = flow ? stringifyFlowCollection : stringifyBlockCollection;
+      return stringify2(collection, ctx, options);
+    }
+    function stringifyBlockCollection({ comment, items }, ctx, { blockItemPrefix, flowChars, itemIndent, onChompKeep, onComment }) {
+      const { indent, options: { commentString } } = ctx;
+      const itemCtx = Object.assign({}, ctx, { indent: itemIndent, type: null });
+      let chompKeep = false;
+      const lines2 = [];
+      for (let i = 0; i < items.length; ++i) {
+        const item = items[i];
+        let comment2 = null;
+        if (identity.isNode(item)) {
+          if (!chompKeep && item.spaceBefore)
+            lines2.push("");
+          addCommentBefore(ctx, lines2, item.commentBefore, chompKeep);
+          if (item.comment)
+            comment2 = item.comment;
+        } else if (identity.isPair(item)) {
+          const ik = identity.isNode(item.key) ? item.key : null;
+          if (ik) {
+            if (!chompKeep && ik.spaceBefore)
+              lines2.push("");
+            addCommentBefore(ctx, lines2, ik.commentBefore, chompKeep);
+          }
+        }
+        chompKeep = false;
+        let str3 = stringify.stringify(item, itemCtx, () => comment2 = null, () => chompKeep = true);
+        if (comment2)
+          str3 += stringifyComment.lineComment(str3, itemIndent, commentString(comment2));
+        if (chompKeep && comment2)
+          chompKeep = false;
+        lines2.push(blockItemPrefix + str3);
+      }
+      let str2;
+      if (lines2.length === 0) {
+        str2 = flowChars.start + flowChars.end;
+      } else {
+        str2 = lines2[0];
+        for (let i = 1; i < lines2.length; ++i) {
+          const line = lines2[i];
+          str2 += line ? `
+${indent}${line}` : "\n";
+        }
+      }
+      if (comment) {
+        str2 += "\n" + stringifyComment.indentComment(commentString(comment), indent);
+        if (onComment)
+          onComment();
+      } else if (chompKeep && onChompKeep)
+        onChompKeep();
+      return str2;
+    }
+    function stringifyFlowCollection({ items }, ctx, { flowChars, itemIndent }) {
+      const { indent, indentStep, flowCollectionPadding: fcPadding, options: { commentString } } = ctx;
+      itemIndent += indentStep;
+      const itemCtx = Object.assign({}, ctx, {
+        indent: itemIndent,
+        inFlow: true,
+        type: null
+      });
+      let reqNewline = false;
+      let linesAtValue = 0;
+      const lines2 = [];
+      for (let i = 0; i < items.length; ++i) {
+        const item = items[i];
+        let comment = null;
+        if (identity.isNode(item)) {
+          if (item.spaceBefore)
+            lines2.push("");
+          addCommentBefore(ctx, lines2, item.commentBefore, false);
+          if (item.comment)
+            comment = item.comment;
+        } else if (identity.isPair(item)) {
+          const ik = identity.isNode(item.key) ? item.key : null;
+          if (ik) {
+            if (ik.spaceBefore)
+              lines2.push("");
+            addCommentBefore(ctx, lines2, ik.commentBefore, false);
+            if (ik.comment)
+              reqNewline = true;
+          }
+          const iv = identity.isNode(item.value) ? item.value : null;
+          if (iv) {
+            if (iv.comment)
+              comment = iv.comment;
+            if (iv.commentBefore)
+              reqNewline = true;
+          } else if (item.value == null && ik?.comment) {
+            comment = ik.comment;
+          }
+        }
+        if (comment)
+          reqNewline = true;
+        let str2 = stringify.stringify(item, itemCtx, () => comment = null);
+        reqNewline || (reqNewline = lines2.length > linesAtValue || str2.includes("\n"));
+        if (i < items.length - 1) {
+          str2 += ",";
+        } else if (ctx.options.trailingComma) {
+          if (ctx.options.lineWidth > 0) {
+            reqNewline || (reqNewline = lines2.reduce((sum, line) => sum + line.length + 2, 2) + (str2.length + 2) > ctx.options.lineWidth);
+          }
+          if (reqNewline) {
+            str2 += ",";
+          }
+        }
+        if (comment)
+          str2 += stringifyComment.lineComment(str2, itemIndent, commentString(comment));
+        lines2.push(str2);
+        linesAtValue = lines2.length;
+      }
+      const { start, end } = flowChars;
+      if (lines2.length === 0) {
+        return start + end;
+      } else {
+        if (!reqNewline) {
+          const len = lines2.reduce((sum, line) => sum + line.length + 2, 2);
+          reqNewline = ctx.options.lineWidth > 0 && len > ctx.options.lineWidth;
+        }
+        if (reqNewline) {
+          let str2 = start;
+          for (const line of lines2)
+            str2 += line ? `
+${indentStep}${indent}${line}` : "\n";
+          return `${str2}
+${indent}${end}`;
+        } else {
+          return `${start}${fcPadding}${lines2.join(" ")}${fcPadding}${end}`;
+        }
+      }
+    }
+    function addCommentBefore({ indent, options: { commentString } }, lines2, comment, chompKeep) {
+      if (comment && chompKeep)
+        comment = comment.replace(/^\n+/, "");
+      if (comment) {
+        const ic = stringifyComment.indentComment(commentString(comment), indent);
+        lines2.push(ic.trimStart());
+      }
+    }
+    exports.stringifyCollection = stringifyCollection;
+  }
+});
+
+// node_modules/yaml/dist/nodes/YAMLMap.js
+var require_YAMLMap = __commonJS({
+  "node_modules/yaml/dist/nodes/YAMLMap.js"(exports) {
+    "use strict";
+    var stringifyCollection = require_stringifyCollection();
+    var addPairToJSMap = require_addPairToJSMap();
+    var Collection = require_Collection();
+    var identity = require_identity();
+    var Pair = require_Pair();
+    var Scalar = require_Scalar();
+    function findPair(items, key) {
+      const k = identity.isScalar(key) ? key.value : key;
+      for (const it of items) {
+        if (identity.isPair(it)) {
+          if (it.key === key || it.key === k)
+            return it;
+          if (identity.isScalar(it.key) && it.key.value === k)
+            return it;
+        }
+      }
+      return void 0;
+    }
+    var YAMLMap = class extends Collection.Collection {
+      static get tagName() {
+        return "tag:yaml.org,2002:map";
+      }
+      constructor(schema) {
+        super(identity.MAP, schema);
+        this.items = [];
+      }
+      /**
+       * A generic collection parsing method that can be extended
+       * to other node classes that inherit from YAMLMap
+       */
+      static from(schema, obj, ctx) {
+        const { keepUndefined, replacer } = ctx;
+        const map2 = new this(schema);
+        const add = (key, value) => {
+          if (typeof replacer === "function")
+            value = replacer.call(obj, key, value);
+          else if (Array.isArray(replacer) && !replacer.includes(key))
+            return;
+          if (value !== void 0 || keepUndefined)
+            map2.items.push(Pair.createPair(key, value, ctx));
+        };
+        if (obj instanceof Map) {
+          for (const [key, value] of obj)
+            add(key, value);
+        } else if (obj && typeof obj === "object") {
+          for (const key of Object.keys(obj))
+            add(key, obj[key]);
+        }
+        if (typeof schema.sortMapEntries === "function") {
+          map2.items.sort(schema.sortMapEntries);
+        }
+        return map2;
+      }
+      /**
+       * Adds a value to the collection.
+       *
+       * @param overwrite - If not set `true`, using a key that is already in the
+       *   collection will throw. Otherwise, overwrites the previous value.
+       */
+      add(pair, overwrite) {
+        let _pair;
+        if (identity.isPair(pair))
+          _pair = pair;
+        else if (!pair || typeof pair !== "object" || !("key" in pair)) {
+          _pair = new Pair.Pair(pair, pair?.value);
+        } else
+          _pair = new Pair.Pair(pair.key, pair.value);
+        const prev = findPair(this.items, _pair.key);
+        const sortEntries = this.schema?.sortMapEntries;
+        if (prev) {
+          if (!overwrite)
+            throw new Error(`Key ${_pair.key} already set`);
+          if (identity.isScalar(prev.value) && Scalar.isScalarValue(_pair.value))
+            prev.value.value = _pair.value;
+          else
+            prev.value = _pair.value;
+        } else if (sortEntries) {
+          const i = this.items.findIndex((item) => sortEntries(_pair, item) < 0);
+          if (i === -1)
+            this.items.push(_pair);
+          else
+            this.items.splice(i, 0, _pair);
+        } else {
+          this.items.push(_pair);
+        }
+      }
+      delete(key) {
+        const it = findPair(this.items, key);
+        if (!it)
+          return false;
+        const del = this.items.splice(this.items.indexOf(it), 1);
+        return del.length > 0;
+      }
+      get(key, keepScalar) {
+        const it = findPair(this.items, key);
+        const node2 = it?.value;
+        return (!keepScalar && identity.isScalar(node2) ? node2.value : node2) ?? void 0;
+      }
+      has(key) {
+        return !!findPair(this.items, key);
+      }
+      set(key, value) {
+        this.add(new Pair.Pair(key, value), true);
+      }
+      /**
+       * @param ctx - Conversion context, originally set in Document#toJS()
+       * @param {Class} Type - If set, forces the returned collection type
+       * @returns Instance of Type, Map, or Object
+       */
+      toJSON(_, ctx, Type) {
+        const map2 = Type ? new Type() : ctx?.mapAsMap ? /* @__PURE__ */ new Map() : {};
+        if (ctx?.onCreate)
+          ctx.onCreate(map2);
+        for (const item of this.items)
+          addPairToJSMap.addPairToJSMap(ctx, map2, item);
+        return map2;
+      }
+      toString(ctx, onComment, onChompKeep) {
+        if (!ctx)
+          return JSON.stringify(this);
+        for (const item of this.items) {
+          if (!identity.isPair(item))
+            throw new Error(`Map items must all be pairs; found ${JSON.stringify(item)} instead`);
+        }
+        if (!ctx.allNullValues && this.hasAllNullValues(false))
+          ctx = Object.assign({}, ctx, { allNullValues: true });
+        return stringifyCollection.stringifyCollection(this, ctx, {
+          blockItemPrefix: "",
+          flowChars: { start: "{", end: "}" },
+          itemIndent: ctx.indent || "",
+          onChompKeep,
+          onComment
+        });
+      }
+    };
+    exports.YAMLMap = YAMLMap;
+    exports.findPair = findPair;
+  }
+});
+
+// node_modules/yaml/dist/schema/common/map.js
+var require_map = __commonJS({
+  "node_modules/yaml/dist/schema/common/map.js"(exports) {
+    "use strict";
+    var identity = require_identity();
+    var YAMLMap = require_YAMLMap();
+    var map2 = {
+      collection: "map",
+      default: true,
+      nodeClass: YAMLMap.YAMLMap,
+      tag: "tag:yaml.org,2002:map",
+      resolve(map3, onError) {
+        if (!identity.isMap(map3))
+          onError("Expected a mapping for this tag");
+        return map3;
+      },
+      createNode: (schema, obj, ctx) => YAMLMap.YAMLMap.from(schema, obj, ctx)
+    };
+    exports.map = map2;
+  }
+});
+
+// node_modules/yaml/dist/nodes/YAMLSeq.js
+var require_YAMLSeq = __commonJS({
+  "node_modules/yaml/dist/nodes/YAMLSeq.js"(exports) {
+    "use strict";
+    var createNode = require_createNode();
+    var stringifyCollection = require_stringifyCollection();
+    var Collection = require_Collection();
+    var identity = require_identity();
+    var Scalar = require_Scalar();
+    var toJS = require_toJS();
+    var YAMLSeq = class extends Collection.Collection {
+      static get tagName() {
+        return "tag:yaml.org,2002:seq";
+      }
+      constructor(schema) {
+        super(identity.SEQ, schema);
+        this.items = [];
+      }
+      add(value) {
+        this.items.push(value);
+      }
+      /**
+       * Removes a value from the collection.
+       *
+       * `key` must contain a representation of an integer for this to succeed.
+       * It may be wrapped in a `Scalar`.
+       *
+       * @returns `true` if the item was found and removed.
+       */
+      delete(key) {
+        const idx = asItemIndex(key);
+        if (typeof idx !== "number")
+          return false;
+        const del = this.items.splice(idx, 1);
+        return del.length > 0;
+      }
+      get(key, keepScalar) {
+        const idx = asItemIndex(key);
+        if (typeof idx !== "number")
+          return void 0;
+        const it = this.items[idx];
+        return !keepScalar && identity.isScalar(it) ? it.value : it;
+      }
+      /**
+       * Checks if the collection includes a value with the key `key`.
+       *
+       * `key` must contain a representation of an integer for this to succeed.
+       * It may be wrapped in a `Scalar`.
+       */
+      has(key) {
+        const idx = asItemIndex(key);
+        return typeof idx === "number" && idx < this.items.length;
+      }
+      /**
+       * Sets a value in this collection. For `!!set`, `value` needs to be a
+       * boolean to add/remove the item from the set.
+       *
+       * If `key` does not contain a representation of an integer, this will throw.
+       * It may be wrapped in a `Scalar`.
+       */
+      set(key, value) {
+        const idx = asItemIndex(key);
+        if (typeof idx !== "number")
+          throw new Error(`Expected a valid index, not ${key}.`);
+        const prev = this.items[idx];
+        if (identity.isScalar(prev) && Scalar.isScalarValue(value))
+          prev.value = value;
+        else
+          this.items[idx] = value;
+      }
+      toJSON(_, ctx) {
+        const seq = [];
+        if (ctx?.onCreate)
+          ctx.onCreate(seq);
+        let i = 0;
+        for (const item of this.items)
+          seq.push(toJS.toJS(item, String(i++), ctx));
+        return seq;
+      }
+      toString(ctx, onComment, onChompKeep) {
+        if (!ctx)
+          return JSON.stringify(this);
+        return stringifyCollection.stringifyCollection(this, ctx, {
+          blockItemPrefix: "- ",
+          flowChars: { start: "[", end: "]" },
+          itemIndent: (ctx.indent || "") + "  ",
+          onChompKeep,
+          onComment
+        });
+      }
+      static from(schema, obj, ctx) {
+        const { replacer } = ctx;
+        const seq = new this(schema);
+        if (obj && Symbol.iterator in Object(obj)) {
+          let i = 0;
+          for (let it of obj) {
+            if (typeof replacer === "function") {
+              const key = obj instanceof Set ? it : String(i++);
+              it = replacer.call(obj, key, it);
+            }
+            seq.items.push(createNode.createNode(it, void 0, ctx));
+          }
+        }
+        return seq;
+      }
+    };
+    function asItemIndex(key) {
+      let idx = identity.isScalar(key) ? key.value : key;
+      if (idx && typeof idx === "string")
+        idx = Number(idx);
+      return typeof idx === "number" && Number.isInteger(idx) && idx >= 0 ? idx : null;
+    }
+    exports.YAMLSeq = YAMLSeq;
+  }
+});
+
+// node_modules/yaml/dist/schema/common/seq.js
+var require_seq = __commonJS({
+  "node_modules/yaml/dist/schema/common/seq.js"(exports) {
+    "use strict";
+    var identity = require_identity();
+    var YAMLSeq = require_YAMLSeq();
+    var seq = {
+      collection: "seq",
+      default: true,
+      nodeClass: YAMLSeq.YAMLSeq,
+      tag: "tag:yaml.org,2002:seq",
+      resolve(seq2, onError) {
+        if (!identity.isSeq(seq2))
+          onError("Expected a sequence for this tag");
+        return seq2;
+      },
+      createNode: (schema, obj, ctx) => YAMLSeq.YAMLSeq.from(schema, obj, ctx)
+    };
+    exports.seq = seq;
+  }
+});
+
+// node_modules/yaml/dist/schema/common/string.js
+var require_string = __commonJS({
+  "node_modules/yaml/dist/schema/common/string.js"(exports) {
+    "use strict";
+    var stringifyString = require_stringifyString();
+    var string4 = {
+      identify: (value) => typeof value === "string",
+      default: true,
+      tag: "tag:yaml.org,2002:str",
+      resolve: (str2) => str2,
+      stringify(item, ctx, onComment, onChompKeep) {
+        ctx = Object.assign({ actualString: true }, ctx);
+        return stringifyString.stringifyString(item, ctx, onComment, onChompKeep);
+      }
+    };
+    exports.string = string4;
+  }
+});
+
+// node_modules/yaml/dist/schema/common/null.js
+var require_null = __commonJS({
+  "node_modules/yaml/dist/schema/common/null.js"(exports) {
+    "use strict";
+    var Scalar = require_Scalar();
+    var nullTag = {
+      identify: (value) => value == null,
+      createNode: () => new Scalar.Scalar(null),
+      default: true,
+      tag: "tag:yaml.org,2002:null",
+      test: /^(?:~|[Nn]ull|NULL)?$/,
+      resolve: () => new Scalar.Scalar(null),
+      stringify: ({ source }, ctx) => typeof source === "string" && nullTag.test.test(source) ? source : ctx.options.nullStr
+    };
+    exports.nullTag = nullTag;
+  }
+});
+
+// node_modules/yaml/dist/schema/core/bool.js
+var require_bool = __commonJS({
+  "node_modules/yaml/dist/schema/core/bool.js"(exports) {
+    "use strict";
+    var Scalar = require_Scalar();
+    var boolTag = {
+      identify: (value) => typeof value === "boolean",
+      default: true,
+      tag: "tag:yaml.org,2002:bool",
+      test: /^(?:[Tt]rue|TRUE|[Ff]alse|FALSE)$/,
+      resolve: (str2) => new Scalar.Scalar(str2[0] === "t" || str2[0] === "T"),
+      stringify({ source, value }, ctx) {
+        if (source && boolTag.test.test(source)) {
+          const sv = source[0] === "t" || source[0] === "T";
+          if (value === sv)
+            return source;
+        }
+        return value ? ctx.options.trueStr : ctx.options.falseStr;
+      }
+    };
+    exports.boolTag = boolTag;
+  }
+});
+
+// node_modules/yaml/dist/stringify/stringifyNumber.js
+var require_stringifyNumber = __commonJS({
+  "node_modules/yaml/dist/stringify/stringifyNumber.js"(exports) {
+    "use strict";
+    function stringifyNumber({ format, minFractionDigits, tag, value }) {
+      if (typeof value === "bigint")
+        return String(value);
+      const num = typeof value === "number" ? value : Number(value);
+      if (!isFinite(num))
+        return isNaN(num) ? ".nan" : num < 0 ? "-.inf" : ".inf";
+      let n = Object.is(value, -0) ? "-0" : JSON.stringify(value);
+      if (!format && minFractionDigits && (!tag || tag === "tag:yaml.org,2002:float") && /^-?\d/.test(n) && !n.includes("e")) {
+        let i = n.indexOf(".");
+        if (i < 0) {
+          i = n.length;
+          n += ".";
+        }
+        let d = minFractionDigits - (n.length - i - 1);
+        while (d-- > 0)
+          n += "0";
+      }
+      return n;
+    }
+    exports.stringifyNumber = stringifyNumber;
+  }
+});
+
+// node_modules/yaml/dist/schema/core/float.js
+var require_float = __commonJS({
+  "node_modules/yaml/dist/schema/core/float.js"(exports) {
+    "use strict";
+    var Scalar = require_Scalar();
+    var stringifyNumber = require_stringifyNumber();
+    var floatNaN = {
+      identify: (value) => typeof value === "number",
+      default: true,
+      tag: "tag:yaml.org,2002:float",
+      test: /^(?:[-+]?\.(?:inf|Inf|INF)|\.nan|\.NaN|\.NAN)$/,
+      resolve: (str2) => str2.slice(-3).toLowerCase() === "nan" ? NaN : str2[0] === "-" ? Number.NEGATIVE_INFINITY : Number.POSITIVE_INFINITY,
+      stringify: stringifyNumber.stringifyNumber
+    };
+    var floatExp = {
+      identify: (value) => typeof value === "number",
+      default: true,
+      tag: "tag:yaml.org,2002:float",
+      format: "EXP",
+      test: /^[-+]?(?:\.[0-9]+|[0-9]+(?:\.[0-9]*)?)[eE][-+]?[0-9]+$/,
+      resolve: (str2) => parseFloat(str2),
+      stringify(node2) {
+        const num = Number(node2.value);
+        return isFinite(num) ? num.toExponential() : stringifyNumber.stringifyNumber(node2);
+      }
+    };
+    var float = {
+      identify: (value) => typeof value === "number",
+      default: true,
+      tag: "tag:yaml.org,2002:float",
+      test: /^[-+]?(?:\.[0-9]+|[0-9]+\.[0-9]*)$/,
+      resolve(str2) {
+        const node2 = new Scalar.Scalar(parseFloat(str2));
+        const dot = str2.indexOf(".");
+        if (dot !== -1 && str2[str2.length - 1] === "0")
+          node2.minFractionDigits = str2.length - dot - 1;
+        return node2;
+      },
+      stringify: stringifyNumber.stringifyNumber
+    };
+    exports.float = float;
+    exports.floatExp = floatExp;
+    exports.floatNaN = floatNaN;
+  }
+});
+
+// node_modules/yaml/dist/schema/core/int.js
+var require_int = __commonJS({
+  "node_modules/yaml/dist/schema/core/int.js"(exports) {
+    "use strict";
+    var stringifyNumber = require_stringifyNumber();
+    var intIdentify = (value) => typeof value === "bigint" || Number.isInteger(value);
+    var intResolve = (str2, offset, radix, { intAsBigInt }) => intAsBigInt ? BigInt(str2) : parseInt(str2.substring(offset), radix);
+    function intStringify(node2, radix, prefix) {
+      const { value } = node2;
+      if (intIdentify(value) && value >= 0)
+        return prefix + value.toString(radix);
+      return stringifyNumber.stringifyNumber(node2);
+    }
+    var intOct = {
+      identify: (value) => intIdentify(value) && value >= 0,
+      default: true,
+      tag: "tag:yaml.org,2002:int",
+      format: "OCT",
+      test: /^0o[0-7]+$/,
+      resolve: (str2, _onError, opt) => intResolve(str2, 2, 8, opt),
+      stringify: (node2) => intStringify(node2, 8, "0o")
+    };
+    var int2 = {
+      identify: intIdentify,
+      default: true,
+      tag: "tag:yaml.org,2002:int",
+      test: /^[-+]?[0-9]+$/,
+      resolve: (str2, _onError, opt) => intResolve(str2, 0, 10, opt),
+      stringify: stringifyNumber.stringifyNumber
+    };
+    var intHex = {
+      identify: (value) => intIdentify(value) && value >= 0,
+      default: true,
+      tag: "tag:yaml.org,2002:int",
+      format: "HEX",
+      test: /^0x[0-9a-fA-F]+$/,
+      resolve: (str2, _onError, opt) => intResolve(str2, 2, 16, opt),
+      stringify: (node2) => intStringify(node2, 16, "0x")
+    };
+    exports.int = int2;
+    exports.intHex = intHex;
+    exports.intOct = intOct;
+  }
+});
+
+// node_modules/yaml/dist/schema/core/schema.js
+var require_schema = __commonJS({
+  "node_modules/yaml/dist/schema/core/schema.js"(exports) {
+    "use strict";
+    var map2 = require_map();
+    var _null4 = require_null();
+    var seq = require_seq();
+    var string4 = require_string();
+    var bool = require_bool();
+    var float = require_float();
+    var int2 = require_int();
+    var schema = [
+      map2.map,
+      seq.seq,
+      string4.string,
+      _null4.nullTag,
+      bool.boolTag,
+      int2.intOct,
+      int2.int,
+      int2.intHex,
+      float.floatNaN,
+      float.floatExp,
+      float.float
+    ];
+    exports.schema = schema;
+  }
+});
+
+// node_modules/yaml/dist/schema/json/schema.js
+var require_schema2 = __commonJS({
+  "node_modules/yaml/dist/schema/json/schema.js"(exports) {
+    "use strict";
+    var Scalar = require_Scalar();
+    var map2 = require_map();
+    var seq = require_seq();
+    function intIdentify(value) {
+      return typeof value === "bigint" || Number.isInteger(value);
+    }
+    var stringifyJSON = ({ value }) => JSON.stringify(value);
+    var jsonScalars = [
+      {
+        identify: (value) => typeof value === "string",
+        default: true,
+        tag: "tag:yaml.org,2002:str",
+        resolve: (str2) => str2,
+        stringify: stringifyJSON
+      },
+      {
+        identify: (value) => value == null,
+        createNode: () => new Scalar.Scalar(null),
+        default: true,
+        tag: "tag:yaml.org,2002:null",
+        test: /^null$/,
+        resolve: () => null,
+        stringify: stringifyJSON
+      },
+      {
+        identify: (value) => typeof value === "boolean",
+        default: true,
+        tag: "tag:yaml.org,2002:bool",
+        test: /^true$|^false$/,
+        resolve: (str2) => str2 === "true",
+        stringify: stringifyJSON
+      },
+      {
+        identify: intIdentify,
+        default: true,
+        tag: "tag:yaml.org,2002:int",
+        test: /^-?(?:0|[1-9][0-9]*)$/,
+        resolve: (str2, _onError, { intAsBigInt }) => intAsBigInt ? BigInt(str2) : parseInt(str2, 10),
+        stringify: ({ value }) => intIdentify(value) ? value.toString() : JSON.stringify(value)
+      },
+      {
+        identify: (value) => typeof value === "number",
+        default: true,
+        tag: "tag:yaml.org,2002:float",
+        test: /^-?(?:0|[1-9][0-9]*)(?:\.[0-9]*)?(?:[eE][-+]?[0-9]+)?$/,
+        resolve: (str2) => parseFloat(str2),
+        stringify: stringifyJSON
+      }
+    ];
+    var jsonError = {
+      default: true,
+      tag: "",
+      test: /^/,
+      resolve(str2, onError) {
+        onError(`Unresolved plain scalar ${JSON.stringify(str2)}`);
+        return str2;
+      }
+    };
+    var schema = [map2.map, seq.seq].concat(jsonScalars, jsonError);
+    exports.schema = schema;
+  }
+});
+
+// node_modules/yaml/dist/schema/yaml-1.1/binary.js
+var require_binary = __commonJS({
+  "node_modules/yaml/dist/schema/yaml-1.1/binary.js"(exports) {
+    "use strict";
+    var node_buffer = __require("buffer");
+    var Scalar = require_Scalar();
+    var stringifyString = require_stringifyString();
+    var binary = {
+      identify: (value) => value instanceof Uint8Array,
+      // Buffer inherits from Uint8Array
+      default: false,
+      tag: "tag:yaml.org,2002:binary",
+      /**
+       * Returns a Buffer in node and an Uint8Array in browsers
+       *
+       * To use the resulting buffer as an image, you'll want to do something like:
+       *
+       *   const blob = new Blob([buffer], { type: 'image/jpeg' })
+       *   document.querySelector('#photo').src = URL.createObjectURL(blob)
+       */
+      resolve(src, onError) {
+        if (typeof node_buffer.Buffer === "function") {
+          return node_buffer.Buffer.from(src, "base64");
+        } else if (typeof atob === "function") {
+          const str2 = atob(src.replace(/[\n\r]/g, ""));
+          const buffer = new Uint8Array(str2.length);
+          for (let i = 0; i < str2.length; ++i)
+            buffer[i] = str2.charCodeAt(i);
+          return buffer;
+        } else {
+          onError("This environment does not support reading binary tags; either Buffer or atob is required");
+          return src;
+        }
+      },
+      stringify({ comment, type, value }, ctx, onComment, onChompKeep) {
+        if (!value)
+          return "";
+        const buf = value;
+        let str2;
+        if (typeof node_buffer.Buffer === "function") {
+          str2 = buf instanceof node_buffer.Buffer ? buf.toString("base64") : node_buffer.Buffer.from(buf.buffer).toString("base64");
+        } else if (typeof btoa === "function") {
+          let s = "";
+          for (let i = 0; i < buf.length; ++i)
+            s += String.fromCharCode(buf[i]);
+          str2 = btoa(s);
+        } else {
+          throw new Error("This environment does not support writing binary tags; either Buffer or btoa is required");
+        }
+        type ?? (type = Scalar.Scalar.BLOCK_LITERAL);
+        if (type !== Scalar.Scalar.QUOTE_DOUBLE) {
+          const lineWidth = Math.max(ctx.options.lineWidth - ctx.indent.length, ctx.options.minContentWidth);
+          const n = Math.ceil(str2.length / lineWidth);
+          const lines2 = new Array(n);
+          for (let i = 0, o = 0; i < n; ++i, o += lineWidth) {
+            lines2[i] = str2.substr(o, lineWidth);
+          }
+          str2 = lines2.join(type === Scalar.Scalar.BLOCK_LITERAL ? "\n" : " ");
+        }
+        return stringifyString.stringifyString({ comment, type, value: str2 }, ctx, onComment, onChompKeep);
+      }
+    };
+    exports.binary = binary;
+  }
+});
+
+// node_modules/yaml/dist/schema/yaml-1.1/pairs.js
+var require_pairs = __commonJS({
+  "node_modules/yaml/dist/schema/yaml-1.1/pairs.js"(exports) {
+    "use strict";
+    var identity = require_identity();
+    var Pair = require_Pair();
+    var Scalar = require_Scalar();
+    var YAMLSeq = require_YAMLSeq();
+    function resolvePairs(seq, onError) {
+      if (identity.isSeq(seq)) {
+        for (let i = 0; i < seq.items.length; ++i) {
+          let item = seq.items[i];
+          if (identity.isPair(item))
+            continue;
+          else if (identity.isMap(item)) {
+            if (item.items.length > 1)
+              onError("Each pair must have its own sequence indicator");
+            const pair = item.items[0] || new Pair.Pair(new Scalar.Scalar(null));
+            if (item.commentBefore)
+              pair.key.commentBefore = pair.key.commentBefore ? `${item.commentBefore}
+${pair.key.commentBefore}` : item.commentBefore;
+            if (item.comment) {
+              const cn = pair.value ?? pair.key;
+              cn.comment = cn.comment ? `${item.comment}
+${cn.comment}` : item.comment;
+            }
+            item = pair;
+          }
+          seq.items[i] = identity.isPair(item) ? item : new Pair.Pair(item);
+        }
+      } else
+        onError("Expected a sequence for this tag");
+      return seq;
+    }
+    function createPairs(schema, iterable, ctx) {
+      const { replacer } = ctx;
+      const pairs2 = new YAMLSeq.YAMLSeq(schema);
+      pairs2.tag = "tag:yaml.org,2002:pairs";
+      let i = 0;
+      if (iterable && Symbol.iterator in Object(iterable))
+        for (let it of iterable) {
+          if (typeof replacer === "function")
+            it = replacer.call(iterable, String(i++), it);
+          let key, value;
+          if (Array.isArray(it)) {
+            if (it.length === 2) {
+              key = it[0];
+              value = it[1];
+            } else
+              throw new TypeError(`Expected [key, value] tuple: ${it}`);
+          } else if (it && it instanceof Object) {
+            const keys = Object.keys(it);
+            if (keys.length === 1) {
+              key = keys[0];
+              value = it[key];
+            } else {
+              throw new TypeError(`Expected tuple with one key, not ${keys.length} keys`);
+            }
+          } else {
+            key = it;
+          }
+          pairs2.items.push(Pair.createPair(key, value, ctx));
+        }
+      return pairs2;
+    }
+    var pairs = {
+      collection: "seq",
+      default: false,
+      tag: "tag:yaml.org,2002:pairs",
+      resolve: resolvePairs,
+      createNode: createPairs
+    };
+    exports.createPairs = createPairs;
+    exports.pairs = pairs;
+    exports.resolvePairs = resolvePairs;
+  }
+});
+
+// node_modules/yaml/dist/schema/yaml-1.1/omap.js
+var require_omap = __commonJS({
+  "node_modules/yaml/dist/schema/yaml-1.1/omap.js"(exports) {
+    "use strict";
+    var identity = require_identity();
+    var toJS = require_toJS();
+    var YAMLMap = require_YAMLMap();
+    var YAMLSeq = require_YAMLSeq();
+    var pairs = require_pairs();
+    var YAMLOMap = class _YAMLOMap extends YAMLSeq.YAMLSeq {
+      constructor() {
+        super();
+        this.add = YAMLMap.YAMLMap.prototype.add.bind(this);
+        this.delete = YAMLMap.YAMLMap.prototype.delete.bind(this);
+        this.get = YAMLMap.YAMLMap.prototype.get.bind(this);
+        this.has = YAMLMap.YAMLMap.prototype.has.bind(this);
+        this.set = YAMLMap.YAMLMap.prototype.set.bind(this);
+        this.tag = _YAMLOMap.tag;
+      }
+      /**
+       * If `ctx` is given, the return type is actually `Map<unknown, unknown>`,
+       * but TypeScript won't allow widening the signature of a child method.
+       */
+      toJSON(_, ctx) {
+        if (!ctx)
+          return super.toJSON(_);
+        const map2 = /* @__PURE__ */ new Map();
+        if (ctx?.onCreate)
+          ctx.onCreate(map2);
+        for (const pair of this.items) {
+          let key, value;
+          if (identity.isPair(pair)) {
+            key = toJS.toJS(pair.key, "", ctx);
+            value = toJS.toJS(pair.value, key, ctx);
+          } else {
+            key = toJS.toJS(pair, "", ctx);
+          }
+          if (map2.has(key))
+            throw new Error("Ordered maps must not include duplicate keys");
+          map2.set(key, value);
+        }
+        return map2;
+      }
+      static from(schema, iterable, ctx) {
+        const pairs$1 = pairs.createPairs(schema, iterable, ctx);
+        const omap2 = new this();
+        omap2.items = pairs$1.items;
+        return omap2;
+      }
+    };
+    YAMLOMap.tag = "tag:yaml.org,2002:omap";
+    var omap = {
+      collection: "seq",
+      identify: (value) => value instanceof Map,
+      nodeClass: YAMLOMap,
+      default: false,
+      tag: "tag:yaml.org,2002:omap",
+      resolve(seq, onError) {
+        const pairs$1 = pairs.resolvePairs(seq, onError);
+        const seenKeys = [];
+        for (const { key } of pairs$1.items) {
+          if (identity.isScalar(key)) {
+            if (seenKeys.includes(key.value)) {
+              onError(`Ordered maps must not include duplicate keys: ${key.value}`);
+            } else {
+              seenKeys.push(key.value);
+            }
+          }
+        }
+        return Object.assign(new YAMLOMap(), pairs$1);
+      },
+      createNode: (schema, iterable, ctx) => YAMLOMap.from(schema, iterable, ctx)
+    };
+    exports.YAMLOMap = YAMLOMap;
+    exports.omap = omap;
+  }
+});
+
+// node_modules/yaml/dist/schema/yaml-1.1/bool.js
+var require_bool2 = __commonJS({
+  "node_modules/yaml/dist/schema/yaml-1.1/bool.js"(exports) {
+    "use strict";
+    var Scalar = require_Scalar();
+    function boolStringify({ value, source }, ctx) {
+      const boolObj = value ? trueTag : falseTag;
+      if (source && boolObj.test.test(source))
+        return source;
+      return value ? ctx.options.trueStr : ctx.options.falseStr;
+    }
+    var trueTag = {
+      identify: (value) => value === true,
+      default: true,
+      tag: "tag:yaml.org,2002:bool",
+      test: /^(?:Y|y|[Yy]es|YES|[Tt]rue|TRUE|[Oo]n|ON)$/,
+      resolve: () => new Scalar.Scalar(true),
+      stringify: boolStringify
+    };
+    var falseTag = {
+      identify: (value) => value === false,
+      default: true,
+      tag: "tag:yaml.org,2002:bool",
+      test: /^(?:N|n|[Nn]o|NO|[Ff]alse|FALSE|[Oo]ff|OFF)$/,
+      resolve: () => new Scalar.Scalar(false),
+      stringify: boolStringify
+    };
+    exports.falseTag = falseTag;
+    exports.trueTag = trueTag;
+  }
+});
+
+// node_modules/yaml/dist/schema/yaml-1.1/float.js
+var require_float2 = __commonJS({
+  "node_modules/yaml/dist/schema/yaml-1.1/float.js"(exports) {
+    "use strict";
+    var Scalar = require_Scalar();
+    var stringifyNumber = require_stringifyNumber();
+    var floatNaN = {
+      identify: (value) => typeof value === "number",
+      default: true,
+      tag: "tag:yaml.org,2002:float",
+      test: /^(?:[-+]?\.(?:inf|Inf|INF)|\.nan|\.NaN|\.NAN)$/,
+      resolve: (str2) => str2.slice(-3).toLowerCase() === "nan" ? NaN : str2[0] === "-" ? Number.NEGATIVE_INFINITY : Number.POSITIVE_INFINITY,
+      stringify: stringifyNumber.stringifyNumber
+    };
+    var floatExp = {
+      identify: (value) => typeof value === "number",
+      default: true,
+      tag: "tag:yaml.org,2002:float",
+      format: "EXP",
+      test: /^[-+]?(?:[0-9][0-9_]*)?(?:\.[0-9_]*)?[eE][-+]?[0-9]+$/,
+      resolve: (str2) => parseFloat(str2.replace(/_/g, "")),
+      stringify(node2) {
+        const num = Number(node2.value);
+        return isFinite(num) ? num.toExponential() : stringifyNumber.stringifyNumber(node2);
+      }
+    };
+    var float = {
+      identify: (value) => typeof value === "number",
+      default: true,
+      tag: "tag:yaml.org,2002:float",
+      test: /^[-+]?(?:[0-9][0-9_]*)?\.[0-9_]*$/,
+      resolve(str2) {
+        const node2 = new Scalar.Scalar(parseFloat(str2.replace(/_/g, "")));
+        const dot = str2.indexOf(".");
+        if (dot !== -1) {
+          const f = str2.substring(dot + 1).replace(/_/g, "");
+          if (f[f.length - 1] === "0")
+            node2.minFractionDigits = f.length;
+        }
+        return node2;
+      },
+      stringify: stringifyNumber.stringifyNumber
+    };
+    exports.float = float;
+    exports.floatExp = floatExp;
+    exports.floatNaN = floatNaN;
+  }
+});
+
+// node_modules/yaml/dist/schema/yaml-1.1/int.js
+var require_int2 = __commonJS({
+  "node_modules/yaml/dist/schema/yaml-1.1/int.js"(exports) {
+    "use strict";
+    var stringifyNumber = require_stringifyNumber();
+    var intIdentify = (value) => typeof value === "bigint" || Number.isInteger(value);
+    function intResolve(str2, offset, radix, { intAsBigInt }) {
+      const sign = str2[0];
+      if (sign === "-" || sign === "+")
+        offset += 1;
+      str2 = str2.substring(offset).replace(/_/g, "");
+      if (intAsBigInt) {
+        switch (radix) {
+          case 2:
+            str2 = `0b${str2}`;
+            break;
+          case 8:
+            str2 = `0o${str2}`;
+            break;
+          case 16:
+            str2 = `0x${str2}`;
+            break;
+        }
+        const n2 = BigInt(str2);
+        return sign === "-" ? BigInt(-1) * n2 : n2;
+      }
+      const n = parseInt(str2, radix);
+      return sign === "-" ? -1 * n : n;
+    }
+    function intStringify(node2, radix, prefix) {
+      const { value } = node2;
+      if (intIdentify(value)) {
+        const str2 = value.toString(radix);
+        return value < 0 ? "-" + prefix + str2.substr(1) : prefix + str2;
+      }
+      return stringifyNumber.stringifyNumber(node2);
+    }
+    var intBin = {
+      identify: intIdentify,
+      default: true,
+      tag: "tag:yaml.org,2002:int",
+      format: "BIN",
+      test: /^[-+]?0b[0-1_]+$/,
+      resolve: (str2, _onError, opt) => intResolve(str2, 2, 2, opt),
+      stringify: (node2) => intStringify(node2, 2, "0b")
+    };
+    var intOct = {
+      identify: intIdentify,
+      default: true,
+      tag: "tag:yaml.org,2002:int",
+      format: "OCT",
+      test: /^[-+]?0[0-7_]+$/,
+      resolve: (str2, _onError, opt) => intResolve(str2, 1, 8, opt),
+      stringify: (node2) => intStringify(node2, 8, "0")
+    };
+    var int2 = {
+      identify: intIdentify,
+      default: true,
+      tag: "tag:yaml.org,2002:int",
+      test: /^[-+]?[0-9][0-9_]*$/,
+      resolve: (str2, _onError, opt) => intResolve(str2, 0, 10, opt),
+      stringify: stringifyNumber.stringifyNumber
+    };
+    var intHex = {
+      identify: intIdentify,
+      default: true,
+      tag: "tag:yaml.org,2002:int",
+      format: "HEX",
+      test: /^[-+]?0x[0-9a-fA-F_]+$/,
+      resolve: (str2, _onError, opt) => intResolve(str2, 2, 16, opt),
+      stringify: (node2) => intStringify(node2, 16, "0x")
+    };
+    exports.int = int2;
+    exports.intBin = intBin;
+    exports.intHex = intHex;
+    exports.intOct = intOct;
+  }
+});
+
+// node_modules/yaml/dist/schema/yaml-1.1/set.js
+var require_set = __commonJS({
+  "node_modules/yaml/dist/schema/yaml-1.1/set.js"(exports) {
+    "use strict";
+    var identity = require_identity();
+    var Pair = require_Pair();
+    var YAMLMap = require_YAMLMap();
+    var YAMLSet = class _YAMLSet extends YAMLMap.YAMLMap {
+      constructor(schema) {
+        super(schema);
+        this.tag = _YAMLSet.tag;
+      }
+      add(key) {
+        let pair;
+        if (identity.isPair(key))
+          pair = key;
+        else if (key && typeof key === "object" && "key" in key && "value" in key && key.value === null)
+          pair = new Pair.Pair(key.key, null);
+        else
+          pair = new Pair.Pair(key, null);
+        const prev = YAMLMap.findPair(this.items, pair.key);
+        if (!prev)
+          this.items.push(pair);
+      }
+      /**
+       * If `keepPair` is `true`, returns the Pair matching `key`.
+       * Otherwise, returns the value of that Pair's key.
+       */
+      get(key, keepPair) {
+        const pair = YAMLMap.findPair(this.items, key);
+        return !keepPair && identity.isPair(pair) ? identity.isScalar(pair.key) ? pair.key.value : pair.key : pair;
+      }
+      set(key, value) {
+        if (typeof value !== "boolean")
+          throw new Error(`Expected boolean value for set(key, value) in a YAML set, not ${typeof value}`);
+        const prev = YAMLMap.findPair(this.items, key);
+        if (prev && !value) {
+          this.items.splice(this.items.indexOf(prev), 1);
+        } else if (!prev && value) {
+          this.items.push(new Pair.Pair(key));
+        }
+      }
+      toJSON(_, ctx) {
+        return super.toJSON(_, ctx, Set);
+      }
+      toString(ctx, onComment, onChompKeep) {
+        if (!ctx)
+          return JSON.stringify(this);
+        if (this.hasAllNullValues(true))
+          return super.toString(Object.assign({}, ctx, { allNullValues: true }), onComment, onChompKeep);
+        else
+          throw new Error("Set items must all have null values");
+      }
+      static from(schema, iterable, ctx) {
+        const { replacer } = ctx;
+        const set3 = new this(schema);
+        if (iterable && Symbol.iterator in Object(iterable))
+          for (let value of iterable) {
+            if (typeof replacer === "function")
+              value = replacer.call(iterable, value, value);
+            set3.items.push(Pair.createPair(value, null, ctx));
+          }
+        return set3;
+      }
+    };
+    YAMLSet.tag = "tag:yaml.org,2002:set";
+    var set2 = {
+      collection: "map",
+      identify: (value) => value instanceof Set,
+      nodeClass: YAMLSet,
+      default: false,
+      tag: "tag:yaml.org,2002:set",
+      createNode: (schema, iterable, ctx) => YAMLSet.from(schema, iterable, ctx),
+      resolve(map2, onError) {
+        if (identity.isMap(map2)) {
+          if (map2.hasAllNullValues(true))
+            return Object.assign(new YAMLSet(), map2);
+          else
+            onError("Set items must all have null values");
+        } else
+          onError("Expected a mapping for this tag");
+        return map2;
+      }
+    };
+    exports.YAMLSet = YAMLSet;
+    exports.set = set2;
+  }
+});
+
+// node_modules/yaml/dist/schema/yaml-1.1/timestamp.js
+var require_timestamp = __commonJS({
+  "node_modules/yaml/dist/schema/yaml-1.1/timestamp.js"(exports) {
+    "use strict";
+    var stringifyNumber = require_stringifyNumber();
+    function parseSexagesimal(str2, asBigInt) {
+      const sign = str2[0];
+      const parts = sign === "-" || sign === "+" ? str2.substring(1) : str2;
+      const num = (n) => asBigInt ? BigInt(n) : Number(n);
+      const res = parts.replace(/_/g, "").split(":").reduce((res2, p) => res2 * num(60) + num(p), num(0));
+      return sign === "-" ? num(-1) * res : res;
+    }
+    function stringifySexagesimal(node2) {
+      let { value } = node2;
+      let num = (n) => n;
+      if (typeof value === "bigint")
+        num = (n) => BigInt(n);
+      else if (isNaN(value) || !isFinite(value))
+        return stringifyNumber.stringifyNumber(node2);
+      let sign = "";
+      if (value < 0) {
+        sign = "-";
+        value *= num(-1);
+      }
+      const _60 = num(60);
+      const parts = [value % _60];
+      if (value < 60) {
+        parts.unshift(0);
+      } else {
+        value = (value - parts[0]) / _60;
+        parts.unshift(value % _60);
+        if (value >= 60) {
+          value = (value - parts[0]) / _60;
+          parts.unshift(value);
+        }
+      }
+      return sign + parts.map((n) => String(n).padStart(2, "0")).join(":").replace(/000000\d*$/, "");
+    }
+    var intTime = {
+      identify: (value) => typeof value === "bigint" || Number.isInteger(value),
+      default: true,
+      tag: "tag:yaml.org,2002:int",
+      format: "TIME",
+      test: /^[-+]?[0-9][0-9_]*(?::[0-5]?[0-9])+$/,
+      resolve: (str2, _onError, { intAsBigInt }) => parseSexagesimal(str2, intAsBigInt),
+      stringify: stringifySexagesimal
+    };
+    var floatTime = {
+      identify: (value) => typeof value === "number",
+      default: true,
+      tag: "tag:yaml.org,2002:float",
+      format: "TIME",
+      test: /^[-+]?[0-9][0-9_]*(?::[0-5]?[0-9])+\.[0-9_]*$/,
+      resolve: (str2) => parseSexagesimal(str2, false),
+      stringify: stringifySexagesimal
+    };
+    var timestamp = {
+      identify: (value) => value instanceof Date,
+      default: true,
+      tag: "tag:yaml.org,2002:timestamp",
+      // If the time zone is omitted, the timestamp is assumed to be specified in UTC. The time part
+      // may be omitted altogether, resulting in a date format. In such a case, the time part is
+      // assumed to be 00:00:00Z (start of day, UTC).
+      test: RegExp("^([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})(?:(?:t|T|[ \\t]+)([0-9]{1,2}):([0-9]{1,2}):([0-9]{1,2}(\\.[0-9]+)?)(?:[ \\t]*(Z|[-+][012]?[0-9](?::[0-9]{2})?))?)?$"),
+      resolve(str2) {
+        const match2 = str2.match(timestamp.test);
+        if (!match2)
+          throw new Error("!!timestamp expects a date, starting with yyyy-mm-dd");
+        const [, year, month, day, hour, minute, second] = match2.map(Number);
+        const millisec = match2[7] ? Number((match2[7] + "00").substr(1, 3)) : 0;
+        let date5 = Date.UTC(year, month - 1, day, hour || 0, minute || 0, second || 0, millisec);
+        const tz = match2[8];
+        if (tz && tz !== "Z") {
+          let d = parseSexagesimal(tz, false);
+          if (Math.abs(d) < 30)
+            d *= 60;
+          date5 -= 6e4 * d;
+        }
+        return new Date(date5);
+      },
+      stringify: ({ value }) => value?.toISOString().replace(/(T00:00:00)?\.000Z$/, "") ?? ""
+    };
+    exports.floatTime = floatTime;
+    exports.intTime = intTime;
+    exports.timestamp = timestamp;
+  }
+});
+
+// node_modules/yaml/dist/schema/yaml-1.1/schema.js
+var require_schema3 = __commonJS({
+  "node_modules/yaml/dist/schema/yaml-1.1/schema.js"(exports) {
+    "use strict";
+    var map2 = require_map();
+    var _null4 = require_null();
+    var seq = require_seq();
+    var string4 = require_string();
+    var binary = require_binary();
+    var bool = require_bool2();
+    var float = require_float2();
+    var int2 = require_int2();
+    var merge2 = require_merge();
+    var omap = require_omap();
+    var pairs = require_pairs();
+    var set2 = require_set();
+    var timestamp = require_timestamp();
+    var schema = [
+      map2.map,
+      seq.seq,
+      string4.string,
+      _null4.nullTag,
+      bool.trueTag,
+      bool.falseTag,
+      int2.intBin,
+      int2.intOct,
+      int2.int,
+      int2.intHex,
+      float.floatNaN,
+      float.floatExp,
+      float.float,
+      binary.binary,
+      merge2.merge,
+      omap.omap,
+      pairs.pairs,
+      set2.set,
+      timestamp.intTime,
+      timestamp.floatTime,
+      timestamp.timestamp
+    ];
+    exports.schema = schema;
+  }
+});
+
+// node_modules/yaml/dist/schema/tags.js
+var require_tags = __commonJS({
+  "node_modules/yaml/dist/schema/tags.js"(exports) {
+    "use strict";
+    var map2 = require_map();
+    var _null4 = require_null();
+    var seq = require_seq();
+    var string4 = require_string();
+    var bool = require_bool();
+    var float = require_float();
+    var int2 = require_int();
+    var schema = require_schema();
+    var schema$1 = require_schema2();
+    var binary = require_binary();
+    var merge2 = require_merge();
+    var omap = require_omap();
+    var pairs = require_pairs();
+    var schema$2 = require_schema3();
+    var set2 = require_set();
+    var timestamp = require_timestamp();
+    var schemas = /* @__PURE__ */ new Map([
+      ["core", schema.schema],
+      ["failsafe", [map2.map, seq.seq, string4.string]],
+      ["json", schema$1.schema],
+      ["yaml11", schema$2.schema],
+      ["yaml-1.1", schema$2.schema]
+    ]);
+    var tagsByName = {
+      binary: binary.binary,
+      bool: bool.boolTag,
+      float: float.float,
+      floatExp: float.floatExp,
+      floatNaN: float.floatNaN,
+      floatTime: timestamp.floatTime,
+      int: int2.int,
+      intHex: int2.intHex,
+      intOct: int2.intOct,
+      intTime: timestamp.intTime,
+      map: map2.map,
+      merge: merge2.merge,
+      null: _null4.nullTag,
+      omap: omap.omap,
+      pairs: pairs.pairs,
+      seq: seq.seq,
+      set: set2.set,
+      timestamp: timestamp.timestamp
+    };
+    var coreKnownTags = {
+      "tag:yaml.org,2002:binary": binary.binary,
+      "tag:yaml.org,2002:merge": merge2.merge,
+      "tag:yaml.org,2002:omap": omap.omap,
+      "tag:yaml.org,2002:pairs": pairs.pairs,
+      "tag:yaml.org,2002:set": set2.set,
+      "tag:yaml.org,2002:timestamp": timestamp.timestamp
+    };
+    function getTags(customTags, schemaName, addMergeTag) {
+      const schemaTags = schemas.get(schemaName);
+      if (schemaTags && !customTags) {
+        return addMergeTag && !schemaTags.includes(merge2.merge) ? schemaTags.concat(merge2.merge) : schemaTags.slice();
+      }
+      let tags = schemaTags;
+      if (!tags) {
+        if (Array.isArray(customTags))
+          tags = [];
+        else {
+          const keys = Array.from(schemas.keys()).filter((key) => key !== "yaml11").map((key) => JSON.stringify(key)).join(", ");
+          throw new Error(`Unknown schema "${schemaName}"; use one of ${keys} or define customTags array`);
+        }
+      }
+      if (Array.isArray(customTags)) {
+        for (const tag of customTags)
+          tags = tags.concat(tag);
+      } else if (typeof customTags === "function") {
+        tags = customTags(tags.slice());
+      }
+      if (addMergeTag)
+        tags = tags.concat(merge2.merge);
+      return tags.reduce((tags2, tag) => {
+        const tagObj = typeof tag === "string" ? tagsByName[tag] : tag;
+        if (!tagObj) {
+          const tagName = JSON.stringify(tag);
+          const keys = Object.keys(tagsByName).map((key) => JSON.stringify(key)).join(", ");
+          throw new Error(`Unknown custom tag ${tagName}; use one of ${keys}`);
+        }
+        if (!tags2.includes(tagObj))
+          tags2.push(tagObj);
+        return tags2;
+      }, []);
+    }
+    exports.coreKnownTags = coreKnownTags;
+    exports.getTags = getTags;
+  }
+});
+
+// node_modules/yaml/dist/schema/Schema.js
+var require_Schema = __commonJS({
+  "node_modules/yaml/dist/schema/Schema.js"(exports) {
+    "use strict";
+    var identity = require_identity();
+    var map2 = require_map();
+    var seq = require_seq();
+    var string4 = require_string();
+    var tags = require_tags();
+    var sortMapEntriesByKey = (a, b) => a.key < b.key ? -1 : a.key > b.key ? 1 : 0;
+    var Schema = class _Schema {
+      constructor({ compat, customTags, merge: merge2, resolveKnownTags, schema, sortMapEntries, toStringDefaults }) {
+        this.compat = Array.isArray(compat) ? tags.getTags(compat, "compat") : compat ? tags.getTags(null, compat) : null;
+        this.name = typeof schema === "string" && schema || "core";
+        this.knownTags = resolveKnownTags ? tags.coreKnownTags : {};
+        this.tags = tags.getTags(customTags, this.name, merge2);
+        this.toStringOptions = toStringDefaults ?? null;
+        Object.defineProperty(this, identity.MAP, { value: map2.map });
+        Object.defineProperty(this, identity.SCALAR, { value: string4.string });
+        Object.defineProperty(this, identity.SEQ, { value: seq.seq });
+        this.sortMapEntries = typeof sortMapEntries === "function" ? sortMapEntries : sortMapEntries === true ? sortMapEntriesByKey : null;
+      }
+      clone() {
+        const copy = Object.create(_Schema.prototype, Object.getOwnPropertyDescriptors(this));
+        copy.tags = this.tags.slice();
+        return copy;
+      }
+    };
+    exports.Schema = Schema;
+  }
+});
+
+// node_modules/yaml/dist/stringify/stringifyDocument.js
+var require_stringifyDocument = __commonJS({
+  "node_modules/yaml/dist/stringify/stringifyDocument.js"(exports) {
+    "use strict";
+    var identity = require_identity();
+    var stringify = require_stringify();
+    var stringifyComment = require_stringifyComment();
+    function stringifyDocument(doc, options) {
+      const lines2 = [];
+      let hasDirectives = options.directives === true;
+      if (options.directives !== false && doc.directives) {
+        const dir = doc.directives.toString(doc);
+        if (dir) {
+          lines2.push(dir);
+          hasDirectives = true;
+        } else if (doc.directives.docStart)
+          hasDirectives = true;
+      }
+      if (hasDirectives)
+        lines2.push("---");
+      const ctx = stringify.createStringifyContext(doc, options);
+      const { commentString } = ctx.options;
+      if (doc.commentBefore) {
+        if (lines2.length !== 1)
+          lines2.unshift("");
+        const cs = commentString(doc.commentBefore);
+        lines2.unshift(stringifyComment.indentComment(cs, ""));
+      }
+      let chompKeep = false;
+      let contentComment = null;
+      if (doc.contents) {
+        if (identity.isNode(doc.contents)) {
+          if (doc.contents.spaceBefore && hasDirectives)
+            lines2.push("");
+          if (doc.contents.commentBefore) {
+            const cs = commentString(doc.contents.commentBefore);
+            lines2.push(stringifyComment.indentComment(cs, ""));
+          }
+          ctx.forceBlockIndent = !!doc.comment;
+          contentComment = doc.contents.comment;
+        }
+        const onChompKeep = contentComment ? void 0 : () => chompKeep = true;
+        let body = stringify.stringify(doc.contents, ctx, () => contentComment = null, onChompKeep);
+        if (contentComment)
+          body += stringifyComment.lineComment(body, "", commentString(contentComment));
+        if ((body[0] === "|" || body[0] === ">") && lines2[lines2.length - 1] === "---") {
+          lines2[lines2.length - 1] = `--- ${body}`;
+        } else
+          lines2.push(body);
+      } else {
+        lines2.push(stringify.stringify(doc.contents, ctx));
+      }
+      if (doc.directives?.docEnd) {
+        if (doc.comment) {
+          const cs = commentString(doc.comment);
+          if (cs.includes("\n")) {
+            lines2.push("...");
+            lines2.push(stringifyComment.indentComment(cs, ""));
+          } else {
+            lines2.push(`... ${cs}`);
+          }
+        } else {
+          lines2.push("...");
+        }
+      } else {
+        let dc = doc.comment;
+        if (dc && chompKeep)
+          dc = dc.replace(/^\n+/, "");
+        if (dc) {
+          if ((!chompKeep || contentComment) && lines2[lines2.length - 1] !== "")
+            lines2.push("");
+          lines2.push(stringifyComment.indentComment(commentString(dc), ""));
+        }
+      }
+      return lines2.join("\n") + "\n";
+    }
+    exports.stringifyDocument = stringifyDocument;
+  }
+});
+
+// node_modules/yaml/dist/doc/Document.js
+var require_Document = __commonJS({
+  "node_modules/yaml/dist/doc/Document.js"(exports) {
+    "use strict";
+    var Alias = require_Alias();
+    var Collection = require_Collection();
+    var identity = require_identity();
+    var Pair = require_Pair();
+    var toJS = require_toJS();
+    var Schema = require_Schema();
+    var stringifyDocument = require_stringifyDocument();
+    var anchors = require_anchors();
+    var applyReviver = require_applyReviver();
+    var createNode = require_createNode();
+    var directives = require_directives();
+    var Document = class _Document {
+      constructor(value, replacer, options) {
+        this.commentBefore = null;
+        this.comment = null;
+        this.errors = [];
+        this.warnings = [];
+        Object.defineProperty(this, identity.NODE_TYPE, { value: identity.DOC });
+        let _replacer = null;
+        if (typeof replacer === "function" || Array.isArray(replacer)) {
+          _replacer = replacer;
+        } else if (options === void 0 && replacer) {
+          options = replacer;
+          replacer = void 0;
+        }
+        const opt = Object.assign({
+          intAsBigInt: false,
+          keepSourceTokens: false,
+          logLevel: "warn",
+          prettyErrors: true,
+          strict: true,
+          stringKeys: false,
+          uniqueKeys: true,
+          version: "1.2"
+        }, options);
+        this.options = opt;
+        let { version: version2 } = opt;
+        if (options?._directives) {
+          this.directives = options._directives.atDocument();
+          if (this.directives.yaml.explicit)
+            version2 = this.directives.yaml.version;
+        } else
+          this.directives = new directives.Directives({ version: version2 });
+        this.setSchema(version2, options);
+        this.contents = value === void 0 ? null : this.createNode(value, _replacer, options);
+      }
+      /**
+       * Create a deep copy of this Document and its contents.
+       *
+       * Custom Node values that inherit from `Object` still refer to their original instances.
+       */
+      clone() {
+        const copy = Object.create(_Document.prototype, {
+          [identity.NODE_TYPE]: { value: identity.DOC }
+        });
+        copy.commentBefore = this.commentBefore;
+        copy.comment = this.comment;
+        copy.errors = this.errors.slice();
+        copy.warnings = this.warnings.slice();
+        copy.options = Object.assign({}, this.options);
+        if (this.directives)
+          copy.directives = this.directives.clone();
+        copy.schema = this.schema.clone();
+        copy.contents = identity.isNode(this.contents) ? this.contents.clone(copy.schema) : this.contents;
+        if (this.range)
+          copy.range = this.range.slice();
+        return copy;
+      }
+      /** Adds a value to the document. */
+      add(value) {
+        if (assertCollection(this.contents))
+          this.contents.add(value);
+      }
+      /** Adds a value to the document. */
+      addIn(path, value) {
+        if (assertCollection(this.contents))
+          this.contents.addIn(path, value);
+      }
+      /**
+       * Create a new `Alias` node, ensuring that the target `node` has the required anchor.
+       *
+       * If `node` already has an anchor, `name` is ignored.
+       * Otherwise, the `node.anchor` value will be set to `name`,
+       * or if an anchor with that name is already present in the document,
+       * `name` will be used as a prefix for a new unique anchor.
+       * If `name` is undefined, the generated anchor will use 'a' as a prefix.
+       */
+      createAlias(node2, name) {
+        if (!node2.anchor) {
+          const prev = anchors.anchorNames(this);
+          node2.anchor = // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+          !name || prev.has(name) ? anchors.findNewAnchor(name || "a", prev) : name;
+        }
+        return new Alias.Alias(node2.anchor);
+      }
+      createNode(value, replacer, options) {
+        let _replacer = void 0;
+        if (typeof replacer === "function") {
+          value = replacer.call({ "": value }, "", value);
+          _replacer = replacer;
+        } else if (Array.isArray(replacer)) {
+          const keyToStr = (v) => typeof v === "number" || v instanceof String || v instanceof Number;
+          const asStr = replacer.filter(keyToStr).map(String);
+          if (asStr.length > 0)
+            replacer = replacer.concat(asStr);
+          _replacer = replacer;
+        } else if (options === void 0 && replacer) {
+          options = replacer;
+          replacer = void 0;
+        }
+        const { aliasDuplicateObjects, anchorPrefix, flow, keepUndefined, onTagObj, tag } = options ?? {};
+        const { onAnchor, setAnchors, sourceObjects } = anchors.createNodeAnchors(
+          this,
+          // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+          anchorPrefix || "a"
+        );
+        const ctx = {
+          aliasDuplicateObjects: aliasDuplicateObjects ?? true,
+          keepUndefined: keepUndefined ?? false,
+          onAnchor,
+          onTagObj,
+          replacer: _replacer,
+          schema: this.schema,
+          sourceObjects
+        };
+        const node2 = createNode.createNode(value, tag, ctx);
+        if (flow && identity.isCollection(node2))
+          node2.flow = true;
+        setAnchors();
+        return node2;
+      }
+      /**
+       * Convert a key and a value into a `Pair` using the current schema,
+       * recursively wrapping all values as `Scalar` or `Collection` nodes.
+       */
+      createPair(key, value, options = {}) {
+        const k = this.createNode(key, null, options);
+        const v = this.createNode(value, null, options);
+        return new Pair.Pair(k, v);
+      }
+      /**
+       * Removes a value from the document.
+       * @returns `true` if the item was found and removed.
+       */
+      delete(key) {
+        return assertCollection(this.contents) ? this.contents.delete(key) : false;
+      }
+      /**
+       * Removes a value from the document.
+       * @returns `true` if the item was found and removed.
+       */
+      deleteIn(path) {
+        if (Collection.isEmptyPath(path)) {
+          if (this.contents == null)
+            return false;
+          this.contents = null;
+          return true;
+        }
+        return assertCollection(this.contents) ? this.contents.deleteIn(path) : false;
+      }
+      /**
+       * Returns item at `key`, or `undefined` if not found. By default unwraps
+       * scalar values from their surrounding node; to disable set `keepScalar` to
+       * `true` (collections are always returned intact).
+       */
+      get(key, keepScalar) {
+        return identity.isCollection(this.contents) ? this.contents.get(key, keepScalar) : void 0;
+      }
+      /**
+       * Returns item at `path`, or `undefined` if not found. By default unwraps
+       * scalar values from their surrounding node; to disable set `keepScalar` to
+       * `true` (collections are always returned intact).
+       */
+      getIn(path, keepScalar) {
+        if (Collection.isEmptyPath(path))
+          return !keepScalar && identity.isScalar(this.contents) ? this.contents.value : this.contents;
+        return identity.isCollection(this.contents) ? this.contents.getIn(path, keepScalar) : void 0;
+      }
+      /**
+       * Checks if the document includes a value with the key `key`.
+       */
+      has(key) {
+        return identity.isCollection(this.contents) ? this.contents.has(key) : false;
+      }
+      /**
+       * Checks if the document includes a value at `path`.
+       */
+      hasIn(path) {
+        if (Collection.isEmptyPath(path))
+          return this.contents !== void 0;
+        return identity.isCollection(this.contents) ? this.contents.hasIn(path) : false;
+      }
+      /**
+       * Sets a value in this document. For `!!set`, `value` needs to be a
+       * boolean to add/remove the item from the set.
+       */
+      set(key, value) {
+        if (this.contents == null) {
+          this.contents = Collection.collectionFromPath(this.schema, [key], value);
+        } else if (assertCollection(this.contents)) {
+          this.contents.set(key, value);
+        }
+      }
+      /**
+       * Sets a value in this document. For `!!set`, `value` needs to be a
+       * boolean to add/remove the item from the set.
+       */
+      setIn(path, value) {
+        if (Collection.isEmptyPath(path)) {
+          this.contents = value;
+        } else if (this.contents == null) {
+          this.contents = Collection.collectionFromPath(this.schema, Array.from(path), value);
+        } else if (assertCollection(this.contents)) {
+          this.contents.setIn(path, value);
+        }
+      }
+      /**
+       * Change the YAML version and schema used by the document.
+       * A `null` version disables support for directives, explicit tags, anchors, and aliases.
+       * It also requires the `schema` option to be given as a `Schema` instance value.
+       *
+       * Overrides all previously set schema options.
+       */
+      setSchema(version2, options = {}) {
+        if (typeof version2 === "number")
+          version2 = String(version2);
+        let opt;
+        switch (version2) {
+          case "1.1":
+            if (this.directives)
+              this.directives.yaml.version = "1.1";
+            else
+              this.directives = new directives.Directives({ version: "1.1" });
+            opt = { resolveKnownTags: false, schema: "yaml-1.1" };
+            break;
+          case "1.2":
+          case "next":
+            if (this.directives)
+              this.directives.yaml.version = version2;
+            else
+              this.directives = new directives.Directives({ version: version2 });
+            opt = { resolveKnownTags: true, schema: "core" };
+            break;
+          case null:
+            if (this.directives)
+              delete this.directives;
+            opt = null;
+            break;
+          default: {
+            const sv = JSON.stringify(version2);
+            throw new Error(`Expected '1.1', '1.2' or null as first argument, but found: ${sv}`);
+          }
+        }
+        if (options.schema instanceof Object)
+          this.schema = options.schema;
+        else if (opt)
+          this.schema = new Schema.Schema(Object.assign(opt, options));
+        else
+          throw new Error(`With a null YAML version, the { schema: Schema } option is required`);
+      }
+      // json & jsonArg are only used from toJSON()
+      toJS({ json: json3, jsonArg, mapAsMap, maxAliasCount, onAnchor, reviver } = {}) {
+        const ctx = {
+          anchors: /* @__PURE__ */ new Map(),
+          doc: this,
+          keep: !json3,
+          mapAsMap: mapAsMap === true,
+          mapKeyWarned: false,
+          maxAliasCount: typeof maxAliasCount === "number" ? maxAliasCount : 100
+        };
+        const res = toJS.toJS(this.contents, jsonArg ?? "", ctx);
+        if (typeof onAnchor === "function")
+          for (const { count: count2, res: res2 } of ctx.anchors.values())
+            onAnchor(res2, count2);
+        return typeof reviver === "function" ? applyReviver.applyReviver(reviver, { "": res }, "", res) : res;
+      }
+      /**
+       * A JSON representation of the document `contents`.
+       *
+       * @param jsonArg Used by `JSON.stringify` to indicate the array index or
+       *   property name.
+       */
+      toJSON(jsonArg, onAnchor) {
+        return this.toJS({ json: true, jsonArg, mapAsMap: false, onAnchor });
+      }
+      /** A YAML representation of the document. */
+      toString(options = {}) {
+        if (this.errors.length > 0)
+          throw new Error("Document with errors cannot be stringified");
+        if ("indent" in options && (!Number.isInteger(options.indent) || Number(options.indent) <= 0)) {
+          const s = JSON.stringify(options.indent);
+          throw new Error(`"indent" option must be a positive integer, not ${s}`);
+        }
+        return stringifyDocument.stringifyDocument(this, options);
+      }
+    };
+    function assertCollection(contents) {
+      if (identity.isCollection(contents))
+        return true;
+      throw new Error("Expected a YAML collection as document contents");
+    }
+    exports.Document = Document;
+  }
+});
+
+// node_modules/yaml/dist/errors.js
+var require_errors = __commonJS({
+  "node_modules/yaml/dist/errors.js"(exports) {
+    "use strict";
+    var YAMLError = class extends Error {
+      constructor(name, pos, code2, message) {
+        super();
+        this.name = name;
+        this.code = code2;
+        this.message = message;
+        this.pos = pos;
+      }
+    };
+    var YAMLParseError = class extends YAMLError {
+      constructor(pos, code2, message) {
+        super("YAMLParseError", pos, code2, message);
+      }
+    };
+    var YAMLWarning = class extends YAMLError {
+      constructor(pos, code2, message) {
+        super("YAMLWarning", pos, code2, message);
+      }
+    };
+    var prettifyError2 = (src, lc) => (error62) => {
+      if (error62.pos[0] === -1)
+        return;
+      error62.linePos = error62.pos.map((pos) => lc.linePos(pos));
+      const { line, col } = error62.linePos[0];
+      error62.message += ` at line ${line}, column ${col}`;
+      let ci = col - 1;
+      let lineStr = src.substring(lc.lineStarts[line - 1], lc.lineStarts[line]).replace(/[\n\r]+$/, "");
+      if (ci >= 60 && lineStr.length > 80) {
+        const trimStart = Math.min(ci - 39, lineStr.length - 79);
+        lineStr = "\u2026" + lineStr.substring(trimStart);
+        ci -= trimStart - 1;
+      }
+      if (lineStr.length > 80)
+        lineStr = lineStr.substring(0, 79) + "\u2026";
+      if (line > 1 && /^ *$/.test(lineStr.substring(0, ci))) {
+        let prev = src.substring(lc.lineStarts[line - 2], lc.lineStarts[line - 1]);
+        if (prev.length > 80)
+          prev = prev.substring(0, 79) + "\u2026\n";
+        lineStr = prev + lineStr;
+      }
+      if (/[^ ]/.test(lineStr)) {
+        let count2 = 1;
+        const end = error62.linePos[1];
+        if (end?.line === line && end.col > col) {
+          count2 = Math.max(1, Math.min(end.col - col, 80 - ci));
+        }
+        const pointer = " ".repeat(ci) + "^".repeat(count2);
+        error62.message += `:
+
+${lineStr}
+${pointer}
+`;
+      }
+    };
+    exports.YAMLError = YAMLError;
+    exports.YAMLParseError = YAMLParseError;
+    exports.YAMLWarning = YAMLWarning;
+    exports.prettifyError = prettifyError2;
+  }
+});
+
+// node_modules/yaml/dist/compose/resolve-props.js
+var require_resolve_props = __commonJS({
+  "node_modules/yaml/dist/compose/resolve-props.js"(exports) {
+    "use strict";
+    function resolveProps(tokens, { flow, indicator, next, offset, onError, parentIndent, startOnNewline }) {
+      let spaceBefore = false;
+      let atNewline = startOnNewline;
+      let hasSpace = startOnNewline;
+      let comment = "";
+      let commentSep = "";
+      let hasNewline = false;
+      let reqSpace = false;
+      let tab = null;
+      let anchor2 = null;
+      let tag = null;
+      let newlineAfterProp = null;
+      let comma = null;
+      let found = null;
+      let start = null;
+      for (const token of tokens) {
+        if (reqSpace) {
+          if (token.type !== "space" && token.type !== "newline" && token.type !== "comma")
+            onError(token.offset, "MISSING_CHAR", "Tags and anchors must be separated from the next token by white space");
+          reqSpace = false;
+        }
+        if (tab) {
+          if (atNewline && token.type !== "comment" && token.type !== "newline") {
+            onError(tab, "TAB_AS_INDENT", "Tabs are not allowed as indentation");
+          }
+          tab = null;
+        }
+        switch (token.type) {
+          case "space":
+            if (!flow && (indicator !== "doc-start" || next?.type !== "flow-collection") && token.source.includes("	")) {
+              tab = token;
+            }
+            hasSpace = true;
+            break;
+          case "comment": {
+            if (!hasSpace)
+              onError(token, "MISSING_CHAR", "Comments must be separated from other tokens by white space characters");
+            const cb = token.source.substring(1) || " ";
+            if (!comment)
+              comment = cb;
+            else
+              comment += commentSep + cb;
+            commentSep = "";
+            atNewline = false;
+            break;
+          }
+          case "newline":
+            if (atNewline) {
+              if (comment)
+                comment += token.source;
+              else if (!found || indicator !== "seq-item-ind")
+                spaceBefore = true;
+            } else
+              commentSep += token.source;
+            atNewline = true;
+            hasNewline = true;
+            if (anchor2 || tag)
+              newlineAfterProp = token;
+            hasSpace = true;
+            break;
+          case "anchor":
+            if (anchor2)
+              onError(token, "MULTIPLE_ANCHORS", "A node can have at most one anchor");
+            if (token.source.endsWith(":"))
+              onError(token.offset + token.source.length - 1, "BAD_ALIAS", "Anchor ending in : is ambiguous", true);
+            anchor2 = token;
+            start ?? (start = token.offset);
+            atNewline = false;
+            hasSpace = false;
+            reqSpace = true;
+            break;
+          case "tag": {
+            if (tag)
+              onError(token, "MULTIPLE_TAGS", "A node can have at most one tag");
+            tag = token;
+            start ?? (start = token.offset);
+            atNewline = false;
+            hasSpace = false;
+            reqSpace = true;
+            break;
+          }
+          case indicator:
+            if (anchor2 || tag)
+              onError(token, "BAD_PROP_ORDER", `Anchors and tags must be after the ${token.source} indicator`);
+            if (found)
+              onError(token, "UNEXPECTED_TOKEN", `Unexpected ${token.source} in ${flow ?? "collection"}`);
+            found = token;
+            atNewline = indicator === "seq-item-ind" || indicator === "explicit-key-ind";
+            hasSpace = false;
+            break;
+          case "comma":
+            if (flow) {
+              if (comma)
+                onError(token, "UNEXPECTED_TOKEN", `Unexpected , in ${flow}`);
+              comma = token;
+              atNewline = false;
+              hasSpace = false;
+              break;
+            }
+          // else fallthrough
+          default:
+            onError(token, "UNEXPECTED_TOKEN", `Unexpected ${token.type} token`);
+            atNewline = false;
+            hasSpace = false;
+        }
+      }
+      const last = tokens[tokens.length - 1];
+      const end = last ? last.offset + last.source.length : offset;
+      if (reqSpace && next && next.type !== "space" && next.type !== "newline" && next.type !== "comma" && (next.type !== "scalar" || next.source !== "")) {
+        onError(next.offset, "MISSING_CHAR", "Tags and anchors must be separated from the next token by white space");
+      }
+      if (tab && (atNewline && tab.indent <= parentIndent || next?.type === "block-map" || next?.type === "block-seq"))
+        onError(tab, "TAB_AS_INDENT", "Tabs are not allowed as indentation");
+      return {
+        comma,
+        found,
+        spaceBefore,
+        comment,
+        hasNewline,
+        anchor: anchor2,
+        tag,
+        newlineAfterProp,
+        end,
+        start: start ?? end
+      };
+    }
+    exports.resolveProps = resolveProps;
+  }
+});
+
+// node_modules/yaml/dist/compose/util-contains-newline.js
+var require_util_contains_newline = __commonJS({
+  "node_modules/yaml/dist/compose/util-contains-newline.js"(exports) {
+    "use strict";
+    function containsNewline(key) {
+      if (!key)
+        return null;
+      switch (key.type) {
+        case "alias":
+        case "scalar":
+        case "double-quoted-scalar":
+        case "single-quoted-scalar":
+          if (key.source.includes("\n"))
+            return true;
+          if (key.end) {
+            for (const st of key.end)
+              if (st.type === "newline")
+                return true;
+          }
+          return false;
+        case "flow-collection":
+          for (const it of key.items) {
+            for (const st of it.start)
+              if (st.type === "newline")
+                return true;
+            if (it.sep) {
+              for (const st of it.sep)
+                if (st.type === "newline")
+                  return true;
+            }
+            if (containsNewline(it.key) || containsNewline(it.value))
+              return true;
+          }
+          return false;
+        default:
+          return true;
+      }
+    }
+    exports.containsNewline = containsNewline;
+  }
+});
+
+// node_modules/yaml/dist/compose/util-flow-indent-check.js
+var require_util_flow_indent_check = __commonJS({
+  "node_modules/yaml/dist/compose/util-flow-indent-check.js"(exports) {
+    "use strict";
+    var utilContainsNewline = require_util_contains_newline();
+    function flowIndentCheck(indent, fc, onError) {
+      if (fc?.type === "flow-collection") {
+        const end = fc.end[0];
+        if (end.indent === indent && (end.source === "]" || end.source === "}") && utilContainsNewline.containsNewline(fc)) {
+          const msg = "Flow end indicator should be more indented than parent";
+          onError(end, "BAD_INDENT", msg, true);
+        }
+      }
+    }
+    exports.flowIndentCheck = flowIndentCheck;
+  }
+});
+
+// node_modules/yaml/dist/compose/util-map-includes.js
+var require_util_map_includes = __commonJS({
+  "node_modules/yaml/dist/compose/util-map-includes.js"(exports) {
+    "use strict";
+    var identity = require_identity();
+    function mapIncludes(ctx, items, search) {
+      const { uniqueKeys } = ctx.options;
+      if (uniqueKeys === false)
+        return false;
+      const isEqual = typeof uniqueKeys === "function" ? uniqueKeys : (a, b) => a === b || identity.isScalar(a) && identity.isScalar(b) && a.value === b.value;
+      return items.some((pair) => isEqual(pair.key, search));
+    }
+    exports.mapIncludes = mapIncludes;
+  }
+});
+
+// node_modules/yaml/dist/compose/resolve-block-map.js
+var require_resolve_block_map = __commonJS({
+  "node_modules/yaml/dist/compose/resolve-block-map.js"(exports) {
+    "use strict";
+    var Pair = require_Pair();
+    var YAMLMap = require_YAMLMap();
+    var resolveProps = require_resolve_props();
+    var utilContainsNewline = require_util_contains_newline();
+    var utilFlowIndentCheck = require_util_flow_indent_check();
+    var utilMapIncludes = require_util_map_includes();
+    var startColMsg = "All mapping items must start at the same column";
+    function resolveBlockMap({ composeNode, composeEmptyNode }, ctx, bm, onError, tag) {
+      const NodeClass = tag?.nodeClass ?? YAMLMap.YAMLMap;
+      const map2 = new NodeClass(ctx.schema);
+      if (ctx.atRoot)
+        ctx.atRoot = false;
+      let offset = bm.offset;
+      let commentEnd = null;
+      for (const collItem of bm.items) {
+        const { start, key, sep: sep2, value } = collItem;
+        const keyProps = resolveProps.resolveProps(start, {
+          indicator: "explicit-key-ind",
+          next: key ?? sep2?.[0],
+          offset,
+          onError,
+          parentIndent: bm.indent,
+          startOnNewline: true
+        });
+        const implicitKey = !keyProps.found;
+        if (implicitKey) {
+          if (key) {
+            if (key.type === "block-seq")
+              onError(offset, "BLOCK_AS_IMPLICIT_KEY", "A block sequence may not be used as an implicit map key");
+            else if ("indent" in key && key.indent !== bm.indent)
+              onError(offset, "BAD_INDENT", startColMsg);
+          }
+          if (!keyProps.anchor && !keyProps.tag && !sep2) {
+            commentEnd = keyProps.end;
+            if (keyProps.comment) {
+              if (map2.comment)
+                map2.comment += "\n" + keyProps.comment;
+              else
+                map2.comment = keyProps.comment;
+            }
+            continue;
+          }
+          if (keyProps.newlineAfterProp || utilContainsNewline.containsNewline(key)) {
+            onError(key ?? start[start.length - 1], "MULTILINE_IMPLICIT_KEY", "Implicit keys need to be on a single line");
+          }
+        } else if (keyProps.found?.indent !== bm.indent) {
+          onError(offset, "BAD_INDENT", startColMsg);
+        }
+        ctx.atKey = true;
+        const keyStart = keyProps.end;
+        const keyNode = key ? composeNode(ctx, key, keyProps, onError) : composeEmptyNode(ctx, keyStart, start, null, keyProps, onError);
+        if (ctx.schema.compat)
+          utilFlowIndentCheck.flowIndentCheck(bm.indent, key, onError);
+        ctx.atKey = false;
+        if (utilMapIncludes.mapIncludes(ctx, map2.items, keyNode))
+          onError(keyStart, "DUPLICATE_KEY", "Map keys must be unique");
+        const valueProps = resolveProps.resolveProps(sep2 ?? [], {
+          indicator: "map-value-ind",
+          next: value,
+          offset: keyNode.range[2],
+          onError,
+          parentIndent: bm.indent,
+          startOnNewline: !key || key.type === "block-scalar"
+        });
+        offset = valueProps.end;
+        if (valueProps.found) {
+          if (implicitKey) {
+            if (value?.type === "block-map" && !valueProps.hasNewline)
+              onError(offset, "BLOCK_AS_IMPLICIT_KEY", "Nested mappings are not allowed in compact mappings");
+            if (ctx.options.strict && keyProps.start < valueProps.found.offset - 1024)
+              onError(keyNode.range, "KEY_OVER_1024_CHARS", "The : indicator must be at most 1024 chars after the start of an implicit block mapping key");
+          }
+          const valueNode = value ? composeNode(ctx, value, valueProps, onError) : composeEmptyNode(ctx, offset, sep2, null, valueProps, onError);
+          if (ctx.schema.compat)
+            utilFlowIndentCheck.flowIndentCheck(bm.indent, value, onError);
+          offset = valueNode.range[2];
+          const pair = new Pair.Pair(keyNode, valueNode);
+          if (ctx.options.keepSourceTokens)
+            pair.srcToken = collItem;
+          map2.items.push(pair);
+        } else {
+          if (implicitKey)
+            onError(keyNode.range, "MISSING_CHAR", "Implicit map keys need to be followed by map values");
+          if (valueProps.comment) {
+            if (keyNode.comment)
+              keyNode.comment += "\n" + valueProps.comment;
+            else
+              keyNode.comment = valueProps.comment;
+          }
+          const pair = new Pair.Pair(keyNode);
+          if (ctx.options.keepSourceTokens)
+            pair.srcToken = collItem;
+          map2.items.push(pair);
+        }
+      }
+      if (commentEnd && commentEnd < offset)
+        onError(commentEnd, "IMPOSSIBLE", "Map comment with trailing content");
+      map2.range = [bm.offset, offset, commentEnd ?? offset];
+      return map2;
+    }
+    exports.resolveBlockMap = resolveBlockMap;
+  }
+});
+
+// node_modules/yaml/dist/compose/resolve-block-seq.js
+var require_resolve_block_seq = __commonJS({
+  "node_modules/yaml/dist/compose/resolve-block-seq.js"(exports) {
+    "use strict";
+    var YAMLSeq = require_YAMLSeq();
+    var resolveProps = require_resolve_props();
+    var utilFlowIndentCheck = require_util_flow_indent_check();
+    function resolveBlockSeq({ composeNode, composeEmptyNode }, ctx, bs, onError, tag) {
+      const NodeClass = tag?.nodeClass ?? YAMLSeq.YAMLSeq;
+      const seq = new NodeClass(ctx.schema);
+      if (ctx.atRoot)
+        ctx.atRoot = false;
+      if (ctx.atKey)
+        ctx.atKey = false;
+      let offset = bs.offset;
+      let commentEnd = null;
+      for (const { start, value } of bs.items) {
+        const props = resolveProps.resolveProps(start, {
+          indicator: "seq-item-ind",
+          next: value,
+          offset,
+          onError,
+          parentIndent: bs.indent,
+          startOnNewline: true
+        });
+        if (!props.found) {
+          if (props.anchor || props.tag || value) {
+            if (value?.type === "block-seq")
+              onError(props.end, "BAD_INDENT", "All sequence items must start at the same column");
+            else
+              onError(offset, "MISSING_CHAR", "Sequence item without - indicator");
+          } else {
+            commentEnd = props.end;
+            if (props.comment)
+              seq.comment = props.comment;
+            continue;
+          }
+        }
+        const node2 = value ? composeNode(ctx, value, props, onError) : composeEmptyNode(ctx, props.end, start, null, props, onError);
+        if (ctx.schema.compat)
+          utilFlowIndentCheck.flowIndentCheck(bs.indent, value, onError);
+        offset = node2.range[2];
+        seq.items.push(node2);
+      }
+      seq.range = [bs.offset, offset, commentEnd ?? offset];
+      return seq;
+    }
+    exports.resolveBlockSeq = resolveBlockSeq;
+  }
+});
+
+// node_modules/yaml/dist/compose/resolve-end.js
+var require_resolve_end = __commonJS({
+  "node_modules/yaml/dist/compose/resolve-end.js"(exports) {
+    "use strict";
+    function resolveEnd(end, offset, reqSpace, onError) {
+      let comment = "";
+      if (end) {
+        let hasSpace = false;
+        let sep2 = "";
+        for (const token of end) {
+          const { source, type } = token;
+          switch (type) {
+            case "space":
+              hasSpace = true;
+              break;
+            case "comment": {
+              if (reqSpace && !hasSpace)
+                onError(token, "MISSING_CHAR", "Comments must be separated from other tokens by white space characters");
+              const cb = source.substring(1) || " ";
+              if (!comment)
+                comment = cb;
+              else
+                comment += sep2 + cb;
+              sep2 = "";
+              break;
+            }
+            case "newline":
+              if (comment)
+                sep2 += source;
+              hasSpace = true;
+              break;
+            default:
+              onError(token, "UNEXPECTED_TOKEN", `Unexpected ${type} at node end`);
+          }
+          offset += source.length;
+        }
+      }
+      return { comment, offset };
+    }
+    exports.resolveEnd = resolveEnd;
+  }
+});
+
+// node_modules/yaml/dist/compose/resolve-flow-collection.js
+var require_resolve_flow_collection = __commonJS({
+  "node_modules/yaml/dist/compose/resolve-flow-collection.js"(exports) {
+    "use strict";
+    var identity = require_identity();
+    var Pair = require_Pair();
+    var YAMLMap = require_YAMLMap();
+    var YAMLSeq = require_YAMLSeq();
+    var resolveEnd = require_resolve_end();
+    var resolveProps = require_resolve_props();
+    var utilContainsNewline = require_util_contains_newline();
+    var utilMapIncludes = require_util_map_includes();
+    var blockMsg = "Block collections are not allowed within flow collections";
+    var isBlock = (token) => token && (token.type === "block-map" || token.type === "block-seq");
+    function resolveFlowCollection({ composeNode, composeEmptyNode }, ctx, fc, onError, tag) {
+      const isMap = fc.start.source === "{";
+      const fcName = isMap ? "flow map" : "flow sequence";
+      const NodeClass = tag?.nodeClass ?? (isMap ? YAMLMap.YAMLMap : YAMLSeq.YAMLSeq);
+      const coll = new NodeClass(ctx.schema);
+      coll.flow = true;
+      const atRoot = ctx.atRoot;
+      if (atRoot)
+        ctx.atRoot = false;
+      if (ctx.atKey)
+        ctx.atKey = false;
+      let offset = fc.offset + fc.start.source.length;
+      for (let i = 0; i < fc.items.length; ++i) {
+        const collItem = fc.items[i];
+        const { start, key, sep: sep2, value } = collItem;
+        const props = resolveProps.resolveProps(start, {
+          flow: fcName,
+          indicator: "explicit-key-ind",
+          next: key ?? sep2?.[0],
+          offset,
+          onError,
+          parentIndent: fc.indent,
+          startOnNewline: false
+        });
+        if (!props.found) {
+          if (!props.anchor && !props.tag && !sep2 && !value) {
+            if (i === 0 && props.comma)
+              onError(props.comma, "UNEXPECTED_TOKEN", `Unexpected , in ${fcName}`);
+            else if (i < fc.items.length - 1)
+              onError(props.start, "UNEXPECTED_TOKEN", `Unexpected empty item in ${fcName}`);
+            if (props.comment) {
+              if (coll.comment)
+                coll.comment += "\n" + props.comment;
+              else
+                coll.comment = props.comment;
+            }
+            offset = props.end;
+            continue;
+          }
+          if (!isMap && ctx.options.strict && utilContainsNewline.containsNewline(key))
+            onError(
+              key,
+              // checked by containsNewline()
+              "MULTILINE_IMPLICIT_KEY",
+              "Implicit keys of flow sequence pairs need to be on a single line"
+            );
+        }
+        if (i === 0) {
+          if (props.comma)
+            onError(props.comma, "UNEXPECTED_TOKEN", `Unexpected , in ${fcName}`);
+        } else {
+          if (!props.comma)
+            onError(props.start, "MISSING_CHAR", `Missing , between ${fcName} items`);
+          if (props.comment) {
+            let prevItemComment = "";
+            loop: for (const st of start) {
+              switch (st.type) {
+                case "comma":
+                case "space":
+                  break;
+                case "comment":
+                  prevItemComment = st.source.substring(1);
+                  break loop;
+                default:
+                  break loop;
+              }
+            }
+            if (prevItemComment) {
+              let prev = coll.items[coll.items.length - 1];
+              if (identity.isPair(prev))
+                prev = prev.value ?? prev.key;
+              if (prev.comment)
+                prev.comment += "\n" + prevItemComment;
+              else
+                prev.comment = prevItemComment;
+              props.comment = props.comment.substring(prevItemComment.length + 1);
+            }
+          }
+        }
+        if (!isMap && !sep2 && !props.found) {
+          const valueNode = value ? composeNode(ctx, value, props, onError) : composeEmptyNode(ctx, props.end, sep2, null, props, onError);
+          coll.items.push(valueNode);
+          offset = valueNode.range[2];
+          if (isBlock(value))
+            onError(valueNode.range, "BLOCK_IN_FLOW", blockMsg);
+        } else {
+          ctx.atKey = true;
+          const keyStart = props.end;
+          const keyNode = key ? composeNode(ctx, key, props, onError) : composeEmptyNode(ctx, keyStart, start, null, props, onError);
+          if (isBlock(key))
+            onError(keyNode.range, "BLOCK_IN_FLOW", blockMsg);
+          ctx.atKey = false;
+          const valueProps = resolveProps.resolveProps(sep2 ?? [], {
+            flow: fcName,
+            indicator: "map-value-ind",
+            next: value,
+            offset: keyNode.range[2],
+            onError,
+            parentIndent: fc.indent,
+            startOnNewline: false
+          });
+          if (valueProps.found) {
+            if (!isMap && !props.found && ctx.options.strict) {
+              if (sep2)
+                for (const st of sep2) {
+                  if (st === valueProps.found)
+                    break;
+                  if (st.type === "newline") {
+                    onError(st, "MULTILINE_IMPLICIT_KEY", "Implicit keys of flow sequence pairs need to be on a single line");
+                    break;
+                  }
+                }
+              if (props.start < valueProps.found.offset - 1024)
+                onError(valueProps.found, "KEY_OVER_1024_CHARS", "The : indicator must be at most 1024 chars after the start of an implicit flow sequence key");
+            }
+          } else if (value) {
+            if ("source" in value && value.source?.[0] === ":")
+              onError(value, "MISSING_CHAR", `Missing space after : in ${fcName}`);
+            else
+              onError(valueProps.start, "MISSING_CHAR", `Missing , or : between ${fcName} items`);
+          }
+          const valueNode = value ? composeNode(ctx, value, valueProps, onError) : valueProps.found ? composeEmptyNode(ctx, valueProps.end, sep2, null, valueProps, onError) : null;
+          if (valueNode) {
+            if (isBlock(value))
+              onError(valueNode.range, "BLOCK_IN_FLOW", blockMsg);
+          } else if (valueProps.comment) {
+            if (keyNode.comment)
+              keyNode.comment += "\n" + valueProps.comment;
+            else
+              keyNode.comment = valueProps.comment;
+          }
+          const pair = new Pair.Pair(keyNode, valueNode);
+          if (ctx.options.keepSourceTokens)
+            pair.srcToken = collItem;
+          if (isMap) {
+            const map2 = coll;
+            if (utilMapIncludes.mapIncludes(ctx, map2.items, keyNode))
+              onError(keyStart, "DUPLICATE_KEY", "Map keys must be unique");
+            map2.items.push(pair);
+          } else {
+            const map2 = new YAMLMap.YAMLMap(ctx.schema);
+            map2.flow = true;
+            map2.items.push(pair);
+            const endRange = (valueNode ?? keyNode).range;
+            map2.range = [keyNode.range[0], endRange[1], endRange[2]];
+            coll.items.push(map2);
+          }
+          offset = valueNode ? valueNode.range[2] : valueProps.end;
+        }
+      }
+      const expectedEnd = isMap ? "}" : "]";
+      const [ce, ...ee] = fc.end;
+      let cePos = offset;
+      if (ce?.source === expectedEnd)
+        cePos = ce.offset + ce.source.length;
+      else {
+        const name = fcName[0].toUpperCase() + fcName.substring(1);
+        const msg = atRoot ? `${name} must end with a ${expectedEnd}` : `${name} in block collection must be sufficiently indented and end with a ${expectedEnd}`;
+        onError(offset, atRoot ? "MISSING_CHAR" : "BAD_INDENT", msg);
+        if (ce && ce.source.length !== 1)
+          ee.unshift(ce);
+      }
+      if (ee.length > 0) {
+        const end = resolveEnd.resolveEnd(ee, cePos, ctx.options.strict, onError);
+        if (end.comment) {
+          if (coll.comment)
+            coll.comment += "\n" + end.comment;
+          else
+            coll.comment = end.comment;
+        }
+        coll.range = [fc.offset, cePos, end.offset];
+      } else {
+        coll.range = [fc.offset, cePos, cePos];
+      }
+      return coll;
+    }
+    exports.resolveFlowCollection = resolveFlowCollection;
+  }
+});
+
+// node_modules/yaml/dist/compose/compose-collection.js
+var require_compose_collection = __commonJS({
+  "node_modules/yaml/dist/compose/compose-collection.js"(exports) {
+    "use strict";
+    var identity = require_identity();
+    var Scalar = require_Scalar();
+    var YAMLMap = require_YAMLMap();
+    var YAMLSeq = require_YAMLSeq();
+    var resolveBlockMap = require_resolve_block_map();
+    var resolveBlockSeq = require_resolve_block_seq();
+    var resolveFlowCollection = require_resolve_flow_collection();
+    function resolveCollection(CN, ctx, token, onError, tagName, tag) {
+      const coll = token.type === "block-map" ? resolveBlockMap.resolveBlockMap(CN, ctx, token, onError, tag) : token.type === "block-seq" ? resolveBlockSeq.resolveBlockSeq(CN, ctx, token, onError, tag) : resolveFlowCollection.resolveFlowCollection(CN, ctx, token, onError, tag);
+      const Coll = coll.constructor;
+      if (tagName === "!" || tagName === Coll.tagName) {
+        coll.tag = Coll.tagName;
+        return coll;
+      }
+      if (tagName)
+        coll.tag = tagName;
+      return coll;
+    }
+    function composeCollection(CN, ctx, token, props, onError) {
+      const tagToken = props.tag;
+      const tagName = !tagToken ? null : ctx.directives.tagName(tagToken.source, (msg) => onError(tagToken, "TAG_RESOLVE_FAILED", msg));
+      if (token.type === "block-seq") {
+        const { anchor: anchor2, newlineAfterProp: nl } = props;
+        const lastProp = anchor2 && tagToken ? anchor2.offset > tagToken.offset ? anchor2 : tagToken : anchor2 ?? tagToken;
+        if (lastProp && (!nl || nl.offset < lastProp.offset)) {
+          const message = "Missing newline after block sequence props";
+          onError(lastProp, "MISSING_CHAR", message);
+        }
+      }
+      const expType = token.type === "block-map" ? "map" : token.type === "block-seq" ? "seq" : token.start.source === "{" ? "map" : "seq";
+      if (!tagToken || !tagName || tagName === "!" || tagName === YAMLMap.YAMLMap.tagName && expType === "map" || tagName === YAMLSeq.YAMLSeq.tagName && expType === "seq") {
+        return resolveCollection(CN, ctx, token, onError, tagName);
+      }
+      let tag = ctx.schema.tags.find((t2) => t2.tag === tagName && t2.collection === expType);
+      if (!tag) {
+        const kt = ctx.schema.knownTags[tagName];
+        if (kt?.collection === expType) {
+          ctx.schema.tags.push(Object.assign({}, kt, { default: false }));
+          tag = kt;
+        } else {
+          if (kt) {
+            onError(tagToken, "BAD_COLLECTION_TYPE", `${kt.tag} used for ${expType} collection, but expects ${kt.collection ?? "scalar"}`, true);
+          } else {
+            onError(tagToken, "TAG_RESOLVE_FAILED", `Unresolved tag: ${tagName}`, true);
+          }
+          return resolveCollection(CN, ctx, token, onError, tagName);
+        }
+      }
+      const coll = resolveCollection(CN, ctx, token, onError, tagName, tag);
+      const res = tag.resolve?.(coll, (msg) => onError(tagToken, "TAG_RESOLVE_FAILED", msg), ctx.options) ?? coll;
+      const node2 = identity.isNode(res) ? res : new Scalar.Scalar(res);
+      node2.range = coll.range;
+      node2.tag = tagName;
+      if (tag?.format)
+        node2.format = tag.format;
+      return node2;
+    }
+    exports.composeCollection = composeCollection;
+  }
+});
+
+// node_modules/yaml/dist/compose/resolve-block-scalar.js
+var require_resolve_block_scalar = __commonJS({
+  "node_modules/yaml/dist/compose/resolve-block-scalar.js"(exports) {
+    "use strict";
+    var Scalar = require_Scalar();
+    function resolveBlockScalar(ctx, scalar, onError) {
+      const start = scalar.offset;
+      const header = parseBlockScalarHeader(scalar, ctx.options.strict, onError);
+      if (!header)
+        return { value: "", type: null, comment: "", range: [start, start, start] };
+      const type = header.mode === ">" ? Scalar.Scalar.BLOCK_FOLDED : Scalar.Scalar.BLOCK_LITERAL;
+      const lines2 = scalar.source ? splitLines(scalar.source) : [];
+      let chompStart = lines2.length;
+      for (let i = lines2.length - 1; i >= 0; --i) {
+        const content = lines2[i][1];
+        if (content === "" || content === "\r")
+          chompStart = i;
+        else
+          break;
+      }
+      if (chompStart === 0) {
+        const value2 = header.chomp === "+" && lines2.length > 0 ? "\n".repeat(Math.max(1, lines2.length - 1)) : "";
+        let end2 = start + header.length;
+        if (scalar.source)
+          end2 += scalar.source.length;
+        return { value: value2, type, comment: header.comment, range: [start, end2, end2] };
+      }
+      let trimIndent = scalar.indent + header.indent;
+      let offset = scalar.offset + header.length;
+      let contentStart = 0;
+      for (let i = 0; i < chompStart; ++i) {
+        const [indent, content] = lines2[i];
+        if (content === "" || content === "\r") {
+          if (header.indent === 0 && indent.length > trimIndent)
+            trimIndent = indent.length;
+        } else {
+          if (indent.length < trimIndent) {
+            const message = "Block scalars with more-indented leading empty lines must use an explicit indentation indicator";
+            onError(offset + indent.length, "MISSING_CHAR", message);
+          }
+          if (header.indent === 0)
+            trimIndent = indent.length;
+          contentStart = i;
+          if (trimIndent === 0 && !ctx.atRoot) {
+            const message = "Block scalar values in collections must be indented";
+            onError(offset, "BAD_INDENT", message);
+          }
+          break;
+        }
+        offset += indent.length + content.length + 1;
+      }
+      for (let i = lines2.length - 1; i >= chompStart; --i) {
+        if (lines2[i][0].length > trimIndent)
+          chompStart = i + 1;
+      }
+      let value = "";
+      let sep2 = "";
+      let prevMoreIndented = false;
+      for (let i = 0; i < contentStart; ++i)
+        value += lines2[i][0].slice(trimIndent) + "\n";
+      for (let i = contentStart; i < chompStart; ++i) {
+        let [indent, content] = lines2[i];
+        offset += indent.length + content.length + 1;
+        const crlf = content[content.length - 1] === "\r";
+        if (crlf)
+          content = content.slice(0, -1);
+        if (content && indent.length < trimIndent) {
+          const src = header.indent ? "explicit indentation indicator" : "first line";
+          const message = `Block scalar lines must not be less indented than their ${src}`;
+          onError(offset - content.length - (crlf ? 2 : 1), "BAD_INDENT", message);
+          indent = "";
+        }
+        if (type === Scalar.Scalar.BLOCK_LITERAL) {
+          value += sep2 + indent.slice(trimIndent) + content;
+          sep2 = "\n";
+        } else if (indent.length > trimIndent || content[0] === "	") {
+          if (sep2 === " ")
+            sep2 = "\n";
+          else if (!prevMoreIndented && sep2 === "\n")
+            sep2 = "\n\n";
+          value += sep2 + indent.slice(trimIndent) + content;
+          sep2 = "\n";
+          prevMoreIndented = true;
+        } else if (content === "") {
+          if (sep2 === "\n")
+            value += "\n";
+          else
+            sep2 = "\n";
+        } else {
+          value += sep2 + content;
+          sep2 = " ";
+          prevMoreIndented = false;
+        }
+      }
+      switch (header.chomp) {
+        case "-":
+          break;
+        case "+":
+          for (let i = chompStart; i < lines2.length; ++i)
+            value += "\n" + lines2[i][0].slice(trimIndent);
+          if (value[value.length - 1] !== "\n")
+            value += "\n";
+          break;
+        default:
+          value += "\n";
+      }
+      const end = start + header.length + scalar.source.length;
+      return { value, type, comment: header.comment, range: [start, end, end] };
+    }
+    function parseBlockScalarHeader({ offset, props }, strict, onError) {
+      if (props[0].type !== "block-scalar-header") {
+        onError(props[0], "IMPOSSIBLE", "Block scalar header not found");
+        return null;
+      }
+      const { source } = props[0];
+      const mode = source[0];
+      let indent = 0;
+      let chomp = "";
+      let error62 = -1;
+      for (let i = 1; i < source.length; ++i) {
+        const ch = source[i];
+        if (!chomp && (ch === "-" || ch === "+"))
+          chomp = ch;
+        else {
+          const n = Number(ch);
+          if (!indent && n)
+            indent = n;
+          else if (error62 === -1)
+            error62 = offset + i;
+        }
+      }
+      if (error62 !== -1)
+        onError(error62, "UNEXPECTED_TOKEN", `Block scalar header includes extra characters: ${source}`);
+      let hasSpace = false;
+      let comment = "";
+      let length = source.length;
+      for (let i = 1; i < props.length; ++i) {
+        const token = props[i];
+        switch (token.type) {
+          case "space":
+            hasSpace = true;
+          // fallthrough
+          case "newline":
+            length += token.source.length;
+            break;
+          case "comment":
+            if (strict && !hasSpace) {
+              const message = "Comments must be separated from other tokens by white space characters";
+              onError(token, "MISSING_CHAR", message);
+            }
+            length += token.source.length;
+            comment = token.source.substring(1);
+            break;
+          case "error":
+            onError(token, "UNEXPECTED_TOKEN", token.message);
+            length += token.source.length;
+            break;
+          /* istanbul ignore next should not happen */
+          default: {
+            const message = `Unexpected token in block scalar header: ${token.type}`;
+            onError(token, "UNEXPECTED_TOKEN", message);
+            const ts = token.source;
+            if (ts && typeof ts === "string")
+              length += ts.length;
+          }
+        }
+      }
+      return { mode, indent, chomp, comment, length };
+    }
+    function splitLines(source) {
+      const split = source.split(/\n( *)/);
+      const first = split[0];
+      const m = first.match(/^( *)/);
+      const line0 = m?.[1] ? [m[1], first.slice(m[1].length)] : ["", first];
+      const lines2 = [line0];
+      for (let i = 1; i < split.length; i += 2)
+        lines2.push([split[i], split[i + 1]]);
+      return lines2;
+    }
+    exports.resolveBlockScalar = resolveBlockScalar;
+  }
+});
+
+// node_modules/yaml/dist/compose/resolve-flow-scalar.js
+var require_resolve_flow_scalar = __commonJS({
+  "node_modules/yaml/dist/compose/resolve-flow-scalar.js"(exports) {
+    "use strict";
+    var Scalar = require_Scalar();
+    var resolveEnd = require_resolve_end();
+    function resolveFlowScalar(scalar, strict, onError) {
+      const { offset, type, source, end } = scalar;
+      let _type;
+      let value;
+      const _onError = (rel, code2, msg) => onError(offset + rel, code2, msg);
+      switch (type) {
+        case "scalar":
+          _type = Scalar.Scalar.PLAIN;
+          value = plainValue(source, _onError);
+          break;
+        case "single-quoted-scalar":
+          _type = Scalar.Scalar.QUOTE_SINGLE;
+          value = singleQuotedValue(source, _onError);
+          break;
+        case "double-quoted-scalar":
+          _type = Scalar.Scalar.QUOTE_DOUBLE;
+          value = doubleQuotedValue(source, _onError);
+          break;
+        /* istanbul ignore next should not happen */
+        default:
+          onError(scalar, "UNEXPECTED_TOKEN", `Expected a flow scalar value, but found: ${type}`);
+          return {
+            value: "",
+            type: null,
+            comment: "",
+            range: [offset, offset + source.length, offset + source.length]
+          };
+      }
+      const valueEnd = offset + source.length;
+      const re = resolveEnd.resolveEnd(end, valueEnd, strict, onError);
+      return {
+        value,
+        type: _type,
+        comment: re.comment,
+        range: [offset, valueEnd, re.offset]
+      };
+    }
+    function plainValue(source, onError) {
+      let badChar = "";
+      switch (source[0]) {
+        /* istanbul ignore next should not happen */
+        case "	":
+          badChar = "a tab character";
+          break;
+        case ",":
+          badChar = "flow indicator character ,";
+          break;
+        case "%":
+          badChar = "directive indicator character %";
+          break;
+        case "|":
+        case ">": {
+          badChar = `block scalar indicator ${source[0]}`;
+          break;
+        }
+        case "@":
+        case "`": {
+          badChar = `reserved character ${source[0]}`;
+          break;
+        }
+      }
+      if (badChar)
+        onError(0, "BAD_SCALAR_START", `Plain value cannot start with ${badChar}`);
+      return unfoldLines(source);
+    }
+    function singleQuotedValue(source, onError) {
+      if (source[source.length - 1] !== "'" || source.length === 1)
+        onError(source.length, "MISSING_CHAR", "Missing closing 'quote");
+      return unfoldLines(source.slice(1, -1)).replace(/''/g, "'");
+    }
+    function unfoldLines(source) {
+      const line = /(.*?)\r?\n/sy;
+      let match2 = line.exec(source);
+      if (!match2)
+        return source;
+      let trimEnd, trimBoth;
+      try {
+        trimEnd = new RegExp("(?<![ 	])[ 	]+$");
+        trimBoth = new RegExp("^[ 	]+|(?<![ 	])[ 	]+$", "g");
+      } catch {
+        trimEnd = /[ \t]+$/;
+        trimBoth = /^[ \t]+|[ \t]+$/g;
+      }
+      let res = match2[1].replace(trimEnd, "");
+      let sep2 = " ";
+      let pos = line.lastIndex;
+      while (match2 = line.exec(source)) {
+        const lm = match2[1].replace(trimBoth, "");
+        if (lm === "") {
+          if (sep2 === "\n")
+            res += sep2;
+          else
+            sep2 = "\n";
+        } else {
+          res += sep2 + lm;
+          sep2 = " ";
+        }
+        pos = line.lastIndex;
+      }
+      const last = /[ \t]*(.*)/sy;
+      last.lastIndex = pos;
+      match2 = last.exec(source);
+      return res + sep2 + (match2?.[1] ?? "");
+    }
+    function doubleQuotedValue(source, onError) {
+      let res = "";
+      for (let i = 1; i < source.length - 1; ++i) {
+        const ch = source[i];
+        if (ch === "\r" && source[i + 1] === "\n")
+          continue;
+        if (ch === "\n") {
+          const { fold, offset } = foldNewline(source, i);
+          res += fold;
+          i = offset;
+        } else if (ch === "\\") {
+          let next = source[++i];
+          const cc = escapeCodes[next];
+          if (cc)
+            res += cc;
+          else if (next === "\n") {
+            next = source[i + 1];
+            while (next === " " || next === "	")
+              next = source[++i + 1];
+          } else if (next === "\r" && source[i + 1] === "\n") {
+            next = source[++i + 1];
+            while (next === " " || next === "	")
+              next = source[++i + 1];
+          } else if (next === "x" || next === "u" || next === "U") {
+            const length = next === "x" ? 2 : next === "u" ? 4 : 8;
+            res += parseCharCode(source, i + 1, length, onError);
+            i += length;
+          } else {
+            const raw2 = source.substr(i - 1, 2);
+            onError(i - 1, "BAD_DQ_ESCAPE", `Invalid escape sequence ${raw2}`);
+            res += raw2;
+          }
+        } else if (ch === " " || ch === "	") {
+          const wsStart = i;
+          let next = source[i + 1];
+          while (next === " " || next === "	")
+            next = source[++i + 1];
+          if (next !== "\n" && !(next === "\r" && source[i + 2] === "\n"))
+            res += i > wsStart ? source.slice(wsStart, i + 1) : ch;
+        } else {
+          res += ch;
+        }
+      }
+      if (source[source.length - 1] !== '"' || source.length === 1)
+        onError(source.length, "MISSING_CHAR", 'Missing closing "quote');
+      return res;
+    }
+    function foldNewline(source, offset) {
+      let fold = "";
+      let ch = source[offset + 1];
+      while (ch === " " || ch === "	" || ch === "\n" || ch === "\r") {
+        if (ch === "\r" && source[offset + 2] !== "\n")
+          break;
+        if (ch === "\n")
+          fold += "\n";
+        offset += 1;
+        ch = source[offset + 1];
+      }
+      if (!fold)
+        fold = " ";
+      return { fold, offset };
+    }
+    var escapeCodes = {
+      "0": "\0",
+      // null character
+      a: "\x07",
+      // bell character
+      b: "\b",
+      // backspace
+      e: "\x1B",
+      // escape character
+      f: "\f",
+      // form feed
+      n: "\n",
+      // line feed
+      r: "\r",
+      // carriage return
+      t: "	",
+      // horizontal tab
+      v: "\v",
+      // vertical tab
+      N: "\x85",
+      // Unicode next line
+      _: "\xA0",
+      // Unicode non-breaking space
+      L: "\u2028",
+      // Unicode line separator
+      P: "\u2029",
+      // Unicode paragraph separator
+      " ": " ",
+      '"': '"',
+      "/": "/",
+      "\\": "\\",
+      "	": "	"
+    };
+    function parseCharCode(source, offset, length, onError) {
+      const cc = source.substr(offset, length);
+      const ok = cc.length === length && /^[0-9a-fA-F]+$/.test(cc);
+      const code2 = ok ? parseInt(cc, 16) : NaN;
+      try {
+        return String.fromCodePoint(code2);
+      } catch {
+        const raw2 = source.substr(offset - 2, length + 2);
+        onError(offset - 2, "BAD_DQ_ESCAPE", `Invalid escape sequence ${raw2}`);
+        return raw2;
+      }
+    }
+    exports.resolveFlowScalar = resolveFlowScalar;
+  }
+});
+
+// node_modules/yaml/dist/compose/compose-scalar.js
+var require_compose_scalar = __commonJS({
+  "node_modules/yaml/dist/compose/compose-scalar.js"(exports) {
+    "use strict";
+    var identity = require_identity();
+    var Scalar = require_Scalar();
+    var resolveBlockScalar = require_resolve_block_scalar();
+    var resolveFlowScalar = require_resolve_flow_scalar();
+    function composeScalar(ctx, token, tagToken, onError) {
+      const { value, type, comment, range } = token.type === "block-scalar" ? resolveBlockScalar.resolveBlockScalar(ctx, token, onError) : resolveFlowScalar.resolveFlowScalar(token, ctx.options.strict, onError);
+      const tagName = tagToken ? ctx.directives.tagName(tagToken.source, (msg) => onError(tagToken, "TAG_RESOLVE_FAILED", msg)) : null;
+      let tag;
+      if (ctx.options.stringKeys && ctx.atKey) {
+        tag = ctx.schema[identity.SCALAR];
+      } else if (tagName)
+        tag = findScalarTagByName(ctx.schema, value, tagName, tagToken, onError);
+      else if (token.type === "scalar")
+        tag = findScalarTagByTest(ctx, value, token, onError);
+      else
+        tag = ctx.schema[identity.SCALAR];
+      let scalar;
+      try {
+        const res = tag.resolve(value, (msg) => onError(tagToken ?? token, "TAG_RESOLVE_FAILED", msg), ctx.options);
+        scalar = identity.isScalar(res) ? res : new Scalar.Scalar(res);
+      } catch (error62) {
+        const msg = error62 instanceof Error ? error62.message : String(error62);
+        onError(tagToken ?? token, "TAG_RESOLVE_FAILED", msg);
+        scalar = new Scalar.Scalar(value);
+      }
+      scalar.range = range;
+      scalar.source = value;
+      if (type)
+        scalar.type = type;
+      if (tagName)
+        scalar.tag = tagName;
+      if (tag.format)
+        scalar.format = tag.format;
+      if (comment)
+        scalar.comment = comment;
+      return scalar;
+    }
+    function findScalarTagByName(schema, value, tagName, tagToken, onError) {
+      if (tagName === "!")
+        return schema[identity.SCALAR];
+      const matchWithTest = [];
+      for (const tag of schema.tags) {
+        if (!tag.collection && tag.tag === tagName) {
+          if (tag.default && tag.test)
+            matchWithTest.push(tag);
+          else
+            return tag;
+        }
+      }
+      for (const tag of matchWithTest)
+        if (tag.test?.test(value))
+          return tag;
+      const kt = schema.knownTags[tagName];
+      if (kt && !kt.collection) {
+        schema.tags.push(Object.assign({}, kt, { default: false, test: void 0 }));
+        return kt;
+      }
+      onError(tagToken, "TAG_RESOLVE_FAILED", `Unresolved tag: ${tagName}`, tagName !== "tag:yaml.org,2002:str");
+      return schema[identity.SCALAR];
+    }
+    function findScalarTagByTest({ atKey, directives, schema }, value, token, onError) {
+      const tag = schema.tags.find((tag2) => (tag2.default === true || atKey && tag2.default === "key") && tag2.test?.test(value)) || schema[identity.SCALAR];
+      if (schema.compat) {
+        const compat = schema.compat.find((tag2) => tag2.default && tag2.test?.test(value)) ?? schema[identity.SCALAR];
+        if (tag.tag !== compat.tag) {
+          const ts = directives.tagString(tag.tag);
+          const cs = directives.tagString(compat.tag);
+          const msg = `Value may be parsed as either ${ts} or ${cs}`;
+          onError(token, "TAG_RESOLVE_FAILED", msg, true);
+        }
+      }
+      return tag;
+    }
+    exports.composeScalar = composeScalar;
+  }
+});
+
+// node_modules/yaml/dist/compose/util-empty-scalar-position.js
+var require_util_empty_scalar_position = __commonJS({
+  "node_modules/yaml/dist/compose/util-empty-scalar-position.js"(exports) {
+    "use strict";
+    function emptyScalarPosition(offset, before, pos) {
+      if (before) {
+        pos ?? (pos = before.length);
+        for (let i = pos - 1; i >= 0; --i) {
+          let st = before[i];
+          switch (st.type) {
+            case "space":
+            case "comment":
+            case "newline":
+              offset -= st.source.length;
+              continue;
+          }
+          st = before[++i];
+          while (st?.type === "space") {
+            offset += st.source.length;
+            st = before[++i];
+          }
+          break;
+        }
+      }
+      return offset;
+    }
+    exports.emptyScalarPosition = emptyScalarPosition;
+  }
+});
+
+// node_modules/yaml/dist/compose/compose-node.js
+var require_compose_node = __commonJS({
+  "node_modules/yaml/dist/compose/compose-node.js"(exports) {
+    "use strict";
+    var Alias = require_Alias();
+    var identity = require_identity();
+    var composeCollection = require_compose_collection();
+    var composeScalar = require_compose_scalar();
+    var resolveEnd = require_resolve_end();
+    var utilEmptyScalarPosition = require_util_empty_scalar_position();
+    var CN = { composeNode, composeEmptyNode };
+    function composeNode(ctx, token, props, onError) {
+      const atKey = ctx.atKey;
+      const { spaceBefore, comment, anchor: anchor2, tag } = props;
+      let node2;
+      let isSrcToken = true;
+      switch (token.type) {
+        case "alias":
+          node2 = composeAlias(ctx, token, onError);
+          if (anchor2 || tag)
+            onError(token, "ALIAS_PROPS", "An alias node must not specify any properties");
+          break;
+        case "scalar":
+        case "single-quoted-scalar":
+        case "double-quoted-scalar":
+        case "block-scalar":
+          node2 = composeScalar.composeScalar(ctx, token, tag, onError);
+          if (anchor2)
+            node2.anchor = anchor2.source.substring(1);
+          break;
+        case "block-map":
+        case "block-seq":
+        case "flow-collection":
+          try {
+            node2 = composeCollection.composeCollection(CN, ctx, token, props, onError);
+            if (anchor2)
+              node2.anchor = anchor2.source.substring(1);
+          } catch (error62) {
+            const message = error62 instanceof Error ? error62.message : String(error62);
+            onError(token, "RESOURCE_EXHAUSTION", message);
+          }
+          break;
+        default: {
+          const message = token.type === "error" ? token.message : `Unsupported token (type: ${token.type})`;
+          onError(token, "UNEXPECTED_TOKEN", message);
+          isSrcToken = false;
+        }
+      }
+      node2 ?? (node2 = composeEmptyNode(ctx, token.offset, void 0, null, props, onError));
+      if (anchor2 && node2.anchor === "")
+        onError(anchor2, "BAD_ALIAS", "Anchor cannot be an empty string");
+      if (atKey && ctx.options.stringKeys && (!identity.isScalar(node2) || typeof node2.value !== "string" || node2.tag && node2.tag !== "tag:yaml.org,2002:str")) {
+        const msg = "With stringKeys, all keys must be strings";
+        onError(tag ?? token, "NON_STRING_KEY", msg);
+      }
+      if (spaceBefore)
+        node2.spaceBefore = true;
+      if (comment) {
+        if (token.type === "scalar" && token.source === "")
+          node2.comment = comment;
+        else
+          node2.commentBefore = comment;
+      }
+      if (ctx.options.keepSourceTokens && isSrcToken)
+        node2.srcToken = token;
+      return node2;
+    }
+    function composeEmptyNode(ctx, offset, before, pos, { spaceBefore, comment, anchor: anchor2, tag, end }, onError) {
+      const token = {
+        type: "scalar",
+        offset: utilEmptyScalarPosition.emptyScalarPosition(offset, before, pos),
+        indent: -1,
+        source: ""
+      };
+      const node2 = composeScalar.composeScalar(ctx, token, tag, onError);
+      if (anchor2) {
+        node2.anchor = anchor2.source.substring(1);
+        if (node2.anchor === "")
+          onError(anchor2, "BAD_ALIAS", "Anchor cannot be an empty string");
+      }
+      if (spaceBefore)
+        node2.spaceBefore = true;
+      if (comment) {
+        node2.comment = comment;
+        node2.range[2] = end;
+      }
+      return node2;
+    }
+    function composeAlias({ options }, { offset, source, end }, onError) {
+      const alias = new Alias.Alias(source.substring(1));
+      if (alias.source === "")
+        onError(offset, "BAD_ALIAS", "Alias cannot be an empty string");
+      if (alias.source.endsWith(":"))
+        onError(offset + source.length - 1, "BAD_ALIAS", "Alias ending in : is ambiguous", true);
+      const valueEnd = offset + source.length;
+      const re = resolveEnd.resolveEnd(end, valueEnd, options.strict, onError);
+      alias.range = [offset, valueEnd, re.offset];
+      if (re.comment)
+        alias.comment = re.comment;
+      return alias;
+    }
+    exports.composeEmptyNode = composeEmptyNode;
+    exports.composeNode = composeNode;
+  }
+});
+
+// node_modules/yaml/dist/compose/compose-doc.js
+var require_compose_doc = __commonJS({
+  "node_modules/yaml/dist/compose/compose-doc.js"(exports) {
+    "use strict";
+    var Document = require_Document();
+    var composeNode = require_compose_node();
+    var resolveEnd = require_resolve_end();
+    var resolveProps = require_resolve_props();
+    function composeDoc(options, directives, { offset, start, value, end }, onError) {
+      const opts2 = Object.assign({ _directives: directives }, options);
+      const doc = new Document.Document(void 0, opts2);
+      const ctx = {
+        atKey: false,
+        atRoot: true,
+        directives: doc.directives,
+        options: doc.options,
+        schema: doc.schema
+      };
+      const props = resolveProps.resolveProps(start, {
+        indicator: "doc-start",
+        next: value ?? end?.[0],
+        offset,
+        onError,
+        parentIndent: 0,
+        startOnNewline: true
+      });
+      if (props.found) {
+        doc.directives.docStart = true;
+        if (value && (value.type === "block-map" || value.type === "block-seq") && !props.hasNewline)
+          onError(props.end, "MISSING_CHAR", "Block collection cannot start on same line with directives-end marker");
+      }
+      doc.contents = value ? composeNode.composeNode(ctx, value, props, onError) : composeNode.composeEmptyNode(ctx, props.end, start, null, props, onError);
+      const contentEnd = doc.contents.range[2];
+      const re = resolveEnd.resolveEnd(end, contentEnd, false, onError);
+      if (re.comment)
+        doc.comment = re.comment;
+      doc.range = [offset, contentEnd, re.offset];
+      return doc;
+    }
+    exports.composeDoc = composeDoc;
+  }
+});
+
+// node_modules/yaml/dist/compose/composer.js
+var require_composer = __commonJS({
+  "node_modules/yaml/dist/compose/composer.js"(exports) {
+    "use strict";
+    var node_process = __require("process");
+    var directives = require_directives();
+    var Document = require_Document();
+    var errors = require_errors();
+    var identity = require_identity();
+    var composeDoc = require_compose_doc();
+    var resolveEnd = require_resolve_end();
+    function getErrorPos(src) {
+      if (typeof src === "number")
+        return [src, src + 1];
+      if (Array.isArray(src))
+        return src.length === 2 ? src : [src[0], src[1]];
+      const { offset, source } = src;
+      return [offset, offset + (typeof source === "string" ? source.length : 1)];
+    }
+    function parsePrelude(prelude) {
+      let comment = "";
+      let atComment = false;
+      let afterEmptyLine = false;
+      for (let i = 0; i < prelude.length; ++i) {
+        const source = prelude[i];
+        switch (source[0]) {
+          case "#":
+            comment += (comment === "" ? "" : afterEmptyLine ? "\n\n" : "\n") + (source.substring(1) || " ");
+            atComment = true;
+            afterEmptyLine = false;
+            break;
+          case "%":
+            if (prelude[i + 1]?.[0] !== "#")
+              i += 1;
+            atComment = false;
+            break;
+          default:
+            if (!atComment)
+              afterEmptyLine = true;
+            atComment = false;
+        }
+      }
+      return { comment, afterEmptyLine };
+    }
+    var Composer = class {
+      constructor(options = {}) {
+        this.doc = null;
+        this.atDirectives = false;
+        this.prelude = [];
+        this.errors = [];
+        this.warnings = [];
+        this.onError = (source, code2, message, warning) => {
+          const pos = getErrorPos(source);
+          if (warning)
+            this.warnings.push(new errors.YAMLWarning(pos, code2, message));
+          else
+            this.errors.push(new errors.YAMLParseError(pos, code2, message));
+        };
+        this.directives = new directives.Directives({ version: options.version || "1.2" });
+        this.options = options;
+      }
+      decorate(doc, afterDoc) {
+        const { comment, afterEmptyLine } = parsePrelude(this.prelude);
+        if (comment) {
+          const dc = doc.contents;
+          if (afterDoc) {
+            doc.comment = doc.comment ? `${doc.comment}
+${comment}` : comment;
+          } else if (afterEmptyLine || doc.directives.docStart || !dc) {
+            doc.commentBefore = comment;
+          } else if (identity.isCollection(dc) && !dc.flow && dc.items.length > 0) {
+            let it = dc.items[0];
+            if (identity.isPair(it))
+              it = it.key;
+            const cb = it.commentBefore;
+            it.commentBefore = cb ? `${comment}
+${cb}` : comment;
+          } else {
+            const cb = dc.commentBefore;
+            dc.commentBefore = cb ? `${comment}
+${cb}` : comment;
+          }
+        }
+        if (afterDoc) {
+          for (let i = 0; i < this.errors.length; ++i)
+            doc.errors.push(this.errors[i]);
+          for (let i = 0; i < this.warnings.length; ++i)
+            doc.warnings.push(this.warnings[i]);
+        } else {
+          doc.errors = this.errors;
+          doc.warnings = this.warnings;
+        }
+        this.prelude = [];
+        this.errors = [];
+        this.warnings = [];
+      }
+      /**
+       * Current stream status information.
+       *
+       * Mostly useful at the end of input for an empty stream.
+       */
+      streamInfo() {
+        return {
+          comment: parsePrelude(this.prelude).comment,
+          directives: this.directives,
+          errors: this.errors,
+          warnings: this.warnings
+        };
+      }
+      /**
+       * Compose tokens into documents.
+       *
+       * @param forceDoc - If the stream contains no document, still emit a final document including any comments and directives that would be applied to a subsequent document.
+       * @param endOffset - Should be set if `forceDoc` is also set, to set the document range end and to indicate errors correctly.
+       */
+      *compose(tokens, forceDoc = false, endOffset = -1) {
+        for (const token of tokens)
+          yield* this.next(token);
+        yield* this.end(forceDoc, endOffset);
+      }
+      /** Advance the composer by one CST token. */
+      *next(token) {
+        if (node_process.env.LOG_STREAM)
+          console.dir(token, { depth: null });
+        switch (token.type) {
+          case "directive":
+            this.directives.add(token.source, (offset, message, warning) => {
+              const pos = getErrorPos(token);
+              pos[0] += offset;
+              this.onError(pos, "BAD_DIRECTIVE", message, warning);
+            });
+            this.prelude.push(token.source);
+            this.atDirectives = true;
+            break;
+          case "document": {
+            const doc = composeDoc.composeDoc(this.options, this.directives, token, this.onError);
+            if (this.atDirectives && !doc.directives.docStart)
+              this.onError(token, "MISSING_CHAR", "Missing directives-end/doc-start indicator line");
+            this.decorate(doc, false);
+            if (this.doc)
+              yield this.doc;
+            this.doc = doc;
+            this.atDirectives = false;
+            break;
+          }
+          case "byte-order-mark":
+          case "space":
+            break;
+          case "comment":
+          case "newline":
+            this.prelude.push(token.source);
+            break;
+          case "error": {
+            const msg = token.source ? `${token.message}: ${JSON.stringify(token.source)}` : token.message;
+            const error62 = new errors.YAMLParseError(getErrorPos(token), "UNEXPECTED_TOKEN", msg);
+            if (this.atDirectives || !this.doc)
+              this.errors.push(error62);
+            else
+              this.doc.errors.push(error62);
+            break;
+          }
+          case "doc-end": {
+            if (!this.doc) {
+              const msg = "Unexpected doc-end without preceding document";
+              this.errors.push(new errors.YAMLParseError(getErrorPos(token), "UNEXPECTED_TOKEN", msg));
+              break;
+            }
+            this.doc.directives.docEnd = true;
+            const end = resolveEnd.resolveEnd(token.end, token.offset + token.source.length, this.doc.options.strict, this.onError);
+            this.decorate(this.doc, true);
+            if (end.comment) {
+              const dc = this.doc.comment;
+              this.doc.comment = dc ? `${dc}
+${end.comment}` : end.comment;
+            }
+            this.doc.range[2] = end.offset;
+            break;
+          }
+          default:
+            this.errors.push(new errors.YAMLParseError(getErrorPos(token), "UNEXPECTED_TOKEN", `Unsupported token ${token.type}`));
+        }
+      }
+      /**
+       * Call at end of input to yield any remaining document.
+       *
+       * @param forceDoc - If the stream contains no document, still emit a final document including any comments and directives that would be applied to a subsequent document.
+       * @param endOffset - Should be set if `forceDoc` is also set, to set the document range end and to indicate errors correctly.
+       */
+      *end(forceDoc = false, endOffset = -1) {
+        if (this.doc) {
+          this.decorate(this.doc, true);
+          yield this.doc;
+          this.doc = null;
+        } else if (forceDoc) {
+          const opts2 = Object.assign({ _directives: this.directives }, this.options);
+          const doc = new Document.Document(void 0, opts2);
+          if (this.atDirectives)
+            this.onError(endOffset, "MISSING_CHAR", "Missing directives-end indicator line");
+          doc.range = [0, endOffset, endOffset];
+          this.decorate(doc, false);
+          yield doc;
+        }
+      }
+    };
+    exports.Composer = Composer;
+  }
+});
+
+// node_modules/yaml/dist/parse/cst-scalar.js
+var require_cst_scalar = __commonJS({
+  "node_modules/yaml/dist/parse/cst-scalar.js"(exports) {
+    "use strict";
+    var resolveBlockScalar = require_resolve_block_scalar();
+    var resolveFlowScalar = require_resolve_flow_scalar();
+    var errors = require_errors();
+    var stringifyString = require_stringifyString();
+    function resolveAsScalar(token, strict = true, onError) {
+      if (token) {
+        const _onError = (pos, code2, message) => {
+          const offset = typeof pos === "number" ? pos : Array.isArray(pos) ? pos[0] : pos.offset;
+          if (onError)
+            onError(offset, code2, message);
+          else
+            throw new errors.YAMLParseError([offset, offset + 1], code2, message);
+        };
+        switch (token.type) {
+          case "scalar":
+          case "single-quoted-scalar":
+          case "double-quoted-scalar":
+            return resolveFlowScalar.resolveFlowScalar(token, strict, _onError);
+          case "block-scalar":
+            return resolveBlockScalar.resolveBlockScalar({ options: { strict } }, token, _onError);
+        }
+      }
+      return null;
+    }
+    function createScalarToken(value, context) {
+      const { implicitKey = false, indent, inFlow = false, offset = -1, type = "PLAIN" } = context;
+      const source = stringifyString.stringifyString({ type, value }, {
+        implicitKey,
+        indent: indent > 0 ? " ".repeat(indent) : "",
+        inFlow,
+        options: { blockQuote: true, lineWidth: -1 }
+      });
+      const end = context.end ?? [
+        { type: "newline", offset: -1, indent, source: "\n" }
+      ];
+      switch (source[0]) {
+        case "|":
+        case ">": {
+          const he = source.indexOf("\n");
+          const head = source.substring(0, he);
+          const body = source.substring(he + 1) + "\n";
+          const props = [
+            { type: "block-scalar-header", offset, indent, source: head }
+          ];
+          if (!addEndtoBlockProps(props, end))
+            props.push({ type: "newline", offset: -1, indent, source: "\n" });
+          return { type: "block-scalar", offset, indent, props, source: body };
+        }
+        case '"':
+          return { type: "double-quoted-scalar", offset, indent, source, end };
+        case "'":
+          return { type: "single-quoted-scalar", offset, indent, source, end };
+        default:
+          return { type: "scalar", offset, indent, source, end };
+      }
+    }
+    function setScalarValue(token, value, context = {}) {
+      let { afterKey = false, implicitKey = false, inFlow = false, type } = context;
+      let indent = "indent" in token ? token.indent : null;
+      if (afterKey && typeof indent === "number")
+        indent += 2;
+      if (!type)
+        switch (token.type) {
+          case "single-quoted-scalar":
+            type = "QUOTE_SINGLE";
+            break;
+          case "double-quoted-scalar":
+            type = "QUOTE_DOUBLE";
+            break;
+          case "block-scalar": {
+            const header = token.props[0];
+            if (header.type !== "block-scalar-header")
+              throw new Error("Invalid block scalar header");
+            type = header.source[0] === ">" ? "BLOCK_FOLDED" : "BLOCK_LITERAL";
+            break;
+          }
+          default:
+            type = "PLAIN";
+        }
+      const source = stringifyString.stringifyString({ type, value }, {
+        implicitKey: implicitKey || indent === null,
+        indent: indent !== null && indent > 0 ? " ".repeat(indent) : "",
+        inFlow,
+        options: { blockQuote: true, lineWidth: -1 }
+      });
+      switch (source[0]) {
+        case "|":
+        case ">":
+          setBlockScalarValue(token, source);
+          break;
+        case '"':
+          setFlowScalarValue(token, source, "double-quoted-scalar");
+          break;
+        case "'":
+          setFlowScalarValue(token, source, "single-quoted-scalar");
+          break;
+        default:
+          setFlowScalarValue(token, source, "scalar");
+      }
+    }
+    function setBlockScalarValue(token, source) {
+      const he = source.indexOf("\n");
+      const head = source.substring(0, he);
+      const body = source.substring(he + 1) + "\n";
+      if (token.type === "block-scalar") {
+        const header = token.props[0];
+        if (header.type !== "block-scalar-header")
+          throw new Error("Invalid block scalar header");
+        header.source = head;
+        token.source = body;
+      } else {
+        const { offset } = token;
+        const indent = "indent" in token ? token.indent : -1;
+        const props = [
+          { type: "block-scalar-header", offset, indent, source: head }
+        ];
+        if (!addEndtoBlockProps(props, "end" in token ? token.end : void 0))
+          props.push({ type: "newline", offset: -1, indent, source: "\n" });
+        for (const key of Object.keys(token))
+          if (key !== "type" && key !== "offset")
+            delete token[key];
+        Object.assign(token, { type: "block-scalar", indent, props, source: body });
+      }
+    }
+    function addEndtoBlockProps(props, end) {
+      if (end)
+        for (const st of end)
+          switch (st.type) {
+            case "space":
+            case "comment":
+              props.push(st);
+              break;
+            case "newline":
+              props.push(st);
+              return true;
+          }
+      return false;
+    }
+    function setFlowScalarValue(token, source, type) {
+      switch (token.type) {
+        case "scalar":
+        case "double-quoted-scalar":
+        case "single-quoted-scalar":
+          token.type = type;
+          token.source = source;
+          break;
+        case "block-scalar": {
+          const end = token.props.slice(1);
+          let oa = source.length;
+          if (token.props[0].type === "block-scalar-header")
+            oa -= token.props[0].source.length;
+          for (const tok of end)
+            tok.offset += oa;
+          delete token.props;
+          Object.assign(token, { type, source, end });
+          break;
+        }
+        case "block-map":
+        case "block-seq": {
+          const offset = token.offset + source.length;
+          const nl = { type: "newline", offset, indent: token.indent, source: "\n" };
+          delete token.items;
+          Object.assign(token, { type, source, end: [nl] });
+          break;
+        }
+        default: {
+          const indent = "indent" in token ? token.indent : -1;
+          const end = "end" in token && Array.isArray(token.end) ? token.end.filter((st) => st.type === "space" || st.type === "comment" || st.type === "newline") : [];
+          for (const key of Object.keys(token))
+            if (key !== "type" && key !== "offset")
+              delete token[key];
+          Object.assign(token, { type, indent, source, end });
+        }
+      }
+    }
+    exports.createScalarToken = createScalarToken;
+    exports.resolveAsScalar = resolveAsScalar;
+    exports.setScalarValue = setScalarValue;
+  }
+});
+
+// node_modules/yaml/dist/parse/cst-stringify.js
+var require_cst_stringify = __commonJS({
+  "node_modules/yaml/dist/parse/cst-stringify.js"(exports) {
+    "use strict";
+    var stringify = (cst) => "type" in cst ? stringifyToken(cst) : stringifyItem(cst);
+    function stringifyToken(token) {
+      switch (token.type) {
+        case "block-scalar": {
+          let res = "";
+          for (const tok of token.props)
+            res += stringifyToken(tok);
+          return res + token.source;
+        }
+        case "block-map":
+        case "block-seq": {
+          let res = "";
+          for (const item of token.items)
+            res += stringifyItem(item);
+          return res;
+        }
+        case "flow-collection": {
+          let res = token.start.source;
+          for (const item of token.items)
+            res += stringifyItem(item);
+          for (const st of token.end)
+            res += st.source;
+          return res;
+        }
+        case "document": {
+          let res = stringifyItem(token);
+          if (token.end)
+            for (const st of token.end)
+              res += st.source;
+          return res;
+        }
+        default: {
+          let res = token.source;
+          if ("end" in token && token.end)
+            for (const st of token.end)
+              res += st.source;
+          return res;
+        }
+      }
+    }
+    function stringifyItem({ start, key, sep: sep2, value }) {
+      let res = "";
+      for (const st of start)
+        res += st.source;
+      if (key)
+        res += stringifyToken(key);
+      if (sep2)
+        for (const st of sep2)
+          res += st.source;
+      if (value)
+        res += stringifyToken(value);
+      return res;
+    }
+    exports.stringify = stringify;
+  }
+});
+
+// node_modules/yaml/dist/parse/cst-visit.js
+var require_cst_visit = __commonJS({
+  "node_modules/yaml/dist/parse/cst-visit.js"(exports) {
+    "use strict";
+    var BREAK = Symbol("break visit");
+    var SKIP2 = Symbol("skip children");
+    var REMOVE = Symbol("remove item");
+    function visit2(cst, visitor) {
+      if ("type" in cst && cst.type === "document")
+        cst = { start: cst.start, value: cst.value };
+      _visit(Object.freeze([]), cst, visitor);
+    }
+    visit2.BREAK = BREAK;
+    visit2.SKIP = SKIP2;
+    visit2.REMOVE = REMOVE;
+    visit2.itemAtPath = (cst, path) => {
+      let item = cst;
+      for (const [field, index] of path) {
+        const tok = item?.[field];
+        if (tok && "items" in tok) {
+          item = tok.items[index];
+        } else
+          return void 0;
+      }
+      return item;
+    };
+    visit2.parentCollection = (cst, path) => {
+      const parent = visit2.itemAtPath(cst, path.slice(0, -1));
+      const field = path[path.length - 1][0];
+      const coll = parent?.[field];
+      if (coll && "items" in coll)
+        return coll;
+      throw new Error("Parent collection not found");
+    };
+    function _visit(path, item, visitor) {
+      let ctrl = visitor(item, path);
+      if (typeof ctrl === "symbol")
+        return ctrl;
+      for (const field of ["key", "value"]) {
+        const token = item[field];
+        if (token && "items" in token) {
+          for (let i = 0; i < token.items.length; ++i) {
+            const ci = _visit(Object.freeze(path.concat([[field, i]])), token.items[i], visitor);
+            if (typeof ci === "number")
+              i = ci - 1;
+            else if (ci === BREAK)
+              return BREAK;
+            else if (ci === REMOVE) {
+              token.items.splice(i, 1);
+              i -= 1;
+            }
+          }
+          if (typeof ctrl === "function" && field === "key")
+            ctrl = ctrl(item, path);
+        }
+      }
+      return typeof ctrl === "function" ? ctrl(item, path) : ctrl;
+    }
+    exports.visit = visit2;
+  }
+});
+
+// node_modules/yaml/dist/parse/cst.js
+var require_cst = __commonJS({
+  "node_modules/yaml/dist/parse/cst.js"(exports) {
+    "use strict";
+    var cstScalar = require_cst_scalar();
+    var cstStringify = require_cst_stringify();
+    var cstVisit = require_cst_visit();
+    var BOM = "\uFEFF";
+    var DOCUMENT = "";
+    var FLOW_END = "";
+    var SCALAR = "";
+    var isCollection = (token) => !!token && "items" in token;
+    var isScalar = (token) => !!token && (token.type === "scalar" || token.type === "single-quoted-scalar" || token.type === "double-quoted-scalar" || token.type === "block-scalar");
+    function prettyToken(token) {
+      switch (token) {
+        case BOM:
+          return "<BOM>";
+        case DOCUMENT:
+          return "<DOC>";
+        case FLOW_END:
+          return "<FLOW_END>";
+        case SCALAR:
+          return "<SCALAR>";
+        default:
+          return JSON.stringify(token);
+      }
+    }
+    function tokenType(source) {
+      switch (source) {
+        case BOM:
+          return "byte-order-mark";
+        case DOCUMENT:
+          return "doc-mode";
+        case FLOW_END:
+          return "flow-error-end";
+        case SCALAR:
+          return "scalar";
+        case "---":
+          return "doc-start";
+        case "...":
+          return "doc-end";
+        case "":
+        case "\n":
+        case "\r\n":
+          return "newline";
+        case "-":
+          return "seq-item-ind";
+        case "?":
+          return "explicit-key-ind";
+        case ":":
+          return "map-value-ind";
+        case "{":
+          return "flow-map-start";
+        case "}":
+          return "flow-map-end";
+        case "[":
+          return "flow-seq-start";
+        case "]":
+          return "flow-seq-end";
+        case ",":
+          return "comma";
+      }
+      switch (source[0]) {
+        case " ":
+        case "	":
+          return "space";
+        case "#":
+          return "comment";
+        case "%":
+          return "directive-line";
+        case "*":
+          return "alias";
+        case "&":
+          return "anchor";
+        case "!":
+          return "tag";
+        case "'":
+          return "single-quoted-scalar";
+        case '"':
+          return "double-quoted-scalar";
+        case "|":
+        case ">":
+          return "block-scalar-header";
+      }
+      return null;
+    }
+    exports.createScalarToken = cstScalar.createScalarToken;
+    exports.resolveAsScalar = cstScalar.resolveAsScalar;
+    exports.setScalarValue = cstScalar.setScalarValue;
+    exports.stringify = cstStringify.stringify;
+    exports.visit = cstVisit.visit;
+    exports.BOM = BOM;
+    exports.DOCUMENT = DOCUMENT;
+    exports.FLOW_END = FLOW_END;
+    exports.SCALAR = SCALAR;
+    exports.isCollection = isCollection;
+    exports.isScalar = isScalar;
+    exports.prettyToken = prettyToken;
+    exports.tokenType = tokenType;
+  }
+});
+
+// node_modules/yaml/dist/parse/lexer.js
+var require_lexer = __commonJS({
+  "node_modules/yaml/dist/parse/lexer.js"(exports) {
+    "use strict";
+    var cst = require_cst();
+    function isEmpty(ch) {
+      switch (ch) {
+        case void 0:
+        case " ":
+        case "\n":
+        case "\r":
+        case "	":
+          return true;
+        default:
+          return false;
+      }
+    }
+    var hexDigits = new Set("0123456789ABCDEFabcdef");
+    var tagChars = new Set("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-#;/?:@&=+$_.!~*'()");
+    var flowIndicatorChars = new Set(",[]{}");
+    var invalidAnchorChars = new Set(" ,[]{}\n\r	");
+    var isNotAnchorChar = (ch) => !ch || invalidAnchorChars.has(ch);
+    var Lexer = class {
+      constructor() {
+        this.atEnd = false;
+        this.blockScalarIndent = -1;
+        this.blockScalarKeep = false;
+        this.buffer = "";
+        this.flowKey = false;
+        this.flowLevel = 0;
+        this.indentNext = 0;
+        this.indentValue = 0;
+        this.lineEndPos = null;
+        this.next = null;
+        this.pos = 0;
+      }
+      /**
+       * Generate YAML tokens from the `source` string. If `incomplete`,
+       * a part of the last line may be left as a buffer for the next call.
+       *
+       * @returns A generator of lexical tokens
+       */
+      *lex(source, incomplete = false) {
+        if (source) {
+          if (typeof source !== "string")
+            throw TypeError("source is not a string");
+          this.buffer = this.buffer ? this.buffer + source : source;
+          this.lineEndPos = null;
+        }
+        this.atEnd = !incomplete;
+        let next = this.next ?? "stream";
+        while (next && (incomplete || this.hasChars(1)))
+          next = yield* this.parseNext(next);
+      }
+      atLineEnd() {
+        let i = this.pos;
+        let ch = this.buffer[i];
+        while (ch === " " || ch === "	")
+          ch = this.buffer[++i];
+        if (!ch || ch === "#" || ch === "\n")
+          return true;
+        if (ch === "\r")
+          return this.buffer[i + 1] === "\n";
+        return false;
+      }
+      charAt(n) {
+        return this.buffer[this.pos + n];
+      }
+      continueScalar(offset) {
+        let ch = this.buffer[offset];
+        if (this.indentNext > 0) {
+          let indent = 0;
+          while (ch === " ")
+            ch = this.buffer[++indent + offset];
+          if (ch === "\r") {
+            const next = this.buffer[indent + offset + 1];
+            if (next === "\n" || !next && !this.atEnd)
+              return offset + indent + 1;
+          }
+          return ch === "\n" || indent >= this.indentNext || !ch && !this.atEnd ? offset + indent : -1;
+        }
+        if (ch === "-" || ch === ".") {
+          const dt = this.buffer.substr(offset, 3);
+          if ((dt === "---" || dt === "...") && isEmpty(this.buffer[offset + 3]))
+            return -1;
+        }
+        return offset;
+      }
+      getLine() {
+        let end = this.lineEndPos;
+        if (typeof end !== "number" || end !== -1 && end < this.pos) {
+          end = this.buffer.indexOf("\n", this.pos);
+          this.lineEndPos = end;
+        }
+        if (end === -1)
+          return this.atEnd ? this.buffer.substring(this.pos) : null;
+        if (this.buffer[end - 1] === "\r")
+          end -= 1;
+        return this.buffer.substring(this.pos, end);
+      }
+      hasChars(n) {
+        return this.pos + n <= this.buffer.length;
+      }
+      setNext(state) {
+        this.buffer = this.buffer.substring(this.pos);
+        this.pos = 0;
+        this.lineEndPos = null;
+        this.next = state;
+        return null;
+      }
+      peek(n) {
+        return this.buffer.substr(this.pos, n);
+      }
+      *parseNext(next) {
+        switch (next) {
+          case "stream":
+            return yield* this.parseStream();
+          case "line-start":
+            return yield* this.parseLineStart();
+          case "block-start":
+            return yield* this.parseBlockStart();
+          case "doc":
+            return yield* this.parseDocument();
+          case "flow":
+            return yield* this.parseFlowCollection();
+          case "quoted-scalar":
+            return yield* this.parseQuotedScalar();
+          case "block-scalar":
+            return yield* this.parseBlockScalar();
+          case "plain-scalar":
+            return yield* this.parsePlainScalar();
+        }
+      }
+      *parseStream() {
+        let line = this.getLine();
+        if (line === null)
+          return this.setNext("stream");
+        if (line[0] === cst.BOM) {
+          yield* this.pushCount(1);
+          line = line.substring(1);
+        }
+        if (line[0] === "%") {
+          let dirEnd = line.length;
+          let cs = line.indexOf("#");
+          while (cs !== -1) {
+            const ch = line[cs - 1];
+            if (ch === " " || ch === "	") {
+              dirEnd = cs - 1;
+              break;
+            } else {
+              cs = line.indexOf("#", cs + 1);
+            }
+          }
+          while (true) {
+            const ch = line[dirEnd - 1];
+            if (ch === " " || ch === "	")
+              dirEnd -= 1;
+            else
+              break;
+          }
+          const n = (yield* this.pushCount(dirEnd)) + (yield* this.pushSpaces(true));
+          yield* this.pushCount(line.length - n);
+          this.pushNewline();
+          return "stream";
+        }
+        if (this.atLineEnd()) {
+          const sp = yield* this.pushSpaces(true);
+          yield* this.pushCount(line.length - sp);
+          yield* this.pushNewline();
+          return "stream";
+        }
+        yield cst.DOCUMENT;
+        return yield* this.parseLineStart();
+      }
+      *parseLineStart() {
+        const ch = this.charAt(0);
+        if (!ch && !this.atEnd)
+          return this.setNext("line-start");
+        if (ch === "-" || ch === ".") {
+          if (!this.atEnd && !this.hasChars(4))
+            return this.setNext("line-start");
+          const s = this.peek(3);
+          if ((s === "---" || s === "...") && isEmpty(this.charAt(3))) {
+            yield* this.pushCount(3);
+            this.indentValue = 0;
+            this.indentNext = 0;
+            return s === "---" ? "doc" : "stream";
+          }
+        }
+        this.indentValue = yield* this.pushSpaces(false);
+        if (this.indentNext > this.indentValue && !isEmpty(this.charAt(1)))
+          this.indentNext = this.indentValue;
+        return yield* this.parseBlockStart();
+      }
+      *parseBlockStart() {
+        const [ch0, ch1] = this.peek(2);
+        if (!ch1 && !this.atEnd)
+          return this.setNext("block-start");
+        if ((ch0 === "-" || ch0 === "?" || ch0 === ":") && isEmpty(ch1)) {
+          const n = (yield* this.pushCount(1)) + (yield* this.pushSpaces(true));
+          this.indentNext = this.indentValue + 1;
+          this.indentValue += n;
+          return "block-start";
+        }
+        return "doc";
+      }
+      *parseDocument() {
+        yield* this.pushSpaces(true);
+        const line = this.getLine();
+        if (line === null)
+          return this.setNext("doc");
+        let n = yield* this.pushIndicators();
+        switch (line[n]) {
+          case "#":
+            yield* this.pushCount(line.length - n);
+          // fallthrough
+          case void 0:
+            yield* this.pushNewline();
+            return yield* this.parseLineStart();
+          case "{":
+          case "[":
+            yield* this.pushCount(1);
+            this.flowKey = false;
+            this.flowLevel = 1;
+            return "flow";
+          case "}":
+          case "]":
+            yield* this.pushCount(1);
+            return "doc";
+          case "*":
+            yield* this.pushUntil(isNotAnchorChar);
+            return "doc";
+          case '"':
+          case "'":
+            return yield* this.parseQuotedScalar();
+          case "|":
+          case ">":
+            n += yield* this.parseBlockScalarHeader();
+            n += yield* this.pushSpaces(true);
+            yield* this.pushCount(line.length - n);
+            yield* this.pushNewline();
+            return yield* this.parseBlockScalar();
+          default:
+            return yield* this.parsePlainScalar();
+        }
+      }
+      *parseFlowCollection() {
+        let nl, sp;
+        let indent = -1;
+        do {
+          nl = yield* this.pushNewline();
+          if (nl > 0) {
+            sp = yield* this.pushSpaces(false);
+            this.indentValue = indent = sp;
+          } else {
+            sp = 0;
+          }
+          sp += yield* this.pushSpaces(true);
+        } while (nl + sp > 0);
+        const line = this.getLine();
+        if (line === null)
+          return this.setNext("flow");
+        if (indent !== -1 && indent < this.indentNext && line[0] !== "#" || indent === 0 && (line.startsWith("---") || line.startsWith("...")) && isEmpty(line[3])) {
+          const atFlowEndMarker = indent === this.indentNext - 1 && this.flowLevel === 1 && (line[0] === "]" || line[0] === "}");
+          if (!atFlowEndMarker) {
+            this.flowLevel = 0;
+            yield cst.FLOW_END;
+            return yield* this.parseLineStart();
+          }
+        }
+        let n = 0;
+        while (line[n] === ",") {
+          n += yield* this.pushCount(1);
+          n += yield* this.pushSpaces(true);
+          this.flowKey = false;
+        }
+        n += yield* this.pushIndicators();
+        switch (line[n]) {
+          case void 0:
+            return "flow";
+          case "#":
+            yield* this.pushCount(line.length - n);
+            return "flow";
+          case "{":
+          case "[":
+            yield* this.pushCount(1);
+            this.flowKey = false;
+            this.flowLevel += 1;
+            return "flow";
+          case "}":
+          case "]":
+            yield* this.pushCount(1);
+            this.flowKey = true;
+            this.flowLevel -= 1;
+            return this.flowLevel ? "flow" : "doc";
+          case "*":
+            yield* this.pushUntil(isNotAnchorChar);
+            return "flow";
+          case '"':
+          case "'":
+            this.flowKey = true;
+            return yield* this.parseQuotedScalar();
+          case ":": {
+            const next = this.charAt(1);
+            if (this.flowKey || isEmpty(next) || next === ",") {
+              this.flowKey = false;
+              yield* this.pushCount(1);
+              yield* this.pushSpaces(true);
+              return "flow";
+            }
+          }
+          // fallthrough
+          default:
+            this.flowKey = false;
+            return yield* this.parsePlainScalar();
+        }
+      }
+      *parseQuotedScalar() {
+        const quote = this.charAt(0);
+        let end = this.buffer.indexOf(quote, this.pos + 1);
+        if (quote === "'") {
+          while (end !== -1 && this.buffer[end + 1] === "'")
+            end = this.buffer.indexOf("'", end + 2);
+        } else {
+          while (end !== -1) {
+            let n = 0;
+            while (this.buffer[end - 1 - n] === "\\")
+              n += 1;
+            if (n % 2 === 0)
+              break;
+            end = this.buffer.indexOf('"', end + 1);
+          }
+        }
+        const qb = this.buffer.substring(0, end);
+        let nl = qb.indexOf("\n", this.pos);
+        if (nl !== -1) {
+          while (nl !== -1) {
+            const cs = this.continueScalar(nl + 1);
+            if (cs === -1)
+              break;
+            nl = qb.indexOf("\n", cs);
+          }
+          if (nl !== -1) {
+            end = nl - (qb[nl - 1] === "\r" ? 2 : 1);
+          }
+        }
+        if (end === -1) {
+          if (!this.atEnd)
+            return this.setNext("quoted-scalar");
+          end = this.buffer.length;
+        }
+        yield* this.pushToIndex(end + 1, false);
+        return this.flowLevel ? "flow" : "doc";
+      }
+      *parseBlockScalarHeader() {
+        this.blockScalarIndent = -1;
+        this.blockScalarKeep = false;
+        let i = this.pos;
+        while (true) {
+          const ch = this.buffer[++i];
+          if (ch === "+")
+            this.blockScalarKeep = true;
+          else if (ch > "0" && ch <= "9")
+            this.blockScalarIndent = Number(ch) - 1;
+          else if (ch !== "-")
+            break;
+        }
+        return yield* this.pushUntil((ch) => isEmpty(ch) || ch === "#");
+      }
+      *parseBlockScalar() {
+        let nl = this.pos - 1;
+        let indent = 0;
+        let ch;
+        loop: for (let i2 = this.pos; ch = this.buffer[i2]; ++i2) {
+          switch (ch) {
+            case " ":
+              indent += 1;
+              break;
+            case "\n":
+              nl = i2;
+              indent = 0;
+              break;
+            case "\r": {
+              const next = this.buffer[i2 + 1];
+              if (!next && !this.atEnd)
+                return this.setNext("block-scalar");
+              if (next === "\n")
+                break;
+            }
+            // fallthrough
+            default:
+              break loop;
+          }
+        }
+        if (!ch && !this.atEnd)
+          return this.setNext("block-scalar");
+        if (indent >= this.indentNext) {
+          if (this.blockScalarIndent === -1)
+            this.indentNext = indent;
+          else {
+            this.indentNext = this.blockScalarIndent + (this.indentNext === 0 ? 1 : this.indentNext);
+          }
+          do {
+            const cs = this.continueScalar(nl + 1);
+            if (cs === -1)
+              break;
+            nl = this.buffer.indexOf("\n", cs);
+          } while (nl !== -1);
+          if (nl === -1) {
+            if (!this.atEnd)
+              return this.setNext("block-scalar");
+            nl = this.buffer.length;
+          }
+        }
+        let i = nl + 1;
+        ch = this.buffer[i];
+        while (ch === " ")
+          ch = this.buffer[++i];
+        if (ch === "	") {
+          while (ch === "	" || ch === " " || ch === "\r" || ch === "\n")
+            ch = this.buffer[++i];
+          nl = i - 1;
+        } else if (!this.blockScalarKeep) {
+          do {
+            let i2 = nl - 1;
+            let ch2 = this.buffer[i2];
+            if (ch2 === "\r")
+              ch2 = this.buffer[--i2];
+            const lastChar = i2;
+            while (ch2 === " ")
+              ch2 = this.buffer[--i2];
+            if (ch2 === "\n" && i2 >= this.pos && i2 + 1 + indent > lastChar)
+              nl = i2;
+            else
+              break;
+          } while (true);
+        }
+        yield cst.SCALAR;
+        yield* this.pushToIndex(nl + 1, true);
+        return yield* this.parseLineStart();
+      }
+      *parsePlainScalar() {
+        const inFlow = this.flowLevel > 0;
+        let end = this.pos - 1;
+        let i = this.pos - 1;
+        let ch;
+        while (ch = this.buffer[++i]) {
+          if (ch === ":") {
+            const next = this.buffer[i + 1];
+            if (isEmpty(next) || inFlow && flowIndicatorChars.has(next))
+              break;
+            end = i;
+          } else if (isEmpty(ch)) {
+            let next = this.buffer[i + 1];
+            if (ch === "\r") {
+              if (next === "\n") {
+                i += 1;
+                ch = "\n";
+                next = this.buffer[i + 1];
+              } else
+                end = i;
+            }
+            if (next === "#" || inFlow && flowIndicatorChars.has(next))
+              break;
+            if (ch === "\n") {
+              const cs = this.continueScalar(i + 1);
+              if (cs === -1)
+                break;
+              i = Math.max(i, cs - 2);
+            }
+          } else {
+            if (inFlow && flowIndicatorChars.has(ch))
+              break;
+            end = i;
+          }
+        }
+        if (!ch && !this.atEnd)
+          return this.setNext("plain-scalar");
+        yield cst.SCALAR;
+        yield* this.pushToIndex(end + 1, true);
+        return inFlow ? "flow" : "doc";
+      }
+      *pushCount(n) {
+        if (n > 0) {
+          yield this.buffer.substr(this.pos, n);
+          this.pos += n;
+          return n;
+        }
+        return 0;
+      }
+      *pushToIndex(i, allowEmpty) {
+        const s = this.buffer.slice(this.pos, i);
+        if (s) {
+          yield s;
+          this.pos += s.length;
+          return s.length;
+        } else if (allowEmpty)
+          yield "";
+        return 0;
+      }
+      *pushIndicators() {
+        let n = 0;
+        loop: while (true) {
+          switch (this.charAt(0)) {
+            case "!":
+              n += yield* this.pushTag();
+              n += yield* this.pushSpaces(true);
+              continue loop;
+            case "&":
+              n += yield* this.pushUntil(isNotAnchorChar);
+              n += yield* this.pushSpaces(true);
+              continue loop;
+            case "-":
+            // this is an error
+            case "?":
+            // this is an error outside flow collections
+            case ":": {
+              const inFlow = this.flowLevel > 0;
+              const ch1 = this.charAt(1);
+              if (isEmpty(ch1) || inFlow && flowIndicatorChars.has(ch1)) {
+                if (!inFlow)
+                  this.indentNext = this.indentValue + 1;
+                else if (this.flowKey)
+                  this.flowKey = false;
+                n += yield* this.pushCount(1);
+                n += yield* this.pushSpaces(true);
+                continue loop;
+              }
+            }
+          }
+          break loop;
+        }
+        return n;
+      }
+      *pushTag() {
+        if (this.charAt(1) === "<") {
+          let i = this.pos + 2;
+          let ch = this.buffer[i];
+          while (!isEmpty(ch) && ch !== ">")
+            ch = this.buffer[++i];
+          return yield* this.pushToIndex(ch === ">" ? i + 1 : i, false);
+        } else {
+          let i = this.pos + 1;
+          let ch = this.buffer[i];
+          while (ch) {
+            if (tagChars.has(ch))
+              ch = this.buffer[++i];
+            else if (ch === "%" && hexDigits.has(this.buffer[i + 1]) && hexDigits.has(this.buffer[i + 2])) {
+              ch = this.buffer[i += 3];
+            } else
+              break;
+          }
+          return yield* this.pushToIndex(i, false);
+        }
+      }
+      *pushNewline() {
+        const ch = this.buffer[this.pos];
+        if (ch === "\n")
+          return yield* this.pushCount(1);
+        else if (ch === "\r" && this.charAt(1) === "\n")
+          return yield* this.pushCount(2);
+        else
+          return 0;
+      }
+      *pushSpaces(allowTabs) {
+        let i = this.pos - 1;
+        let ch;
+        do {
+          ch = this.buffer[++i];
+        } while (ch === " " || allowTabs && ch === "	");
+        const n = i - this.pos;
+        if (n > 0) {
+          yield this.buffer.substr(this.pos, n);
+          this.pos = i;
+        }
+        return n;
+      }
+      *pushUntil(test) {
+        let i = this.pos;
+        let ch = this.buffer[i];
+        while (!test(ch))
+          ch = this.buffer[++i];
+        return yield* this.pushToIndex(i, false);
+      }
+    };
+    exports.Lexer = Lexer;
+  }
+});
+
+// node_modules/yaml/dist/parse/line-counter.js
+var require_line_counter = __commonJS({
+  "node_modules/yaml/dist/parse/line-counter.js"(exports) {
+    "use strict";
+    var LineCounter = class {
+      constructor() {
+        this.lineStarts = [];
+        this.addNewLine = (offset) => this.lineStarts.push(offset);
+        this.linePos = (offset) => {
+          let low = 0;
+          let high = this.lineStarts.length;
+          while (low < high) {
+            const mid = low + high >> 1;
+            if (this.lineStarts[mid] < offset)
+              low = mid + 1;
+            else
+              high = mid;
+          }
+          if (this.lineStarts[low] === offset)
+            return { line: low + 1, col: 1 };
+          if (low === 0)
+            return { line: 0, col: offset };
+          const start = this.lineStarts[low - 1];
+          return { line: low, col: offset - start + 1 };
+        };
+      }
+    };
+    exports.LineCounter = LineCounter;
+  }
+});
+
+// node_modules/yaml/dist/parse/parser.js
+var require_parser = __commonJS({
+  "node_modules/yaml/dist/parse/parser.js"(exports) {
+    "use strict";
+    var node_process = __require("process");
+    var cst = require_cst();
+    var lexer = require_lexer();
+    function includesToken(list, type) {
+      for (let i = 0; i < list.length; ++i)
+        if (list[i].type === type)
+          return true;
+      return false;
+    }
+    function findNonEmptyIndex(list) {
+      for (let i = 0; i < list.length; ++i) {
+        switch (list[i].type) {
+          case "space":
+          case "comment":
+          case "newline":
+            break;
+          default:
+            return i;
+        }
+      }
+      return -1;
+    }
+    function isFlowToken(token) {
+      switch (token?.type) {
+        case "alias":
+        case "scalar":
+        case "single-quoted-scalar":
+        case "double-quoted-scalar":
+        case "flow-collection":
+          return true;
+        default:
+          return false;
+      }
+    }
+    function getPrevProps(parent) {
+      switch (parent.type) {
+        case "document":
+          return parent.start;
+        case "block-map": {
+          const it = parent.items[parent.items.length - 1];
+          return it.sep ?? it.start;
+        }
+        case "block-seq":
+          return parent.items[parent.items.length - 1].start;
+        /* istanbul ignore next should not happen */
+        default:
+          return [];
+      }
+    }
+    function getFirstKeyStartProps(prev) {
+      if (prev.length === 0)
+        return [];
+      let i = prev.length;
+      loop: while (--i >= 0) {
+        switch (prev[i].type) {
+          case "doc-start":
+          case "explicit-key-ind":
+          case "map-value-ind":
+          case "seq-item-ind":
+          case "newline":
+            break loop;
+        }
+      }
+      while (prev[++i]?.type === "space") {
+      }
+      return prev.splice(i, prev.length);
+    }
+    function arrayPushArray(target, source) {
+      if (source.length < 1e5)
+        Array.prototype.push.apply(target, source);
+      else
+        for (let i = 0; i < source.length; ++i)
+          target.push(source[i]);
+    }
+    function fixFlowSeqItems(fc) {
+      if (fc.start.type === "flow-seq-start") {
+        for (const it of fc.items) {
+          if (it.sep && !it.value && !includesToken(it.start, "explicit-key-ind") && !includesToken(it.sep, "map-value-ind")) {
+            if (it.key)
+              it.value = it.key;
+            delete it.key;
+            if (isFlowToken(it.value)) {
+              if (it.value.end)
+                arrayPushArray(it.value.end, it.sep);
+              else
+                it.value.end = it.sep;
+            } else
+              arrayPushArray(it.start, it.sep);
+            delete it.sep;
+          }
+        }
+      }
+    }
+    var Parser = class {
+      /**
+       * @param onNewLine - If defined, called separately with the start position of
+       *   each new line (in `parse()`, including the start of input).
+       */
+      constructor(onNewLine) {
+        this.atNewLine = true;
+        this.atScalar = false;
+        this.indent = 0;
+        this.offset = 0;
+        this.onKeyLine = false;
+        this.stack = [];
+        this.source = "";
+        this.type = "";
+        this.lexer = new lexer.Lexer();
+        this.onNewLine = onNewLine;
+      }
+      /**
+       * Parse `source` as a YAML stream.
+       * If `incomplete`, a part of the last line may be left as a buffer for the next call.
+       *
+       * Errors are not thrown, but yielded as `{ type: 'error', message }` tokens.
+       *
+       * @returns A generator of tokens representing each directive, document, and other structure.
+       */
+      *parse(source, incomplete = false) {
+        if (this.onNewLine && this.offset === 0)
+          this.onNewLine(0);
+        for (const lexeme of this.lexer.lex(source, incomplete))
+          yield* this.next(lexeme);
+        if (!incomplete)
+          yield* this.end();
+      }
+      /**
+       * Advance the parser by the `source` of one lexical token.
+       */
+      *next(source) {
+        this.source = source;
+        if (node_process.env.LOG_TOKENS)
+          console.log("|", cst.prettyToken(source));
+        if (this.atScalar) {
+          this.atScalar = false;
+          yield* this.step();
+          this.offset += source.length;
+          return;
+        }
+        const type = cst.tokenType(source);
+        if (!type) {
+          const message = `Not a YAML token: ${source}`;
+          yield* this.pop({ type: "error", offset: this.offset, message, source });
+          this.offset += source.length;
+        } else if (type === "scalar") {
+          this.atNewLine = false;
+          this.atScalar = true;
+          this.type = "scalar";
+        } else {
+          this.type = type;
+          yield* this.step();
+          switch (type) {
+            case "newline":
+              this.atNewLine = true;
+              this.indent = 0;
+              if (this.onNewLine)
+                this.onNewLine(this.offset + source.length);
+              break;
+            case "space":
+              if (this.atNewLine && source[0] === " ")
+                this.indent += source.length;
+              break;
+            case "explicit-key-ind":
+            case "map-value-ind":
+            case "seq-item-ind":
+              if (this.atNewLine)
+                this.indent += source.length;
+              break;
+            case "doc-mode":
+            case "flow-error-end":
+              return;
+            default:
+              this.atNewLine = false;
+          }
+          this.offset += source.length;
+        }
+      }
+      /** Call at end of input to push out any remaining constructions */
+      *end() {
+        while (this.stack.length > 0)
+          yield* this.pop();
+      }
+      get sourceToken() {
+        const st = {
+          type: this.type,
+          offset: this.offset,
+          indent: this.indent,
+          source: this.source
+        };
+        return st;
+      }
+      *step() {
+        const top = this.peek(1);
+        if (this.type === "doc-end" && top?.type !== "doc-end") {
+          while (this.stack.length > 0)
+            yield* this.pop();
+          this.stack.push({
+            type: "doc-end",
+            offset: this.offset,
+            source: this.source
+          });
+          return;
+        }
+        if (!top)
+          return yield* this.stream();
+        switch (top.type) {
+          case "document":
+            return yield* this.document(top);
+          case "alias":
+          case "scalar":
+          case "single-quoted-scalar":
+          case "double-quoted-scalar":
+            return yield* this.scalar(top);
+          case "block-scalar":
+            return yield* this.blockScalar(top);
+          case "block-map":
+            return yield* this.blockMap(top);
+          case "block-seq":
+            return yield* this.blockSequence(top);
+          case "flow-collection":
+            return yield* this.flowCollection(top);
+          case "doc-end":
+            return yield* this.documentEnd(top);
+        }
+        yield* this.pop();
+      }
+      peek(n) {
+        return this.stack[this.stack.length - n];
+      }
+      *pop(error62) {
+        const token = error62 ?? this.stack.pop();
+        if (!token) {
+          const message = "Tried to pop an empty stack";
+          yield { type: "error", offset: this.offset, source: "", message };
+        } else if (this.stack.length === 0) {
+          yield token;
+        } else {
+          const top = this.peek(1);
+          if (token.type === "block-scalar") {
+            token.indent = "indent" in top ? top.indent : 0;
+          } else if (token.type === "flow-collection" && top.type === "document") {
+            token.indent = 0;
+          }
+          if (token.type === "flow-collection")
+            fixFlowSeqItems(token);
+          switch (top.type) {
+            case "document":
+              top.value = token;
+              break;
+            case "block-scalar":
+              top.props.push(token);
+              break;
+            case "block-map": {
+              const it = top.items[top.items.length - 1];
+              if (it.value) {
+                top.items.push({ start: [], key: token, sep: [] });
+                this.onKeyLine = true;
+                return;
+              } else if (it.sep) {
+                it.value = token;
+              } else {
+                Object.assign(it, { key: token, sep: [] });
+                this.onKeyLine = !it.explicitKey;
+                return;
+              }
+              break;
+            }
+            case "block-seq": {
+              const it = top.items[top.items.length - 1];
+              if (it.value)
+                top.items.push({ start: [], value: token });
+              else
+                it.value = token;
+              break;
+            }
+            case "flow-collection": {
+              const it = top.items[top.items.length - 1];
+              if (!it || it.value)
+                top.items.push({ start: [], key: token, sep: [] });
+              else if (it.sep)
+                it.value = token;
+              else
+                Object.assign(it, { key: token, sep: [] });
+              return;
+            }
+            /* istanbul ignore next should not happen */
+            default:
+              yield* this.pop();
+              yield* this.pop(token);
+          }
+          if ((top.type === "document" || top.type === "block-map" || top.type === "block-seq") && (token.type === "block-map" || token.type === "block-seq")) {
+            const last = token.items[token.items.length - 1];
+            if (last && !last.sep && !last.value && last.start.length > 0 && findNonEmptyIndex(last.start) === -1 && (token.indent === 0 || last.start.every((st) => st.type !== "comment" || st.indent < token.indent))) {
+              if (top.type === "document")
+                top.end = last.start;
+              else
+                top.items.push({ start: last.start });
+              token.items.splice(-1, 1);
+            }
+          }
+        }
+      }
+      *stream() {
+        switch (this.type) {
+          case "directive-line":
+            yield { type: "directive", offset: this.offset, source: this.source };
+            return;
+          case "byte-order-mark":
+          case "space":
+          case "comment":
+          case "newline":
+            yield this.sourceToken;
+            return;
+          case "doc-mode":
+          case "doc-start": {
+            const doc = {
+              type: "document",
+              offset: this.offset,
+              start: []
+            };
+            if (this.type === "doc-start")
+              doc.start.push(this.sourceToken);
+            this.stack.push(doc);
+            return;
+          }
+        }
+        yield {
+          type: "error",
+          offset: this.offset,
+          message: `Unexpected ${this.type} token in YAML stream`,
+          source: this.source
+        };
+      }
+      *document(doc) {
+        if (doc.value)
+          return yield* this.lineEnd(doc);
+        switch (this.type) {
+          case "doc-start": {
+            if (findNonEmptyIndex(doc.start) !== -1) {
+              yield* this.pop();
+              yield* this.step();
+            } else
+              doc.start.push(this.sourceToken);
+            return;
+          }
+          case "anchor":
+          case "tag":
+          case "space":
+          case "comment":
+          case "newline":
+            doc.start.push(this.sourceToken);
+            return;
+        }
+        const bv = this.startBlockValue(doc);
+        if (bv)
+          this.stack.push(bv);
+        else {
+          yield {
+            type: "error",
+            offset: this.offset,
+            message: `Unexpected ${this.type} token in YAML document`,
+            source: this.source
+          };
+        }
+      }
+      *scalar(scalar) {
+        if (this.type === "map-value-ind") {
+          const prev = getPrevProps(this.peek(2));
+          const start = getFirstKeyStartProps(prev);
+          let sep2;
+          if (scalar.end) {
+            sep2 = scalar.end;
+            sep2.push(this.sourceToken);
+            delete scalar.end;
+          } else
+            sep2 = [this.sourceToken];
+          const map2 = {
+            type: "block-map",
+            offset: scalar.offset,
+            indent: scalar.indent,
+            items: [{ start, key: scalar, sep: sep2 }]
+          };
+          this.onKeyLine = true;
+          this.stack[this.stack.length - 1] = map2;
+        } else
+          yield* this.lineEnd(scalar);
+      }
+      *blockScalar(scalar) {
+        switch (this.type) {
+          case "space":
+          case "comment":
+          case "newline":
+            scalar.props.push(this.sourceToken);
+            return;
+          case "scalar":
+            scalar.source = this.source;
+            this.atNewLine = true;
+            this.indent = 0;
+            if (this.onNewLine) {
+              let nl = this.source.indexOf("\n") + 1;
+              while (nl !== 0) {
+                this.onNewLine(this.offset + nl);
+                nl = this.source.indexOf("\n", nl) + 1;
+              }
+            }
+            yield* this.pop();
+            break;
+          /* istanbul ignore next should not happen */
+          default:
+            yield* this.pop();
+            yield* this.step();
+        }
+      }
+      *blockMap(map2) {
+        const it = map2.items[map2.items.length - 1];
+        switch (this.type) {
+          case "newline":
+            this.onKeyLine = false;
+            if (it.value) {
+              const end = "end" in it.value ? it.value.end : void 0;
+              const last = Array.isArray(end) ? end[end.length - 1] : void 0;
+              if (last?.type === "comment")
+                end?.push(this.sourceToken);
+              else
+                map2.items.push({ start: [this.sourceToken] });
+            } else if (it.sep) {
+              it.sep.push(this.sourceToken);
+            } else {
+              it.start.push(this.sourceToken);
+            }
+            return;
+          case "space":
+          case "comment":
+            if (it.value) {
+              map2.items.push({ start: [this.sourceToken] });
+            } else if (it.sep) {
+              it.sep.push(this.sourceToken);
+            } else {
+              if (this.atIndentedComment(it.start, map2.indent)) {
+                const prev = map2.items[map2.items.length - 2];
+                const end = prev?.value?.end;
+                if (Array.isArray(end)) {
+                  arrayPushArray(end, it.start);
+                  end.push(this.sourceToken);
+                  map2.items.pop();
+                  return;
+                }
+              }
+              it.start.push(this.sourceToken);
+            }
+            return;
+        }
+        if (this.indent >= map2.indent) {
+          const atMapIndent = !this.onKeyLine && this.indent === map2.indent;
+          const atNextItem = atMapIndent && (it.sep || it.explicitKey) && this.type !== "seq-item-ind";
+          let start = [];
+          if (atNextItem && it.sep && !it.value) {
+            const nl = [];
+            for (let i = 0; i < it.sep.length; ++i) {
+              const st = it.sep[i];
+              switch (st.type) {
+                case "newline":
+                  nl.push(i);
+                  break;
+                case "space":
+                  break;
+                case "comment":
+                  if (st.indent > map2.indent)
+                    nl.length = 0;
+                  break;
+                default:
+                  nl.length = 0;
+              }
+            }
+            if (nl.length >= 2)
+              start = it.sep.splice(nl[1]);
+          }
+          switch (this.type) {
+            case "anchor":
+            case "tag":
+              if (atNextItem || it.value) {
+                start.push(this.sourceToken);
+                map2.items.push({ start });
+                this.onKeyLine = true;
+              } else if (it.sep) {
+                it.sep.push(this.sourceToken);
+              } else {
+                it.start.push(this.sourceToken);
+              }
+              return;
+            case "explicit-key-ind":
+              if (!it.sep && !it.explicitKey) {
+                it.start.push(this.sourceToken);
+                it.explicitKey = true;
+              } else if (atNextItem || it.value) {
+                start.push(this.sourceToken);
+                map2.items.push({ start, explicitKey: true });
+              } else {
+                this.stack.push({
+                  type: "block-map",
+                  offset: this.offset,
+                  indent: this.indent,
+                  items: [{ start: [this.sourceToken], explicitKey: true }]
+                });
+              }
+              this.onKeyLine = true;
+              return;
+            case "map-value-ind":
+              if (it.explicitKey) {
+                if (!it.sep) {
+                  if (includesToken(it.start, "newline")) {
+                    Object.assign(it, { key: null, sep: [this.sourceToken] });
+                  } else {
+                    const start2 = getFirstKeyStartProps(it.start);
+                    this.stack.push({
+                      type: "block-map",
+                      offset: this.offset,
+                      indent: this.indent,
+                      items: [{ start: start2, key: null, sep: [this.sourceToken] }]
+                    });
+                  }
+                } else if (it.value) {
+                  map2.items.push({ start: [], key: null, sep: [this.sourceToken] });
+                } else if (includesToken(it.sep, "map-value-ind")) {
+                  this.stack.push({
+                    type: "block-map",
+                    offset: this.offset,
+                    indent: this.indent,
+                    items: [{ start, key: null, sep: [this.sourceToken] }]
+                  });
+                } else if (isFlowToken(it.key) && !includesToken(it.sep, "newline")) {
+                  const start2 = getFirstKeyStartProps(it.start);
+                  const key = it.key;
+                  const sep2 = it.sep;
+                  sep2.push(this.sourceToken);
+                  delete it.key;
+                  delete it.sep;
+                  this.stack.push({
+                    type: "block-map",
+                    offset: this.offset,
+                    indent: this.indent,
+                    items: [{ start: start2, key, sep: sep2 }]
+                  });
+                } else if (start.length > 0) {
+                  it.sep = it.sep.concat(start, this.sourceToken);
+                } else {
+                  it.sep.push(this.sourceToken);
+                }
+              } else {
+                if (!it.sep) {
+                  Object.assign(it, { key: null, sep: [this.sourceToken] });
+                } else if (it.value || atNextItem) {
+                  map2.items.push({ start, key: null, sep: [this.sourceToken] });
+                } else if (includesToken(it.sep, "map-value-ind")) {
+                  this.stack.push({
+                    type: "block-map",
+                    offset: this.offset,
+                    indent: this.indent,
+                    items: [{ start: [], key: null, sep: [this.sourceToken] }]
+                  });
+                } else {
+                  it.sep.push(this.sourceToken);
+                }
+              }
+              this.onKeyLine = true;
+              return;
+            case "alias":
+            case "scalar":
+            case "single-quoted-scalar":
+            case "double-quoted-scalar": {
+              const fs = this.flowScalar(this.type);
+              if (atNextItem || it.value) {
+                map2.items.push({ start, key: fs, sep: [] });
+                this.onKeyLine = true;
+              } else if (it.sep) {
+                this.stack.push(fs);
+              } else {
+                Object.assign(it, { key: fs, sep: [] });
+                this.onKeyLine = true;
+              }
+              return;
+            }
+            default: {
+              const bv = this.startBlockValue(map2);
+              if (bv) {
+                if (bv.type === "block-seq") {
+                  if (!it.explicitKey && it.sep && !includesToken(it.sep, "newline")) {
+                    yield* this.pop({
+                      type: "error",
+                      offset: this.offset,
+                      message: "Unexpected block-seq-ind on same line with key",
+                      source: this.source
+                    });
+                    return;
+                  }
+                } else if (atMapIndent) {
+                  map2.items.push({ start });
+                }
+                this.stack.push(bv);
+                return;
+              }
+            }
+          }
+        }
+        yield* this.pop();
+        yield* this.step();
+      }
+      *blockSequence(seq) {
+        const it = seq.items[seq.items.length - 1];
+        switch (this.type) {
+          case "newline":
+            if (it.value) {
+              const end = "end" in it.value ? it.value.end : void 0;
+              const last = Array.isArray(end) ? end[end.length - 1] : void 0;
+              if (last?.type === "comment")
+                end?.push(this.sourceToken);
+              else
+                seq.items.push({ start: [this.sourceToken] });
+            } else
+              it.start.push(this.sourceToken);
+            return;
+          case "space":
+          case "comment":
+            if (it.value)
+              seq.items.push({ start: [this.sourceToken] });
+            else {
+              if (this.atIndentedComment(it.start, seq.indent)) {
+                const prev = seq.items[seq.items.length - 2];
+                const end = prev?.value?.end;
+                if (Array.isArray(end)) {
+                  arrayPushArray(end, it.start);
+                  end.push(this.sourceToken);
+                  seq.items.pop();
+                  return;
+                }
+              }
+              it.start.push(this.sourceToken);
+            }
+            return;
+          case "anchor":
+          case "tag":
+            if (it.value || this.indent <= seq.indent)
+              break;
+            it.start.push(this.sourceToken);
+            return;
+          case "seq-item-ind":
+            if (this.indent !== seq.indent)
+              break;
+            if (it.value || includesToken(it.start, "seq-item-ind"))
+              seq.items.push({ start: [this.sourceToken] });
+            else
+              it.start.push(this.sourceToken);
+            return;
+        }
+        if (this.indent > seq.indent) {
+          const bv = this.startBlockValue(seq);
+          if (bv) {
+            this.stack.push(bv);
+            return;
+          }
+        }
+        yield* this.pop();
+        yield* this.step();
+      }
+      *flowCollection(fc) {
+        const it = fc.items[fc.items.length - 1];
+        if (this.type === "flow-error-end") {
+          let top;
+          do {
+            yield* this.pop();
+            top = this.peek(1);
+          } while (top?.type === "flow-collection");
+        } else if (fc.end.length === 0) {
+          switch (this.type) {
+            case "comma":
+            case "explicit-key-ind":
+              if (!it || it.sep)
+                fc.items.push({ start: [this.sourceToken] });
+              else
+                it.start.push(this.sourceToken);
+              return;
+            case "map-value-ind":
+              if (!it || it.value)
+                fc.items.push({ start: [], key: null, sep: [this.sourceToken] });
+              else if (it.sep)
+                it.sep.push(this.sourceToken);
+              else
+                Object.assign(it, { key: null, sep: [this.sourceToken] });
+              return;
+            case "space":
+            case "comment":
+            case "newline":
+            case "anchor":
+            case "tag":
+              if (!it || it.value)
+                fc.items.push({ start: [this.sourceToken] });
+              else if (it.sep)
+                it.sep.push(this.sourceToken);
+              else
+                it.start.push(this.sourceToken);
+              return;
+            case "alias":
+            case "scalar":
+            case "single-quoted-scalar":
+            case "double-quoted-scalar": {
+              const fs = this.flowScalar(this.type);
+              if (!it || it.value)
+                fc.items.push({ start: [], key: fs, sep: [] });
+              else if (it.sep)
+                this.stack.push(fs);
+              else
+                Object.assign(it, { key: fs, sep: [] });
+              return;
+            }
+            case "flow-map-end":
+            case "flow-seq-end":
+              fc.end.push(this.sourceToken);
+              return;
+          }
+          const bv = this.startBlockValue(fc);
+          if (bv)
+            this.stack.push(bv);
+          else {
+            yield* this.pop();
+            yield* this.step();
+          }
+        } else {
+          const parent = this.peek(2);
+          if (parent.type === "block-map" && (this.type === "map-value-ind" && parent.indent === fc.indent || this.type === "newline" && !parent.items[parent.items.length - 1].sep)) {
+            yield* this.pop();
+            yield* this.step();
+          } else if (this.type === "map-value-ind" && parent.type !== "flow-collection") {
+            const prev = getPrevProps(parent);
+            const start = getFirstKeyStartProps(prev);
+            fixFlowSeqItems(fc);
+            const sep2 = fc.end.splice(1, fc.end.length);
+            sep2.push(this.sourceToken);
+            const map2 = {
+              type: "block-map",
+              offset: fc.offset,
+              indent: fc.indent,
+              items: [{ start, key: fc, sep: sep2 }]
+            };
+            this.onKeyLine = true;
+            this.stack[this.stack.length - 1] = map2;
+          } else {
+            yield* this.lineEnd(fc);
+          }
+        }
+      }
+      flowScalar(type) {
+        if (this.onNewLine) {
+          let nl = this.source.indexOf("\n") + 1;
+          while (nl !== 0) {
+            this.onNewLine(this.offset + nl);
+            nl = this.source.indexOf("\n", nl) + 1;
+          }
+        }
+        return {
+          type,
+          offset: this.offset,
+          indent: this.indent,
+          source: this.source
+        };
+      }
+      startBlockValue(parent) {
+        switch (this.type) {
+          case "alias":
+          case "scalar":
+          case "single-quoted-scalar":
+          case "double-quoted-scalar":
+            return this.flowScalar(this.type);
+          case "block-scalar-header":
+            return {
+              type: "block-scalar",
+              offset: this.offset,
+              indent: this.indent,
+              props: [this.sourceToken],
+              source: ""
+            };
+          case "flow-map-start":
+          case "flow-seq-start":
+            return {
+              type: "flow-collection",
+              offset: this.offset,
+              indent: this.indent,
+              start: this.sourceToken,
+              items: [],
+              end: []
+            };
+          case "seq-item-ind":
+            return {
+              type: "block-seq",
+              offset: this.offset,
+              indent: this.indent,
+              items: [{ start: [this.sourceToken] }]
+            };
+          case "explicit-key-ind": {
+            this.onKeyLine = true;
+            const prev = getPrevProps(parent);
+            const start = getFirstKeyStartProps(prev);
+            start.push(this.sourceToken);
+            return {
+              type: "block-map",
+              offset: this.offset,
+              indent: this.indent,
+              items: [{ start, explicitKey: true }]
+            };
+          }
+          case "map-value-ind": {
+            this.onKeyLine = true;
+            const prev = getPrevProps(parent);
+            const start = getFirstKeyStartProps(prev);
+            return {
+              type: "block-map",
+              offset: this.offset,
+              indent: this.indent,
+              items: [{ start, key: null, sep: [this.sourceToken] }]
+            };
+          }
+        }
+        return null;
+      }
+      atIndentedComment(start, indent) {
+        if (this.type !== "comment")
+          return false;
+        if (this.indent <= indent)
+          return false;
+        return start.every((st) => st.type === "newline" || st.type === "space");
+      }
+      *documentEnd(docEnd) {
+        if (this.type !== "doc-mode") {
+          if (docEnd.end)
+            docEnd.end.push(this.sourceToken);
+          else
+            docEnd.end = [this.sourceToken];
+          if (this.type === "newline")
+            yield* this.pop();
+        }
+      }
+      *lineEnd(token) {
+        switch (this.type) {
+          case "comma":
+          case "doc-start":
+          case "doc-end":
+          case "flow-seq-end":
+          case "flow-map-end":
+          case "map-value-ind":
+            yield* this.pop();
+            yield* this.step();
+            break;
+          case "newline":
+            this.onKeyLine = false;
+          // fallthrough
+          case "space":
+          case "comment":
+          default:
+            if (token.end)
+              token.end.push(this.sourceToken);
+            else
+              token.end = [this.sourceToken];
+            if (this.type === "newline")
+              yield* this.pop();
+        }
+      }
+    };
+    exports.Parser = Parser;
+  }
+});
+
+// node_modules/yaml/dist/public-api.js
+var require_public_api = __commonJS({
+  "node_modules/yaml/dist/public-api.js"(exports) {
+    "use strict";
+    var composer = require_composer();
+    var Document = require_Document();
+    var errors = require_errors();
+    var log7 = require_log();
+    var identity = require_identity();
+    var lineCounter = require_line_counter();
+    var parser = require_parser();
+    function parseOptions(options) {
+      const prettyErrors = options.prettyErrors !== false;
+      const lineCounter$1 = options.lineCounter || prettyErrors && new lineCounter.LineCounter() || null;
+      return { lineCounter: lineCounter$1, prettyErrors };
+    }
+    function parseAllDocuments(source, options = {}) {
+      const { lineCounter: lineCounter2, prettyErrors } = parseOptions(options);
+      const parser$1 = new parser.Parser(lineCounter2?.addNewLine);
+      const composer$1 = new composer.Composer(options);
+      const docs = Array.from(composer$1.compose(parser$1.parse(source)));
+      if (prettyErrors && lineCounter2)
+        for (const doc of docs) {
+          doc.errors.forEach(errors.prettifyError(source, lineCounter2));
+          doc.warnings.forEach(errors.prettifyError(source, lineCounter2));
+        }
+      if (docs.length > 0)
+        return docs;
+      return Object.assign([], { empty: true }, composer$1.streamInfo());
+    }
+    function parseDocument(source, options = {}) {
+      const { lineCounter: lineCounter2, prettyErrors } = parseOptions(options);
+      const parser$1 = new parser.Parser(lineCounter2?.addNewLine);
+      const composer$1 = new composer.Composer(options);
+      let doc = null;
+      for (const _doc of composer$1.compose(parser$1.parse(source), true, source.length)) {
+        if (!doc)
+          doc = _doc;
+        else if (doc.options.logLevel !== "silent") {
+          doc.errors.push(new errors.YAMLParseError(_doc.range.slice(0, 2), "MULTIPLE_DOCS", "Source contains multiple documents; please use YAML.parseAllDocuments()"));
+          break;
+        }
+      }
+      if (prettyErrors && lineCounter2) {
+        doc.errors.forEach(errors.prettifyError(source, lineCounter2));
+        doc.warnings.forEach(errors.prettifyError(source, lineCounter2));
+      }
+      return doc;
+    }
+    function parse3(src, reviver, options) {
+      let _reviver = void 0;
+      if (typeof reviver === "function") {
+        _reviver = reviver;
+      } else if (options === void 0 && reviver && typeof reviver === "object") {
+        options = reviver;
+      }
+      const doc = parseDocument(src, options);
+      if (!doc)
+        return null;
+      doc.warnings.forEach((warning) => log7.warn(doc.options.logLevel, warning));
+      if (doc.errors.length > 0) {
+        if (doc.options.logLevel !== "silent")
+          throw doc.errors[0];
+        else
+          doc.errors = [];
+      }
+      return doc.toJS(Object.assign({ reviver: _reviver }, options));
+    }
+    function stringify(value, replacer, options) {
+      let _replacer = null;
+      if (typeof replacer === "function" || Array.isArray(replacer)) {
+        _replacer = replacer;
+      } else if (options === void 0 && replacer) {
+        options = replacer;
+      }
+      if (typeof options === "string")
+        options = options.length;
+      if (typeof options === "number") {
+        const indent = Math.round(options);
+        options = indent < 1 ? void 0 : indent > 8 ? { indent: 8 } : { indent };
+      }
+      if (value === void 0) {
+        const { keepUndefined } = options ?? replacer ?? {};
+        if (!keepUndefined)
+          return void 0;
+      }
+      if (identity.isDocument(value) && !_replacer)
+        return value.toString(options);
+      return new Document.Document(value, _replacer, options).toString(options);
+    }
+    exports.parse = parse3;
+    exports.parseAllDocuments = parseAllDocuments;
+    exports.parseDocument = parseDocument;
+    exports.stringify = stringify;
+  }
+});
+
+// node_modules/yaml/dist/index.js
+var require_dist = __commonJS({
+  "node_modules/yaml/dist/index.js"(exports) {
+    "use strict";
+    var composer = require_composer();
+    var Document = require_Document();
+    var Schema = require_Schema();
+    var errors = require_errors();
+    var Alias = require_Alias();
+    var identity = require_identity();
+    var Pair = require_Pair();
+    var Scalar = require_Scalar();
+    var YAMLMap = require_YAMLMap();
+    var YAMLSeq = require_YAMLSeq();
+    var cst = require_cst();
+    var lexer = require_lexer();
+    var lineCounter = require_line_counter();
+    var parser = require_parser();
+    var publicApi = require_public_api();
+    var visit2 = require_visit();
+    exports.Composer = composer.Composer;
+    exports.Document = Document.Document;
+    exports.Schema = Schema.Schema;
+    exports.YAMLError = errors.YAMLError;
+    exports.YAMLParseError = errors.YAMLParseError;
+    exports.YAMLWarning = errors.YAMLWarning;
+    exports.Alias = Alias.Alias;
+    exports.isAlias = identity.isAlias;
+    exports.isCollection = identity.isCollection;
+    exports.isDocument = identity.isDocument;
+    exports.isMap = identity.isMap;
+    exports.isNode = identity.isNode;
+    exports.isPair = identity.isPair;
+    exports.isScalar = identity.isScalar;
+    exports.isSeq = identity.isSeq;
+    exports.Pair = Pair.Pair;
+    exports.Scalar = Scalar.Scalar;
+    exports.YAMLMap = YAMLMap.YAMLMap;
+    exports.YAMLSeq = YAMLSeq.YAMLSeq;
+    exports.CST = cst;
+    exports.Lexer = lexer.Lexer;
+    exports.LineCounter = lineCounter.LineCounter;
+    exports.Parser = parser.Parser;
+    exports.parse = publicApi.parse;
+    exports.parseAllDocuments = publicApi.parseAllDocuments;
+    exports.parseDocument = publicApi.parseDocument;
+    exports.stringify = publicApi.stringify;
+    exports.visit = visit2.visit;
+    exports.visitAsync = visit2.visitAsync;
+  }
+});
+
+// packages/core/src/events.ts
+import { appendFileSync, existsSync as existsSync2, mkdirSync as mkdirSync2, readFileSync as readFileSync3, writeFileSync as writeFileSync2 } from "node:fs";
+import { join as join3 } from "node:path";
+function ensureSdlcDir(root) {
+  const dir = join3(root, ".sdlc");
+  mkdirSync2(dir, { recursive: true });
+  const gi = join3(dir, ".gitignore");
+  if (!existsSync2(gi)) writeFileSync2(gi, LOCAL_FILES.join("\n") + "\n");
+  return dir;
+}
+function recordEvent(root, event) {
+  try {
+    ensureSdlcDir(root);
+    appendFileSync(join3(root, EVENTS_PATH), JSON.stringify({ ts: (/* @__PURE__ */ new Date()).toISOString(), ...event }) + "\n");
+  } catch {
+  }
+}
+function readEvents(root, limit = 500) {
+  const p = join3(root, EVENTS_PATH);
+  if (!existsSync2(p)) return [];
+  const out = [];
+  for (const line of readFileSync3(p, "utf8").split("\n").slice(-limit - 1)) {
+    if (!line) continue;
+    try {
+      out.push(JSON.parse(line));
+    } catch {
+    }
+  }
+  return out.reverse();
+}
+var EVENTS_PATH, LOCAL_FILES;
+var init_events = __esm({
+  "packages/core/src/events.ts"() {
+    "use strict";
+    EVENTS_PATH = ".sdlc/events.jsonl";
+    LOCAL_FILES = ["events.jsonl", "fix-lock", "ui-token", "bands/", "risk-floor.json", "pr-stats.json", "jobs/"];
+  }
+});
+
 // packages/core/src/bands.ts
 import { execFileSync as execFileSync2 } from "node:child_process";
-import { appendFileSync as appendFileSync2, existsSync as existsSync2, mkdirSync as mkdirSync2, readFileSync as readFileSync2 } from "node:fs";
-import { join as join2 } from "node:path";
+import { appendFileSync as appendFileSync2, existsSync as existsSync3, mkdirSync as mkdirSync3, readFileSync as readFileSync4 } from "node:fs";
+import { join as join4 } from "node:path";
 function loadBands(root) {
-  const p = join2(root, BANDS_PATH);
-  if (!existsSync2(p)) return void 0;
+  const p = join4(root, BANDS_PATH);
+  if (!existsSync3(p)) return void 0;
   let raw2;
   try {
-    raw2 = (0, import_yaml.parse)(readFileSync2(p, "utf8"));
+    raw2 = (0, import_yaml.parse)(readFileSync4(p, "utf8"));
   } catch (e) {
     throw new SdlcError(`${BANDS_PATH}: ${e.message}`);
   }
@@ -27956,16 +28202,16 @@ async function readSource(root, source, env = process.env) {
   return values;
 }
 function historyPath(root, metric) {
-  return join2(root, BANDS_HISTORY_DIR, `${metric}.jsonl`);
+  return join4(root, BANDS_HISTORY_DIR, `${metric}.jsonl`);
 }
 function readHistory(root, metric) {
   const p = historyPath(root, metric);
-  if (!existsSync2(p)) return [];
-  return readFileSync2(p, "utf8").split("\n").filter(Boolean).map((l) => Number(JSON.parse(l).value)).filter(Number.isFinite);
+  if (!existsSync3(p)) return [];
+  return readFileSync4(p, "utf8").split("\n").filter(Boolean).map((l) => Number(JSON.parse(l).value)).filter(Number.isFinite);
 }
 function appendHistory(root, metric, value) {
   ensureSdlcDir(root);
-  mkdirSync2(join2(root, BANDS_HISTORY_DIR), { recursive: true });
+  mkdirSync3(join4(root, BANDS_HISTORY_DIR), { recursive: true });
   appendFileSync2(historyPath(root, metric), JSON.stringify({ ts: (/* @__PURE__ */ new Date()).toISOString(), value }) + "\n");
 }
 async function checkBands(root, file2, opts2) {
@@ -28042,156 +28288,6 @@ var init_bands = __esm({
   }
 });
 
-// packages/core/src/config.ts
-import { existsSync as existsSync3, mkdirSync as mkdirSync3, readFileSync as readFileSync3, writeFileSync as writeFileSync2 } from "node:fs";
-import { dirname, join as join3 } from "node:path";
-function configPath(root) {
-  if (existsSync3(join3(root, CONFIG_PATH))) return { path: CONFIG_PATH, legacy: false };
-  if (existsSync3(join3(root, LEGACY_CONFIG_PATH))) return { path: LEGACY_CONFIG_PATH, legacy: true };
-  return void 0;
-}
-function loadConfig(root) {
-  const found = configPath(root);
-  if (!found) return void 0;
-  let raw2;
-  try {
-    raw2 = JSON.parse(readFileSync3(join3(root, found.path), "utf8"));
-  } catch (e) {
-    return { config: { version: 1 }, ...found, issues: [`invalid JSON: ${e.message}`] };
-  }
-  const parsed = ConfigSchema.safeParse(raw2);
-  if (parsed.success) return { config: parsed.data, ...found, issues: [] };
-  return { config: raw2, ...found, issues: formatIssues(parsed.error) };
-}
-function validateConfig(raw2) {
-  const parsed = ConfigSchema.safeParse(raw2);
-  return parsed.success ? { ok: true, config: parsed.data } : { ok: false, issues: formatIssues(parsed.error) };
-}
-function formatIssues(err) {
-  return err.issues.map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`);
-}
-function writeConfig(root, config2, path = CONFIG_PATH) {
-  const full = join3(root, path);
-  mkdirSync3(dirname(full), { recursive: true });
-  writeFileSync2(full, JSON.stringify(config2, null, 2) + "\n");
-}
-function localeOf(loaded) {
-  return loaded?.config.locale ?? (loaded?.legacy ? "es" : "en");
-}
-function configJsonSchema() {
-  return external_exports.toJSONSchema(ConfigSchema, { io: "input" });
-}
-var AGENTS, ARTIFACTS, CI_AGENTS, NOTIFY_EVENTS, RISK_PROFILES, commandMap, ConfigSchema, CONFIG_PATH, LEGACY_CONFIG_PATH;
-var init_config = __esm({
-  "packages/core/src/config.ts"() {
-    "use strict";
-    init_zod();
-    AGENTS = ["claude", "cursor", "agents-md"];
-    ARTIFACTS = ["intent", "spec", "plan"];
-    CI_AGENTS = ["claude", "codex", "cursor"];
-    NOTIFY_EVENTS = ["gate.pending", "gate.decided", "spec.ready", "review.done", "change.merged", "risk.raised"];
-    RISK_PROFILES = ["strict", "graded"];
-    commandMap = external_exports.record(external_exports.string(), external_exports.string());
-    ConfigSchema = external_exports.looseObject({
-      version: external_exports.literal(1),
-      locale: external_exports.enum(["en", "es"]).optional(),
-      agents: external_exports.array(external_exports.enum(AGENTS)).optional(),
-      vcs: external_exports.looseObject({
-        provider: external_exports.enum(["github", "gitlab", "bitbucket"]).optional(),
-        host: external_exports.string().optional(),
-        workspace: external_exports.string().optional(),
-        repo: external_exports.string().optional(),
-        default_branch: external_exports.string().optional()
-      }).optional(),
-      tracker: external_exports.looseObject({
-        provider: external_exports.enum(["jira", "github", "linear", "none"]).optional(),
-        /** `jira-sot`: the tracker (Jira, GitHub Issues or Linear) is the source of truth; the name is historical. */
-        mode: external_exports.enum(["linkage", "jira-sot", "repo-sot"]).optional(),
-        base_url: external_exports.string().optional(),
-        project_key: external_exports.string().optional(),
-        /** Linear: team key (`ENG` in `ENG-123`). */
-        team_key: external_exports.string().optional(),
-        /** GitHub Issues: `owner/repo` when the issues live in another repository than the code. */
-        repo: external_exports.string().optional(),
-        default_issue_type: external_exports.string().optional(),
-        incident_issue_type: external_exports.string().optional(),
-        transitions: external_exports.record(external_exports.string(), external_exports.string()).optional()
-      }).optional(),
-      stack: external_exports.looseObject({ language: external_exports.string().optional(), package_manager: external_exports.string().optional(), project_type: external_exports.string().optional() }).optional(),
-      commands: external_exports.looseObject({
-        build: external_exports.string().optional(),
-        test: external_exports.string().optional(),
-        lint: external_exports.string().optional(),
-        format: external_exports.string().optional(),
-        run: external_exports.string().optional()
-      }).optional(),
-      format_on_edit: commandMap.optional(),
-      protected_paths: external_exports.array(external_exports.string()).optional(),
-      append_only_paths: external_exports.array(external_exports.string()).optional(),
-      test_globs: external_exports.array(external_exports.string()).optional(),
-      secret_patterns_extra: external_exports.array(external_exports.string()).optional(),
-      risk: external_exports.looseObject({
-        high_risk_paths: external_exports.array(external_exports.string()).optional(),
-        /** Paths that are never low risk (default: CI workflows, `.sdlc/**`, REVIEW.md). */
-        always_human_paths: external_exports.array(external_exports.string()).optional(),
-        /** `strict` (default): every gate needs a person. `graded`: human approvals scale with the tier. */
-        profile: external_exports.enum(RISK_PROFILES).optional(),
-        /** Human approvals per tier; defaults depend on `profile`. */
-        tiers: external_exports.partialRecord(external_exports.enum(["low", "medium", "high"]), external_exports.looseObject({ approvals: external_exports.number().int().min(0).max(5) })).optional(),
-        /** Authors (git name, email or `@login`) who get the lighter paths; everyone else needs another person. */
-        trusted_authors: external_exports.array(external_exports.string()).optional(),
-        size: external_exports.looseObject({ low_max_lines: external_exports.number().int().min(0).optional(), high_min_lines: external_exports.number().int().positive().optional() }).optional(),
-        /** `sdlc ci risk`: also ask the agent whether this change needs another person (it can only raise the tier). */
-        agent_escalation: external_exports.boolean().optional()
-      }).optional(),
-      production_gate: external_exports.looseObject({ patterns: external_exports.array(external_exports.string()).optional(), approval_env: external_exports.string().optional() }).optional(),
-      /** Who may approve each artifact: role names, resolved through `roles`. Empty → anyone but an agent. */
-      gates: external_exports.partialRecord(external_exports.enum(ARTIFACTS), external_exports.array(external_exports.string())).optional(),
-      /** Solo projects: the author may approve their own spec and plan (agents still cannot). */
-      gates_self_approval: external_exports.boolean().optional(),
-      /** Role → git emails (or names, or `@login` on the forge) of the people holding it. */
-      roles: external_exports.record(external_exports.string(), external_exports.array(external_exports.string())).optional(),
-      plugin: external_exports.looseObject({ marketplace_repo: external_exports.string().optional() }).optional(),
-      /** `sdlc quick`: small changes without spec and plan, limited on every push. */
-      quick_lane: external_exports.looseObject({
-        enabled: external_exports.boolean().optional(),
-        max_files: external_exports.number().int().positive().optional(),
-        forbid_paths: external_exports.array(external_exports.string()).optional()
-      }).optional(),
-      /** `sdlc notify`: loop events to Slack or any webhook (Teams, Discord, …). Off while the webhook env var is unset. */
-      notify: external_exports.looseObject({
-        webhook_env: external_exports.string().optional(),
-        format: external_exports.enum(["slack", "generic"]).optional(),
-        events: external_exports.array(external_exports.enum(NOTIFY_EVENTS)).optional(),
-        /** `@login`, email or git name → Slack member ID, to mention whoever has to act. */
-        people: external_exports.record(external_exports.string(), external_exports.string()).optional()
-      }).optional(),
-      /** Headless runs in CI (`sdlc ci …`): which agent CLI to drive. */
-      ci: external_exports.looseObject({
-        agent: external_exports.enum(CI_AGENTS).optional(),
-        model: external_exports.string().optional(),
-        min_pass_rate: external_exports.number().min(0).max(1).optional(),
-        /** `sdlc ci mention`: answer only (read) or also commit requested changes to the PR branch (edit). */
-        mention_mode: external_exports.enum(["read", "edit"]).optional(),
-        /** Headings every PR/MR description needs before sdlc/gates turns green ([] turns the check off). */
-        pr_sections: external_exports.array(external_exports.string()).optional(),
-        /** `sdlc ci review`: depth (auto follows the risk tier: low quick, medium standard, high deep) and the round cap. */
-        review: external_exports.looseObject({
-          depth: external_exports.enum(["auto", "quick", "standard", "deep"]).optional(),
-          max_rounds: external_exports.number().int().min(1).max(10).optional()
-        }).optional(),
-        /** `sdlc ci nightly-review`: the modules it rotates through (one per night) and how many intents a night may open. */
-        nightly: external_exports.looseObject({
-          modules: external_exports.array(external_exports.string()).optional(),
-          max_intents: external_exports.number().int().min(0).max(20).optional()
-        }).optional()
-      }).optional()
-    });
-    CONFIG_PATH = ".sdlc/config.json";
-    LEGACY_CONFIG_PATH = ".claude/sdlc.json";
-  }
-});
-
 // packages/core/src/frontmatter.ts
 function stripComment(v) {
   return v.replace(/\s+#.*$/, "").trim();
@@ -28246,9 +28342,9 @@ var init_frontmatter = __esm({
 
 // packages/core/src/git.ts
 import { execFileSync as execFileSync3 } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join as join4 } from "node:path";
+import { mkdtempSync as mkdtempSync2, rmSync as rmSync2 } from "node:fs";
+import { tmpdir as tmpdir2 } from "node:os";
+import { join as join5 } from "node:path";
 function git(cwd, args, input2) {
   try {
     return execFileSync3("git", args, {
@@ -28281,9 +28377,9 @@ function commitFiles(root, branch, files, msg, from) {
   if (lines(git(root, ["worktree", "list", "--porcelain"])).some((l) => l === `branch ${ref}`))
     throw new Error(`${branch} is checked out in a worktree; commit from there`);
   const parent = gitOrThrow(root, ["rev-parse", `${from ?? ref}^{commit}`]);
-  const dir = mkdtempSync(join4(tmpdir(), "sdlc-commit-"));
+  const dir = mkdtempSync2(join5(tmpdir2(), "sdlc-commit-"));
   try {
-    const env = { GIT_INDEX_FILE: join4(dir, "index") };
+    const env = { GIT_INDEX_FILE: join5(dir, "index") };
     gitOrThrow(root, ["read-tree", parent], { env });
     for (const [path, content] of Object.entries(files)) {
       const blob = gitOrThrow(root, ["hash-object", "-w", "--stdin"], { input: content });
@@ -28294,7 +28390,7 @@ function commitFiles(root, branch, files, msg, from) {
     gitOrThrow(root, ["update-ref", "-m", `sdlc: ${msg.split("\n")[0]}`, ref, sha2, from ? "0".repeat(sha2.length) : parent]);
     return sha2.slice(0, 7);
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync2(dir, { recursive: true, force: true });
   }
 }
 function lines(out) {
@@ -28369,6 +28465,10 @@ Si sigue exactamente el plan, no hace falta hacer nada: respond\xE9 brevemente y
       "nx.someone": () => "otra persona",
       "nx.agent": (p) => `Siguiente: ${p.next}`,
       "nx.done": (p) => `${p.change} est\xE1 mergeado; empez\xE1 el pr\xF3ximo`,
+      "nx.roadmap.approve": (p) => `Te toca decidir el roadmap ${p.roadmap} (${p.stories} historias)`,
+      "nx.roadmap.draft": (p) => `El roadmap ${p.roadmap} sigue en borrador (${p.problems})`,
+      "nx.roadmap.apply": (p) => `El roadmap ${p.roadmap} est\xE1 aprobado: faltan crear ${p.missing} tickets`,
+      "nx.story": (p) => `Pr\xF3xima historia del roadmap ${p.roadmap}: ${p.id} ${p.title} (${p.key})`,
       "nt.gate.pending": (p) => `${p.change}: el ${p.artifact} espera aprobaci\xF3n`,
       "nt.gate.decided": (p) => `${p.change}: ${p.artifact} ${p.decision} por ${p.by}`,
       "nt.spec.ready": (p) => `${p.change}: la spec est\xE1 lista para revisar`,
@@ -28430,6 +28530,10 @@ If it follows the plan exactly, nothing to do: answer briefly and finish.`,
       "nx.someone": () => "another person",
       "nx.agent": (p) => `Next: ${p.next}`,
       "nx.done": (p) => `${p.change} is merged; start the next one`,
+      "nx.roadmap.approve": (p) => `Your call: the roadmap ${p.roadmap} (${p.stories} stories)`,
+      "nx.roadmap.draft": (p) => `The roadmap ${p.roadmap} is still a draft (${p.problems})`,
+      "nx.roadmap.apply": (p) => `The roadmap ${p.roadmap} is approved: ${p.missing} tickets still to create`,
+      "nx.story": (p) => `Next story of the roadmap ${p.roadmap}: ${p.id} ${p.title} (${p.key})`,
       "nt.gate.pending": (p) => `${p.change}: the ${p.artifact} is waiting for approval`,
       "nt.gate.decided": (p) => `${p.change}: ${p.artifact} ${p.decision} by ${p.by}`,
       "nt.spec.ready": (p) => `${p.change}: the spec is ready for review`,
@@ -28448,8 +28552,8 @@ If it follows the plan exactly, nothing to do: answer briefly and finish.`,
 });
 
 // packages/core/src/changes.ts
-import { existsSync as existsSync4, readdirSync, readFileSync as readFileSync4, statSync } from "node:fs";
-import { join as join5 } from "node:path";
+import { existsSync as existsSync4, readdirSync, readFileSync as readFileSync5, statSync } from "node:fs";
+import { join as join6 } from "node:path";
 function stageOf(artifacts) {
   for (const a of ARTIFACTS) if (artifacts[a]?.status === "rejected") return "rejected";
   if (artifacts.intent?.data?.lane === "quick" && !artifacts.spec && !artifacts.plan) return "quick-ready";
@@ -28487,13 +28591,13 @@ function activeChange(root) {
   const branch = currentBranch(root);
   if (!branch?.startsWith("change/")) return void 0;
   const slug = branch.slice("change/".length);
-  if (existsSync4(join5(root, "changes", slug))) return `changes/${slug}`;
-  const dated = safeReaddir(join5(root, "changes")).find((d) => d.endsWith(`-${slug}`));
+  if (existsSync4(join6(root, "changes", slug))) return `changes/${slug}`;
+  const dated = safeReaddir(join6(root, "changes")).find((d) => d.endsWith(`-${slug}`));
   return `changes/${dated ?? slug}`;
 }
 function safeReaddir(dir) {
   try {
-    return readdirSync(dir).filter((d) => statSync(join5(dir, d)).isDirectory());
+    return readdirSync(dir).filter((d) => statSync(join6(dir, d)).isDirectory());
   } catch {
     return [];
   }
@@ -28505,8 +28609,8 @@ function slugOf(dir) {
   return dir.replace(/^\d{4}-\d{2}(-\d{2})?-/, "");
 }
 function readArtifact(root, dir, file2, branches) {
-  const p = join5(root, "changes", dir, file2);
-  if (existsSync4(p)) return { raw: readFileSync4(p, "utf8") };
+  const p = join6(root, "changes", dir, file2);
+  if (existsSync4(p)) return { raw: readFileSync5(p, "utf8") };
   for (const b of branches) {
     const raw2 = git(root, ["show", `${b}:changes/${dir}/${file2}`]);
     if (raw2 !== void 0) return { raw: raw2, branch: b };
@@ -28526,11 +28630,12 @@ function hasCodeCommits(root, branch, base) {
 function listChanges(root, opts2 = {}) {
   const locale = opts2.locale ?? "en";
   const branches = changeBranches(root);
-  const dirs = new Set(safeReaddir(join5(root, "changes")));
+  const dirs = new Set(safeReaddir(join6(root, "changes")));
   for (const b of branches) {
     for (const d of lines(git(root, ["ls-tree", "-d", "--name-only", `${b}:changes/`]))) dirs.add(d);
   }
   dirs.delete("_templates");
+  dirs.delete("_roadmaps");
   const active = activeChange(root);
   const base = opts2.defaultBranch ?? "main";
   const baseExists = git(root, ["rev-parse", "--verify", "--quiet", base]) !== void 0;
@@ -28593,13 +28698,13 @@ var init_changes = __esm({
 });
 
 // packages/core/src/explainers.ts
-import { existsSync as existsSync5, readdirSync as readdirSync2, readFileSync as readFileSync5 } from "node:fs";
-import { join as join6 } from "node:path";
+import { existsSync as existsSync5, readdirSync as readdirSync2, readFileSync as readFileSync6 } from "node:fs";
+import { join as join7 } from "node:path";
 function listExplainers(root) {
-  const dir = join6(root, EXPLAINERS_DIR);
+  const dir = join7(root, EXPLAINERS_DIR);
   if (!existsSync5(dir)) return [];
   return readdirSync2(dir).filter((f) => f.endsWith(".md") && f !== "README.md").sort().flatMap((f) => {
-    const { data } = parseFrontmatter(readFileSync5(join6(dir, f), "utf8"));
+    const { data } = parseFrontmatter(readFileSync6(join7(dir, f), "utf8"));
     if (!data.module) return [];
     const module = trimSlash(data.module);
     const sourceSha = data.source_sha || void 0;
@@ -28736,8 +28841,8 @@ var init_glob = __esm({
 });
 
 // packages/core/src/risk.ts
-import { existsSync as existsSync6, readFileSync as readFileSync6, writeFileSync as writeFileSync3 } from "node:fs";
-import { join as join7 } from "node:path";
+import { existsSync as existsSync6, readFileSync as readFileSync7, writeFileSync as writeFileSync3 } from "node:fs";
+import { join as join8 } from "node:path";
 function parseTier(v) {
   const s = v?.trim().toLowerCase() ?? "";
   if (/^(high|alto|alta)\b/.test(s)) return "high";
@@ -28827,7 +28932,7 @@ function parseFloor(raw2) {
   }
 }
 function readRiskFloor(root, now = /* @__PURE__ */ new Date()) {
-  const local = existsSync6(join7(root, RISK_FLOOR_PATH)) ? readFileSync6(join7(root, RISK_FLOOR_PATH), "utf8") : void 0;
+  const local = existsSync6(join8(root, RISK_FLOOR_PATH)) ? readFileSync7(join8(root, RISK_FLOOR_PATH), "utf8") : void 0;
   const fromRef = git(root, ["cat-file", "-p", `${RISK_FLOOR_REF}:floor.json`]);
   const active = [parseFloor(local), parseFloor(fromRef)].filter((f) => !!f && Date.parse(f.until) > now.getTime());
   return active.sort((a, b) => tierRank(b.tier) - tierRank(a.tier) || b.until.localeCompare(a.until))[0];
@@ -28837,7 +28942,7 @@ function writeRiskFloor(root, floor, now = /* @__PURE__ */ new Date()) {
   const next = current && (tierRank(current.tier) > tierRank(floor.tier) || current.tier === floor.tier && current.until > floor.until) ? current : floor;
   const json3 = JSON.stringify(next, null, 2) + "\n";
   ensureSdlcDir(root);
-  writeFileSync3(join7(root, RISK_FLOOR_PATH), json3);
+  writeFileSync3(join8(root, RISK_FLOOR_PATH), json3);
   const blob = git(root, ["hash-object", "-w", "--stdin"], json3);
   const tree = blob && git(root, ["mktree"], `100644 blob ${blob}	floor.json
 `);
@@ -28906,8 +29011,8 @@ var init_risk = __esm({
 });
 
 // packages/core/src/gates.ts
-import { readFileSync as readFileSync7, writeFileSync as writeFileSync4 } from "node:fs";
-import { join as join8 } from "node:path";
+import { readFileSync as readFileSync8, writeFileSync as writeFileSync4 } from "node:fs";
+import { join as join9 } from "node:path";
 function approvalsFor(loaded, tier, artifact = "code") {
   const profile = isGraded(loaded) ? "graded" : "strict";
   const n = loaded?.config.risk?.tiers?.[tier]?.approvals ?? TIER_APPROVALS[profile][tier];
@@ -29034,15 +29139,15 @@ function decideGate(root, loaded, changeId, artifact, decision, opts2 = {}) {
     if (graded) fields.approved_tier = tier;
   } else if (graded && info?.data.approved_by) fields.approved_by = "";
   const verb = decision === "approved" ? "approve" : "reject";
-  const count = graded && decision === "approved" && !opts2.auto ? ` (${approvers.length}/${need}, ${tier} risk)` : "";
-  const msg = [`chore(${change.slug}): ${verb} ${artifact}`, "", opts2.comment ?? "", `Gate: ${artifact} ${enough || decision === "rejected" ? status : "approval"} by ${by}${who.email ? ` <${who.email}>` : ""}${count}`].filter((l, i) => i !== 2 || l).join("\n");
+  const count2 = graded && decision === "approved" && !opts2.auto ? ` (${approvers.length}/${need}, ${tier} risk)` : "";
+  const msg = [`chore(${change.slug}): ${verb} ${artifact}`, "", opts2.comment ?? "", `Gate: ${artifact} ${enough || decision === "rejected" ? status : "approval"} by ${by}${who.email ? ` <${who.email}>` : ""}${count2}`].filter((l, i) => i !== 2 || l).join("\n");
   const commit = change.source === "worktree" ? commitInWorktree(root, info.path, fields, msg) : commitOnBranch(root, change.source.branch, info.path, fields, msg);
   recordEvent(root, { type: decision === "approved" ? "gate.approve" : "gate.reject", change: change.id, artifact, by, detail: opts2.comment ?? (opts2.auto ? `automatic at ${tier} risk` : void 0) });
   return { change: change.id, artifact, decision, commit, by, ...graded && decision === "approved" ? { approvals: { have: opts2.auto ? 0 : approvers.length, need } } : {} };
 }
 function commitInWorktree(root, path, fields, msg) {
-  const full = join8(root, path);
-  writeFileSync4(full, setFrontmatter(readFileSync7(full, "utf8"), fields));
+  const full = join9(root, path);
+  writeFileSync4(full, setFrontmatter(readFileSync8(full, "utf8"), fields));
   gitOrThrow(root, ["add", "--", path]);
   gitOrThrow(root, ["commit", "-m", msg, "--", path]);
   return gitOrThrow(root, ["rev-parse", "--short", "HEAD"]);
@@ -29124,10 +29229,19 @@ function jira(loaded, env = process.env) {
       await call("POST", `/issue/${key}/comment`, { body });
     },
     async create(o) {
-      const r = await call("POST", "/issue", {
-        fields: { project: { key: projectKey() }, summary: o.summary, description: o.body, issuetype: { name: o.type ?? tracker2.default_issue_type ?? "Task" } }
-      });
+      const fields = {
+        project: { key: projectKey() },
+        summary: o.summary,
+        description: o.body,
+        issuetype: { name: o.type ?? tracker2.default_issue_type ?? "Task" }
+      };
+      if (o.labels?.length) fields.labels = o.labels.map((l) => l.replace(/\s+/g, "-"));
+      if (o.parent) fields[tracker2.epic_link_field ?? "parent"] = tracker2.epic_link_field ? o.parent : { key: o.parent };
+      const r = await call("POST", "/issue", { fields });
       return r.key;
+    },
+    async link(blocker, blocked) {
+      await call("POST", "/issueLink", { type: { name: "Blocks" }, inwardIssue: { key: blocker }, outwardIssue: { key: blocked } });
     },
     async setDescription(key, body) {
       await call("PUT", `/issue/${key}`, { fields: { description: body } });
@@ -29191,8 +29305,26 @@ function githubIssues(loaded, env, root) {
     },
     async create(o) {
       const type = o.type ?? tracker2.default_issue_type;
-      const r = await call("POST", "/issues", { title: o.summary, body: o.body, labels: type ? [type] : [] });
+      const labels = [.../* @__PURE__ */ new Set([...type ? [type] : [], ...o.labels ?? []])];
+      const r = await call("POST", "/issues", { title: o.summary, body: o.body, labels });
+      if (o.parent) {
+        const epic = num(o.parent);
+        try {
+          await call("POST", `/issues/${epic}/sub_issues`, { sub_issue_id: r.id });
+        } catch {
+          const e = await call("GET", `/issues/${epic}`);
+          await call("PATCH", `/issues/${epic}`, { body: `${e.body ?? ""}
+- [ ] #${r.number}`.trimStart() });
+        }
+      }
       return `#${r.number}`;
+    },
+    async link(blocker, blocked) {
+      const n = num(blocked);
+      const i = await call("GET", `/issues/${n}`);
+      await call("PATCH", `/issues/${n}`, { body: `${i.body ?? ""}
+
+Blocked by #${num(blocker)}`.trimStart() });
     },
     async setDescription(key, body) {
       await call("PATCH", `/issues/${num(key)}`, { body });
@@ -29239,12 +29371,17 @@ function linear(loaded, env) {
       await gql("mutation($id: String!, $body: String!) { commentCreate(input: { issueId: $id, body: $body }) { success } }", { id: await issueId(k), body });
     },
     async create(o) {
-      const d = await gql("mutation($team: String!, $title: String!, $body: String) { issueCreate(input: { teamId: $team, title: $title, description: $body }) { issue { identifier } } }", {
-        team: (await getTeam()).id,
-        title: o.summary,
-        body: o.body
-      });
+      const d = await gql(
+        "mutation($team: String!, $title: String!, $body: String, $parent: String) { issueCreate(input: { teamId: $team, title: $title, description: $body, parentId: $parent }) { issue { identifier } } }",
+        { team: (await getTeam()).id, title: o.summary, body: o.body, parent: o.parent ? await issueId(o.parent) : null }
+      );
       return d.issueCreate.issue.identifier;
+    },
+    async link(blocker, blocked) {
+      await gql("mutation($a: String!, $b: String!) { issueRelationCreate(input: { issueId: $a, relatedIssueId: $b, type: blocks }) { success } }", {
+        a: await issueId(blocker),
+        b: await issueId(blocked)
+      });
     },
     async setDescription(k, body) {
       await gql("mutation($id: String!, $body: String!) { issueUpdate(id: $id, input: { description: $body }) { success } }", { id: await issueId(k), body });
@@ -29283,25 +29420,25 @@ var init_tracker = __esm({
 });
 
 // packages/core/src/metrics.ts
-import { existsSync as existsSync7, readFileSync as readFileSync8, writeFileSync as writeFileSync5 } from "node:fs";
-import { join as join9 } from "node:path";
+import { existsSync as existsSync7, readFileSync as readFileSync9, writeFileSync as writeFileSync5 } from "node:fs";
+import { join as join10 } from "node:path";
 function sumOutcomes(xs) {
   const t2 = { fixed: 0, wrong: 0, intentional: 0, ignored: 0, open: 0 };
   for (const x of xs) if (x) for (const k of OUTCOMES) t2[k] += x[k] ?? 0;
   return t2;
 }
 function readPrStats(root) {
-  const p = join9(root, PR_STATS_PATH);
+  const p = join10(root, PR_STATS_PATH);
   if (!existsSync7(p)) return {};
   try {
-    return JSON.parse(readFileSync8(p, "utf8")).changes ?? {};
+    return JSON.parse(readFileSync9(p, "utf8")).changes ?? {};
   } catch {
     return {};
   }
 }
 function writePrStats(root, changes) {
   ensureSdlcDir(root);
-  writeFileSync5(join9(root, PR_STATS_PATH), JSON.stringify({ updatedAt: (/* @__PURE__ */ new Date()).toISOString(), changes }, null, 2) + "\n");
+  writeFileSync5(join10(root, PR_STATS_PATH), JSON.stringify({ updatedAt: (/* @__PURE__ */ new Date()).toISOString(), changes }, null, 2) + "\n");
 }
 function firstAdd(root, path) {
   const ts = lines(git(root, ["log", "--all", "--diff-filter=A", "--format=%ct", "--", path])).pop();
@@ -29385,7 +29522,7 @@ function metrics(root, opts2 = {}) {
   const recent = changes.filter(inWindow);
   const incidents = recent.filter((m) => m.origin === "incident").length;
   const { landed, reverts } = revertStats(root, opts2.defaultBranch ?? "main", opts2.since);
-  const count = (key) => all.reduce((acc, c) => {
+  const count2 = (key) => all.reduce((acc, c) => {
     const k = key(c) ?? "unknown";
     acc[k] = (acc[k] ?? 0) + 1;
     return acc;
@@ -29398,8 +29535,8 @@ function metrics(root, opts2 = {}) {
     changes,
     summary: {
       changes: all.length,
-      byStage: count((c) => c.stage),
-      byOrigin: count((c) => c.origin),
+      byStage: count2((c) => c.stage),
+      byOrigin: count2((c) => c.origin),
       medianIntentToSpecH: median(changes.flatMap((m) => m.intentToSpecH !== void 0 ? [m.intentToSpecH] : [])),
       medianSpecToPlanH: median(changes.flatMap((m) => m.specToPlanH !== void 0 ? [m.specToPlanH] : [])),
       specReworkRate: withPlan.length ? withPlan.filter((m) => (m.specReworkAfterPlan ?? 0) > 0).length / withPlan.length : void 0,
@@ -29458,6 +29595,417 @@ var init_metrics = __esm({
   }
 });
 
+// packages/core/src/roadmap.ts
+import { createHash } from "node:crypto";
+import { copyFileSync, existsSync as existsSync8, mkdirSync as mkdirSync4, readdirSync as readdirSync3, readFileSync as readFileSync10, statSync as statSync2, writeFileSync as writeFileSync6 } from "node:fs";
+import { basename, extname, join as join11 } from "node:path";
+function parseRoadmap(raw2, slug = "", path = roadmapPath(slug)) {
+  const { data, body, hasFrontmatter } = parseFrontmatter(raw2);
+  const offset = hasFrontmatter ? raw2.split("\n").length - body.split("\n").length : 0;
+  const lines2 = body.split("\n");
+  const items = [];
+  const questions = [];
+  let current;
+  let inFields = false;
+  let inQuestions = false;
+  let epic;
+  for (let i = 0; i < lines2.length; i++) {
+    const line = lines2[i];
+    const h = HEADING.exec(line);
+    if (h) {
+      const kind = h[2].includes(".") ? "story" : "epic";
+      if (kind === "epic") epic = h[2];
+      current = { id: h[2], kind, title: h[3], epic: kind === "story" ? epic : void 0, fields: {}, description: "", criteria: [], depends: [], line: offset + i + 1 };
+      items.push(current);
+      inFields = true;
+      inQuestions = false;
+      continue;
+    }
+    if (/^#{1,2}\s/.test(line)) {
+      current = void 0;
+      inQuestions = QUESTIONS.test(line);
+      continue;
+    }
+    if (inQuestions) {
+      const q = QUESTION.exec(line);
+      if (q) questions.push({ id: q[1], text: q[2].trim() });
+      const a = ANSWER.exec(line);
+      if (a && questions.length && a[1].trim()) questions[questions.length - 1].answer = a[1].trim();
+      continue;
+    }
+    if (!current) continue;
+    const f = FIELD.exec(line);
+    if (inFields && f && ITEM_FIELDS.includes(f[1])) {
+      current.fields[f[1]] = f[2].trim();
+      continue;
+    }
+    if (line.trim()) inFields = false;
+    const c = CRITERION.exec(line);
+    if (c) current.criteria.push(c[1].trim());
+    else current.description += `${line}
+`;
+  }
+  for (const it of items) {
+    it.description = it.description.replace(/^(Acceptance criteria|Criterios de aceptación):?\s*$/gim, "").trim();
+    it.depends = (it.fields.depends ?? "").split(",").map((s) => s.trim()).filter((s) => s && s !== "-");
+  }
+  const title = body.match(/^#\s+(?:[^:\n]+:\s*)?(.+)$/m)?.[1]?.trim() ?? slug;
+  return { slug, path, data, title, items, questions, raw: raw2 };
+}
+function checkRoadmap(r) {
+  const errors = [];
+  const warnings = [];
+  const ids = /* @__PURE__ */ new Set();
+  const at2 = (it) => `${it.id} (line ${it.line})`;
+  for (const it of r.items) {
+    if (ids.has(it.id)) errors.push(`${at2(it)}: duplicate id`);
+    ids.add(it.id);
+  }
+  const epics = r.items.filter((i) => i.kind === "epic");
+  const stories = r.items.filter((i) => i.kind === "story");
+  if (!epics.length) errors.push("no epics: add `## E1 \xB7 <title>` headings");
+  for (const e of epics) if (!stories.some((s) => s.epic === e.id)) warnings.push(`${at2(e)}: epic without stories`);
+  for (const s of stories) {
+    if (!s.epic || !s.id.startsWith(`${s.epic}.`)) errors.push(`${at2(s)}: story is not under its epic (${s.id.split(".")[0]})`);
+    if (s.fields.risk && !ROADMAP_RISKS.includes(s.fields.risk)) errors.push(`${at2(s)}: risk must be low, medium or high`);
+    if (!s.criteria.length) errors.push(`${at2(s)}: no acceptance criteria (\`- [ ] \u2026\` lines)`);
+    else if (s.criteria.length > MAX_CRITERIA) warnings.push(`${at2(s)}: ${s.criteria.length} acceptance criteria; probably more than one change, consider splitting it`);
+    for (const d of s.depends) if (!ids.has(d)) errors.push(`${at2(s)}: depends on ${d}, which does not exist`);
+  }
+  const cycle = findCycle(stories);
+  if (cycle) errors.push(`dependency cycle: ${cycle.join(" \u2192 ")}`);
+  const open2 = r.questions.filter((q) => !q.answer);
+  for (const q of open2) errors.push(`${q.id} has no answer: ${q.text}`);
+  return { errors, warnings, epics: epics.length, stories: stories.length, open: open2.length };
+}
+function findCycle(stories) {
+  const deps = new Map(stories.map((s) => [s.id, s.depends]));
+  const state = /* @__PURE__ */ new Map();
+  const walk2 = (id, path) => {
+    if (state.get(id) === "done") return void 0;
+    if (state.get(id) === "visiting") return [...path.slice(path.indexOf(id)), id];
+    state.set(id, "visiting");
+    for (const d of deps.get(id) ?? []) {
+      const c = walk2(d, [...path, id]);
+      if (c) return c;
+    }
+    state.set(id, "done");
+    return void 0;
+  };
+  for (const s of stories) {
+    const c = walk2(s.id, []);
+    if (c) return c;
+  }
+  return void 0;
+}
+function roadmapHash(raw2) {
+  const { body } = parseFrontmatter(raw2);
+  const normalized = body.split("\n").filter((l) => !/^-\s+(key|links):/.test(l)).join("\n").trim();
+  return createHash("sha256").update(normalized).digest("hex").slice(0, 16);
+}
+function setItemField(raw2, id, name, value) {
+  const lines2 = raw2.split("\n");
+  const start = lines2.findIndex((l) => HEADING.exec(l)?.[2] === id);
+  if (start === -1) throw new SdlcError(`no item ${id} in the roadmap`);
+  let i = start + 1;
+  for (; i < lines2.length; i++) {
+    const f = FIELD.exec(lines2[i]);
+    if (!f || !ITEM_FIELDS.includes(f[1])) break;
+    if (f[1] === name) {
+      lines2[i] = `- ${name}: ${value}`;
+      return lines2.join("\n");
+    }
+  }
+  lines2.splice(i, 0, `- ${name}: ${value}`);
+  return lines2.join("\n");
+}
+function setAnswers(raw2, answers) {
+  const lines2 = raw2.split("\n");
+  const out = [];
+  let inQuestions = false;
+  let pending;
+  const flush = () => {
+    if (pending && answers[pending]?.trim()) out.push(`  A: ${answers[pending].trim().replace(/\n+/g, " ")}`);
+    pending = void 0;
+  };
+  for (const line of lines2) {
+    if (/^#{1,3}\s/.test(line)) {
+      flush();
+      inQuestions = QUESTIONS.test(line);
+      out.push(line);
+      continue;
+    }
+    if (inQuestions) {
+      const q = QUESTION.exec(line);
+      if (q) {
+        flush();
+        out.push(line);
+        pending = q[1];
+        continue;
+      }
+      if (ANSWER.test(line) && pending && answers[pending]?.trim()) continue;
+      if (ANSWER.test(line) && pending) {
+        out.push(line);
+        pending = void 0;
+        continue;
+      }
+      if (!line.trim()) flush();
+    }
+    out.push(line);
+  }
+  flush();
+  return out.join("\n");
+}
+function roadmapTemplate(o) {
+  const es2 = o.locale === "es";
+  return `---
+roadmap: ${o.slug}
+status: draft            # draft \u2192 approved | rejected (sdlc roadmap approve)
+author: ${o.author ?? ""}
+source: ${o.source ?? ""}
+created: ${(/* @__PURE__ */ new Date()).toISOString().slice(0, 10)}
+---
+# Roadmap: ${o.title}
+
+${es2 ? "<!-- Resumen: objetivo del plan t\xE9cnico, alcance y lo que queda afuera. -->" : "<!-- Summary: the goal of the technical plan, what is in scope and what is not. -->"}
+
+## E1 \xB7 ${es2 ? "<t\xEDtulo de la \xE9pica>" : "<epic title>"}
+
+${es2 ? "<!-- Qu\xE9 entrega esta \xE9pica. -->" : "<!-- What this epic delivers. -->"}
+
+### E1.S1 \xB7 ${es2 ? "<t\xEDtulo de la historia>" : "<story title>"}
+- risk: low
+- depends: -
+- source: ${es2 ? "\xA7<secci\xF3n del documento>" : "\xA7<section of the document>"}
+
+${es2 ? "<!-- Qu\xE9 y por qu\xE9, en dos o tres l\xEDneas. -->" : "<!-- What and why, in two or three lines. -->"}
+
+${es2 ? "Criterios de aceptaci\xF3n:" : "Acceptance criteria:"}
+- [ ] ${es2 ? "<comportamiento observable>" : "<observable behaviour>"}
+
+## ${es2 ? "Preguntas abiertas" : "Open questions"}
+- Q1: ${es2 ? "<lo que el documento no aclara>" : "<what the document leaves unclear>"}
+  A:
+`;
+}
+function listRoadmaps(root) {
+  const dir = join11(root, ROADMAPS_DIR);
+  if (!existsSync8(dir)) return [];
+  return readdirSync3(dir).filter((d) => existsSync8(join11(dir, d, "roadmap.md"))).sort().map((d) => parseRoadmap(readFileSync10(join11(dir, d, "roadmap.md"), "utf8"), d));
+}
+function getRoadmap(root, slug) {
+  const s = slug.replace(/^changes\/_roadmaps\//, "").replace(/\/(roadmap\.md)?$/, "");
+  const p = join11(root, roadmapPath(s));
+  if (!existsSync8(p)) throw new SdlcError(`roadmap not found: ${roadmapPath(s)} (create it with: sdlc roadmap new ${s} --source <file|url>)`);
+  return parseRoadmap(readFileSync10(p, "utf8"), s);
+}
+function newRoadmap(root, slug, o = {}) {
+  if (!/^[a-z0-9][a-z0-9-]*$/.test(slug)) throw new SdlcError(`invalid slug '${slug}': lowercase letters, digits and dashes`);
+  const dir = join11(root, ROADMAPS_DIR, slug);
+  if (existsSync8(join11(dir, "roadmap.md"))) throw new SdlcError(`${roadmapPath(slug)} already exists`);
+  mkdirSync4(dir, { recursive: true });
+  let source = o.source;
+  if (o.source && !/^https?:\/\//.test(o.source)) {
+    const ext = extname(o.source).toLowerCase();
+    if (!SOURCE_EXTENSIONS.includes(ext)) throw new SdlcError(`unsupported source ${basename(o.source)}: use ${SOURCE_EXTENSIONS.join(", ")} (export Word or Google Docs to PDF)`);
+    if (!existsSync8(o.source)) throw new SdlcError(`source not found: ${o.source}`);
+    if (statSync2(o.source).size > MAX_SOURCE_BYTES) throw new SdlcError(`source is larger than ${MAX_SOURCE_BYTES / 1024 / 1024} MB`);
+    copyFileSync(o.source, join11(dir, `source${ext}`));
+    source = `${ROADMAPS_DIR}/${slug}/source${ext}`;
+  }
+  const title = o.title ?? slug.replace(/-/g, " ").replace(/^./, (c) => c.toUpperCase());
+  writeFileSync6(join11(dir, "roadmap.md"), roadmapTemplate({ slug, title, author: o.author ?? gitUser(root).name, source, locale: localeOf(o.loaded) }));
+  recordEvent(root, { type: "roadmap.new", change: `${ROADMAPS_DIR}/${slug}`, detail: source });
+  return { path: roadmapPath(slug), source };
+}
+function canDecideRoadmap(who, loaded) {
+  const id = `${who.name ?? ""} <${who.email ?? ""}>${who.login ? ` @${who.login}` : ""}`;
+  if (!who.email && !who.name && !who.login) return { ok: false, reason: "git user.name / user.email is not set" };
+  if (isAgent(who)) return { ok: false, reason: `${id} looks like an agent or bot; a person must approve` };
+  const roles = loaded?.config.gates?.roadmap ?? [];
+  const people = [...new Set(roles.flatMap((r) => loaded?.config.roles?.[r] ?? []))];
+  if (!roles.length || !people.length || personMatches(people, who)) return { ok: true };
+  return { ok: false, reason: `roadmap needs approval from: ${roles.join(", ")}` };
+}
+function decideRoadmap(root, loaded, slug, decision, o = {}) {
+  const r = getRoadmap(root, slug);
+  const who = o.approver ?? gitUser(root);
+  const can = canDecideRoadmap(who, loaded);
+  if (!can.ok) throw new SdlcError(can.reason);
+  if (decision === "approved") {
+    const c = checkRoadmap(r);
+    if (c.errors.length) throw new SdlcError(`the roadmap does not pass the check; fix it first:
+${c.errors.map((e) => `  - ${e}`).join("\n")}`);
+  }
+  const by = who.name ?? who.email ?? `@${who.login}`;
+  const fields = { status: decision };
+  if (decision === "approved") {
+    fields.approved_by = by;
+    fields.approved_at = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+    fields.approved_hash = roadmapHash(r.raw);
+  }
+  writeFileSync6(join11(root, r.path), setFrontmatter(r.raw, fields));
+  const dir = `${ROADMAPS_DIR}/${r.slug}`;
+  const verb = decision === "approved" ? "approve" : "reject";
+  const msg = [`chore(roadmap-${r.slug}): ${verb} roadmap`, "", ...o.comment ? [o.comment, ""] : [], `Gate: roadmap ${decision} by ${by}${who.email ? ` <${who.email}>` : ""}`].join("\n");
+  gitOrThrow(root, ["add", "--", dir]);
+  gitOrThrow(root, ["commit", "-m", msg, "--", dir]);
+  recordEvent(root, { type: decision === "approved" ? "gate.approve" : "gate.reject", change: dir, artifact: "roadmap", by, detail: o.comment });
+  return { slug: r.slug, decision, by, commit: gitOrThrow(root, ["rev-parse", "--short", "HEAD"]) };
+}
+function approvalHolds(r) {
+  if (r.data.status !== "approved") return { ok: false, reason: `${r.path} is ${r.data.status || "draft"}; a person approves it first (sdlc roadmap approve ${r.slug})` };
+  if (r.data.approved_hash && r.data.approved_hash !== roadmapHash(r.raw))
+    return { ok: false, reason: `${r.path} changed after it was approved; approve it again (sdlc roadmap approve ${r.slug})` };
+  return { ok: true };
+}
+function ticketBody(r, it, locale = "en") {
+  const es2 = locale === "es";
+  const parts = [it.description];
+  if (it.criteria.length) parts.push(`${es2 ? "Criterios de aceptaci\xF3n" : "Acceptance criteria"}:
+${it.criteria.map((c) => `- ${c}`).join("\n")}`);
+  const origin = [`${es2 ? "Roadmap" : "Roadmap"}: ${r.path} (${it.id})`];
+  if (it.fields.source) origin.push(`${es2 ? "Fuente" : "Source"}: ${it.fields.source}${r.data.source ? ` \xB7 ${r.data.source}` : ""}`);
+  if (it.fields.risk) origin.push(`${es2 ? "Riesgo" : "Risk"}: ${it.fields.risk}`);
+  parts.push(origin.join("\n"));
+  return parts.filter(Boolean).join("\n\n");
+}
+async function applyRoadmap(root, loaded, slug, o = {}) {
+  let r = getRoadmap(root, slug);
+  const holds = approvalHolds(r);
+  if (!holds.ok) throw new SdlcError(holds.reason);
+  const c = checkRoadmap(r);
+  if (c.errors.length) throw new SdlcError(`the roadmap does not pass the check:
+${c.errors.map((e) => `  - ${e}`).join("\n")}`);
+  const locale = localeOf(loaded);
+  const cfg = loaded?.config.tracker;
+  const keyOf = (id) => r.items.find((i) => i.id === id)?.fields.key;
+  const actions = [];
+  for (const it of r.items) {
+    if (it.fields.key) continue;
+    actions.push({ id: it.id, kind: it.kind === "epic" ? "create-epic" : "create-story", summary: it.title, parent: it.epic });
+  }
+  for (const s of r.items.filter((i) => i.kind === "story")) {
+    const done = (s.fields.links ?? "").split(",").map((x) => x.trim());
+    for (const d of s.depends) if (!done.includes(d)) actions.push({ id: s.id, kind: "link", summary: `${d} blocks ${s.id}`, blocker: d });
+  }
+  if (o.dryRun) return { actions, created: 0, linked: 0, dryRun: true };
+  if (!actions.length) return { actions, created: 0, linked: 0, dryRun: false };
+  if (!o.tracker) throw new SdlcError("tracker not configured");
+  const t2 = o.tracker();
+  let raw2 = r.raw;
+  let created = 0;
+  let linked = 0;
+  const save = (next) => {
+    raw2 = next;
+    writeFileSync6(join11(root, r.path), raw2);
+    r = parseRoadmap(raw2, r.slug);
+  };
+  let failure3;
+  try {
+    for (const a of actions) {
+      const it = r.items.find((i) => i.id === a.id);
+      if (a.kind === "link") {
+        const blocker = keyOf(a.blocker);
+        if (!blocker || !it.fields.key) continue;
+        await t2.link(blocker, it.fields.key);
+        const done = (it.fields.links ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+        save(setItemField(raw2, it.id, "links", [...done, a.blocker].join(", ")));
+        a.key = it.fields.key;
+        linked++;
+        continue;
+      }
+      const labels = (it.fields.labels ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+      const parent = a.kind === "create-story" ? keyOf(it.epic) : void 0;
+      const key = await t2.create({
+        summary: it.title,
+        body: ticketBody(r, it, locale),
+        type: a.kind === "create-epic" ? cfg?.epic_issue_type ?? (t2.provider === "jira" ? "Epic" : "epic") : cfg?.default_issue_type,
+        parent,
+        labels: a.kind === "create-epic" && t2.provider === "github" ? [...labels, "epic"] : labels
+      });
+      save(setItemField(raw2, it.id, "key", key));
+      a.key = key;
+      a.parent = parent;
+      created++;
+    }
+  } catch (e) {
+    failure3 = e;
+  }
+  let commit;
+  if (created || linked) {
+    const dir = `${ROADMAPS_DIR}/${r.slug}`;
+    const msg = `chore(roadmap-${r.slug}): ${created} tickets created, ${linked} links${failure3 ? " (partial)" : ""}`;
+    gitOrThrow(root, ["add", "--", dir]);
+    if (git(root, ["diff", "--cached", "--quiet", "--", dir]) === void 0) {
+      gitOrThrow(root, ["commit", "-m", msg, "--", dir]);
+      commit = gitOrThrow(root, ["rev-parse", "--short", "HEAD"]);
+    }
+    recordEvent(root, { type: "roadmap.apply", change: dir, detail: `${created} created, ${linked} linked${failure3 ? ", partial" : ""}` });
+  }
+  if (failure3) {
+    const msg = failure3.message;
+    throw new SdlcError(`${msg}
+${created} tickets and ${linked} links were created and saved in ${r.path}; run apply again to continue`);
+  }
+  return { actions, created, linked, dryRun: false, commit };
+}
+function roadmapStatus(root, loaded, slug) {
+  const changes = listChanges(root, { locale: localeOf(loaded), defaultBranch: loaded?.config.vcs?.default_branch });
+  const byTicket = new Map(changes.filter((c) => c.ticket).map((c) => [c.ticket, c]));
+  const out = [];
+  for (const r of slug ? [getRoadmap(root, slug)] : listRoadmaps(root)) {
+    const stories = r.items.filter((i) => i.kind === "story");
+    const merged = (id) => {
+      const k = stories.find((s) => s.id === id)?.fields.key;
+      return !!k && byTicket.get(k)?.stage === "merged";
+    };
+    for (const s of stories) {
+      const ch = s.fields.key ? byTicket.get(s.fields.key) : void 0;
+      out.push({ roadmap: r.slug, id: s.id, title: s.title, key: s.fields.key, change: ch?.id, stage: ch?.stage, blockedBy: s.depends.filter((d) => !merged(d)) });
+    }
+  }
+  return out;
+}
+function nextStory(root, loaded) {
+  const approved = new Set(listRoadmaps(root).filter((r) => r.data.status === "approved").map((r) => r.slug));
+  if (!approved.size) return void 0;
+  return roadmapStatus(root, loaded).find((s) => approved.has(s.roadmap) && s.key && !s.change && !s.blockedBy.length);
+}
+function findRoadmapItem(root, key) {
+  for (const r of listRoadmaps(root)) {
+    const item = r.items.find((i) => i.fields.key?.toLowerCase() === key.toLowerCase());
+    if (item) return { roadmap: r, item };
+  }
+  return void 0;
+}
+var ROADMAPS_DIR, ROADMAP_RISKS, ITEM_FIELDS, MAX_CRITERIA, SOURCE_EXTENSIONS, MAX_SOURCE_BYTES, HEADING, QUESTIONS, FIELD, CRITERION, QUESTION, ANSWER, roadmapPath;
+var init_roadmap = __esm({
+  "packages/core/src/roadmap.ts"() {
+    "use strict";
+    init_changes();
+    init_config();
+    init_events();
+    init_frontmatter();
+    init_git();
+    init_gates();
+    init_http();
+    ROADMAPS_DIR = "changes/_roadmaps";
+    ROADMAP_RISKS = ["low", "medium", "high"];
+    ITEM_FIELDS = ["risk", "depends", "source", "labels", "key", "links"];
+    MAX_CRITERIA = 8;
+    SOURCE_EXTENSIONS = [".pdf", ".md", ".markdown", ".txt"];
+    MAX_SOURCE_BYTES = 20 * 1024 * 1024;
+    HEADING = /^(#{2,3})\s+(E\d+(?:\.S\d+)?)\s*[·:—–-]\s*(.+?)\s*$/;
+    QUESTIONS = /^##\s+(Open questions|Preguntas abiertas)\s*$/i;
+    FIELD = /^-\s+([a-z_]+):\s*(.*)$/;
+    CRITERION = /^\s*-\s+\[[ xX]\]\s+(.+)$/;
+    QUESTION = /^-\s+(Q\d+):\s*(.+)$/;
+    ANSWER = /^\s+(?:A|R):\s*(.*)$/;
+    roadmapPath = (slug) => `${ROADMAPS_DIR}/${slug}/roadmap.md`;
+  }
+});
+
 // packages/core/src/next.ts
 function forChange(change, loaded, who, locale) {
   const base = { change: change.slug, stage: change.stage };
@@ -29494,8 +30042,30 @@ function nextAction(root, loaded, opts2 = {}) {
     const { change, artifact } = inbox[0];
     return { kind: "approve", change, artifact, command: `sdlc approve ${change} ${artifact}`, message: t(locale, "nx.approve", { change, artifact }), inbox: inbox.slice(1) };
   }
+  const roadmaps = listRoadmaps(root);
+  const drafts = roadmaps.filter((r) => (r.data.status || "draft") === "draft").map((r) => ({ r, check: checkRoadmap(r) }));
+  const ready = drafts.find((d) => !d.check.errors.length);
+  if (ready && canDecideRoadmap(who, loaded).ok) {
+    const roadmap = ready.r.slug;
+    return { kind: "roadmap", roadmap, command: `sdlc roadmap approve ${roadmap}`, message: t(locale, "nx.roadmap.approve", { roadmap, stories: String(ready.check.stories) }), inbox };
+  }
   const mine = open2.find((c) => c.branch && (!c.author || c.author === who.name || c.author === who.email)) ?? open2.find((c) => c.branch);
   if (mine) return { kind: "switch", change: mine.slug, stage: mine.stage, command: `git checkout ${mine.branch}`, message: t(locale, "nx.switch", { change: mine.slug, stage: mine.stage }), inbox };
+  const unapplied = trackerEnabled(loaded) ? roadmaps.find((r) => r.data.status === "approved" && r.items.some((i) => !i.fields.key)) : void 0;
+  if (unapplied) {
+    const missing = String(unapplied.items.filter((i) => !i.fields.key).length);
+    return { kind: "roadmap", roadmap: unapplied.slug, command: `sdlc roadmap apply ${unapplied.slug}`, message: t(locale, "nx.roadmap.apply", { roadmap: unapplied.slug, missing }), inbox };
+  }
+  const story = nextStory(root, loaded);
+  if (story) {
+    const skill = `/sdlc-intent ${story.key}`;
+    return { kind: "new", roadmap: story.roadmap, skill, message: t(locale, "nx.story", { roadmap: story.roadmap, id: story.id, title: story.title, key: story.key }), inbox };
+  }
+  const draft = drafts.find((d) => d.check.errors.length);
+  if (draft) {
+    const problems = draft.check.open ? `${draft.check.open} open question(s)` : `${draft.check.errors.length} problem(s): sdlc roadmap check ${draft.r.slug}`;
+    return { kind: "roadmap", roadmap: draft.r.slug, skill: `/sdlc-roadmap ${draft.r.slug}`, message: t(locale, "nx.roadmap.draft", { roadmap: draft.r.slug, problems }), inbox };
+  }
   return { kind: "new", command: "sdlc new <slug>", message: t(locale, "nx.new"), inbox };
 }
 function formatNext(n) {
@@ -29511,6 +30081,8 @@ var init_next = __esm({
     init_gates();
     init_git();
     init_i18n();
+    init_roadmap();
+    init_tracker();
     SKILL = {
       "no-intent": "/sdlc-intent",
       "intent-accepted": "/sdlc-spec",
@@ -29651,8 +30223,8 @@ var init_project = __esm({
 
 // packages/core/src/policies.ts
 import { execSync } from "node:child_process";
-import { existsSync as existsSync8, readFileSync as readFileSync9 } from "node:fs";
-import { basename, join as join10 } from "node:path";
+import { existsSync as existsSync9, readFileSync as readFileSync11 } from "node:fs";
+import { basename as basename2, join as join12 } from "node:path";
 function ereToRegExp(ere) {
   const src = ere.replace(/\[:([a-z]+):\]/g, (m, name) => POSIX_CLASSES[name] ?? m);
   try {
@@ -29666,7 +30238,7 @@ function checkProtected(ctx, path, locale, isNew) {
   const glob = matchAny(rel, ctx.loaded?.config.protected_paths);
   if (glob) return { action: "deny", policy: "protected-paths", message: t(locale, "protected.deny", { path: rel, glob, config: ctx.loaded.path }) };
   const append = matchAny(rel, ctx.loaded?.config.append_only_paths);
-  if (!append || (isNew ?? !existsSync8(join10(ctx.root, rel)))) return ALLOW;
+  if (!append || (isNew ?? !existsSync9(join12(ctx.root, rel)))) return ALLOW;
   return { action: "deny", policy: "protected-paths", message: t(locale, "appendonly.deny", { path: rel, glob: append, config: ctx.loaded.path }) };
 }
 function checkSecrets(ctx, content, locale) {
@@ -29702,11 +30274,11 @@ function checkProductionGate(ctx, command, locale) {
   return ALLOW;
 }
 function runFormatOnEdit(ctx, path, locale) {
-  const full = path.startsWith("/") ? path : join10(ctx.root, path);
-  if (!existsSync8(full)) return ALLOW;
+  const full = path.startsWith("/") ? path : join12(ctx.root, path);
+  if (!existsSync9(full)) return ALLOW;
   const rel = relPath(ctx.root, full);
   const entry = Object.entries(ctx.loaded?.config.format_on_edit ?? {}).find(
-    ([glob]) => globMatch(rel, glob) || globMatch(basename(rel), glob)
+    ([glob]) => globMatch(rel, glob) || globMatch(basename2(rel), glob)
   );
   if (!entry) return ALLOW;
   const cmd = entry[1].replaceAll("{file}", shellQuote(full));
@@ -29724,7 +30296,7 @@ function dirtyFiles(root) {
 }
 function checkPlanSync(ctx, locale) {
   const change = activeChange(ctx.root);
-  if (!change || !existsSync8(join10(ctx.root, change, "plan.md"))) return ALLOW;
+  if (!change || !existsSync9(join12(ctx.root, change, "plan.md"))) return ALLOW;
   let code2 = false;
   let plan = false;
   for (const f of dirtyFiles(ctx.root)) {
@@ -29736,7 +30308,7 @@ function checkPlanSync(ctx, locale) {
 function sessionContext(ctx, locale) {
   const { root, loaded } = ctx;
   if (!loaded) {
-    return existsSync8(join10(root, ".git")) ? { action: "context", message: t(locale, "session.noconfig") } : ALLOW;
+    return existsSync9(join12(root, ".git")) ? { action: "context", message: t(locale, "session.noconfig") } : ALLOW;
   }
   const out = [t(locale, "session.config", { config: loaded.path })];
   const change = activeChange(root);
@@ -29752,9 +30324,9 @@ function sessionContext(ctx, locale) {
     if (n.kind !== "new") out.push(t(locale, "session.next", { next: formatNext(n) }));
   }
   if (fixLockActive(root)) out.push(t(locale, "session.lock"));
-  const setup = join10(root, "SETUP.md");
-  if (existsSync8(setup)) {
-    const n = (readFileSync9(setup, "utf8").match(/⬜/g) ?? []).length;
+  const setup = join12(root, "SETUP.md");
+  if (existsSync9(setup)) {
+    const n = (readFileSync11(setup, "utf8").match(/⬜/g) ?? []).length;
     if (n > 0) out.push(t(locale, "session.setup", { n }));
   }
   return { action: "context", message: out.join("\n") };
@@ -29827,7 +30399,7 @@ var init_policies = __esm({
       punct: "!-\\/:-@\\[-`{-~"
     };
     FIX_LOCKS = [".sdlc/fix-lock", ".claude/.sdlc-fix-lock"];
-    fixLockActive = (root) => FIX_LOCKS.some((p) => existsSync8(join10(root, p)));
+    fixLockActive = (root) => FIX_LOCKS.some((p) => existsSync9(join12(root, p)));
     MENTION_ONLY = /* @__PURE__ */ new Set(["git", "gh", "glab", "echo", "printf", "cat", "grep", "rg", "jq"]);
     shellQuote = (s) => `'${s.replace(/'/g, `'\\''`)}'`;
   }
@@ -29884,8 +30456,8 @@ var init_pr_sections = __esm({
 });
 
 // packages/core/src/quick.ts
-import { readFileSync as readFileSync10, writeFileSync as writeFileSync6 } from "node:fs";
-import { join as join11 } from "node:path";
+import { readFileSync as readFileSync12, writeFileSync as writeFileSync7 } from "node:fs";
+import { join as join13 } from "node:path";
 function quickLimits(loaded) {
   const q = loaded?.config.quick_lane ?? {};
   return {
@@ -29914,9 +30486,9 @@ function promote(root, loaded, changeId, by) {
   const intent = change.artifacts.intent;
   if (!intent || intent.data.lane !== "quick") throw new SdlcError(`${change.id} is not in the quick lane`);
   if (change.source !== "worktree") throw new SdlcError(`${change.id} is on ${change.source.branch}; check it out to promote it`);
-  const p = join11(root, intent.path);
-  const text = setFrontmatter(readFileSync10(p, "utf8"), { lane: "full", status: "draft" });
-  writeFileSync6(p, text);
+  const p = join13(root, intent.path);
+  const text = setFrontmatter(readFileSync12(p, "utf8"), { lane: "full", status: "draft" });
+  writeFileSync7(p, text);
   recordEvent(root, { type: "change.promote", change: change.slug, by });
   return change;
 }
@@ -29938,16 +30510,16 @@ var init_quick = __esm({
 
 // packages/core/src/telemetry.ts
 import { randomUUID } from "node:crypto";
-import { existsSync as existsSync9, mkdirSync as mkdirSync4, readFileSync as readFileSync11, writeFileSync as writeFileSync7 } from "node:fs";
-import { homedir, platform } from "node:os";
-import { dirname as dirname2, join as join12 } from "node:path";
+import { existsSync as existsSync10, mkdirSync as mkdirSync5, readFileSync as readFileSync13, writeFileSync as writeFileSync8 } from "node:fs";
+import { homedir as homedir2, platform } from "node:os";
+import { dirname as dirname2, join as join14 } from "node:path";
 function telemetryPath(env = process.env) {
-  const base = env.XDG_CONFIG_HOME || join12(env.HOME || homedir(), ".config");
-  return join12(base, "sdlc", "telemetry.json");
+  const base = env.XDG_CONFIG_HOME || join14(env.HOME || homedir2(), ".config");
+  return join14(base, "sdlc", "telemetry.json");
 }
 function readTelemetry(env = process.env) {
   try {
-    const s = JSON.parse(readFileSync11(telemetryPath(env), "utf8"));
+    const s = JSON.parse(readFileSync13(telemetryPath(env), "utf8"));
     return { enabled: s.enabled === true, id: s.id || randomUUID(), last_sent: s.last_sent };
   } catch {
     return { enabled: false, id: randomUUID() };
@@ -29955,8 +30527,8 @@ function readTelemetry(env = process.env) {
 }
 function writeTelemetry(s, env = process.env) {
   const p = telemetryPath(env);
-  mkdirSync4(dirname2(p), { recursive: true });
-  writeFileSync7(p, JSON.stringify(s, null, 2) + "\n");
+  mkdirSync5(dirname2(p), { recursive: true });
+  writeFileSync8(p, JSON.stringify(s, null, 2) + "\n");
 }
 function telemetryState(env = process.env) {
   if (doNotTrack(env)) return "blocked-dnt";
@@ -29985,7 +30557,7 @@ function telemetryPayload(root, loaded, version2, env = process.env) {
 }
 async function maybeSendTelemetry(root, loaded, version2, env = process.env, timeoutMs = 1500) {
   try {
-    if (telemetryState(env) !== "on" || !existsSync9(join12(root, ".git"))) return false;
+    if (telemetryState(env) !== "on" || !existsSync10(join14(root, ".git"))) return false;
     const s = readTelemetry(env);
     if (s.last_sent && Date.now() - Date.parse(s.last_sent) < 24 * 36e5) return false;
     const body = JSON.stringify(telemetryPayload(root, loaded, version2, env));
@@ -30323,6 +30895,7 @@ var init_vcs = __esm({
 var init_src = __esm({
   "packages/core/src/index.ts"() {
     "use strict";
+    init_agent();
     init_bands();
     init_changes();
     init_config();
@@ -30344,45 +30917,46 @@ var init_src = __esm({
     init_project();
     init_quick();
     init_risk();
+    init_roadmap();
     init_telemetry();
     init_vcs();
   }
 });
 
 // packages/adapters/src/content.ts
-import { existsSync as existsSync10, readdirSync as readdirSync3, readFileSync as readFileSync12, statSync as statSync2 } from "node:fs";
-import { dirname as dirname3, join as join13, relative as relative2 } from "node:path";
+import { existsSync as existsSync11, readdirSync as readdirSync4, readFileSync as readFileSync14, statSync as statSync3 } from "node:fs";
+import { dirname as dirname3, join as join15, relative as relative2 } from "node:path";
 import { fileURLToPath } from "node:url";
 function contentDir() {
-  const candidates = [process.env.SDLC_CONTENT_DIR, join13(here, "content"), join13(here, "..", "content"), join13(here, "..", "..", "..", "content")];
-  const found = candidates.find((c) => c && existsSync10(join13(c, "en", "skills")));
+  const candidates = [process.env.SDLC_CONTENT_DIR, join15(here, "content"), join15(here, "..", "content"), join15(here, "..", "..", "..", "content")];
+  const found = candidates.find((c) => c && existsSync11(join15(c, "en", "skills")));
   if (!found) throw new Error(`ai-sdlc content not found (looked in: ${candidates.filter(Boolean).join(", ")})`);
   return found;
 }
 function walk(dir, root = dir) {
-  return readdirSync3(dir).flatMap((name) => {
-    const full = join13(dir, name);
-    const st = statSync2(full);
+  return readdirSync4(dir).flatMap((name) => {
+    const full = join15(dir, name);
+    const st = statSync3(full);
     if (st.isDirectory()) return walk(full, root);
-    return [{ rel: relative2(root, full), content: readFileSync12(full, "utf8"), executable: (st.mode & 73) !== 0 }];
+    return [{ rel: relative2(root, full), content: readFileSync14(full, "utf8"), executable: (st.mode & 73) !== 0 }];
   });
 }
 function localeDir(locale) {
   const base = contentDir();
-  return existsSync10(join13(base, locale, "skills")) ? join13(base, locale) : join13(base, "en");
+  return existsSync11(join15(base, locale, "skills")) ? join15(base, locale) : join15(base, "en");
 }
 function loadSkills(locale) {
-  const dir = join13(localeDir(locale), "skills");
-  return readdirSync3(dir).filter((n) => existsSync10(join13(dir, n, "SKILL.md"))).sort().map((name) => {
-    const files = walk(join13(dir, name));
+  const dir = join15(localeDir(locale), "skills");
+  return readdirSync4(dir).filter((n) => existsSync11(join15(dir, n, "SKILL.md"))).sort().map((name) => {
+    const files = walk(join15(dir, name));
     const { data } = parseFrontmatter(files.find((f) => f.rel === "SKILL.md").content);
     return { name, description: data.description ?? "", argumentHint: data["argument-hint"]?.replace(/^"|"$/g, ""), files };
   });
 }
 function loadAgents(locale) {
-  const dir = join13(localeDir(locale), "agents");
-  return readdirSync3(dir).filter((n) => n.endsWith(".md")).sort().map((file2) => {
-    const raw2 = readFileSync12(join13(dir, file2), "utf8");
+  const dir = join15(localeDir(locale), "agents");
+  return readdirSync4(dir).filter((n) => n.endsWith(".md")).sort().map((file2) => {
+    const raw2 = readFileSync14(join15(dir, file2), "utf8");
     const { data, body } = parseFrontmatter(raw2);
     return { name: data.name ?? file2.replace(/\.md$/, ""), description: data.description ?? "", raw: raw2, body };
   });
@@ -30400,9 +30974,9 @@ var init_content = __esm({
 });
 
 // packages/adapters/src/render.ts
-import { createHash } from "node:crypto";
-import { chmodSync, existsSync as existsSync11, mkdirSync as mkdirSync5, readdirSync as readdirSync4, readFileSync as readFileSync13, rmdirSync, rmSync as rmSync2, writeFileSync as writeFileSync8 } from "node:fs";
-import { dirname as dirname4, join as join14 } from "node:path";
+import { createHash as createHash2 } from "node:crypto";
+import { chmodSync, existsSync as existsSync12, mkdirSync as mkdirSync6, readdirSync as readdirSync5, readFileSync as readFileSync15, rmdirSync, rmSync as rmSync3, writeFileSync as writeFileSync9 } from "node:fs";
+import { dirname as dirname4, join as join16 } from "node:path";
 function skillFiles(skills, base, hint) {
   return skills.flatMap(
     (s) => s.files.map((f) => ({ path: `${base}/${s.name}/${f.rel}`, content: renderText(f.content, { sdlc_hint: hint }), executable: f.executable }))
@@ -30426,7 +31000,7 @@ function claudeHooks(cmd) {
 }
 function readJson(root, path) {
   try {
-    return JSON.parse(readFileSync13(join14(root, path), "utf8"));
+    return JSON.parse(readFileSync15(join16(root, path), "utf8"));
   } catch {
     return {};
   }
@@ -30520,8 +31094,8 @@ ${guardrails(loaded, locale)}
 
 ${how}
 ${END}`;
-  const path = join14(root, "AGENTS.md");
-  const current = existsSync11(path) ? readFileSync13(path, "utf8") : "";
+  const path = join16(root, "AGENTS.md");
+  const current = existsSync12(path) ? readFileSync15(path, "utf8") : "";
   const re = new RegExp(`${START.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[\\s\\S]*?${END}`);
   const content = re.test(current) ? current.replace(re, block2) : `${current ? current.trimEnd() + "\n\n" : "# AGENTS.md\n\n"}${block2}
 `;
@@ -30547,7 +31121,7 @@ exec "$(git rev-parse --show-toplevel)/${BIN}" hook ${name} --agent git
 function renderDisabled(root, agents) {
   const out = [];
   const strip = (path, key) => {
-    if (!existsSync11(join14(root, path))) return;
+    if (!existsSync12(join16(root, path))) return;
     const json3 = readJson(root, path);
     if (!json3[key] || !JSON.stringify(json3[key]).includes("sdlc hook")) return;
     json3[key] = mergeHookMap(json3[key], {});
@@ -30555,9 +31129,9 @@ function renderDisabled(root, agents) {
   };
   if (!agents.includes("claude")) strip(".claude/settings.json", "hooks");
   if (!agents.includes("cursor")) strip(".cursor/hooks.json", "hooks");
-  const agentsMd = join14(root, "AGENTS.md");
-  if (!agents.includes("agents-md") && existsSync11(agentsMd)) {
-    const current = readFileSync13(agentsMd, "utf8");
+  const agentsMd = join16(root, "AGENTS.md");
+  if (!agents.includes("agents-md") && existsSync12(agentsMd)) {
+    const current = readFileSync15(agentsMd, "utf8");
     const i = current.indexOf(START);
     const j = current.indexOf(END);
     if (i >= 0 && j > i) out.push({ path: "AGENTS.md", content: (current.slice(0, i).trimEnd() + "\n" + current.slice(j + END.length).trimStart()).trimStart(), merged: true });
@@ -30577,31 +31151,31 @@ function renderProject(root, loaded) {
 }
 function sync(root, loaded, opts2 = {}) {
   ensureSdlcDir(root);
-  const manifestPath = join14(root, MANIFEST);
-  const manifest = existsSync11(manifestPath) ? JSON.parse(readFileSync13(manifestPath, "utf8")) : {};
+  const manifestPath = join16(root, MANIFEST);
+  const manifest = existsSync12(manifestPath) ? JSON.parse(readFileSync15(manifestPath, "utf8")) : {};
   const next = {};
   const report = { written: [], unchanged: [], drift: [], conflicts: [], removed: [] };
   const files = renderProject(root, loaded);
   const produced = new Set(files.map((f) => f.path));
   for (const [path, known] of Object.entries(manifest)) {
     if (produced.has(path)) continue;
-    const full = join14(root, path);
-    if (!existsSync11(full)) continue;
-    if (!opts2.force && sha(readFileSync13(full, "utf8")) !== known) {
+    const full = join16(root, path);
+    if (!existsSync12(full)) continue;
+    if (!opts2.force && sha(readFileSync15(full, "utf8")) !== known) {
       report.drift.push(path);
       next[path] = known;
       continue;
     }
     if (!opts2.dryRun) {
-      rmSync2(full);
-      for (let dir = dirname4(full); dir.startsWith(root + "/") && readdirSync4(dir).length === 0; dir = dirname4(dir)) rmdirSync(dir);
+      rmSync3(full);
+      for (let dir = dirname4(full); dir.startsWith(root + "/") && readdirSync5(dir).length === 0; dir = dirname4(dir)) rmdirSync(dir);
     }
     report.removed.push(path);
   }
   for (const f of files) {
-    const full = join14(root, f.path);
-    const exists = existsSync11(full);
-    const current = exists ? readFileSync13(full, "utf8") : void 0;
+    const full = join16(root, f.path);
+    const exists = existsSync12(full);
+    const current = exists ? readFileSync15(full, "utf8") : void 0;
     if (current === f.content) {
       report.unchanged.push(f.path);
       if (!f.merged) next[f.path] = sha(f.content);
@@ -30620,15 +31194,15 @@ function sync(root, loaded, opts2 = {}) {
       }
     }
     if (!opts2.dryRun) {
-      mkdirSync5(dirname4(full), { recursive: true });
-      writeFileSync8(full, f.content);
+      mkdirSync6(dirname4(full), { recursive: true });
+      writeFileSync9(full, f.content);
       if (f.executable) chmodSync(full, 493);
     }
     report.written.push(f.path);
     if (!f.merged) next[f.path] = sha(f.content);
   }
   if (!opts2.dryRun) {
-    writeFileSync8(manifestPath, JSON.stringify(next, null, 2) + "\n");
+    writeFileSync9(manifestPath, JSON.stringify(next, null, 2) + "\n");
     report.hooksPath = installHooksPath(root);
     recordEvent(root, { type: "sync", detail: `${report.written.length} written, ${report.removed.length} removed, ${report.drift.length} drift` });
   }
@@ -30644,10 +31218,10 @@ function installHooksPath(root) {
   return { set: true };
 }
 function detectDrift(root) {
-  const manifestPath = join14(root, MANIFEST);
-  if (!existsSync11(manifestPath)) return [];
-  const manifest = JSON.parse(readFileSync13(manifestPath, "utf8"));
-  return Object.entries(manifest).filter(([p, h]) => !existsSync11(join14(root, p)) || sha(readFileSync13(join14(root, p), "utf8")) !== h).map(([p]) => p);
+  const manifestPath = join16(root, MANIFEST);
+  if (!existsSync12(manifestPath)) return [];
+  const manifest = JSON.parse(readFileSync15(manifestPath, "utf8"));
+  return Object.entries(manifest).filter(([p, h]) => !existsSync12(join16(root, p)) || sha(readFileSync15(join16(root, p), "utf8")) !== h).map(([p]) => p);
 }
 var SHIM, BIN, LOOP, STAGE_ORDER, rank, sortSkills, PROJECT_HINT, isOurs, CURSOR_READONLY, START, END, code, MANIFEST, sha;
 var init_render = __esm({
@@ -30690,7 +31264,7 @@ ${cmds}`,
 ### Stages
 ${cmds}`
     };
-    STAGE_ORDER = ["sdlc-intent", "sdlc-spec", "sdlc-plan", "sdlc-build", "sdlc-fix", "sdlc-quick", "sdlc-ship", "sdlc-status", "sdlc-incident", "sdlc-explain", "sdlc-setup"];
+    STAGE_ORDER = ["sdlc-roadmap", "sdlc-intent", "sdlc-spec", "sdlc-plan", "sdlc-build", "sdlc-fix", "sdlc-quick", "sdlc-ship", "sdlc-status", "sdlc-incident", "sdlc-explain", "sdlc-setup"];
     rank = (s) => STAGE_ORDER.includes(s.name) ? STAGE_ORDER.indexOf(s.name) : STAGE_ORDER.length;
     sortSkills = (s) => [...s].sort((a, b) => rank(a) - rank(b));
     PROJECT_HINT = {
@@ -30703,14 +31277,14 @@ ${cmds}`
     END = "<!-- ai-sdlc:end -->";
     code = (xs) => xs.map((x) => `\`${x}\``).join(", ");
     MANIFEST = ".sdlc/generated.json";
-    sha = (s) => createHash("sha256").update(s).digest("hex").slice(0, 16);
+    sha = (s) => createHash2("sha256").update(s).digest("hex").slice(0, 16);
   }
 });
 
 // packages/adapters/src/doctor.ts
 import { execFileSync as execFileSync5 } from "node:child_process";
-import { existsSync as existsSync12, readdirSync as readdirSync5, readFileSync as readFileSync14 } from "node:fs";
-import { join as join15 } from "node:path";
+import { existsSync as existsSync13, readdirSync as readdirSync6, readFileSync as readFileSync16 } from "node:fs";
+import { join as join17 } from "node:path";
 function has(bin) {
   try {
     execFileSync5(bin, ["--version"], { stdio: "ignore" });
@@ -30722,10 +31296,10 @@ function has(bin) {
 function ciInstalled(root, provider) {
   let files = CI_FILES[provider];
   if (provider === "github") {
-    const dir = join15(root, ".github/workflows");
-    files = existsSync12(dir) ? readdirSync5(dir).filter((f) => /\.ya?ml$/.test(f)).map((f) => `.github/workflows/${f}`) : [];
+    const dir = join17(root, ".github/workflows");
+    files = existsSync13(dir) ? readdirSync6(dir).filter((f) => /\.ya?ml$/.test(f)).map((f) => `.github/workflows/${f}`) : [];
   }
-  return files.some((f) => existsSync12(join15(root, f)) && /\bsdlc\b|martinisef\/ai_sdlc/.test(readFileSync14(join15(root, f), "utf8")));
+  return files.some((f) => existsSync13(join17(root, f)) && /\bsdlc\b|martinisef\/ai_sdlc/.test(readFileSync16(join17(root, f), "utf8")));
 }
 function doctor(root) {
   const checks = [];
@@ -30748,13 +31322,13 @@ function doctor(root) {
     const hp = git(root, ["config", "--local", "core.hooksPath"]);
     add("git-hooks", hp === ".sdlc/git-hooks", hp === ".sdlc/git-hooks" ? "git hooks installed (.sdlc/git-hooks)" : hp ? `core.hooksPath=${hp}: make sure it calls .sdlc/bin/sdlc hook pre-commit/pre-push` : "git hooks not installed \u2014 run `sdlc sync`", hp && hp !== ".sdlc/git-hooks" ? "warn" : void 0);
   }
-  add("shim", existsSync12(join15(root, ".sdlc/bin/sdlc")), existsSync12(join15(root, ".sdlc/bin/sdlc")) ? ".sdlc/bin/sdlc present" : ".sdlc/bin/sdlc missing \u2014 run `sdlc sync`");
-  const localCli = existsSync12(join15(root, "node_modules/.bin/sdlc"));
+  add("shim", existsSync13(join17(root, ".sdlc/bin/sdlc")), existsSync13(join17(root, ".sdlc/bin/sdlc")) ? ".sdlc/bin/sdlc present" : ".sdlc/bin/sdlc missing \u2014 run `sdlc sync`");
+  const localCli = existsSync13(join17(root, "node_modules/.bin/sdlc"));
   const envCli = process.env.SDLC_BIN;
   const found = Boolean(envCli) || localCli || has("sdlc");
   add("cli", found, envCli ? `sdlc CLI from SDLC_BIN (${envCli})` : localCli ? "sdlc CLI in node_modules" : has("sdlc") ? "sdlc CLI on PATH" : "sdlc CLI not installed: hooks fail open. `npm i -D @morsadev/sdlc` (or global)", found ? "info" : "warn");
-  if (agents.includes("cursor")) add("cursor", existsSync12(join15(root, ".cursor/hooks.json")), existsSync12(join15(root, ".cursor/hooks.json")) ? "Cursor hooks configured" : "Cursor enabled but .cursor/hooks.json missing \u2014 run `sdlc sync`");
-  if (agents.includes("agents-md")) add("agents-md", existsSync12(join15(root, "AGENTS.md")), existsSync12(join15(root, "AGENTS.md")) ? "AGENTS.md present" : "AGENTS.md missing \u2014 run `sdlc sync`");
+  if (agents.includes("cursor")) add("cursor", existsSync13(join17(root, ".cursor/hooks.json")), existsSync13(join17(root, ".cursor/hooks.json")) ? "Cursor hooks configured" : "Cursor enabled but .cursor/hooks.json missing \u2014 run `sdlc sync`");
+  if (agents.includes("agents-md")) add("agents-md", existsSync13(join17(root, "AGENTS.md")), existsSync13(join17(root, "AGENTS.md")) ? "AGENTS.md present" : "AGENTS.md missing \u2014 run `sdlc sync`");
   const provider = detectProvider(root, loaded);
   add("vcs", !!provider, provider ? `VCS provider: ${provider}` : "VCS provider unknown (vcs.provider or an origin remote)", provider ? "info" : "warn");
   if (provider) {
@@ -30763,7 +31337,7 @@ function doctor(root) {
   }
   if (provider === "github") add("gh", has("gh"), has("gh") ? "gh installed" : "gh not installed: PR status unavailable", has("gh") ? "info" : "warn");
   if (provider === "gitlab") add("glab", has("glab"), has("glab") ? "glab installed" : "glab not installed: MR status unavailable", has("glab") ? "info" : "warn");
-  if (existsSync12(join15(root, BANDS_PATH))) {
+  if (existsSync13(join17(root, BANDS_PATH))) {
     try {
       const n = loadBands(root)?.bands.length ?? 0;
       add("bands", true, n ? `${BANDS_PATH}: ${n} band(s) (sdlc bands check --dry-run to read them)` : `${BANDS_PATH}: no bands yet (Stage 6 off)`);
@@ -32375,8 +32949,35 @@ ${responseLines.join("\r\n")}\r
 });
 
 // node_modules/hono/dist/http-exception.js
+var HTTPException;
 var init_http_exception = __esm({
   "node_modules/hono/dist/http-exception.js"() {
+    HTTPException = class extends Error {
+      res;
+      status;
+      /**
+      * Creates an instance of `HTTPException`.
+      * @param status - HTTP status code for the exception. Defaults to 500.
+      * @param options - Additional options for the exception.
+      */
+      constructor(status = 500, options) {
+        super(options?.message, { cause: options?.cause });
+        this.res = options?.res;
+        this.status = status;
+      }
+      /**
+      * Returns the response object associated with the exception.
+      * If a response object is not provided, a new response is created with the error message and status code.
+      * @returns The response object.
+      */
+      getResponse() {
+        if (this.res) return new Response(this.res.body, {
+          status: this.status,
+          headers: this.res.headers
+        });
+        return new Response(this.message, { status: this.status });
+      }
+    };
   }
 });
 
@@ -32537,11 +33138,11 @@ var init_url = __esm({
       }
       return null;
     };
-    tryDecode = (str, decoder) => {
+    tryDecode = (str2, decoder) => {
       try {
-        return decoder(str);
+        return decoder(str2);
       } catch {
-        return str.replace(/(?:%[0-9A-Fa-f]{2})+/g, (match2) => {
+        return str2.replace(/(?:%[0-9A-Fa-f]{2})+/g, (match2) => {
           try {
             return decoder(match2);
           } catch {
@@ -32550,7 +33151,7 @@ var init_url = __esm({
         });
       }
     };
-    tryDecodeURI = (str) => tryDecode(str, decodeURI);
+    tryDecodeURI = (str2) => tryDecode(str2, decodeURI);
     getPath = (request) => {
       const url2 = request.url;
       const start = url2.indexOf("/", url2.indexOf(":") + 4);
@@ -32594,7 +33195,7 @@ var init_url = __esm({
       });
       return results.filter((v, i, a) => a.indexOf(v) === i);
     };
-    tryDecodeURIComponent = (str) => str.indexOf("%") !== -1 ? tryDecode(str, decodeURIComponent_) : str;
+    tryDecodeURIComponent = (str2) => str2.indexOf("%") !== -1 ? tryDecode(str2, decodeURIComponent_) : str2;
     _decodeURI = (value) => {
       if (value.indexOf("+") !== -1) value = value.replace(/\+/g, " ");
       return tryDecodeURIComponent(value);
@@ -32950,20 +33551,20 @@ var init_html = __esm({
       escapedString.callbacks = callbacks;
       return escapedString;
     };
-    resolveCallback = async (str, phase, preserveCallbacks, context, buffer) => {
-      if (typeof str === "object" && !(str instanceof String)) {
-        if (!(str instanceof Promise)) str = str.toString();
-        if (str instanceof Promise) str = await str;
+    resolveCallback = async (str2, phase, preserveCallbacks, context, buffer) => {
+      if (typeof str2 === "object" && !(str2 instanceof String)) {
+        if (!(str2 instanceof Promise)) str2 = str2.toString();
+        if (str2 instanceof Promise) str2 = await str2;
       }
-      const callbacks = str.callbacks;
-      if (!callbacks?.length) return Promise.resolve(str);
-      if (buffer) buffer[0] += str;
-      else buffer = [str];
+      const callbacks = str2.callbacks;
+      if (!callbacks?.length) return Promise.resolve(str2);
+      if (buffer) buffer[0] += str2;
+      else buffer = [str2];
       const resStr = Promise.all(callbacks.map((c) => c({
         phase,
         buffer,
         context
-      }))).then((res) => Promise.all(res.filter(Boolean).map((str2) => resolveCallback(str2, phase, false, context, buffer))).then(() => buffer[0]));
+      }))).then((res) => Promise.all(res.filter(Boolean).map((str3) => resolveCallback(str3, phase, false, context, buffer))).then(() => buffer[0]));
       if (preserveCallbacks) return raw(await resStr, callbacks);
       else return resStr;
     };
@@ -33237,8 +33838,8 @@ var init_context = __esm({
         }
         if (headers) {
           if (!responseHeaders) {
-            let count = 0;
-            for (const k in headers) if (++count > 1 || typeof headers[k] !== "string") {
+            let count2 = 0;
+            for (const k in headers) if (++count2 > 1 || typeof headers[k] !== "string") {
               responseHeaders = new Headers();
               break;
             }
@@ -34522,34 +35123,268 @@ var init_streaming = __esm({
   }
 });
 
+// node_modules/hono/dist/middleware/body-limit/index.js
+var ERROR_MESSAGE, bodyLimit;
+var init_body_limit = __esm({
+  "node_modules/hono/dist/middleware/body-limit/index.js"() {
+    init_http_exception();
+    ERROR_MESSAGE = "Payload Too Large";
+    bodyLimit = (options) => {
+      const onError = options.onError || (() => {
+        const res = new Response(ERROR_MESSAGE, { status: 413 });
+        throw new HTTPException(413, { res });
+      });
+      const maxSize = options.maxSize;
+      return async function bodyLimit2(c, next) {
+        if (!c.req.raw.body) return next();
+        const hasTransferEncoding = c.req.raw.headers.has("transfer-encoding");
+        if (c.req.raw.headers.has("content-length") && !hasTransferEncoding) return parseInt(c.req.raw.headers.get("content-length") || "0", 10) > maxSize ? onError(c) : next();
+        let size = 0;
+        const chunks = [];
+        const rawReader = c.req.raw.body.getReader();
+        for (; ; ) {
+          const { done, value } = await rawReader.read();
+          if (done) break;
+          size += value.length;
+          if (size > maxSize) return onError(c);
+          chunks.push(value);
+        }
+        const requestInit = {
+          body: new ReadableStream({ start(controller) {
+            for (const chunk of chunks) controller.enqueue(chunk);
+            controller.close();
+          } }),
+          duplex: "half"
+        };
+        c.req.raw = new Request(c.req.raw, requestInit);
+        return next();
+      };
+    };
+  }
+});
+
+// packages/server/src/roadmaps.ts
+import { randomBytes } from "node:crypto";
+import { EventEmitter } from "node:events";
+import { existsSync as existsSync22, mkdirSync as mkdirSync10, mkdtempSync as mkdtempSync4, readdirSync as readdirSync11, readFileSync as readFileSync25, rmSync as rmSync7, writeFileSync as writeFileSync18 } from "node:fs";
+import { tmpdir as tmpdir4 } from "node:os";
+import { extname as extname2, join as join27 } from "node:path";
+function saveJob(root, job) {
+  mkdirSync10(join27(root, JOBS_DIR), { recursive: true });
+  writeFileSync18(join27(root, JOBS_DIR, `${job.id}.json`), JSON.stringify(job, null, 2));
+  jobEvents.emit("job", root, job);
+}
+function readJobs(root) {
+  const dir = join27(root, JOBS_DIR);
+  if (!existsSync22(dir)) return [];
+  const jobs = [];
+  for (const f of readdirSync11(dir).filter((f2) => f2.endsWith(".json"))) {
+    try {
+      const j = JSON.parse(readFileSync25(join27(dir, f), "utf8"));
+      jobs.push(j.status === "running" && j.pid !== process.pid ? { ...j, status: "failed", error: "interrupted: the dashboard stopped while the agent was working" } : j);
+    } catch {
+    }
+  }
+  return jobs.sort((a, b) => b.started.localeCompare(a.started));
+}
+function roadmapPrompt(agent, slug, kind) {
+  const file2 = roadmapPath(slug);
+  const headless = `Headless run from the dashboard: do not ask questions; write each open question with an empty \`A:\` line, the person answers them in the dashboard. Run \`.sdlc/bin/sdlc roadmap check ${slug}\`, then commit only changes/_roadmaps/${slug}/. Never approve the roadmap or create tickets.`;
+  return kind === "draft" ? `Use ${skillRef(agent, "sdlc-roadmap")} to draft the roadmap ${slug} (${file2}) from its source document. ${headless}` : `Use ${skillRef(agent, "sdlc-roadmap")} on the roadmap ${slug}: the person answered open questions in ${file2}. Keep the answers, update the epics and stories they affect, and add a question only if an answer opens a new one. ${headless}`;
+}
+function startJob(root, slug, kind) {
+  const key = `${root}#${slug}`;
+  if (running.has(key)) throw new Error(`the agent is already working on ${slug}`);
+  const loaded = loadConfig(root);
+  const agent = pickAgent(void 0, loaded);
+  const job = { id: `${Date.now().toString(36)}-${randomBytes(3).toString("hex")}`, kind, roadmap: slug, agent, status: "running", started: (/* @__PURE__ */ new Date()).toISOString(), log: "", pid: process.pid };
+  running.add(key);
+  saveJob(root, job);
+  let saved = 0;
+  const log7 = (chunk) => {
+    job.log = (job.log + chunk).slice(-LOG_TAIL);
+    if (Date.now() - saved > 1e3) {
+      saved = Date.now();
+      saveJob(root, job);
+    }
+  };
+  const model = process.env.SDLC_CI_MODEL || loaded?.config.ci?.model;
+  runAgentAsync(agent, { prompt: roadmapPrompt(agent, slug, kind), mode: "edit", allowedTools: EDIT_TOOLS, cwd: root, log: log7 }, model).then((answer2) => {
+    job.status = "done";
+    job.answer = answer2.slice(-4e3);
+  }).catch((e) => {
+    job.status = "failed";
+    job.error = e.message;
+  }).finally(() => {
+    job.finished = (/* @__PURE__ */ new Date()).toISOString();
+    running.delete(key);
+    saveJob(root, job);
+  });
+  return job;
+}
+function brief(r) {
+  const c = checkRoadmap(r);
+  return {
+    slug: r.slug,
+    title: r.title,
+    path: r.path,
+    status: r.data.status || "draft",
+    source: r.data.source,
+    epics: c.epics,
+    stories: c.stories,
+    open: c.open,
+    errors: c.errors,
+    warnings: c.warnings,
+    tickets: r.items.filter((i) => i.fields.key).length,
+    items: r.items.length
+  };
+}
+function roadmapRoutes(app, ws) {
+  app.get("/api/roadmaps", (c) => {
+    const root = ws(c);
+    const jobs = readJobs(root);
+    const canDecide = canDecideRoadmap(gitUser(root), loadConfig(root));
+    return c.json(listRoadmaps(root).map((r) => ({ ...brief(r), canDecide, job: jobs.find((j) => j.roadmap === r.slug) })));
+  });
+  app.post(
+    "/api/roadmaps",
+    bodyLimit({ maxSize: MAX_SOURCE_BYTES + 1024 * 1024, onError: (c) => c.json({ error: `the document is larger than ${MAX_SOURCE_BYTES / 1024 / 1024} MB` }, 413) }),
+    async (c) => {
+      const root = ws(c);
+      const body = await c.req.parseBody();
+      const slug = String(body.slug ?? "").trim();
+      const title = typeof body.title === "string" && body.title.trim() ? body.title.trim() : void 0;
+      const url2 = typeof body.url === "string" && body.url.trim() ? body.url.trim() : void 0;
+      const file2 = body.file instanceof File ? body.file : void 0;
+      if (url2 && !/^https?:\/\//.test(url2)) throw new Error("the link must start with http:// or https://");
+      if (!file2 && !url2) throw new Error("upload the technical plan (PDF, Markdown or text) or give its link");
+      let tmp;
+      let source = url2;
+      if (file2) {
+        const ext = extname2(file2.name).toLowerCase();
+        if (!SOURCE_EXTENSIONS.includes(ext)) throw new Error(`unsupported document ${file2.name}: use ${SOURCE_EXTENSIONS.join(", ")} (export Word or Google Docs to PDF)`);
+        if (file2.size > MAX_SOURCE_BYTES) return c.json({ error: `the document is larger than ${MAX_SOURCE_BYTES / 1024 / 1024} MB` }, 413);
+        tmp = mkdtempSync4(join27(tmpdir4(), "sdlc-upload-"));
+        source = join27(tmp, `plan${ext}`);
+        writeFileSync18(source, Buffer.from(await file2.arrayBuffer()));
+      }
+      let created;
+      try {
+        created = newRoadmap(root, slug, { source, title, loaded: loadConfig(root) });
+      } finally {
+        if (tmp) rmSync7(tmp, { recursive: true, force: true });
+      }
+      const job = body.agent === "false" ? void 0 : startJob(root, slug, "draft");
+      return c.json({ slug, path: created.path, source: created.source, job }, 201);
+    }
+  );
+  app.get("/api/roadmaps/:slug", (c) => {
+    const root = ws(c);
+    const slug = c.req.param("slug");
+    if (!existsSync22(join27(root, roadmapPath(slug)))) return c.json({ error: "not found" }, 404);
+    const loaded = loadConfig(root);
+    const r = getRoadmap(root, slug);
+    const jobs = readJobs(root).filter((j) => j.roadmap === slug);
+    return c.json({
+      ...brief(r),
+      data: r.data,
+      raw: r.raw,
+      questions: r.questions,
+      tree: r.items.map((i) => ({ id: i.id, kind: i.kind, title: i.title, epic: i.epic, fields: i.fields, description: i.description, criteria: i.criteria, depends: i.depends })),
+      canDecide: canDecideRoadmap(gitUser(root), loaded),
+      holds: approvalHolds(r),
+      progress: roadmapStatus(root, loaded, slug),
+      tracker: trackerEnabled(loaded) ? loaded.config.tracker.provider : void 0,
+      job: jobs[0],
+      jobs: jobs.slice(0, 5)
+    });
+  });
+  app.post("/api/roadmaps/:slug/answers", async (c) => {
+    const root = ws(c);
+    const slug = c.req.param("slug");
+    busy(root, slug);
+    const { answers, rerun = true } = await c.req.json();
+    const r = getRoadmap(root, slug);
+    const raw2 = setAnswers(r.raw, answers ?? {});
+    if (raw2 !== r.raw) {
+      writeFileSync18(join27(root, r.path), raw2);
+      gitOrThrow(root, ["add", "--", r.path]);
+      gitOrThrow(root, ["commit", "-q", "-m", `docs(roadmap-${slug}): answer open questions`, "--", r.path]);
+    }
+    const job = rerun && raw2 !== r.raw ? startJob(root, slug, "refine") : void 0;
+    return c.json({ ok: true, changed: raw2 !== r.raw, job, ...brief(getRoadmap(root, slug)) });
+  });
+  app.post("/api/roadmaps/:slug/gate", async (c) => {
+    const root = ws(c);
+    const slug = c.req.param("slug");
+    busy(root, slug);
+    const body = await c.req.json();
+    return c.json(decideRoadmap(root, loadConfig(root), slug, body.decision === "rejected" ? "rejected" : "approved", { comment: body.comment }));
+  });
+  app.post("/api/roadmaps/:slug/apply", async (c) => {
+    const root = ws(c);
+    const slug = c.req.param("slug");
+    busy(root, slug);
+    const { dryRun = false } = await c.req.json().catch(() => ({ dryRun: false }));
+    const loaded = loadConfig(root);
+    const holds = approvalHolds(getRoadmap(root, slug));
+    if (!holds.ok) throw new Error(holds.reason);
+    if (!dryRun && !trackerEnabled(loaded)) throw new Error("tracker not configured (tracker.provider: jira | github | linear): Settings \u2192 Tracker");
+    return c.json(await applyRoadmap(root, loaded, slug, { dryRun, tracker: () => tracker(loaded, process.env, root) }));
+  });
+  app.get("/api/jobs/:id", (c) => {
+    const job = readJobs(ws(c)).find((j) => j.id === c.req.param("id"));
+    return job ? c.json(job) : c.json({ error: "not found" }, 404);
+  });
+}
+var JOBS_DIR, LOG_TAIL, EDIT_TOOLS, jobEvents, running, busy;
+var init_roadmaps = __esm({
+  "packages/server/src/roadmaps.ts"() {
+    "use strict";
+    init_body_limit();
+    init_src();
+    JOBS_DIR = ".sdlc/jobs";
+    LOG_TAIL = 8 * 1024;
+    EDIT_TOOLS = "Read,Write,Edit,Grep,Glob,Bash(git add:*),Bash(git commit:*),Bash(git status),Bash(ls:*),Bash(.sdlc/bin/sdlc:*),Bash(npx sdlc:*)";
+    jobEvents = new EventEmitter();
+    running = /* @__PURE__ */ new Set();
+    busy = (root, slug) => {
+      if (running.has(`${root}#${slug}`)) throw new Error(`the agent is still working on ${slug}; wait until it finishes`);
+    };
+  }
+});
+
 // packages/server/src/index.ts
 var src_exports = {};
 __export(src_exports, {
   createApp: () => createApp,
+  jobEvents: () => jobEvents,
+  readJobs: () => readJobs,
+  roadmapPrompt: () => roadmapPrompt,
   startServer: () => startServer,
   staticFile: () => staticFile
 });
-import { randomBytes, timingSafeEqual } from "node:crypto";
-import { existsSync as existsSync21, mkdirSync as mkdirSync9, readFileSync as readFileSync24, watch, writeFileSync as writeFileSync17 } from "node:fs";
+import { randomBytes as randomBytes2, timingSafeEqual } from "node:crypto";
+import { existsSync as existsSync23, mkdirSync as mkdirSync11, readFileSync as readFileSync26, watch, writeFileSync as writeFileSync19 } from "node:fs";
 import { homedir as homedir4 } from "node:os";
-import { basename as basename2, dirname as dirname7, extname, join as join26, resolve as resolve3, sep } from "node:path";
+import { basename as basename3, dirname as dirname7, extname as extname3, join as join28, resolve as resolve3, sep } from "node:path";
 import { fileURLToPath as fileURLToPath2 } from "node:url";
 import { execFile } from "node:child_process";
 function uiDir() {
-  const candidates = [process.env.SDLC_UI_DIR, join26(here2, "ui"), join26(here2, "..", "..", "ui", "dist")];
-  return candidates.find((c) => c && existsSync21(join26(c, "index.html")));
+  const candidates = [process.env.SDLC_UI_DIR, join28(here2, "ui"), join28(here2, "..", "..", "ui", "dist")];
+  return candidates.find((c) => c && existsSync23(join28(c, "index.html")));
 }
 function loadWorkspaces(current) {
   let list = [];
   try {
-    list = JSON.parse(readFileSync24(WORKSPACES_FILE, "utf8"));
+    list = JSON.parse(readFileSync26(WORKSPACES_FILE, "utf8"));
   } catch {
   }
-  return [current, ...list.filter((p) => p !== current && existsSync21(p))];
+  return [current, ...list.filter((p) => p !== current && existsSync23(p))];
 }
 function saveWorkspaces(list) {
-  mkdirSync9(dirname7(WORKSPACES_FILE), { recursive: true });
-  writeFileSync17(WORKSPACES_FILE, JSON.stringify([...new Set(list)], null, 2));
+  mkdirSync11(dirname7(WORKSPACES_FILE), { recursive: true });
+  writeFileSync19(WORKSPACES_FILE, JSON.stringify([...new Set(list)], null, 2));
 }
 function cachedPr(root, branch, loaded) {
   const key = `${root}#${branch}`;
@@ -34578,7 +35413,7 @@ function timeline(root, c) {
 }
 function staticFile(dir, path) {
   const file2 = resolve3(dir, path === "/" ? "index.html" : path.slice(1));
-  return file2.startsWith(dir + sep) && existsSync21(file2) && extname(file2) ? file2 : join26(dir, "index.html");
+  return file2.startsWith(dir + sep) && existsSync23(file2) && extname3(file2) ? file2 : join28(dir, "index.html");
 }
 function createApp(opts2) {
   const app = new Hono3();
@@ -34600,11 +35435,11 @@ function createApp(opts2) {
     return root;
   };
   app.onError((err, c) => c.json({ error: err.message }, 400));
-  app.get("/api/workspaces", (c) => c.json(workspaces.map((p) => ({ path: p, name: basename2(p), configured: !!loadConfig(p) }))));
+  app.get("/api/workspaces", (c) => c.json(workspaces.map((p) => ({ path: p, name: basename3(p), configured: !!loadConfig(p) }))));
   app.post("/api/workspaces", async (c) => {
     const { path } = await c.req.json();
     const p = resolve3(path);
-    if (!existsSync21(join26(p, ".git"))) throw new Error(`${p} is not a git repository`);
+    if (!existsSync23(join28(p, ".git"))) throw new Error(`${p} is not a git repository`);
     workspaces = [...workspaces.filter((w) => w !== p), p];
     saveWorkspaces(workspaces.slice(1).concat(opts2.root));
     return c.json({ ok: true });
@@ -34614,7 +35449,7 @@ function createApp(opts2) {
     const loaded = loadConfig(root);
     return c.json({
       root,
-      name: basename2(root),
+      name: basename3(root),
       configured: !!loaded,
       configPath: loaded?.path,
       locale: localeOf(loaded),
@@ -34687,6 +35522,7 @@ function createApp(opts2) {
     const { force } = await c.req.json().catch(() => ({ force: false }));
     return c.json(sync(root, loaded, { force }));
   });
+  roadmapRoutes(app, ws);
   app.get("/api/stream", (c) => {
     const root = ws(c);
     return streamSSE(c, async (stream2) => {
@@ -34697,15 +35533,20 @@ function createApp(opts2) {
         timer = setTimeout(() => void stream2.writeSSE({ event: "change", data: String(Date.now()) }), 300);
       };
       for (const p of ["changes", ".sdlc", ".git/refs", ".git/HEAD", CONFIG_PATH]) {
-        const full = join26(root, p);
-        if (!existsSync21(full)) continue;
+        const full = join28(root, p);
+        if (!existsSync23(full)) continue;
         try {
-          watchers.push(watch(full, { recursive: !extname(p) && p !== ".git/HEAD" }, ping));
+          watchers.push(watch(full, { recursive: !extname3(p) && p !== ".git/HEAD" }, ping));
         } catch {
         }
       }
       const keepalive = setInterval(() => void stream2.writeSSE({ event: "ping", data: "" }), 25e3);
+      const onJob = (jobRoot, job) => {
+        if (jobRoot === root) void stream2.writeSSE({ event: "job", data: JSON.stringify(job) });
+      };
+      jobEvents.on("job", onJob);
       await new Promise((done) => stream2.onAbort(done));
+      jobEvents.off("job", onJob);
       clearInterval(keepalive);
       clearTimeout(timer);
       for (const w of watchers) w.close();
@@ -34716,14 +35557,14 @@ function createApp(opts2) {
     if (!dir) return c.html("<p>UI not built. Run <code>npm run build:ui</code>.</p>");
     const target = staticFile(dir, c.req.path);
     const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png" };
-    let body = readFileSync24(target);
+    let body = readFileSync26(target);
     if (target.endsWith("index.html")) body = body.toString().replace("__SDLC_TOKEN__", opts2.token);
-    return c.body(body, 200, { "content-type": types[extname(target)] ?? "application/octet-stream", "cache-control": "no-store" });
+    return c.body(body, 200, { "content-type": types[extname3(target)] ?? "application/octet-stream", "cache-control": "no-store" });
   });
   return app;
 }
 async function startServer(opts2) {
-  const token = randomBytes(16).toString("hex");
+  const token = randomBytes2(16).toString("hex");
   const app = createApp({ root: opts2.root, token });
   const port = opts2.port ?? 4319;
   return new Promise((resolveStart) => {
@@ -34749,8 +35590,10 @@ var init_src3 = __esm({
     init_streaming();
     init_src2();
     init_src();
+    init_roadmaps();
+    init_roadmaps();
     here2 = dirname7(fileURLToPath2(import.meta.url));
-    WORKSPACES_FILE = join26(process.env.XDG_CONFIG_HOME ?? join26(homedir4(), ".config"), "sdlc", "workspaces.json");
+    WORKSPACES_FILE = join28(process.env.XDG_CONFIG_HOME ?? join28(homedir4(), ".config"), "sdlc", "workspaces.json");
     prCache = /* @__PURE__ */ new Map();
   }
 });
@@ -35068,14 +35911,14 @@ __export(src_exports3, {
   startHosted: () => startHosted
 });
 import { createHmac as createHmac2, timingSafeEqual as timingSafeEqual3 } from "node:crypto";
-import { readFileSync as readFileSync25 } from "node:fs";
+import { readFileSync as readFileSync27 } from "node:fs";
 function equal(a, b) {
   const x = Buffer.from(a);
   const y = Buffer.from(b);
   return x.length === y.length && timingSafeEqual3(x, y);
 }
 function client(env) {
-  const privateKey = env.GITHUB_APP_PRIVATE_KEY?.replace(/\\n/g, "\n") ?? (env.GITHUB_APP_PRIVATE_KEY_FILE ? readFileSync25(env.GITHUB_APP_PRIVATE_KEY_FILE, "utf8") : void 0);
+  const privateKey = env.GITHUB_APP_PRIVATE_KEY?.replace(/\\n/g, "\n") ?? (env.GITHUB_APP_PRIVATE_KEY_FILE ? readFileSync27(env.GITHUB_APP_PRIVATE_KEY_FILE, "utf8") : void 0);
   if (!env.GITHUB_APP_ID || !privateKey || !env.GITHUB_INSTALLATION_ID) {
     throw new Error("sdlc hosted needs GITHUB_APP_ID, GITHUB_APP_PRIVATE_KEY (or _FILE) and GITHUB_INSTALLATION_ID");
   }
@@ -35168,100 +36011,19 @@ var init_src5 = __esm({
 // packages/cli/src/main.ts
 init_src2();
 init_src();
-import { existsSync as existsSync22, mkdirSync as mkdirSync10, readFileSync as readFileSync26, rmSync as rmSync7, writeFileSync as writeFileSync18 } from "node:fs";
-import { join as join27 } from "node:path";
+import { existsSync as existsSync24, mkdirSync as mkdirSync12, readFileSync as readFileSync28, rmSync as rmSync8, writeFileSync as writeFileSync20 } from "node:fs";
+import { join as join29 } from "node:path";
 
 // packages/cli/src/metrics.ts
 init_src();
 
 // packages/cli/src/ci/review.ts
 init_src();
-import { writeFileSync as writeFileSync15 } from "node:fs";
-import { join as join24 } from "node:path";
+import { writeFileSync as writeFileSync16 } from "node:fs";
+import { join as join25 } from "node:path";
 
 // packages/cli/src/ci/agent.ts
 init_src();
-import { spawn, spawnSync } from "node:child_process";
-import { mkdtempSync as mkdtempSync2, readFileSync as readFileSync15, rmSync as rmSync3 } from "node:fs";
-import { homedir as homedir2, tmpdir as tmpdir2 } from "node:os";
-import { join as join16 } from "node:path";
-var READ_TOOLS = "Read,Grep,Glob,Bash(git diff:*),Bash(git log:*),Bash(git show:*)";
-function pickAgent(flag, loaded, env = process.env) {
-  const a = flag || env.SDLC_CI_AGENT || loaded?.config.ci?.agent || "claude";
-  if (!CI_AGENTS.includes(a)) throw new SdlcError(`unknown agent '${a}' (one of: ${CI_AGENTS.join(", ")})`);
-  return a;
-}
-var AGENT_BIN = { claude: "claude", codex: "codex", cursor: "cursor-agent" };
-function agentBin(agent, env = process.env) {
-  if (agent !== "cursor") return AGENT_BIN[agent];
-  const local = join16(env.HOME ?? homedir2(), ".local/bin");
-  return ["cursor-agent", "agent", join16(local, "cursor-agent"), join16(local, "agent")].find((b) => hasTool(b, env)) ?? AGENT_BIN.cursor;
-}
-function skillRef(agent, name) {
-  return agent === "claude" ? `the ${name} skill` : `the skill in .agents/skills/${name}/SKILL.md`;
-}
-function invocation(agent, task, model, env) {
-  const tmp = mkdtempSync2(join16(tmpdir2(), "sdlc-agent-"));
-  let args;
-  let lastMessage;
-  switch (agent) {
-    case "claude":
-      args = ["-p", task.prompt, "--allowedTools", task.allowedTools ?? READ_TOOLS];
-      if (task.mode === "edit") args.push("--permission-mode", "acceptEdits");
-      if (model) args.push("--model", model);
-      break;
-    case "codex":
-      lastMessage = join16(tmp, "last.md");
-      args = ["exec", "--sandbox", task.mode !== "edit" ? "read-only" : env.CI ? "danger-full-access" : "workspace-write", "--output-last-message", lastMessage];
-      if (model) args.push("-m", model);
-      args.push(task.prompt);
-      break;
-    case "cursor":
-      args = ["-p", "--output-format", "text", "--trust", "--workspace", task.cwd];
-      args.push(...task.mode === "edit" ? ["--force"] : ["--mode", "ask"]);
-      if (model) args.push("--model", model);
-      args.push(task.prompt);
-      break;
-  }
-  if (agent === "codex" && !env.CODEX_API_KEY && env.OPENAI_API_KEY) env = { ...env, CODEX_API_KEY: env.OPENAI_API_KEY };
-  return { bin: agentBin(agent, env), args, env, tmp, lastMessage };
-}
-function answer(inv, stdout) {
-  if (inv.lastMessage) {
-    try {
-      return readFileSync15(inv.lastMessage, "utf8").trim();
-    } catch {
-    }
-  }
-  return stdout.trim();
-}
-var failure2 = (bin, error62, status) => error62 ? new SdlcError(`${bin}: ${error62.code === "ENOENT" ? "not installed (run: sdlc ci bootstrap)" : error62.message}`) : status !== 0 ? new SdlcError(`${bin} exited with ${status}`) : void 0;
-function runAgent(agent, task, model, env = process.env) {
-  const inv = invocation(agent, task, model, env);
-  try {
-    const r = spawnSync(inv.bin, inv.args, { cwd: task.cwd, env: inv.env, encoding: "utf8", stdio: ["ignore", "pipe", "inherit"], maxBuffer: 64 * 1024 * 1024 });
-    const err = failure2(inv.bin, r.error, r.status);
-    if (err) throw err;
-    return answer(inv, r.stdout);
-  } finally {
-    rmSync3(inv.tmp, { recursive: true, force: true });
-  }
-}
-function runAgentAsync(agent, task, model, env = process.env) {
-  const inv = invocation(agent, task, model, env);
-  return new Promise((resolve4, reject) => {
-    const child = spawn(inv.bin, inv.args, { cwd: task.cwd, env: inv.env, stdio: ["ignore", "pipe", "inherit"] });
-    let stdout = "";
-    let spawnError;
-    child.stdout.setEncoding("utf8").on("data", (d) => stdout += d);
-    child.on("error", (e) => spawnError = e);
-    child.on("close", (status) => {
-      const err = failure2(inv.bin, spawnError, spawnError ? null : status);
-      if (err) reject(err);
-      else resolve4(answer(inv, stdout));
-    });
-  }).finally(() => rmSync3(inv.tmp, { recursive: true, force: true }));
-}
 
 // packages/cli/src/ci/gates.ts
 init_src();
@@ -35270,16 +36032,16 @@ import { execFileSync as execFileSync8 } from "node:child_process";
 // packages/cli/src/ci/index.ts
 init_src();
 import { execFileSync as execFileSync7, spawnSync as spawnSync3 } from "node:child_process";
-import { appendFileSync as appendFileSync4, existsSync as existsSync18, readdirSync as readdirSync9, readFileSync as readFileSync21, rmSync as rmSync5 } from "node:fs";
+import { appendFileSync as appendFileSync4, existsSync as existsSync19, readdirSync as readdirSync10, readFileSync as readFileSync22, rmSync as rmSync5 } from "node:fs";
 import { homedir as homedir3 } from "node:os";
-import { dirname as dirname6, join as join23 } from "node:path";
+import { dirname as dirname6, join as join24 } from "node:path";
 
 // packages/cli/src/ci/evals.ts
 init_src();
 import { execFileSync as execFileSync6, spawnSync as spawnSync2 } from "node:child_process";
-import { existsSync as existsSync13, mkdtempSync as mkdtempSync3, readdirSync as readdirSync6, readFileSync as readFileSync16, rmSync as rmSync4, writeFileSync as writeFileSync9 } from "node:fs";
+import { existsSync as existsSync14, mkdtempSync as mkdtempSync3, readdirSync as readdirSync7, readFileSync as readFileSync17, rmSync as rmSync4, writeFileSync as writeFileSync10 } from "node:fs";
 import { tmpdir as tmpdir3 } from "node:os";
-import { join as join17 } from "node:path";
+import { join as join18 } from "node:path";
 function touched(dir, base) {
   const rel = ["--relative"];
   return [
@@ -35287,7 +36049,7 @@ function touched(dir, base) {
   ];
 }
 function filesMatching(dir, glob, base) {
-  return touched(dir, base).filter((f) => globMatch(f, glob) && existsSync13(join17(dir, f)));
+  return touched(dir, base).filter((f) => globMatch(f, glob) && existsSync14(join18(dir, f)));
 }
 function applyChecks(e, dir, output2, env = process.env, base = "HEAD") {
   const failures = [];
@@ -35314,7 +36076,7 @@ function applyChecks(e, dir, output2, env = process.env, base = "HEAD") {
         break;
       case "file_matches": {
         const re = new RegExp(c.pattern, c.ignore_case ? "mi" : "m");
-        if (!filesMatching(dir, c.glob, base).some((f) => re.test(readFileSync16(join17(dir, f), "utf8")))) failures.push(`no file matching ${c.glob} contains /${c.pattern}/`);
+        if (!filesMatching(dir, c.glob, base).some((f) => re.test(readFileSync17(join18(dir, f), "utf8")))) failures.push(`no file matching ${c.glob} contains /${c.pattern}/`);
         break;
       }
       default:
@@ -35324,10 +36086,10 @@ function applyChecks(e, dir, output2, env = process.env, base = "HEAD") {
   return failures;
 }
 function loadEvals(root, pattern = "*", tags = []) {
-  const dir = join17(root, "evals");
-  if (!existsSync13(dir)) return [];
-  return readdirSync6(dir).filter((f) => f.endsWith(".json") && !f.startsWith("_") && globMatch(f.slice(0, -5), pattern)).sort().map((f) => {
-    const e = JSON.parse(readFileSync16(join17(dir, f), "utf8"));
+  const dir = join18(root, "evals");
+  if (!existsSync14(dir)) return [];
+  return readdirSync7(dir).filter((f) => f.endsWith(".json") && !f.startsWith("_") && globMatch(f.slice(0, -5), pattern)).sort().map((f) => {
+    const e = JSON.parse(readFileSync17(join18(dir, f), "utf8"));
     if (!e.prompt || !Array.isArray(e.checks)) throw new SdlcError(`evals/${f}: needs "prompt" and "checks"`);
     return { ...e, name: e.name ?? f.slice(0, -5) };
   }).filter((e) => !tags.length || (e.tags ?? []).some((t2) => tags.includes(t2)));
@@ -35346,14 +36108,14 @@ function runEvals(c, pattern, out, tags = []) {
   const min = Number(c.env.EVAL_MIN_PASS_RATE ?? c.loaded?.config.ci?.min_pass_rate ?? 0.8);
   const results = [];
   for (const e of evals) {
-    const wt = join17(mkdtempSync3(join17(tmpdir3(), "sdlc-eval-")), "wt");
+    const wt = join18(mkdtempSync3(join18(tmpdir3(), "sdlc-eval-")), "wt");
     execFileSync6("git", ["worktree", "add", "-q", "--detach", wt, "HEAD"], { cwd: c.root, stdio: "ignore" });
-    const dir = join17(wt, e.cwd ?? ".");
-    const env = { ...c.env, EVAL_DIR: join17(c.root, "evals"), EVAL_ROOT: wt, CLAUDE_PROJECT_DIR: dir, SDLC_PROJECT_DIR: dir };
+    const dir = join18(wt, e.cwd ?? ".");
+    const env = { ...c.env, EVAL_DIR: join18(c.root, "evals"), EVAL_ROOT: wt, CLAUDE_PROJECT_DIR: dir, SDLC_PROJECT_DIR: dir };
     let failures;
     const started = Date.now();
     try {
-      if (!existsSync13(dir)) throw new SdlcError(`cwd ${e.cwd} does not exist`);
+      if (!existsSync14(dir)) throw new SdlcError(`cwd ${e.cwd} does not exist`);
       if (e.setup) {
         const r = spawnSync2("sh", ["-c", e.setup], { cwd: dir, env, encoding: "utf8", timeout: 15 * 6e4 });
         if (r.status !== 0) throw new SdlcError(`setup failed: ${(r.stderr || r.stdout).trim().slice(0, 500)}`);
@@ -35365,7 +36127,7 @@ function runEvals(c, pattern, out, tags = []) {
       failures = [err.message];
     } finally {
       git(c.root, ["worktree", "remove", "--force", wt]);
-      rmSync4(join17(wt, ".."), { recursive: true, force: true });
+      rmSync4(join18(wt, ".."), { recursive: true, force: true });
     }
     results.push({ name: e.name, passed: !failures.length, failures, seconds: Math.round((Date.now() - started) / 1e3) });
     console.log(`${failures.length ? "FAIL" : "PASS"} ${e.name}`);
@@ -35374,13 +36136,13 @@ function runEvals(c, pattern, out, tags = []) {
   const passed = results.filter((r) => r.passed).length;
   const rate = passed / results.length;
   console.log(`pass rate: ${passed}/${results.length} = ${rate.toFixed(2)} (minimum ${min})`);
-  if (out) writeFileSync9(out, JSON.stringify({ agent: c.agent, model: c.model, rate, min, date: (/* @__PURE__ */ new Date()).toISOString().slice(0, 10), results }, null, 2) + "\n");
+  if (out) writeFileSync10(out, JSON.stringify({ agent: c.agent, model: c.model, rate, min, date: (/* @__PURE__ */ new Date()).toISOString().slice(0, 10), results }, null, 2) + "\n");
   return rate >= min ? 0 : 1;
 }
 
 // packages/cli/src/ci/scorecard.ts
 init_src();
-import { existsSync as existsSync14, readFileSync as readFileSync17, writeFileSync as writeFileSync10 } from "node:fs";
+import { existsSync as existsSync15, readFileSync as readFileSync18, writeFileSync as writeFileSync11 } from "node:fs";
 var KEY = {
   claude: ["ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN"],
   codex: ["OPENAI_API_KEY", "CODEX_API_KEY"],
@@ -35444,24 +36206,24 @@ function renderScorecard(reports, evals, date5, outcomes) {
 }
 var comparable = (block2) => block2.split("\n").map((l) => l.replace(/\| \d{4}-\d{2}-\d{2} \|$/, "|")).join("\n");
 function updateScorecard(file2, block2) {
-  const doc = existsSync14(file2) ? readFileSync17(file2, "utf8") : "";
+  const doc = existsSync15(file2) ? readFileSync18(file2, "utf8") : "";
   const start = doc.indexOf(SCORECARD_START);
   const end = doc.indexOf(SCORECARD_END);
   if (start < 0 || end < 0) {
-    writeFileSync10(file2, `${doc.trimEnd()}${doc ? "\n\n" : ""}${block2}
+    writeFileSync11(file2, `${doc.trimEnd()}${doc ? "\n\n" : ""}${block2}
 `);
     return true;
   }
   const old = doc.slice(start, end + SCORECARD_END.length);
   if (comparable(old) === comparable(block2)) return false;
-  writeFileSync10(file2, doc.slice(0, start) + block2 + doc.slice(end + SCORECARD_END.length));
+  writeFileSync11(file2, doc.slice(0, start) + block2 + doc.slice(end + SCORECARD_END.length));
   return true;
 }
 
 // packages/cli/src/ci/install.ts
 init_src2();
-import { existsSync as existsSync15, mkdirSync as mkdirSync6, readFileSync as readFileSync18, writeFileSync as writeFileSync11 } from "node:fs";
-import { dirname as dirname5, join as join18 } from "node:path";
+import { existsSync as existsSync16, mkdirSync as mkdirSync7, readFileSync as readFileSync19, writeFileSync as writeFileSync12 } from "node:fs";
+import { dirname as dirname5, join as join19 } from "node:path";
 var TARGETS = {
   github: {
     "ci.yml": ".github/workflows/ci.yml",
@@ -35478,9 +36240,9 @@ var TARGETS = {
 };
 function stackCi(locale, language) {
   if (!language) return {};
-  const file2 = join18(localeDir(locale), "skills", "sdlc-setup", "stacks", `${language}.md`);
-  if (!existsSync15(file2)) return {};
-  const md = readFileSync18(file2, "utf8");
+  const file2 = join19(localeDir(locale), "skills", "sdlc-setup", "stacks", `${language}.md`);
+  if (!existsSync16(file2)) return {};
+  const md = readFileSync19(file2, "utf8");
   const section = md.slice(md.search(/^## CI\b/m));
   const gh = /\*\*GitHub\*\*[^\n]*\n\s*```ya?ml\n([\s\S]*?)```/.exec(section)?.[1];
   const image = /\*\*GitLab\*\*:\s*`image:\s*([^`]+)`/.exec(section)?.[1]?.trim();
@@ -35506,26 +36268,26 @@ function fillCommands(yaml, config2, hasMakefile) {
   return yaml.replace(/make (build|lint|test)\b/g, (m) => map2[m] || m);
 }
 function installCi(root, config2, opts2) {
-  const src = join18(localeDir(opts2.locale), "skills", "sdlc-setup", "ci", opts2.provider);
+  const src = join19(localeDir(opts2.locale), "skills", "sdlc-setup", "ci", opts2.provider);
   const targets = TARGETS[opts2.provider];
   const wanted = opts2.provider === "github" && opts2.files ? opts2.files : Object.keys(targets);
   const ci = stackCi(opts2.locale, config2.stack?.language);
   const branch = config2.vcs?.default_branch ?? "main";
-  const hasMakefile = existsSync15(join18(root, "Makefile"));
+  const hasMakefile = existsSync16(join19(root, "Makefile"));
   const report = { written: [], conflicts: [] };
   for (const name of wanted) {
     const target = targets[name];
-    if (!target || !existsSync15(join18(src, name))) continue;
-    if (existsSync15(join18(root, target))) {
+    if (!target || !existsSync16(join19(src, name))) continue;
+    if (existsSync16(join19(root, target))) {
       report.conflicts.push(target);
       continue;
     }
-    let yaml = readFileSync18(join18(src, name), "utf8");
+    let yaml = readFileSync19(join19(src, name), "utf8");
     yaml = fillStack(yaml, ci, opts2.provider);
     yaml = fillCommands(yaml, config2, hasMakefile);
     if (branch !== "main") yaml = yaml.replace(/branches: \[main\]/g, `branches: [${branch}]`).replace(/^( {4})main:$/m, `$1${branch}:`);
-    mkdirSync6(dirname5(join18(root, target)), { recursive: true });
-    writeFileSync11(join18(root, target), yaml);
+    mkdirSync7(dirname5(join19(root, target)), { recursive: true });
+    writeFileSync12(join19(root, target), yaml);
     report.written.push(target);
   }
   return report;
@@ -35537,20 +36299,20 @@ function ciSecrets(config2) {
 
 // packages/cli/src/ci/capture.ts
 init_src();
-import { existsSync as existsSync16, mkdirSync as mkdirSync7, readdirSync as readdirSync7, readFileSync as readFileSync19, writeFileSync as writeFileSync12 } from "node:fs";
-import { join as join19 } from "node:path";
+import { existsSync as existsSync17, mkdirSync as mkdirSync8, readdirSync as readdirSync8, readFileSync as readFileSync20, writeFileSync as writeFileSync13 } from "node:fs";
+import { join as join20 } from "node:path";
 var REVIEW_EVAL_PROMPT = "Review the last commit (git show HEAD) following REVIEW.md and print the findings table. Then end with exactly one line: IMPORTANT_FINDINGS: <number of Important findings>. Do not modify files.";
 var REVIEW_EVAL_TOOLS = "Read,Grep,Glob,Bash(git show:*),Bash(git log:*),Bash(git diff:*)";
 var PATCH_DIR = "evals/fixtures/review";
 var log = (msg) => process.stderr.write(`[sdlc-ci] ${msg}
 `);
 function captured(root) {
-  const dir = join19(root, "evals");
-  if (!existsSync16(dir)) return /* @__PURE__ */ new Set();
+  const dir = join20(root, "evals");
+  if (!existsSync17(dir)) return /* @__PURE__ */ new Set();
   return new Set(
-    readdirSync7(dir).filter((f) => f.endsWith(".json")).flatMap((f) => {
+    readdirSync8(dir).filter((f) => f.endsWith(".json")).flatMap((f) => {
       try {
-        const c = JSON.parse(readFileSync19(join19(dir, f), "utf8")).source?.commit;
+        const c = JSON.parse(readFileSync20(join20(dir, f), "utf8")).source?.commit;
         return c ? [c] : [];
       } catch {
         return [];
@@ -35560,7 +36322,7 @@ function captured(root) {
 }
 function projectOf(top, file2) {
   const parts = file2.split("/").slice(0, -1);
-  for (let i = parts.length; i > 0; i--) if (existsSync16(join19(top, ...parts.slice(0, i), ".sdlc/config.json"))) return parts.slice(0, i).join("/");
+  for (let i = parts.length; i > 0; i--) if (existsSync17(join20(top, ...parts.slice(0, i), ".sdlc/config.json"))) return parts.slice(0, i).join("/");
   return "";
 }
 function captureEval(root, sha2, o) {
@@ -35573,8 +36335,8 @@ function captureEval(root, sha2, o) {
   const subject = git(root, ["log", "-1", "--format=%s", full]) ?? sha2;
   const name = o.name ?? `review-${o.origin}-${full.slice(0, 8)}`;
   if (!/^[a-z0-9][a-z0-9-]*$/.test(name)) throw new SdlcError(`invalid eval name ${name} (letters, digits, dashes)`);
-  mkdirSync7(join19(root, PATCH_DIR), { recursive: true });
-  writeFileSync12(join19(root, PATCH_DIR, `${name}.patch`), patch + "\n");
+  mkdirSync8(join20(root, PATCH_DIR), { recursive: true });
+  writeFileSync13(join20(root, PATCH_DIR, `${name}.patch`), patch + "\n");
   const top = git(root, ["rev-parse", "--show-toplevel"]) ?? root;
   const projects = [...new Set(files.map((f) => projectOf(top, f)))];
   const main2 = files.find((f) => !/(^|\/)(test|tests|__tests__)\/|\.test\.|_test\./.test(f)) ?? files[0];
@@ -35594,7 +36356,7 @@ function captureEval(root, sha2, o) {
     ]
   };
   const file2 = `evals/${name}.json`;
-  writeFileSync12(join19(root, file2), JSON.stringify(e, null, 2) + "\n");
+  writeFileSync13(join20(root, file2), JSON.stringify(e, null, 2) + "\n");
   return { name, file: file2 };
 }
 function revertedCommits(root, branch, since) {
@@ -35632,14 +36394,14 @@ function captureCommand(c, sha2, flags) {
 
 // packages/cli/src/ci/nightly.ts
 init_src();
-import { appendFileSync as appendFileSync3, writeFileSync as writeFileSync13 } from "node:fs";
-import { join as join21 } from "node:path";
+import { appendFileSync as appendFileSync3, writeFileSync as writeFileSync14 } from "node:fs";
+import { join as join22 } from "node:path";
 
 // packages/cli/src/init.ts
 init_src2();
 init_src();
-import { copyFileSync, existsSync as existsSync17, mkdirSync as mkdirSync8, readdirSync as readdirSync8, readFileSync as readFileSync20, statSync as statSync3 } from "node:fs";
-import { join as join20, relative as relative3 } from "node:path";
+import { copyFileSync as copyFileSync2, existsSync as existsSync18, mkdirSync as mkdirSync9, readdirSync as readdirSync9, readFileSync as readFileSync21, statSync as statSync4 } from "node:fs";
+import { join as join21, relative as relative3 } from "node:path";
 import { createInterface } from "node:readline/promises";
 
 // packages/cli/src/presets.ts
@@ -35736,9 +36498,9 @@ var STACKS = {
   }
 };
 function detectStack(root) {
-  const has2 = (f) => existsSync17(join20(root, f));
+  const has2 = (f) => existsSync18(join21(root, f));
   if (has2("Gemfile") && has2("config/application.rb")) return "ruby";
-  if (readdirSync8(root).some((f) => f.endsWith(".sln") || f.endsWith(".csproj"))) return "dotnet";
+  if (readdirSync9(root).some((f) => f.endsWith(".sln") || f.endsWith(".csproj"))) return "dotnet";
   if (has2("pyproject.toml") || has2("requirements.txt")) return "python";
   if (has2("package.json") || has2("tsconfig.json")) return "typescript";
   if (has2("pom.xml") || has2("build.gradle") || has2("build.gradle.kts")) return "java";
@@ -35746,17 +36508,17 @@ function detectStack(root) {
   return void 0;
 }
 function detectPackageManager(root, stack, fallback) {
-  if (stack !== "typescript") return stack === "java" && existsSync17(join20(root, "pom.xml")) ? "maven" : fallback;
-  if (existsSync17(join20(root, "pnpm-lock.yaml"))) return "pnpm";
-  if (existsSync17(join20(root, "yarn.lock"))) return "yarn";
-  if (existsSync17(join20(root, "bun.lock")) || existsSync17(join20(root, "bun.lockb"))) return "bun";
+  if (stack !== "typescript") return stack === "java" && existsSync18(join21(root, "pom.xml")) ? "maven" : fallback;
+  if (existsSync18(join21(root, "pnpm-lock.yaml"))) return "pnpm";
+  if (existsSync18(join21(root, "yarn.lock"))) return "yarn";
+  if (existsSync18(join21(root, "bun.lock")) || existsSync18(join21(root, "bun.lockb"))) return "bun";
   return "npm";
 }
 function detectAgents(root) {
   const found = [];
-  if (existsSync17(join20(root, ".claude")) || existsSync17(join20(root, "CLAUDE.md"))) found.push("claude");
-  if (existsSync17(join20(root, ".cursor")) || existsSync17(join20(root, ".cursorrules"))) found.push("cursor");
-  if (existsSync17(join20(root, "AGENTS.md")) || existsSync17(join20(root, ".codex"))) found.push("agents-md");
+  if (existsSync18(join21(root, ".claude")) || existsSync18(join21(root, "CLAUDE.md"))) found.push("claude");
+  if (existsSync18(join21(root, ".cursor")) || existsSync18(join21(root, ".cursorrules"))) found.push("cursor");
+  if (existsSync18(join21(root, "AGENTS.md")) || existsSync18(join21(root, ".codex"))) found.push("agents-md");
   return found.length ? found : ["claude"];
 }
 function detectConfig(root, locale) {
@@ -35781,7 +36543,7 @@ function detectConfig(root, locale) {
     config2.test_globs = stack.test_globs;
     config2.protected_paths = stack.protected_paths;
     if (stack.append_only_paths) config2.append_only_paths = stack.append_only_paths;
-    if (stackId === "ruby" && (existsSync17(join20(root, ".rspec")) || existsSync17(join20(root, "spec")))) config2.commands.test = "bundle exec rspec";
+    if (stackId === "ruby" && (existsSync18(join21(root, ".rspec")) || existsSync18(join21(root, "spec")))) config2.commands.test = "bundle exec rspec";
   } else {
     config2.commands = { build: "make build", test: "make test", lint: "make lint", format: "make format" };
     config2.test_globs = ["tests/**", "test/**"];
@@ -35825,19 +36587,19 @@ async function askConfig(config2, preset) {
   }
 }
 function scaffold(root, opts2) {
-  const src = join20(localeDir(opts2.locale), "skills", "sdlc-setup", "scaffold");
+  const src = join21(localeDir(opts2.locale), "skills", "sdlc-setup", "scaffold");
   const created = [];
   const walk2 = (dir) => {
-    for (const name of readdirSync8(dir)) {
-      const from = join20(dir, name);
+    for (const name of readdirSync9(dir)) {
+      const from = join21(dir, name);
       const rel = relative3(src, from);
       if (rel === "CLAUDE.md" && !opts2.claudeMd) continue;
-      const to = join20(root, rel);
-      if (statSync3(from).isDirectory()) {
-        mkdirSync8(to, { recursive: true });
+      const to = join21(root, rel);
+      if (statSync4(from).isDirectory()) {
+        mkdirSync9(to, { recursive: true });
         walk2(from);
-      } else if (!existsSync17(to)) {
-        copyFileSync(from, to);
+      } else if (!existsSync18(to)) {
+        copyFileSync2(from, to);
         created.push(rel);
       }
     }
@@ -35846,9 +36608,9 @@ function scaffold(root, opts2) {
   return created;
 }
 function templateFor(root, artifact, locale) {
-  const local = join20(root, "changes", "_templates", `${artifact}.md`);
-  if (existsSync17(local)) return readFileSync20(local, "utf8");
-  return readFileSync20(join20(localeDir(locale), "skills", "sdlc-setup", "scaffold", "changes", "_templates", `${artifact}.md`), "utf8");
+  const local = join21(root, "changes", "_templates", `${artifact}.md`);
+  if (existsSync18(local)) return readFileSync21(local, "utf8");
+  return readFileSync21(join21(localeDir(locale), "skills", "sdlc-setup", "scaffold", "changes", "_templates", `${artifact}.md`), "utf8");
 }
 
 // packages/cli/src/ci/nightly.ts
@@ -35977,7 +36739,7 @@ ${NIGHTLY_TRAILER}: ${fp}`, from);
     }
     result.intents.push(entry);
   }
-  writeFileSync13(join21(c.root, "nightly-review.json"), JSON.stringify(result, null, 2) + "\n");
+  writeFileSync14(join22(c.root, "nightly-review.json"), JSON.stringify(result, null, 2) + "\n");
   const report = renderNightly(result, modules.length);
   console.log(report);
   if (c.env.GITHUB_STEP_SUMMARY) appendFileSync3(c.env.GITHUB_STEP_SUMMARY, report + "\n");
@@ -35997,8 +36759,8 @@ function renderNightly(r, total) {
 
 // packages/cli/src/ci/risk.ts
 init_src();
-import { writeFileSync as writeFileSync14 } from "node:fs";
-import { join as join22 } from "node:path";
+import { writeFileSync as writeFileSync15 } from "node:fs";
+import { join as join23 } from "node:path";
 var RISK_HEADER = "## Risk (ai-sdlc)";
 var RISK_SUMMARY = "<!-- sdlc:risk-summary -->";
 var log3 = (msg) => process.stderr.write(`[sdlc-ci] ${msg}
@@ -36047,7 +36809,7 @@ async function risk(c, escalate) {
     r = changeRisk(c.root, c.loaded, change, { base, escalated: e.tier, escalatedReason: e.reason && `second classifier: ${e.reason}` });
     if (r.escalated && r.tier === r.escalated) marker = riskMarker(r.escalated, e.reason ?? "");
   }
-  writeFileSync14(join22(c.root, "risk.json"), JSON.stringify(r, null, 2) + "\n");
+  writeFileSync15(join23(c.root, "risk.json"), JSON.stringify(r, null, 2) + "\n");
   const need = approvalsFor(c.loaded, r.tier);
   const extra = isGraded(c.loaded) ? [`Human approvals for the code: ${need === 0 ? "none once the automated checks are green" : need} (risk.profile graded)`] : [];
   const body = renderRisk(r, extra) + (marker ? `
@@ -36071,7 +36833,7 @@ function findChange(root, loaded, o) {
 }
 async function notifyCommand(root, loaded, pos, flags) {
   const event = pos[0] ?? "";
-  const str = (k) => typeof flags[k] === "string" ? flags[k] : void 0;
+  const str2 = (k) => typeof flags[k] === "string" ? flags[k] : void 0;
   if (!isNotifyEvent(event)) {
     process.stderr.write(
       `usage: sdlc notify <${NOTIFY_EVENTS.join("|")}> [--change ID] [--artifact intent|spec|plan] [--decision approved|rejected] [--by WHO] [-m NOTE] [--dry-run]
@@ -36079,17 +36841,17 @@ async function notifyCommand(root, loaded, pos, flags) {
     );
     return 1;
   }
-  const artifact = str("artifact");
+  const artifact = str2("artifact");
   if (artifact && !ARTIFACTS.includes(artifact)) {
     process.stderr.write(`sdlc notify: --artifact must be one of ${ARTIFACTS.join(", ")}
 `);
     return 1;
   }
-  const decision = str("decision");
+  const decision = str2("decision");
   const env = process.env;
-  const change = findChange(root, loaded, { id: str("change"), branch: env.HEAD_REF || env.MERGED_BRANCH || currentBranch(root) });
-  if (str("change") && !change) {
-    process.stderr.write(`sdlc notify: no change '${str("change")}' (see sdlc status)
+  const change = findChange(root, loaded, { id: str2("change"), branch: env.HEAD_REF || env.MERGED_BRANCH || currentBranch(root) });
+  if (str2("change") && !change) {
+    process.stderr.write(`sdlc notify: no change '${str2("change")}' (see sdlc status)
 `);
     return 1;
   }
@@ -36098,9 +36860,9 @@ async function notifyCommand(root, loaded, pos, flags) {
     change,
     artifact,
     decision: decision === "approved" || decision === "rejected" ? decision : void 0,
-    by: str("by"),
-    note: str("m"),
-    prUrl: str("pr-url")
+    by: str2("by"),
+    note: str2("m"),
+    prUrl: str2("pr-url")
   };
   if (flags["dry-run"]) {
     console.log(JSON.stringify(notifyPayload(n, loaded, env), null, 2));
@@ -36269,7 +37031,7 @@ function bootstrap(c) {
     return 0;
   }
   if (c.env.SDLC_PLUGIN_TOKEN) url2 = url2.replace("https://", `https://${c.env.SDLC_PLUGIN_TOKEN_USER || "x-access-token"}:${c.env.SDLC_PLUGIN_TOKEN}@`);
-  const home = c.env.SDLC_HOME || join23(homedir3(), ".ai-sdlc");
+  const home = c.env.SDLC_HOME || join24(homedir3(), ".ai-sdlc");
   rmSync5(home, { recursive: true, force: true });
   execFileSync7("git", ["clone", "-q", "--depth", "1", url2, home], { stdio: ["ignore", "ignore", "inherit"] });
   execFileSync7("claude", ["plugin", "marketplace", "add", home], { stdio: ["ignore", "ignore", "inherit"] });
@@ -36285,9 +37047,9 @@ async function post(c, n, body) {
   log4(await prComment({ root: c.root, loaded: c.loaded, env: c.env }, n, body));
 }
 function pendingIntents(root) {
-  const dir = join23(root, "changes");
-  if (!existsSync18(dir)) return [];
-  return readdirSync9(dir, { withFileTypes: true }).filter((d) => d.isDirectory() && !d.name.startsWith("_")).map((d) => `changes/${d.name}`).filter((d) => existsSync18(join23(root, d, "intent.md")) && !existsSync18(join23(root, d, "spec.md"))).filter((d) => isApproved(parseFrontmatter(readFileSync21(join23(root, d, "intent.md"), "utf8")).data.status)).sort();
+  const dir = join24(root, "changes");
+  if (!existsSync19(dir)) return [];
+  return readdirSync10(dir, { withFileTypes: true }).filter((d) => d.isDirectory() && !d.name.startsWith("_")).map((d) => `changes/${d.name}`).filter((d) => existsSync19(join24(root, d, "intent.md")) && !existsSync19(join24(root, d, "spec.md"))).filter((d) => isApproved(parseFrontmatter(readFileSync22(join24(root, d, "intent.md"), "utf8")).data.status)).sort();
 }
 async function intentToSpec(c) {
   const pending = pendingIntents(c.root);
@@ -36318,13 +37080,13 @@ async function intentToSpec(c) {
     return 0;
   }
   execFileSync7("git", ["push", "origin", `HEAD:${headRef(c)}`], { cwd: c.root, stdio: ["ignore", "inherit", "inherit"] });
-  for (const d of pending.filter((x) => existsSync18(join23(c.root, x, "spec.md")))) {
+  for (const d of pending.filter((x) => existsSync19(join24(c.root, x, "spec.md")))) {
     log4(await notify({ event: "spec.ready", change: findChange(c.root, c.loaded, { id: d }), artifact: "spec" }, c.loaded, c.env));
   }
   return 0;
 }
 function scorecard(c, files, out) {
-  const reports = files.filter((f) => existsSync18(f)).map((f) => JSON.parse(readFileSync21(f, "utf8")));
+  const reports = files.filter((f) => existsSync19(f)).map((f) => JSON.parse(readFileSync22(f, "utf8")));
   if (!reports.length) throw new SdlcError("usage: sdlc ci scorecard <report.json\u2026> (no reports found)");
   const prs = Object.values(readPrStats(c.root)).filter((p) => p.outcomes);
   const outcomes = prs.length ? { prs: prs.length, totals: sumOutcomes(prs.map((p) => p.outcomes)) } : void 0;
@@ -36333,11 +37095,11 @@ function scorecard(c, files, out) {
     console.log(block2);
     return 0;
   }
-  console.log(updateScorecard(join23(c.root, out), block2) ? `updated ${out}` : `${out}: no result changed`);
+  console.log(updateScorecard(join24(c.root, out), block2) ? `updated ${out}` : `${out}: no result changed`);
   return 0;
 }
 async function triage(c, logFile) {
-  if (!logFile || !existsSync18(logFile)) throw new SdlcError("usage: sdlc ci triage <log-file>");
+  if (!logFile || !existsSync19(logFile)) throw new SdlcError("usage: sdlc ci triage <log-file>");
   const out = runAgent(
     c.agent,
     {
@@ -36883,8 +37645,8 @@ async function review(c, kind = "review") {
   const nitIds = new Set(inline.filter((f) => f.severity === "nit").slice(MAX_NITS).map((f) => f.id));
   const body = renderReview(state, { kind, depth, tier: risk2.tier, since, capped, maxRounds, fixed, dropped: candidates.length - kept.length, outside });
   const prefix = kind === "review" ? "review" : "security";
-  writeFileSync15(join24(c.root, `${prefix}.json`), JSON.stringify({ ...state, depth, tier: risk2.tier }, null, 2) + "\n");
-  writeFileSync15(join24(c.root, `${prefix}-tally.txt`), counts(state.findings) + "\n");
+  writeFileSync16(join25(c.root, `${prefix}.json`), JSON.stringify({ ...state, depth, tier: risk2.tier }, null, 2) + "\n");
+  writeFileSync16(join25(c.root, `${prefix}-tally.txt`), counts(state.findings) + "\n");
   if (c.dryRun) {
     console.log(body);
     return 0;
@@ -36980,18 +37742,18 @@ async function refreshPrStats(root, loaded) {
 // packages/cli/src/doctor-fix.ts
 init_src2();
 init_src();
-import { existsSync as existsSync19, readFileSync as readFileSync22, rmSync as rmSync6, writeFileSync as writeFileSync16 } from "node:fs";
-import { join as join25 } from "node:path";
+import { existsSync as existsSync20, readFileSync as readFileSync23, rmSync as rmSync6, writeFileSync as writeFileSync17 } from "node:fs";
+import { join as join26 } from "node:path";
 function migrateLegacy(root) {
-  const config2 = JSON.parse(readFileSync22(join25(root, LEGACY_CONFIG_PATH), "utf8"));
+  const config2 = JSON.parse(readFileSync23(join26(root, LEGACY_CONFIG_PATH), "utf8"));
   config2.locale ??= "es";
   config2.agents ??= ["claude"];
   writeConfig(root, config2);
-  rmSync6(join25(root, LEGACY_CONFIG_PATH));
-  if (existsSync19(join25(root, ".claude/.sdlc-fix-lock"))) {
+  rmSync6(join26(root, LEGACY_CONFIG_PATH));
+  if (existsSync20(join26(root, ".claude/.sdlc-fix-lock"))) {
     ensureSdlcDir(root);
-    writeFileSync16(join25(root, ".sdlc/fix-lock"), "");
-    rmSync6(join25(root, ".claude/.sdlc-fix-lock"));
+    writeFileSync17(join26(root, ".sdlc/fix-lock"), "");
+    rmSync6(join26(root, ".claude/.sdlc-fix-lock"));
   }
 }
 var SYNC_FIXES = /* @__PURE__ */ new Set(["git-hooks", "shim", "cursor", "agents-md"]);
@@ -37029,7 +37791,7 @@ function fixDoctor(root, checks = doctor(root).checks) {
     if (c.id.startsWith("command.")) {
       const k = c.id.slice("command.".length);
       const detected = detectConfig(root, localeOf(loaded)).commands?.[k];
-      if (detected && (!/^make /.test(detected) || existsSync19(join25(root, "Makefile")))) {
+      if (detected && (!/^make /.test(detected) || existsSync20(join26(root, "Makefile")))) {
         writeConfig(root, { ...loaded.config, commands: { ...loaded.config.commands, [k]: detected } });
         out.push({ id: c.id, fixed: true, message: `commands.${k} = ${detected} (detected from the stack)` });
       } else out.push({ id: c.id, fixed: false, message: `set commands.${k} in .sdlc/config.json (no stack detected to infer it)` });
@@ -37060,7 +37822,7 @@ function fixDoctor(root, checks = doctor(root).checks) {
 
 // packages/cli/src/integrations.ts
 init_src();
-import { existsSync as existsSync20, readFileSync as readFileSync23 } from "node:fs";
+import { existsSync as existsSync21, readFileSync as readFileSync24 } from "node:fs";
 import { resolve as resolve2 } from "node:path";
 var VCS_HELP = `sdlc vcs provider                                            \u2192 github | gitlab | bitbucket
 sdlc vcs pr-create --title T --body-file F [--base B] [--draft]  \u2192 PR URL
@@ -37074,7 +37836,8 @@ sdlc tracker get KEY                                \u2192 {"key","summary","sta
 sdlc tracker transitions KEY                        \u2192 available transitions, one per line
 sdlc tracker transition KEY <stage|name>            \u2192 stage = intent|spec|plan|ship|merged (tracker.transitions)
 sdlc tracker comment KEY --body-file F
-sdlc tracker create --summary S --body-file F [--type T]  \u2192 new key
+sdlc tracker create --summary S --body-file F [--type T] [--parent EPIC] [--labels a,b]  \u2192 new key
+sdlc tracker link BLOCKER BLOCKED                   \u2192 BLOCKER blocks BLOCKED
 sdlc tracker set-description KEY --body-file F
 sdlc tracker statuses                               \u2192 project workflow statuses
 Keys: PROJ-123 (Jira), #123 or owner/repo#123 (GitHub Issues), ENG-123 (Linear).
@@ -37094,9 +37857,9 @@ function opts(args) {
 }
 function bodyFile(o, cwd) {
   const f = o["body-file"];
-  if (typeof f !== "string" || !existsSync20(resolve2(cwd, f))) throw new SdlcError("missing --body-file <file>");
+  if (typeof f !== "string" || !existsSync21(resolve2(cwd, f))) throw new SdlcError("missing --body-file <file>");
   const path = resolve2(cwd, f);
-  return { path, body: readFileSync23(path, "utf8") };
+  return { path, body: readFileSync24(path, "utf8") };
 }
 function number4(s, usage) {
   if (!s || !/^\d+$/.test(s)) throw new SdlcError(`usage: ${usage}`);
@@ -37157,9 +37920,17 @@ async function trackerCommand(root, args) {
       await t2().comment(need("comment KEY --body-file F"), bodyFile(o, process.cwd()).body);
       console.log(`comment added on ${pos[0]}`);
       return 0;
-    case "create":
-      if (typeof o.summary !== "string") fail2("usage: create --summary S --body-file F [--type T]");
-      console.log(await t2().create({ summary: o.summary, body: bodyFile(o, process.cwd()).body, type: typeof o.type === "string" ? o.type : void 0 }));
+    case "create": {
+      if (typeof o.summary !== "string") fail2("usage: create --summary S --body-file F [--type T] [--parent EPIC] [--labels a,b]");
+      const str2 = (k) => typeof o[k] === "string" ? o[k] : void 0;
+      const labels = str2("labels")?.split(",").map((l) => l.trim()).filter(Boolean);
+      console.log(await t2().create({ summary: o.summary, body: bodyFile(o, process.cwd()).body, type: str2("type"), parent: str2("parent"), labels }));
+      return 0;
+    }
+    case "link":
+      if (!pos[0] || !pos[1]) fail2("usage: link BLOCKER BLOCKED");
+      await t2().link(pos[0], pos[1]);
+      console.log(`${pos[0]} blocks ${pos[1]}`);
       return 0;
     case "set-description":
       await t2().setDescription(need("set-description KEY --body-file F"), bodyFile(o, process.cwd()).body);
@@ -37174,6 +37945,126 @@ async function trackerCommand(root, args) {
   }
 }
 function fail2(msg) {
+  throw new SdlcError(msg);
+}
+
+// packages/cli/src/roadmap.ts
+init_src();
+var count = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+var ROADMAP_HELP = `sdlc roadmap new <slug> --source <file.pdf|file.md|url> [--title T]   scaffold changes/_roadmaps/<slug>/
+sdlc roadmap check <slug> [--json]               structure, dependencies, open questions (exit 1 on errors)
+sdlc roadmap approve|reject <slug> [-m comment]  a person decides; approving needs a roadmap that passes the check
+sdlc roadmap apply <slug> [--dry-run]            create the missing epics, stories and links in the tracker
+sdlc roadmap status [<slug>] [--json]            each story: ticket, change, stage, what blocks it
+sdlc roadmap find <KEY>                          the roadmap item behind a ticket (JSON), for /sdlc-intent
+sdlc roadmap list                                roadmaps and their status`;
+async function roadmapCommand(root, pos, flags) {
+  const [sub, arg] = pos;
+  const loaded = loadConfig(root);
+  const need = (usage) => arg ?? fail3(`usage: sdlc roadmap ${usage}`);
+  switch (sub) {
+    case "new": {
+      const slug = need("new <slug> --source <file|url>");
+      const r = newRoadmap(root, slug, { source: str(flags.source), title: str(flags.title), loaded });
+      console.log(`created ${r.path}${r.source ? ` (source: ${r.source})` : ""}`);
+      console.log(`Next: /sdlc-roadmap ${slug} in your agent: it reads the document, asks what is missing and drafts the epics and stories.`);
+      return 0;
+    }
+    case "check": {
+      const r = getRoadmap(root, need("check <slug>"));
+      const c = checkRoadmap(r);
+      if (flags.json) console.log(JSON.stringify({ roadmap: r.slug, status: r.data.status || "draft", ...c }, null, 2));
+      else {
+        for (const e of c.errors) console.log(`\u2717 ${e}`);
+        for (const w of c.warnings) console.log(`! ${w}`);
+        console.log(`${c.errors.length ? "\u2717" : "\u2713"} ${r.path}: ${count(c.epics, "epic")}, ${count(c.stories, "story", "stories")}, ${count(c.open, "open question")}${c.errors.length ? `, ${count(c.errors.length, "problem")}` : ""}`);
+      }
+      return c.errors.length ? 1 : 0;
+    }
+    case "approve":
+    case "reject": {
+      const slug = need(`${sub} <slug> [-m comment]`);
+      const d = decideRoadmap(root, loaded, slug, sub === "approve" ? "approved" : "rejected", { comment: str(flags.m) });
+      const r = getRoadmap(root, d.slug);
+      console.log(`${r.path} ${d.decision} by ${d.by} (${d.commit})`);
+      if (d.decision === "approved") {
+        const missing = r.items.filter((i) => !i.fields.key).length;
+        console.log(
+          trackerEnabled(loaded) ? `Next: sdlc roadmap apply ${d.slug} creates ${missing} tickets (--dry-run shows them first).` : `No tracker configured: the roadmap is the plan. Start each story with /sdlc-intent "<story title>".`
+        );
+      }
+      return 0;
+    }
+    case "apply": {
+      const slug = need("apply <slug> [--dry-run]");
+      const dryRun = !!flags["dry-run"];
+      const holds = approvalHolds(getRoadmap(root, slug));
+      if (!holds.ok) throw new SdlcError(holds.reason);
+      if (!dryRun && !trackerEnabled(loaded))
+        throw new SdlcError('tracker not configured (tracker.provider: jira | github | linear): the roadmap stays as the plan; start each story with /sdlc-intent "<story title>"', TRACKER_DISABLED);
+      const res = await applyRoadmap(root, loaded, slug, { dryRun, tracker: () => tracker(loaded, process.env, root) });
+      if (!res.actions.length) {
+        console.log("nothing to do: every item has its ticket and every link exists");
+        return 0;
+      }
+      for (const a of res.actions) {
+        const what = a.kind === "link" ? `link     ${a.summary}` : `${a.kind === "create-epic" ? "epic " : "story"}    ${a.id} ${a.summary}`;
+        console.log(dryRun ? `would create ${what}` : `${a.key ? `${a.key.padEnd(10)}` : "skipped   "} ${what}`);
+      }
+      console.log(dryRun ? `${res.actions.length} action(s); run without --dry-run to create them.` : `${res.created} tickets created, ${res.linked} links${res.commit ? ` (keys saved in ${res.commit})` : ""}`);
+      if (!dryRun) console.log("Next: sdlc next suggests the first story to start (/sdlc-intent <KEY>).");
+      return 0;
+    }
+    case "status": {
+      const list = roadmapStatus(root, loaded, arg);
+      if (flags.json) {
+        console.log(JSON.stringify(list, null, 2));
+        return 0;
+      }
+      if (!list.length) console.log("No roadmaps yet: sdlc roadmap new <slug> --source <file|url>.");
+      let current = "";
+      for (const s of list) {
+        if (s.roadmap !== current) console.log(`${current = s.roadmap}`);
+        const state = s.change ? `${s.stage}` : s.blockedBy.length ? `blocked by ${s.blockedBy.join(", ")}` : s.key ? "ready" : "no ticket";
+        console.log(`  ${s.id.padEnd(7)} ${(s.key ?? "-").padEnd(10)} ${state.padEnd(24)} ${s.title}`);
+      }
+      return 0;
+    }
+    case "find": {
+      const key = need("find <KEY>");
+      const f = findRoadmapItem(root, key);
+      if (!f) {
+        console.error(`${key} is not in any roadmap`);
+        return 1;
+      }
+      const { roadmap: r, item } = f;
+      const epic = r.items.find((i) => i.id === item.epic);
+      console.log(
+        JSON.stringify(
+          { roadmap: r.slug, path: r.path, document: r.data.source || void 0, id: item.id, title: item.title, epic: epic ? `${epic.id} \xB7 ${epic.title}` : void 0, ...item.fields, description: item.description, criteria: item.criteria, depends: item.depends },
+          null,
+          2
+        )
+      );
+      return 0;
+    }
+    case "list": {
+      const all = listRoadmaps(root);
+      if (!all.length) console.log("No roadmaps yet: sdlc roadmap new <slug> --source <file|url>.");
+      for (const r of all) {
+        const c = checkRoadmap(r);
+        const keys = r.items.filter((i) => i.fields.key).length;
+        console.log(`${r.slug.padEnd(20)} ${(r.data.status || "draft").padEnd(9)} ${count(c.epics, "epic")}, ${count(c.stories, "story", "stories")}, ${keys}/${r.items.length} tickets  ${r.title}`);
+      }
+      return 0;
+    }
+    default:
+      console.error(ROADMAP_HELP);
+      return 1;
+  }
+}
+var str = (v) => typeof v === "string" ? v : void 0;
+function fail3(msg) {
   throw new SdlcError(msg);
 }
 
@@ -37323,7 +38214,7 @@ async function bandsCommand(root, args) {
 }
 
 // packages/cli/src/main.ts
-var VERSION = true ? "0.6.0" : JSON.parse(readFileSync26(new URL("../package.json", import.meta.url), "utf8")).version;
+var VERSION = true ? "0.6.0" : JSON.parse(readFileSync28(new URL("../package.json", import.meta.url), "utf8")).version;
 var HELP = `sdlc ${VERSION} \u2014 AI-native SDLC loop (intent \u2192 spec \u2192 plan \u2192 build \u2192 ship \u2192 incident)
 
 Setup
@@ -37350,6 +38241,8 @@ Loop
   approve <change> <intent|spec|plan> [-m comment] [--auto]
                                      --auto: record the approval when the risk tier needs no person (risk.profile graded)
   reject  <change> <intent|spec|plan> [-m comment]
+  roadmap <new|check|approve|reject|apply|status|find|list> \u2026
+                                     a technical plan \u2192 epics and stories \u2192 tickets (sdlc roadmap --help)
   lock on|off|status                 test-lock during a fix
   ui [--port N] [--no-open]          local dashboard
 
@@ -37373,27 +38266,27 @@ function parseArgs(argv) {
     else if (a.startsWith("--")) {
       const [k, v] = a.slice(2).split("=", 2);
       if (v !== void 0) flags[k] = v;
-      else if (["agent", "port", "ticket", "title", "locale", "preset", "first-change", "change", "artifact", "decision", "by", "pr-url", "base", "value", "since"].includes(k)) flags[k] = argv[++i] ?? "";
+      else if (["agent", "port", "ticket", "title", "locale", "preset", "first-change", "change", "artifact", "decision", "by", "pr-url", "base", "value", "since", "source"].includes(k)) flags[k] = argv[++i] ?? "";
       else flags[k] = true;
     } else pos.push(a);
   }
   return { pos, flags };
 }
-function fail3(msg) {
+function fail4(msg) {
   process.stderr.write(`sdlc: ${msg}
 `);
   process.exit(1);
 }
 function readStdin() {
   try {
-    return readFileSync26(0, "utf8");
+    return readFileSync28(0, "utf8");
   } catch {
     return "";
   }
 }
 function requireConfig(root) {
   const loaded = loadConfig(root);
-  if (!loaded) fail3(`no ${CONFIG_PATH} in ${root} \u2014 run \`sdlc init\``);
+  if (!loaded) fail4(`no ${CONFIG_PATH} in ${root} \u2014 run \`sdlc init\``);
   return loaded;
 }
 function printSync(r) {
@@ -37410,7 +38303,7 @@ function slugify3(title) {
 function newChange(root, slug, opts2) {
   const loaded = loadConfig(root);
   const dir = `changes/${(/* @__PURE__ */ new Date()).toISOString().slice(0, 7)}-${slug}`;
-  if (existsSync22(join27(root, dir))) fail3(`${dir} already exists`);
+  if (existsSync24(join29(root, dir))) fail4(`${dir} already exists`);
   if (opts2.branch) gitOrThrow(root, ["checkout", "-b", `change/${slug}`]);
   const who = gitUser(root);
   const fields = { change: slug, created: (/* @__PURE__ */ new Date()).toISOString().slice(0, 10), author: who.name ?? who.email ?? "" };
@@ -37427,8 +38320,8 @@ ${opts2.title}
     body = setFrontmatter(templateFor(root, "intent", localeOf(loaded)), fields);
     if (opts2.title) body = body.replace(/^# (Intent: )?.*$/m, (_m, p) => `# ${p ?? ""}${opts2.title}`);
   }
-  mkdirSync10(join27(root, dir), { recursive: true });
-  writeFileSync18(join27(root, dir, "intent.md"), body);
+  mkdirSync12(join29(root, dir), { recursive: true });
+  writeFileSync20(join29(root, dir, "intent.md"), body);
   recordEvent(root, { type: opts2.quick ? "change.quick" : "change.new", change: slug, by: who.name });
   console.log(`created ${dir}/intent.md${opts2.branch ? ` on branch change/${slug}` : ""}${opts2.quick ? " (quick lane: no spec, no plan)" : ""}`);
   if (!loaded) console.log("Note: project not configured (sdlc init).");
@@ -37439,6 +38332,7 @@ async function main() {
   const [cmd, ...rest] = process.argv.slice(2);
   const { pos, flags } = parseArgs(rest);
   const root = projectDir();
+  if ((flags.help || flags.h) && cmd === "roadmap") return void console.log(ROADMAP_HELP);
   if ((flags.help || flags.h) && cmd && !["ci", "vcs", "tracker", "bands"].includes(cmd)) {
     const usage = HELP.split("\n").filter((l) => l.trimStart().startsWith(`${cmd} `));
     process.stdout.write(usage.length ? usage.map((l) => `sdlc ${l.trim()}`).join("\n") + "\n" : HELP);
@@ -37463,15 +38357,15 @@ async function main() {
         out = event === "pre-push" ? prePush(root) : preCommit(root);
       } else if (agent === "claude" || agent === "cursor") {
         out = runHook(agent, event, readStdin());
-      } else fail3(`unknown agent: ${agent}`);
+      } else fail4(`unknown agent: ${agent}`);
       if (out.stdout) process.stdout.write(out.stdout + "\n");
       if (out.stderr) process.stderr.write(out.stderr + "\n");
       process.exit(out.exitCode);
     }
     case "init": {
-      if (loadConfig(root) && !flags.force) fail3(`already configured (${loadConfig(root).path}); edit it or use \`sdlc ui\`, then \`sdlc sync\``);
+      if (loadConfig(root) && !flags.force) fail4(`already configured (${loadConfig(root).path}); edit it or use \`sdlc ui\`, then \`sdlc sync\``);
       const locale = flags.locale === "es" ? "es" : "en";
-      if (flags.preset !== void 0 && !isPreset(flags.preset)) fail3(`unknown preset ${flags.preset} (${PRESETS.join("|")})`);
+      if (flags.preset !== void 0 && !isPreset(flags.preset)) fail4(`unknown preset ${flags.preset} (${PRESETS.join("|")})`);
       const detected = detectConfig(root, locale);
       let preset = isPreset(flags.preset) ? flags.preset : defaultPreset(detected);
       let config2 = presetConfig(detected, preset);
@@ -37527,9 +38421,9 @@ async function main() {
       return;
     }
     case "migrate": {
-      const legacy = join27(root, LEGACY_CONFIG_PATH);
-      if (!existsSync22(legacy)) fail3(`no ${LEGACY_CONFIG_PATH} to migrate`);
-      if (existsSync22(join27(root, CONFIG_PATH))) fail3(`${CONFIG_PATH} already exists`);
+      const legacy = join29(root, LEGACY_CONFIG_PATH);
+      if (!existsSync24(legacy)) fail4(`no ${LEGACY_CONFIG_PATH} to migrate`);
+      if (existsSync24(join29(root, CONFIG_PATH))) fail4(`${CONFIG_PATH} already exists`);
       migrateLegacy(root);
       console.log(`moved ${LEGACY_CONFIG_PATH} \u2192 ${CONFIG_PATH}`);
       printSync(sync(root, requireConfig(root)));
@@ -37554,7 +38448,7 @@ async function main() {
     case "telemetry": {
       const sub = pos[0] ?? "status";
       if (sub === "on" || sub === "off") writeTelemetry({ ...readTelemetry(), enabled: sub === "on" });
-      else if (sub !== "status") fail3("usage: sdlc telemetry on|off|status");
+      else if (sub !== "status") fail4("usage: sdlc telemetry on|off|status");
       const state = telemetryState();
       const why = {
         on: `on: one anonymous summary a day to ${process.env.SDLC_TELEMETRY_URL}`,
@@ -37591,15 +38485,15 @@ async function main() {
         try {
           since = new Date(Date.now() - durationSeconds(flags.since) * 1e3);
         } catch (e) {
-          fail3(e.message);
+          fail4(e.message);
         }
       }
       const m = metrics(root, { locale: localeOf(loaded), defaultBranch: loaded?.config.vcs?.default_branch, since });
       if (flags.value !== void 0) {
         const get = METRIC_VALUES[String(flags.value)];
-        if (!get) fail3(`unknown metric ${flags.value} (${Object.keys(METRIC_VALUES).join(", ")})`);
+        if (!get) fail4(`unknown metric ${flags.value} (${Object.keys(METRIC_VALUES).join(", ")})`);
         const v = get(m.summary);
-        if (v === void 0) fail3(`${flags.value}: no data yet`);
+        if (v === void 0) fail4(`${flags.value}: no data yet`);
         return void console.log(String(v));
       }
       if (flags.json) return void console.log(JSON.stringify(m, null, 2));
@@ -37607,7 +38501,7 @@ async function main() {
     }
     case "new": {
       const slug = pos[0];
-      if (!slug || !/^[a-z0-9][a-z0-9-]*$/i.test(slug)) fail3("usage: sdlc new <slug> (letters, digits, dashes)");
+      if (!slug || !/^[a-z0-9][a-z0-9-]*$/i.test(slug)) fail4("usage: sdlc new <slug> (letters, digits, dashes)");
       newChange(root, slug, {
         ticket: typeof flags.ticket === "string" ? flags.ticket : void 0,
         title: typeof flags.title === "string" ? flags.title : void 0,
@@ -37619,16 +38513,16 @@ async function main() {
       const loaded = requireConfig(root);
       if (flags.check) {
         const change = listChanges(root, { locale: localeOf(loaded), defaultBranch: loaded.config.vcs?.default_branch }).find((c) => c.active);
-        if (!change || !isQuick(change)) fail3('the active change is not in the quick lane (sdlc quick "<title>" starts one)');
+        if (!change || !isQuick(change)) fail4('the active change is not in the quick lane (sdlc quick "<title>" starts one)');
         const q = checkQuick(loaded, branchFiles(root, loaded.config.vcs?.default_branch ?? "main"));
         if (flags.json) console.log(JSON.stringify({ change: change.slug, ...q }));
         else console.log(q.ok ? `ok: ${q.files.length}/${quickLimits(loaded).maxFiles} code files, no high-risk paths` : `promote it (sdlc promote ${change.slug}): ${q.reason}`);
         process.exitCode = q.ok ? 0 : 1;
         return;
       }
-      if (!quickLimits(loaded).enabled) fail3(t(localeOf(loaded), "quick.disabled"));
+      if (!quickLimits(loaded).enabled) fail4(t(localeOf(loaded), "quick.disabled"));
       const title = pos.join(" ").trim();
-      if (!title) fail3('usage: sdlc quick "<what to change>" [--ticket KEY] [--no-branch] \xB7 sdlc quick --check');
+      if (!title) fail4('usage: sdlc quick "<what to change>" [--ticket KEY] [--no-branch] \xB7 sdlc quick --check');
       const slug = slugify3(title);
       newChange(root, slug, { title, ticket: typeof flags.ticket === "string" ? flags.ticket : void 0, branch: !flags["no-branch"], quick: true });
       return;
@@ -37636,12 +38530,12 @@ async function main() {
     case "promote": {
       const loaded = requireConfig(root);
       const id = pos[0] ?? listChanges(root, { locale: localeOf(loaded) }).find((c) => c.active)?.slug;
-      if (!id) fail3("usage: sdlc promote [<change>] (defaults to the active change)");
+      if (!id) fail4("usage: sdlc promote [<change>] (defaults to the active change)");
       try {
         const c = promote(root, loaded, id, gitUser(root).name);
         console.log(`${c.id} is now in the full loop: intent.md is a draft. Next: /sdlc-intent to complete it, then the PO accepts it (sdlc approve ${c.slug} intent).`);
       } catch (e) {
-        if (e instanceof SdlcError) fail3(e.message);
+        if (e instanceof SdlcError) fail4(e.message);
         throw e;
       }
       return;
@@ -37649,9 +38543,9 @@ async function main() {
     case "approve":
     case "reject": {
       const [change, artifact] = pos;
-      if (!change || !ARTIFACTS.includes(artifact)) fail3(`usage: sdlc ${cmd} <change> <${ARTIFACTS.join("|")}> [-m comment]${cmd === "approve" ? " [--auto]" : ""}`);
+      if (!change || !ARTIFACTS.includes(artifact)) fail4(`usage: sdlc ${cmd} <change> <${ARTIFACTS.join("|")}> [-m comment]${cmd === "approve" ? " [--auto]" : ""}`);
       try {
-        if (flags.auto && cmd !== "approve") fail3("--auto only applies to sdlc approve");
+        if (flags.auto && cmd !== "approve") fail4("--auto only applies to sdlc approve");
         const r = decideGate(root, loadConfig(root), change, artifact, cmd === "approve" ? "approved" : "rejected", {
           comment: typeof flags.m === "string" ? flags.m : void 0,
           auto: !!flags.auto
@@ -37659,7 +38553,7 @@ async function main() {
         const partial2 = r.approvals && r.approvals.have < r.approvals.need ? `; ${r.approvals.have} of ${r.approvals.need} approvals, still waiting for another person` : "";
         console.log(`${r.change}/${r.artifact}.md ${r.decision} by ${r.by} (${r.commit})${partial2}`);
       } catch (e) {
-        fail3(e.message);
+        fail4(e.message);
       }
       return;
     }
@@ -37668,7 +38562,7 @@ async function main() {
       const changes = listChanges(root, { locale: localeOf(loaded), defaultBranch: loaded?.config.vcs?.default_branch });
       const id = pos[0];
       const change = id ? changes.find((c) => c.dir === id.replace(/^changes\//, "") || c.slug === id) : changes.find((c) => c.active);
-      if (id && !change) fail3(`change not found: ${id}`);
+      if (id && !change) fail4(`change not found: ${id}`);
       const base = typeof flags.base === "string" ? flags.base : loaded?.config.vcs?.default_branch ?? "main";
       const r = changeRisk(root, loaded, change, { base });
       if (flags.json) return void console.log(JSON.stringify({ change: change?.id, ...r }, null, 2));
@@ -37687,16 +38581,16 @@ async function main() {
       process.exitCode = await notifyCommand(root, loadConfig(root), pos, flags);
       return;
     case "lock": {
-      const lock = join27(root, FIX_LOCKS[0]);
+      const lock = join29(root, FIX_LOCKS[0]);
       if (pos[0] === "on") {
         ensureSdlcDir(root);
-        writeFileSync18(lock, (/* @__PURE__ */ new Date()).toISOString() + "\n");
+        writeFileSync20(lock, (/* @__PURE__ */ new Date()).toISOString() + "\n");
         console.log("test-lock ON: test files cannot be edited until `sdlc lock off`");
       } else if (pos[0] === "off") {
-        for (const p of FIX_LOCKS) rmSync7(join27(root, p), { force: true });
+        for (const p of FIX_LOCKS) rmSync8(join29(root, p), { force: true });
         console.log("test-lock OFF");
       } else {
-        console.log(FIX_LOCKS.some((p) => existsSync22(join27(root, p))) ? "on" : "off");
+        console.log(FIX_LOCKS.some((p) => existsSync24(join29(root, p))) ? "on" : "off");
       }
       return;
     }
@@ -37707,12 +38601,12 @@ async function main() {
     }
     case "webhook": {
       const { startWebhook: startWebhook2 } = await Promise.resolve().then(() => (init_src4(), src_exports2));
-      await startWebhook2({ port: flags.port ? Number(flags.port) : void 0 }).catch((e) => fail3(e.message));
+      await startWebhook2({ port: flags.port ? Number(flags.port) : void 0 }).catch((e) => fail4(e.message));
       return;
     }
     case "hosted": {
       const { startHosted: startHosted2 } = await Promise.resolve().then(() => (init_src5(), src_exports3));
-      await startHosted2({ port: flags.port ? Number(flags.port) : void 0 }).catch((e) => fail3(e.message));
+      await startHosted2({ port: flags.port ? Number(flags.port) : void 0 }).catch((e) => fail4(e.message));
       return;
     }
     case "vcs":
@@ -37721,6 +38615,9 @@ async function main() {
     case "tracker":
       process.exitCode = await trackerCommand(root, rest);
       return;
+    case "roadmap":
+      process.exitCode = await roadmapCommand(root, pos, flags);
+      return;
     case "ci":
       process.exitCode = await ciCommand(root, rest);
       return;
@@ -37728,7 +38625,7 @@ async function main() {
       process.exitCode = await bandsCommand(root, rest);
       return;
     default:
-      fail3(`unknown command: ${cmd}
+      fail4(`unknown command: ${cmd}
 
 ${HELP}`);
   }
@@ -37761,5 +38658,5 @@ main().then(() => TELEMETRY_CMDS.has(process.argv[2] ?? "") ? maybeSendTelemetry
 `);
     process.exit(e.exitCode);
   }
-  fail3(e.stack ?? String(e));
+  fail4(e.stack ?? String(e));
 });

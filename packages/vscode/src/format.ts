@@ -39,6 +39,7 @@ const ICON: Record<NextAction['kind'], string> = {
   ship: '$(rocket)',
   done: '$(check-all)',
   rejected: '$(error)',
+  roadmap: '$(list-tree)',
 };
 
 export function statusBar(next: NextAction | undefined): { text: string; tooltip: string } {
@@ -53,8 +54,9 @@ export function statusBar(next: NextAction | undefined): { text: string; tooltip
     ship: 'ship',
     done: 'merged',
     rejected: 'rejected',
+    roadmap: next.command?.replace(/^sdlc /, '') ?? next.skill ?? 'roadmap',
   };
-  const subject = next.change ? `${next.change} · ` : 'sdlc: ';
+  const subject = next.change ? `${next.change} · ` : next.roadmap ? `${next.roadmap} · ` : 'sdlc: ';
   const inbox = next.inbox.length ? ` $(inbox) ${next.inbox.length}` : '';
   const tooltip = [next.message, next.command ?? next.skill, next.inbox.length ? `${next.inbox.length} more gate(s) waiting on you` : '']
     .filter(Boolean)

@@ -63,7 +63,7 @@ It is read by the guardrails (`sdlc hook`, for any agent), the loop skills, the 
 | `locale` | guardrail messages, dashboard | `en` or `es`. |
 | `agents` | `sdlc sync`, `sdlc doctor` | Which adapters to generate: `claude`, `cursor`, `agents-md` (Codex, Copilot and others that read AGENTS.md). |
 | `vcs.*` | `sdlc vcs`, `/sdlc-ship`, CI | If `provider` is missing, it is inferred from the remote. |
-| `tracker.*` | `sdlc tracker`, loop skills, CI | `provider`: `jira`, `github` (GitHub Issues; `repo` if not the code's repository), `linear` (`team_key`) or `none`. `transitions` maps each stage to a Jira transition or target status, a GitHub label (default `sdlc:<stage>`; `merged` closes the issue) or a Linear workflow state. |
+| `tracker.*` | `sdlc tracker`, loop skills, CI | `provider`: `jira`, `github` (GitHub Issues; `repo` if not the code's repository), `linear` (`team_key`) or `none`. `transitions` maps each stage to a Jira transition or target status, a GitHub label (default `sdlc:<stage>`; `merged` closes the issue) or a Linear workflow state. `epic_issue_type` (Jira, default `Epic`) is the type `sdlc roadmap apply` uses for epics; stories use `default_issue_type`. `epic_link_field` (Jira Data Center/Server, e.g. `customfield_10014`) links stories to their epic where Cloud uses `parent`. |
 | `commands.*` | skills, `verifier`, evals | Each one is a single command that exits ≠ 0 on failure. |
 | `format_on_edit` | PostToolUse hook | Glob → command; `{file}` is replaced with the path. Keep it fast (one file). |
 | `protected_paths` | `protect-paths` hook | `*` crosses `/`; leading `**/` is optional. |
@@ -78,7 +78,7 @@ It is read by the guardrails (`sdlc hook`, for any agent), the loop skills, the 
 | `risk.size` | `sdlc risk` | `low_max_lines` (default 50) and `high_min_lines` (default 800) of weighted code lines: modified and deleted lines count fully, lines in new files count half; docs and `test_globs` do not count. |
 | `risk.agent_escalation` | `sdlc ci risk` | `true`: a second, agent classifier reads the diff and may raise the tier (never lower it). |
 | `production_gate` | `production-gate` hook | ERE regexes over Bash commands; without the approval variable → block. |
-| `gates` | `sdlc approve`, dashboard | Roles that can approve each artifact. No roles: any person (never an agent or bot). `risk: high` adds `tech-lead` to the plan. |
+| `gates` | `sdlc approve`, `sdlc roadmap approve`, dashboard | Roles that can approve each artifact, and `roadmap` for roadmaps. No roles: any person (never an agent or bot). `risk: high` adds `tech-lead` to the plan. |
 | `gates_self_approval` | `sdlc approve` | `true` (preset `solo`): the author may approve their own spec and plan. Agents and bots still cannot. |
 | `roles` | `sdlc approve`, dashboard | Role → emails/git names, or `@login` on the forge (PR comments). |
 | `quick_lane` | `sdlc quick`, pre-push hook | `enabled` (default `true`), `max_files` (code files, default 10), `forbid_paths` (globs, added to `risk.high_risk_paths`). Beyond them the push is blocked until `sdlc promote`. |

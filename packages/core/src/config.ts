@@ -42,6 +42,10 @@ export const ConfigSchema = z.looseObject({
       repo: z.string().optional(),
       default_issue_type: z.string().optional(),
       incident_issue_type: z.string().optional(),
+      /** `sdlc roadmap apply`: issue type for epics (Jira; default `Epic`). */
+      epic_issue_type: z.string().optional(),
+      /** Jira Data Center/Server: the "Epic Link" custom field (e.g. `customfield_10014`); Cloud uses `parent`. */
+      epic_link_field: z.string().optional(),
       transitions: z.record(z.string(), z.string()).optional(),
     })
     .optional(),
@@ -82,7 +86,7 @@ export const ConfigSchema = z.looseObject({
     .looseObject({ patterns: z.array(z.string()).optional(), approval_env: z.string().optional() })
     .optional(),
   /** Who may approve each artifact: role names, resolved through `roles`. Empty → anyone but an agent. */
-  gates: z.partialRecord(z.enum(ARTIFACTS), z.array(z.string())).optional(),
+  gates: z.partialRecord(z.enum([...ARTIFACTS, 'roadmap']), z.array(z.string())).optional(),
   /** Solo projects: the author may approve their own spec and plan (agents still cannot). */
   gates_self_approval: z.boolean().optional(),
   /** Role → git emails (or names, or `@login` on the forge) of the people holding it. */

@@ -218,6 +218,19 @@ main { padding: 20px; max-width: 1500px; margin: 0 auto; }
 .diff .del { background: var(--bad-soft); color: var(--bad); }
 .sticky { position: sticky; bottom: 0; background: var(--bg); padding: 12px 0; }
 
+.roadmaps .new-roadmap { margin-top: 20px; }
+.roadmap > section, .roadmap .job, .roadmap .checks { margin-top: 12px; }
+.roadmap .gate { margin-top: 12px; }
+.job { padding: 10px 12px; border-radius: 8px; background: var(--info-soft); }
+.job.failed { background: var(--bad-soft); color: var(--bad); }
+.log { font-family: var(--mono); font-size: 11px; white-space: pre-wrap; max-height: 180px; overflow: auto; margin: 8px 0 0; color: var(--text); }
+.tree .epic + .epic { margin-top: 18px; }
+.stories { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.story { border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; }
+.story p { margin: 6px 0 0; }
+.criteria { margin: 6px 0 0; padding-left: 18px; }
+.actions-list { margin: 10px 0 0; padding-left: 18px; font-family: var(--mono); }
+
 @media (max-width: 900px) {
   main { padding: 16px; }
   .split { grid-template-columns: 1fr; }
