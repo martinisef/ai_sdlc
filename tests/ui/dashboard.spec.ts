@@ -86,3 +86,40 @@ test('health, metrics and activity load', async ({ page, dashboard }) => {
   await page.goto(`${dashboard}#/activity`);
   await expect(page.locator('main h2, main .empty, main table').first()).toBeVisible();
 });
+
+test('roadmaps: upload a plan, answer the agent, approve the breakdown and preview the tickets', async ({ page, dashboard, repo }) => {
+  await page.goto(`${dashboard}#/roadmaps`);
+  await expect(page.locator('main')).toContainText('No roadmaps yet');
+  await page.getByLabel('Name (lowercase letters, digits and dashes)').fill('sharing');
+  await page.locator('input[name="file"]').setInputFiles({ name: 'plan.md', mimeType: 'text/markdown', buffer: Buffer.from('# Plan\n\n## 2. Sharing\n') });
+  await page.getByRole('button', { name: 'Upload and draft' }).click();
+
+  await expect(page).toHaveURL(/#\/roadmap\/sharing$/);
+  await expect(page.locator('.job')).toContainText('The agent is drafting the breakdown');
+  const question = page.locator('.questions label', { hasText: 'Is a to-do with the same text a duplicate?' });
+  await expect(question).toBeVisible();
+  await expect(page.locator('.tree')).toContainText('Export a list');
+  await expect(page.locator('.job')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Approve' })).toBeDisabled();
+  expect(read(repo, 'changes/_roadmaps/sharing/source.md')).toContain('## 2. Sharing');
+
+  await question.locator('textarea').fill('Yes, skip it.');
+  await page.getByRole('button', { name: 'Send answers' }).click();
+  await expect(page.locator('.tree')).toContainText('Import a list');
+  expect(read(repo, 'changes/_roadmaps/sharing/roadmap.md')).toMatch(/^ {2}A: Yes, skip it\.$/m);
+
+  await page.goto(`${dashboard}#/inbox`);
+  await page.locator('.inbox li', { hasText: 'roadmap.md' }).locator('a').click();
+  await expect(page.locator('.roadmap > h1')).toHaveText('Sharing');
+
+  await page.getByRole('button', { name: 'Approve' }).click();
+  await expect(page.locator('.gate.done')).toContainText('approved');
+  expect(read(repo, 'changes/_roadmaps/sharing/roadmap.md')).toMatch(/^status: approved/m);
+  expect(execFileSync('git', ['log', '-1', '--format=%B'], { cwd: repo, encoding: 'utf8' })).toContain('Gate: roadmap approved by Ana Product');
+
+  await expect(page.locator('.tickets')).toContainText('No tracker connected');
+  await page.getByRole('button', { name: 'Preview tickets' }).click();
+  await expect(page.locator('.actions-list')).toContainText('story E1.S2 Import a list');
+  await expect(page.locator('.actions-list')).toContainText('E1.S1 blocks E1.S2');
+  await expect(page.getByRole('button', { name: 'Create tickets' })).toBeDisabled();
+});

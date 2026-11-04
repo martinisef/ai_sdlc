@@ -1,3 +1,4 @@
+export * from './agent.ts';
 export * from './bands.ts';
 export * from './changes.ts';
 export * from './config.ts';

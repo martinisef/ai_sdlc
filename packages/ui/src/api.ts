@@ -51,6 +51,7 @@ function ensureSource() {
   sourceWs = workspace;
   source = new EventSource(url('/stream', { token: TOKEN }));
   source.addEventListener('change', () => listeners.forEach((l) => l()));
+  source.addEventListener('job', () => listeners.forEach((l) => l()));
 }
 
 export function useLive(fn: () => void) {
@@ -198,4 +199,73 @@ export interface Workspace {
   path: string;
   name: string;
   configured: boolean;
+}
+
+export interface Job {
+  id: string;
+  kind: 'draft' | 'refine';
+  roadmap: string;
+  agent: string;
+  status: 'running' | 'done' | 'failed';
+  started: string;
+  finished?: string;
+  log: string;
+  answer?: string;
+  error?: string;
+}
+
+export interface RoadmapSummary {
+  slug: string;
+  title: string;
+  path: string;
+  status: string;
+  source?: string;
+  epics: number;
+  stories: number;
+  open: number;
+  errors: string[];
+  warnings: string[];
+  tickets: number;
+  items: number;
+  canDecide?: { ok: boolean; reason?: string };
+  job?: Job;
+}
+
+export interface RoadmapNode {
+  id: string;
+  kind: 'epic' | 'story';
+  title: string;
+  epic?: string;
+  fields: Partial<Record<'risk' | 'depends' | 'source' | 'labels' | 'key' | 'links', string>>;
+  description: string;
+  criteria: string[];
+  depends: string[];
+}
+
+export interface RoadmapDetail extends RoadmapSummary {
+  data: Record<string, string>;
+  raw: string;
+  questions: { id: string; text: string; answer?: string }[];
+  tree: RoadmapNode[];
+  canDecide: { ok: boolean; reason?: string };
+  holds: { ok: boolean; reason?: string };
+  progress: { id: string; title: string; key?: string; change?: string; stage?: string; blockedBy: string[] }[];
+  tracker?: string;
+  jobs: Job[];
+}
+
+export interface ApplyResult {
+  actions: { id: string; kind: 'create-epic' | 'create-story' | 'link'; summary: string; key?: string }[];
+  created: number;
+  linked: number;
+  dryRun: boolean;
+  commit?: string;
+}
+
+/** Multipart upload: the browser sets the boundary, so no JSON content type. */
+export async function upload<T>(path: string, form: FormData): Promise<T> {
+  const res = await fetch(url(path), { method: 'POST', body: form, headers: { 'x-sdlc-token': TOKEN } });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw Object.assign(new Error(body.error ?? res.statusText), { body });
+  return body as T;
 }

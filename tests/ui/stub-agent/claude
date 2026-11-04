@@ -1,0 +1,28 @@
+#!/usr/bin/env node
+// Stands in for `claude -p` in the dashboard tests (tests/ui/fixtures.ts puts this folder first on PATH): drafts the
+// roadmap named in the prompt with one open question, adds a story once it is answered, and commits.
+import fs from 'node:fs';
+import { execFileSync } from 'node:child_process';
+
+const prompt = process.argv[process.argv.indexOf('-p') + 1] ?? '';
+const m = /the roadmap ([a-z0-9-]+)/.exec(prompt);
+if (!m) {
+  console.error(`stub agent: no roadmap in the prompt: ${prompt}`);
+  process.exit(2);
+}
+const dir = `changes/_roadmaps/${m[1]}`;
+const f = `${dir}/roadmap.md`;
+const raw = fs.readFileSync(f, 'utf8');
+const head = raw.slice(0, raw.indexOf('\n---', 4) + 5);
+const story = (id, title, dep) => `### ${id} · ${title}\n- risk: low\n- depends: ${dep}\n- source: §2\n\nAcceptance criteria:\n- [ ] it works\n\n`;
+const answer = /^ {2}A: (.+)$/m.exec(raw);
+let body = `# Roadmap: Sharing\n\nShare a list as a file.\n\n## E1 · Sharing\n\n${story('E1.S1', 'Export a list', '-')}`;
+if (answer) body += `${story('E1.S2', 'Import a list', 'E1.S1')}## Open questions\n- Q1: Is a to-do with the same text a duplicate?\n  A: ${answer[1]}\n`;
+else body += '## Open questions\n- Q1: Is a to-do with the same text a duplicate?\n  A:\n';
+process.stderr.write(`reading ${fs.readdirSync(dir).join(' ')}\n`);
+setTimeout(() => {
+  fs.writeFileSync(f, head + body);
+  execFileSync('git', ['add', '--', dir]);
+  execFileSync('git', ['commit', '-qm', `docs(roadmap-${m[1]}): breakdown`]);
+  console.log(`drafted ${f}`);
+}, 500);

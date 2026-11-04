@@ -34,6 +34,9 @@ import {
   type Change,
   type PullRequest,
 } from '@ai-native-sdlc/core';
+import { jobEvents, roadmapRoutes, type Job } from './roadmaps.ts';
+
+export { jobEvents, readJobs, roadmapPrompt, type Job } from './roadmaps.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -222,6 +225,8 @@ export function createApp(opts: { root: string; token: string }) {
     return c.json(sync(root, loaded, { force }));
   });
 
+  roadmapRoutes(app, ws);
+
   app.get('/api/stream', (c) => {
     const root = ws(c);
     return streamSSE(c, async (stream) => {
@@ -241,7 +246,12 @@ export function createApp(opts: { root: string; token: string }) {
         }
       }
       const keepalive = setInterval(() => void stream.writeSSE({ event: 'ping', data: '' }), 25_000);
+      const onJob = (jobRoot: string, job: Job) => {
+        if (jobRoot === root) void stream.writeSSE({ event: 'job', data: JSON.stringify(job) });
+      };
+      jobEvents.on('job', onJob);
       await new Promise<void>((done) => stream.onAbort(done));
+      jobEvents.off('job', onJob);
       clearInterval(keepalive);
       clearTimeout(timer);
       for (const w of watchers) w.close();

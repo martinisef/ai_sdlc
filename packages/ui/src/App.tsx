@@ -7,6 +7,7 @@ import { ChangeView } from './views/Change';
 import { Health } from './views/Health';
 import { Inbox } from './views/Inbox';
 import { MetricsView } from './views/Metrics';
+import { RoadmapView, Roadmaps } from './views/Roadmaps';
 import { Settings } from './views/Settings';
 
 function useHash() {
@@ -22,6 +23,7 @@ function useHash() {
 const NAV = [
   ['/', 'Board'],
   ['/inbox', 'Inbox'],
+  ['/roadmaps', 'Roadmaps'],
   ['/metrics', 'Metrics'],
   ['/activity', 'Activity'],
   ['/settings', 'Settings'],
@@ -34,8 +36,10 @@ function Shell({ state, workspaces, onWorkspace }: { state: State; workspaces: W
   const section = '/' + (route.split('/')[1] ?? '');
   let view;
   if (route.startsWith('/change/')) view = <ChangeView dir={decodeURIComponent(route.slice('/change/'.length))} />;
+  else if (route.startsWith('/roadmap/')) view = <RoadmapView slug={decodeURIComponent(route.slice('/roadmap/'.length))} />;
   else if (!state.configured && section !== '/health') view = <NotConfigured />;
   else if (section === '/inbox') view = <Inbox state={state} />;
+  else if (section === '/roadmaps') view = <Roadmaps />;
   else if (section === '/metrics') view = <MetricsView />;
   else if (section === '/activity') view = <Activity />;
   else if (section === '/settings') view = <Settings />;
@@ -61,7 +65,7 @@ function Shell({ state, workspaces, onWorkspace }: { state: State; workspaces: W
         </select>
         <nav>
           {NAV.map(([href, label]) => (
-            <a key={href} href={`#${href}`} className={section === href || (href === '/' && section === '/change') ? 'on' : ''}>
+            <a key={href} href={`#${href}`} className={section === href || (href === '/' && section === '/change') || (href === '/roadmaps' && section === '/roadmap') ? 'on' : ''}>
               {t(label)}
             </a>
           ))}
