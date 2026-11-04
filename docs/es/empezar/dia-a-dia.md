@@ -16,7 +16,7 @@ Mira en qué etapa está cada cambio y te dice lo único que hay que hacer ahora
 |---|---|
 | Arreglar un typo, un texto, algo chico | `npx sdlc quick "qué"`, después `/sdlc-quick` |
 | Construir una funcionalidad | `npx sdlc new <nombre-corto> --title "Qué"`, después `/sdlc-intent <el problema con mis palabras>` |
-| Arrancar desde un ticket de Jira | `/sdlc-intent PROJ-123` |
+| Arrancar desde un ticket de Jira | `/sdlc-intent PROJ-123` (antes [conectá Jira](./jira.md)) |
 | Saber qué sigue | `npx sdlc next` |
 | Ver todos los cambios y su etapa | `npx sdlc status`, o el Tablero en `npx sdlc ui` |
 | Aprobar un documento | `npx sdlc approve <cambio> intent` (o `spec`, `plan`) |

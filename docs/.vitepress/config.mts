@@ -30,6 +30,7 @@ export default defineConfig({
               { text: 'Install', link: '/start/install' },
               { text: 'Tutorial: your first change', link: '/start/tutorial' },
               { text: 'Everyday use', link: '/start/daily' },
+              { text: 'Connect Jira', link: '/start/jira' },
               { text: 'Troubleshooting', link: '/start/troubleshooting' },
             ],
           },
@@ -91,6 +92,7 @@ export default defineConfig({
         nav: [
           { text: 'Empezá acá', link: '/es/empezar/que-es' },
           { text: 'Guías', link: '/es/guia-equipo' },
+          { text: 'Integraciones', link: '/es/integraciones/trackers' },
           { text: 'Referencia (en)', link: '/reference/cli' },
         ],
         sidebar: [
@@ -101,6 +103,7 @@ export default defineConfig({
               { text: 'Instalar', link: '/es/empezar/instalar' },
               { text: 'Tutorial: tu primer cambio', link: '/es/empezar/tutorial' },
               { text: 'Uso diario', link: '/es/empezar/dia-a-dia' },
+              { text: 'Conectar Jira', link: '/es/empezar/jira' },
               { text: 'Problemas frecuentes', link: '/es/empezar/problemas' },
             ],
           },
@@ -115,6 +118,15 @@ export default defineConfig({
               { text: 'Para plataforma', link: '/es/guia-plataforma' },
               { text: 'Managed settings', link: '/es/managed-settings' },
               { text: 'Avisos', link: '/es/avisos' },
+            ],
+          },
+          {
+            text: 'Integraciones',
+            items: [
+              { text: 'Trackers (Jira, GitHub Issues, Linear)', link: '/es/integraciones/trackers' },
+              { text: 'CI · GitHub', link: '/es/integraciones/ci-github' },
+              { text: 'CI · GitLab', link: '/es/integraciones/ci-gitlab' },
+              { text: 'CI · Bitbucket', link: '/es/integraciones/ci-bitbucket' },
             ],
           },
         ],

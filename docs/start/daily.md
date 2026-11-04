@@ -16,7 +16,7 @@ It looks at where every change is and tells you the one thing to do now: approve
 |---|---|
 | Fix a typo, a label, a small thing | `npx sdlc quick "what"`, then `/sdlc-quick` |
 | Build a feature | `npx sdlc new <short-name> --title "What"`, then `/sdlc-intent <the problem in my words>` |
-| Start from a Jira ticket | `/sdlc-intent PROJ-123` |
+| Start from a Jira ticket | `/sdlc-intent PROJ-123` (first [connect Jira](./jira.md)) |
 | Know what is next | `npx sdlc next` |
 | See all changes and their stage | `npx sdlc status`, or the Board in `npx sdlc ui` |
 | Approve a document | `npx sdlc approve <change> intent` (or `spec`, `plan`) |

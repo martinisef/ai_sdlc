@@ -83,4 +83,4 @@ npx sdlc doctor
 
 Every line should start with `✓`. A `!` is a warning, not an error; for example `! VCS provider unknown` only means there is no GitHub or GitLab remote yet. `npx sdlc doctor --fix` repairs what it can. If something is still wrong, see [Troubleshooting](./troubleshooting.md).
 
-Next: [Tutorial: your first change](./tutorial.md).
+Next: [Tutorial: your first change](./tutorial.md). Does your team use Jira? You can [connect it](./jira.md) now or later.
