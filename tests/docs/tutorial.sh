@@ -7,6 +7,8 @@ set -u
 REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 export SDLC_BIN="${SDLC:-node --conditions=source $REPO/packages/cli/src/main.ts}"
 unset SDLC_PROJECT_DIR CLAUDE_PROJECT_DIR CURSOR_PROJECT_DIR SDLC_TGZ
+# never reach a real Jira with the reader's credentials
+unset JIRA_EMAIL JIRA_USER JIRA_API_TOKEN JIRA_PAT JIRA_BASE_URL
 PASS=0; FAIL=0
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
@@ -84,8 +86,43 @@ for loc in en es; do
   cd "$TMP"
 done
 
+echo "connect Jira (against tests/docs/fake-jira.mjs)"
+JIRA_EN=docs/start/jira.md; JIRA_ES=docs/es/empezar/jira.md
+jboth() { shows "$1" "$2" "$3"; documented "$JIRA_EN" "$3"; documented "$JIRA_ES" "$3"; }
+node "$REPO/tests/docs/fake-jira.mjs" > "$TMP/jira-port" & FAKE_JIRA=$!
+for _ in 1 2 3 4 5 6 7 8 9 10; do [ -s "$TMP/jira-port" ] && break; sleep 0.5; done
+if cd "$TMP/en/my-todo" 2>/dev/null && [ -s "$TMP/jira-port" ]; then
+  out="$(npx sdlc tracker get PROJ-1 2>&1)"
+  shows "jira: not configured" "$out" "tracker not configured (tracker.provider: jira | github | linear)"
+  documented "$JIRA_EN" "tracker not configured (tracker.provider: jira \| github \| linear)"; documented "$JIRA_ES" "tracker not configured (tracker.provider: jira \| github \| linear)"
+  node -e '
+    const fs = require("fs"), f = ".sdlc/config.json", c = JSON.parse(fs.readFileSync(f, "utf8"));
+    c.tracker = { provider: "jira", mode: "linkage", base_url: process.argv[1], project_key: "PROJ", default_issue_type: "Task", incident_issue_type: "Bug",
+      transitions: { spec: "In Design", plan: "In Progress", ship: "In Review", merged: "Done" } };
+    fs.writeFileSync(f, JSON.stringify(c, null, 2));' "http://127.0.0.1:$(cat "$TMP/jira-port")"
+  out="$(npx sdlc doctor 2>&1)"; case "$out" in *✗*) ko "jira: config block passes doctor" "$out" ;; *) ok "jira: config block passes doctor" ;; esac
+  out="$(npx sdlc tracker get PROJ-1 2>&1)"; jboth "jira: no credentials" "$out" "missing Jira credentials (JIRA_EMAIL + JIRA_API_TOKEN, or JIRA_PAT)"
+  out="$(JIRA_EMAIL=ana@example.com JIRA_API_TOKEN=wrong npx sdlc tracker get PROJ-1 2>&1)"; shows "jira: wrong token" "$out" "HTTP 401"
+  export JIRA_EMAIL=ana@example.com JIRA_API_TOKEN=test-token
+  out="$(npx sdlc tracker get PROJ-9 2>&1)"; shows "jira: unknown ticket" "$out" "HTTP 404"
+  out="$(npx sdlc tracker statuses 2>&1)"; jboth "jira: statuses" "$out" "$(printf 'Done\nIn Design\nIn Progress\nIn Review\nTo Do')"
+  out="$(npx sdlc tracker get PROJ-1 2>&1)"
+  jboth "jira: get" "$out" '{"key":"PROJ-1","summary":"Mark a to-do as done","status":"To Do","type":"Story","description":null,"url":"'
+  out="$(npx sdlc tracker transitions PROJ-1 2>&1)"; jboth "jira: transitions" "$out" "$(printf 'In Design\t→ In Design\nIn Progress\t→ In Progress')"
+  out="$(npx sdlc tracker transition PROJ-1 spec 2>&1)"; shows "jira: transition by stage" "$out" "PROJ-1 → In Design"
+  out="$(npx sdlc tracker transition PROJ-1 spec 2>&1)"
+  jboth "jira: transition not allowed" "$out" "transition 'In Design' is not available for PROJ-1 from its current status"
+  out="$(npx sdlc tracker transition PROJ-1 merged 2>&1)"; shows "jira: merged" "$out" "PROJ-1 → Done"
+  documented "$JIRA_EN" "PROJ-123 → Done"; documented "$JIRA_ES" "PROJ-123 → Done"
+  unset JIRA_EMAIL JIRA_API_TOKEN
+else
+  ko "jira: fake server and repo" "    could not start tests/docs/fake-jira.mjs or find the tutorial repo"
+fi
+kill "$FAKE_JIRA" 2>/dev/null; wait "$FAKE_JIRA" 2>/dev/null
+cd "$TMP"
+
 echo "same pages in both languages"
-pairs="what-is-it:que-es install:instalar tutorial:tutorial daily:dia-a-dia troubleshooting:problemas"
+pairs="what-is-it:que-es install:instalar tutorial:tutorial daily:dia-a-dia jira:jira troubleshooting:problemas"
 for p in $pairs; do
   en="docs/start/${p%%:*}.md"; es="docs/es/empezar/${p##*:}.md"
   [ -f "$REPO/$en" ] && [ -f "$REPO/$es" ] || { ko "$en / $es exist" ""; continue; }
@@ -98,7 +135,7 @@ for p in $pairs; do
     [ -f "$f" ] && [ -f "$fes" ] && grep -q "${m/-en./-es.}" "$REPO/$es" && ok "$m in both" || ko "$m in both" "    missing file or not used in $es"
   done
 done
-for link in /start/what-is-it /start/install /start/tutorial /start/daily /start/troubleshooting /es/empezar/que-es /es/empezar/instalar /es/empezar/tutorial /es/empezar/dia-a-dia /es/empezar/problemas; do
+for link in /start/what-is-it /start/install /start/tutorial /start/daily /start/jira /start/troubleshooting /es/empezar/que-es /es/empezar/instalar /es/empezar/tutorial /es/empezar/dia-a-dia /es/empezar/jira /es/empezar/problemas /es/integraciones/trackers /es/integraciones/ci-github /es/integraciones/ci-gitlab /es/integraciones/ci-bitbucket; do
   grep -q "link: '$link'" "$REPO/docs/.vitepress/config.mts" && ok "sidebar: $link" || ko "sidebar: $link" ""
 done
 
@@ -116,6 +153,24 @@ unresolved_links() {
 }
 bad=$(cd "$REPO" && unresolved_links)
 [ -z "$bad" ] && ok "docs links resolve as files (GitHub)" || ko "docs links resolve as files (GitHub)" "$bad"
+
+# `#anchor` links must match the heading on the site and on GitHub, which slug differently: VitePress drops accents
+# and prefixes a leading digit with `_` ("## 4. Check" → `_4-check`), GitHub keeps both (`4-check`, `creá`)
+bad=$(cd "$REPO" && node -e '
+const fs = require("fs"), path = require("path");
+const vp = (h) => { const s = h.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[\s~`!@#$%^&*()\-_+=[\]{}|\\;:"\x27“”‘’<>,.?/]+/g, "-").replace(/^-+|-+$/g, "").toLowerCase(); return /^\d/.test(s) ? "_" + s : s; };
+const gh = (h) => h.toLowerCase().replace(/[^\p{L}\p{N}\s_-]/gu, "").replace(/\s/g, "-");
+const read = (f) => fs.readFileSync(f, "utf8").replace(/<!--@include: ([^{}]+?)(\{[^}]*\})?-->/g, (_, p) => read(path.join(path.dirname(f), p)));
+const heads = (f) => read(f).replace(/```[\s\S]*?```/g, "").split("\n").filter((l) => /^#{1,6} /.test(l)).map((l) => l.replace(/^#+ /, "").replace(/`/g, "").trim());
+for (const f of process.argv.slice(1)) {
+  for (const [, file, anchor] of fs.readFileSync(f, "utf8").matchAll(/\]\(([^)#\s]*)#([^)\s]+)\)/g)) {
+    if (/^https?:/.test(file)) continue;
+    const target = file ? path.join(path.dirname(f), file) : f;
+    if (!fs.existsSync(target)) continue;
+    if (!heads(target).some((h) => vp(h) === anchor && gh(h) === anchor)) console.log(`    ${f}: ${file}#${anchor}`);
+  }
+}' $(find docs -name '*.md' -not -path '*/node_modules/*' -not -path '*/.vitepress/*'))
+[ -z "$bad" ] && ok "docs #anchors match on the site and on GitHub" || ko "docs #anchors match on the site and on GitHub" "$bad"
 
 echo
 echo "passed: $PASS  failed: $FAIL"

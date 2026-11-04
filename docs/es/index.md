@@ -18,5 +18,7 @@ npx sdlc next                                     # lo único que hay que hacer 
 - [El loop en una página (equipos)](./guia-equipo.md)
 - [Guía de plataforma](./guia-plataforma.md)
 - [Managed settings](./managed-settings.md)
+- [Conectar Jira](./empezar/jira.md)
+- Integraciones: [trackers (Jira, GitHub Issues, Linear)](./integraciones/trackers.md), CI en [GitHub](./integraciones/ci-github.md), [GitLab](./integraciones/ci-gitlab.md) y [Bitbucket](./integraciones/ci-bitbucket.md)
 
-La referencia (CLI, configuración, CI, bandas de control, evals) está en inglés: [Reference](../reference/cli.md). Con `locale: "es"` en `.sdlc/config.json`, `sdlc sync` genera las skills, los subagents y los mensajes de los hooks en español.
+El resto de la referencia (CLI, configuración, bandas de control, evals) está en inglés: [Reference](../reference/cli.md). Con `locale: "es"` en `.sdlc/config.json`, `sdlc sync` genera las skills, los subagents y los mensajes de los hooks en español.
