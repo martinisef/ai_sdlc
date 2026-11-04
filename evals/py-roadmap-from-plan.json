@@ -1,0 +1,70 @@
+{
+  "name": "py-roadmap-from-plan",
+  "cwd": "examples/python-api",
+  "tags": [
+    "loop",
+    "roadmap"
+  ],
+  "description": "/sdlc-roadmap breaks a technical plan into epics and testable stories, marks the health-data work as high risk, orders the table before the upload, records the undecided SMS question, and creates no tickets.",
+  "setup": "cp \"$EVAL_DIR/fixtures/roadmap/claims-portal-plan.md\" claims-portal-plan.md",
+  "prompt": "/sdlc-roadmap claims-portal-plan.md. Use the slug claims-portal. Headless run: do not ask questions; write the open questions with empty answers. Do not commit.",
+  "allowed_tools": "Read,Write,Edit,Grep,Glob,Bash(ls:*),Bash(git status),Bash(.sdlc/bin/sdlc:*)",
+  "checks": [
+    {
+      "type": "file_matches",
+      "glob": "changes/_roadmaps/claims-portal/roadmap.md",
+      "pattern": "^status: draft"
+    },
+    {
+      "type": "file_matches",
+      "glob": "changes/_roadmaps/claims-portal/roadmap.md",
+      "pattern": "^## E3 · ",
+      "why": "notifications, documents and the audit trail are separate deliverables"
+    },
+    {
+      "type": "file_matches",
+      "glob": "changes/_roadmaps/claims-portal/roadmap.md",
+      "pattern": "^- source: §3\\.",
+      "why": "stories point back to the section of the plan"
+    },
+    {
+      "type": "file_matches",
+      "glob": "changes/_roadmaps/claims-portal/roadmap.md",
+      "pattern": "^- risk: high",
+      "why": "personal health data is high risk"
+    },
+    {
+      "type": "file_matches",
+      "glob": "changes/_roadmaps/claims-portal/roadmap.md",
+      "pattern": "^- Q\\d+:.*SMS",
+      "ignore_case": true,
+      "why": "the plan says SMS is undecided"
+    },
+    {
+      "type": "command",
+      "run": ".sdlc/bin/sdlc roadmap check claims-portal --json | node -e 'const c = JSON.parse(require(\"fs\").readFileSync(0, \"utf8\")); const other = c.errors.filter((e) => !/has no answer/.test(e)); if (other.length || c.stories < 6) { console.error(other.join(\"\\n\") || `${c.stories} stories`); process.exit(1); }'",
+      "why": "well-formed: only the unanswered questions fail the check, and the plan is split finer than one story per section"
+    },
+    {
+      "type": "command",
+      "run": "node -e 'const t = require(\"fs\").readFileSync(\"changes/_roadmaps/claims-portal/roadmap.md\", \"utf8\"); const ids = {}; for (const m of t.matchAll(/^### (E\\d+\\.S\\d+) · (.+)$/gm)) ids[m[2].toLowerCase()] = m[1]; const upload = Object.keys(ids).find((k) => /upload/.test(k)); const table = Object.keys(ids).find((k) => /table|storage|model|schema/.test(k)); if (!upload || !table) process.exit(1); const block = t.split(/^### /m).find((b) => b.startsWith(ids[upload])); if (!new RegExp(`depends:.*${ids[table].replace(\".\", \"\\\\.\")}`).test(block)) { console.error(`${ids[upload]} does not depend on ${ids[table]}`); process.exit(1); }'",
+      "why": "the plan says the documents table must exist before uploads ship"
+    },
+    {
+      "type": "file_matches",
+      "glob": "changes/_roadmaps/claims-portal/roadmap.md",
+      "pattern": "^- \\[ \\] ",
+      "why": "stories carry acceptance criteria"
+    },
+    {
+      "type": "diff_excludes",
+      "glob": "src/**",
+      "why": "a roadmap does not touch code"
+    },
+    {
+      "type": "output_matches",
+      "pattern": "sdlc roadmap approve",
+      "why": "hands off to a person instead of approving or creating tickets"
+    }
+  ]
+}

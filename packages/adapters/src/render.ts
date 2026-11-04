@@ -51,7 +51,7 @@ ${cmds}`,
 ${cmds}`,
 };
 
-const STAGE_ORDER = ['sdlc-intent', 'sdlc-spec', 'sdlc-plan', 'sdlc-build', 'sdlc-fix', 'sdlc-quick', 'sdlc-ship', 'sdlc-status', 'sdlc-incident', 'sdlc-explain', 'sdlc-setup'];
+const STAGE_ORDER = ['sdlc-roadmap', 'sdlc-intent', 'sdlc-spec', 'sdlc-plan', 'sdlc-build', 'sdlc-fix', 'sdlc-quick', 'sdlc-ship', 'sdlc-status', 'sdlc-incident', 'sdlc-explain', 'sdlc-setup'];
 const rank = (s: Skill) => (STAGE_ORDER.includes(s.name) ? STAGE_ORDER.indexOf(s.name) : STAGE_ORDER.length);
 const sortSkills = (s: Skill[]) => [...s].sort((a, b) => rank(a) - rank(b));
 

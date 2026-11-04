@@ -19,5 +19,6 @@ export * from './pr-sections.ts';
 export * from './project.ts';
 export * from './quick.ts';
 export * from './risk.ts';
+export * from './roadmap.ts';
 export * from './telemetry.ts';
 export * from './vcs.ts';

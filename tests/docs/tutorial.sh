@@ -40,6 +40,8 @@ for loc in en es; do
   out="$(npx sdlc init ${loc_flag[@]+"${loc_flag[@]}"} --preset solo --yes 2>&1)"
   shows "init" "$out" "✓ ai-sdlc ready · preset solo · typescript · agents: claude"
   documented "$INSTALL" "✓ ai-sdlc ready · preset solo · typescript · agents: claude"
+  files="$(printf '%s\n' "$out" | grep -o '[0-9]* agent files' || true)"
+  [ -n "$files" ] && documented "$INSTALL" "$files" || ko "init: agent files count" "    not in the output: $out"
   git add -A && git commit -qm "chore: ai-sdlc"
   out="$(npx sdlc doctor 2>&1)"
   bad="$(printf '%s\n' "$out" | grep -E '^(✗|!)' | grep -v 'VCS provider unknown' || true)"
@@ -121,8 +123,79 @@ fi
 kill "$FAKE_JIRA" 2>/dev/null; wait "$FAKE_JIRA" 2>/dev/null
 cd "$TMP"
 
+# lines <name> <page> <output>: every line of the output is on the page (commit hashes normalised)
+lines() {
+  local missing="" l norm='s/\(([a-z ]*)[0-9a-f]{7}\)/(\1HASH)/'
+  while IFS= read -r l; do
+    [ -z "$l" ] && continue
+    l="$(printf '%s' "$l" | sed -E "$norm")"
+    sed -E "$norm" "$REPO/$2" | grep -qF -- "$l" || missing="$missing    $l"$'\n'
+  done <<< "$3"
+  [ -z "$missing" ] && ok "$1" || ko "$1" "    not on $2:"$'\n'"$missing"
+}
+# the example roadmap of the page goes where /sdlc-roadmap would write it
+write_roadmap() {
+  local f="changes/_roadmaps/$2/roadmap.md"
+  { sed -n '1,/^---$/p' "$f" | head -n 1; sed -n '2,/^---$/p' "$f"; echo; awk '/^```markdown$/ { on = 1; next } on && /^```$/ { exit } on' "$REPO/$1"; } > "$TMP/roadmap.md"
+  mv "$TMP/roadmap.md" "$f"
+}
+for loc in en es; do
+  if [ "$loc" = es ]; then RM=docs/es/empezar/roadmap.md; RS=compartir-tareas; else RM=docs/start/roadmap.md; RS=todo-sharing; fi
+  echo "from a technical plan to tickets ($loc, against tests/docs/fake-jira.mjs)"
+  export DEMO_LOCALE="$loc"
+  source "$REPO/scripts/media/tutorial.sh"
+  tut_repo "$TMP/$loc/roadmap" || { ko "roadmap ($loc): repo" "could not prepare the repo"; continue; }
+  loc_flag=(); [ "$loc" = es ] && loc_flag=(--locale es)
+  npx sdlc init ${loc_flag[@]+"${loc_flag[@]}"} --preset solo --yes >/dev/null 2>&1 && git add -A && git commit -qm "chore: ai-sdlc"
+  printf '%%PDF-1.4\n' > "$TMP/plan.pdf"
+  F="changes/_roadmaps/$RS/roadmap.md"
+
+  out="$(npx sdlc roadmap new "$RS" --source "$TMP/plan.pdf" 2>&1)"; lines "roadmap new" "$RM" "$out"
+  write_roadmap "$RM" "$RS"
+  sed -i.bak 's/^  A: .*/  A:/' "$F" && rm -f "$F.bak"
+  out="$(npx sdlc roadmap check "$RS" 2>&1)"; shows "check: unanswered question" "$out" "✗ Q1 has no answer: "; documented "$RM" "| \`Q1 has no answer: …\` |"
+  out="$(npx sdlc roadmap approve "$RS" 2>&1)"; shows "approve needs the check" "$out" "the roadmap does not pass the check; fix it first:"; documented "$RM" "the roadmap does not pass the check; fix it first:"
+  write_roadmap "$RM" "$RS"
+  out="$(npx sdlc roadmap check "$RS" 2>&1)"; lines "roadmap check" "$RM" "$out"
+  git add changes/_roadmaps && git commit -qm "docs(roadmap): $RS"
+  out="$(npx sdlc roadmap apply "$RS" 2>&1)"; shows "apply needs the approval" "$out" "is draft; a person approves it first (sdlc roadmap approve $RS)"; documented "$RM" "is draft; a person approves it first (sdlc roadmap approve $RS)"
+  git config user.name Claude && git config user.email noreply@anthropic.com
+  out="$(npx sdlc roadmap approve "$RS" 2>&1)"
+  git config user.name "Ana Dev" && git config user.email ana@example.com
+  shows "an agent cannot approve the roadmap" "$out" "looks like an agent or bot; a person must approve"; documented "$RM" "looks like an agent or bot; a person must approve"
+
+  node "$REPO/tests/docs/fake-jira.mjs" > "$TMP/roadmap-port-$loc" & FAKE_JIRA=$!
+  for _ in 1 2 3 4 5 6 7 8 9 10; do [ -s "$TMP/roadmap-port-$loc" ] && break; sleep 0.5; done
+  JURL="http://127.0.0.1:$(cat "$TMP/roadmap-port-$loc")"
+  node -e '
+    const fs = require("fs"), f = ".sdlc/config.json", c = JSON.parse(fs.readFileSync(f, "utf8"));
+    c.tracker = { provider: "jira", mode: "linkage", base_url: process.argv[1], project_key: "PROJ", default_issue_type: "Task", incident_issue_type: "Bug" };
+    fs.writeFileSync(f, JSON.stringify(c, null, 2));' "$JURL"
+  git commit -qam "chore: connect Jira"
+  export JIRA_EMAIL=ana@example.com JIRA_API_TOKEN=test-token
+  out="$(npx sdlc roadmap approve "$RS" 2>&1)"; lines "roadmap approve" "$RM" "$out"
+  out="$(npx sdlc roadmap apply "$RS" --dry-run 2>&1)"; lines "apply --dry-run" "$RM" "$out"
+  out="$(npx sdlc roadmap apply "$RS" 2>&1)"; lines "apply" "$RM" "$out"
+  out="$(npx sdlc roadmap apply "$RS" 2>&1)"; lines "apply again" "$RM" "$out"
+  out="$(curl -s "$JURL/_created" | node -e 'const { created, links } = JSON.parse(require("fs").readFileSync(0, "utf8"));
+    console.log(created.map((c) => `${c.key} ${c.type} ${c.parent ?? "-"}`).join(", ") + " | " + links.join(", "))')"
+  shows "jira got epics, stories under them and links" "$out" "PROJ-2 Epic -, PROJ-3 Task PROJ-2, PROJ-4 Task PROJ-2, PROJ-5 Epic -, PROJ-6 Task PROJ-5, PROJ-7 Task PROJ-5 | PROJ-3 blocks PROJ-4, PROJ-3 blocks PROJ-6, PROJ-6 blocks PROJ-7"
+  out="$(npx sdlc next 2>&1)"; lines "next: first story" "$RM" "$out"
+  out="$(npx sdlc roadmap status 2>&1)"; lines "roadmap status" "$RM" "$out"
+  echo "- [ ] one more" >> "$F"
+  out="$(npx sdlc roadmap apply "$RS" 2>&1)"; shows "an edit needs a new approval" "$out" "changed after it was approved; approve it again (sdlc roadmap approve $RS)"; documented "$RM" "changed after it was approved; approve it again (sdlc roadmap approve $RS)"
+  git checkout -q -- "$F"
+  node -e 'const fs = require("fs"), c = JSON.parse(fs.readFileSync(".sdlc/config.json", "utf8")); c.tracker.provider = "none"; fs.writeFileSync(".sdlc/config.json", JSON.stringify(c, null, 2));'
+  out="$(npx sdlc roadmap apply "$RS" 2>&1)"; shows "apply without a tracker" "$out" "tracker not configured (tracker.provider: jira | github | linear)"
+  git checkout -q -- .sdlc/config.json
+  unset JIRA_EMAIL JIRA_API_TOKEN
+  kill "$FAKE_JIRA" 2>/dev/null; wait "$FAKE_JIRA" 2>/dev/null
+  cd "$TMP"
+done
+documented docs/start/roadmap.md "tracker not configured (tracker.provider: jira \| github \| linear)"; documented docs/es/empezar/roadmap.md "tracker not configured (tracker.provider: jira \| github \| linear)"
+
 echo "same pages in both languages"
-pairs="what-is-it:que-es install:instalar tutorial:tutorial daily:dia-a-dia jira:jira troubleshooting:problemas"
+pairs="what-is-it:que-es install:instalar tutorial:tutorial daily:dia-a-dia jira:jira roadmap:roadmap troubleshooting:problemas"
 for p in $pairs; do
   en="docs/start/${p%%:*}.md"; es="docs/es/empezar/${p##*:}.md"
   [ -f "$REPO/$en" ] && [ -f "$REPO/$es" ] || { ko "$en / $es exist" ""; continue; }
@@ -135,7 +208,7 @@ for p in $pairs; do
     [ -f "$f" ] && [ -f "$fes" ] && grep -q "${m/-en./-es.}" "$REPO/$es" && ok "$m in both" || ko "$m in both" "    missing file or not used in $es"
   done
 done
-for link in /start/what-is-it /start/install /start/tutorial /start/daily /start/jira /start/troubleshooting /es/empezar/que-es /es/empezar/instalar /es/empezar/tutorial /es/empezar/dia-a-dia /es/empezar/jira /es/empezar/problemas /es/integraciones/trackers /es/integraciones/ci-github /es/integraciones/ci-gitlab /es/integraciones/ci-bitbucket; do
+for link in /start/what-is-it /start/install /start/tutorial /start/daily /start/jira /start/roadmap /start/troubleshooting /es/empezar/que-es /es/empezar/instalar /es/empezar/tutorial /es/empezar/dia-a-dia /es/empezar/jira /es/empezar/roadmap /es/empezar/problemas /es/integraciones/trackers /es/integraciones/ci-github /es/integraciones/ci-gitlab /es/integraciones/ci-bitbucket; do
   grep -q "link: '$link'" "$REPO/docs/.vitepress/config.mts" && ok "sidebar: $link" || ko "sidebar: $link" ""
 done
 

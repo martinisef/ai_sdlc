@@ -16,6 +16,7 @@ Loop CLI: `sdlc` ({{sdlc_hint}}). Project config: `.sdlc/config.json`.
 
 ## 1. Input
 - **With a ticket** (`$ARGUMENTS` looks like a key: `ABC-123` for Jira or Linear, `#123` for GitHub Issues) and `tracker.provider` is not `none`: read the ticket with the tracker's MCP (Atlassian, Linear) if it is available in the session; otherwise, with `sdlc tracker get <KEY>`. Use the summary and description as a starting point. `origin: ticket`.
+  - If the ticket came from a roadmap, `sdlc roadmap find <KEY>` prints its item (JSON): use its acceptance criteria, risk and dependencies, and read the section of the document it cites (`source` in `document`). Say which roadmap it comes from; if a story it depends on is not merged yet (`sdlc roadmap status`), warn before going on.
 - **With text**: it is the initial description of the idea. `origin: idea`.
 - **No arguments**: ask the person to describe the problem in their own words.
 - If the tracker fails (credentials, network), say so in one line and continue without it: the tracker supports the loop, it does not block it.

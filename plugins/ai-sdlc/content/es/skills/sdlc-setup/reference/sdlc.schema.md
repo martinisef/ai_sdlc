@@ -63,7 +63,7 @@ Lo leen los guardrails (`sdlc hook`, para cualquier agente), las skills del loop
 | `locale` | mensajes de guardrails, dashboard | `en` o `es`. |
 | `agents` | `sdlc sync`, `sdlc doctor` | Qué adapters generar: `claude`, `cursor`, `agents-md` (Codex, Copilot y otros que leen AGENTS.md). |
 | `vcs.*` | `sdlc vcs`, `/sdlc-ship`, CI | Si falta `provider`, se deduce del remote. |
-| `tracker.*` | `sdlc tracker`, skills del loop, CI | `provider`: `jira`, `github` (GitHub Issues; `repo` si no es el repositorio del código), `linear` (`team_key`) o `none`. `transitions` mapea cada etapa a una transición o estado destino de Jira, un label de GitHub (por defecto `sdlc:<etapa>`; `merged` cierra el issue) o un estado del workflow de Linear. |
+| `tracker.*` | `sdlc tracker`, skills del loop, CI | `provider`: `jira`, `github` (GitHub Issues; `repo` si no es el repositorio del código), `linear` (`team_key`) o `none`. `transitions` mapea cada etapa a una transición o estado destino de Jira, un label de GitHub (por defecto `sdlc:<etapa>`; `merged` cierra el issue) o un estado del workflow de Linear. `epic_issue_type` (Jira, por defecto `Epic`) es el tipo que usa `sdlc roadmap apply` para las épicas; las historias usan `default_issue_type`. `epic_link_field` (Jira Data Center/Server, ej. `customfield_10014`) vincula las historias a su épica donde Cloud usa `parent`. |
 | `commands.*` | skills, `verifier`, evals | Cada uno es un solo comando que sale ≠ 0 si falla. |
 | `format_on_edit` | hook PostToolUse | Glob → comando; `{file}` se reemplaza por la ruta. Mantenerlo rápido (un archivo). |
 | `protected_paths` | hook `protect-paths` | `*` cruza `/`; `**/` inicial es opcional. |
@@ -78,7 +78,7 @@ Lo leen los guardrails (`sdlc hook`, para cualquier agente), las skills del loop
 | `risk.size` | `sdlc risk` | `low_max_lines` (por defecto 50) y `high_min_lines` (por defecto 800) de líneas de código ponderadas: las modificadas y borradas cuentan completas, las de archivos nuevos cuentan la mitad; docs y `test_globs` no cuentan. |
 | `risk.agent_escalation` | `sdlc ci risk` | `true`: un segundo clasificador, un agente, lee el diff y puede subir el nivel (nunca bajarlo). |
 | `production_gate` | hook `production-gate` | Regex ERE sobre comandos Bash; sin la variable de aprobación → bloqueo. |
-| `gates` | `sdlc approve`, dashboard | Roles que pueden aprobar cada artefacto. Sin roles: cualquier persona (nunca un agente o bot). `risk: high` suma `tech-lead` al plan. |
+| `gates` | `sdlc approve`, `sdlc roadmap approve`, dashboard | Roles que pueden aprobar cada artefacto, y `roadmap` para los roadmaps. Sin roles: cualquier persona (nunca un agente o bot). `risk: high` suma `tech-lead` al plan. |
 | `gates_self_approval` | `sdlc approve` | `true` (preset `solo`): el autor puede aprobar su propia spec y plan. Los agentes y bots siguen sin poder. |
 | `roles` | `sdlc approve`, dashboard | Rol → emails/nombres git, o `@login` en la forja (comentarios en el PR). |
 | `quick_lane` | `sdlc quick`, hook pre-push | `enabled` (por defecto `true`), `max_files` (archivos de código, por defecto 10), `forbid_paths` (globs, se suman a `risk.high_risk_paths`). Si se superan, el push se bloquea hasta `sdlc promote`. |

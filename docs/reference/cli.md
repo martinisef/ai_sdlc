@@ -37,6 +37,13 @@ Every command works from any directory inside the repository. The project root i
 | `sdlc risk [<change>] [--base B] [--json]` | Risk tier set by the change, not the author: the diff against the base (paths, weighted size, dependencies, deletions), the paths the spec and plan name, and the declared `risk:`. See [Risk tiers](../guide/risk.md). |
 | `sdlc approve <change> <intent\|spec\|plan> [-m comment] [--auto]` | Gate decision as a commit. See [Gates](../guide/concepts.md#gates). `--auto` (with `risk.profile: graded`) records the approval when the risk tier needs nobody; see [Risk tiers](../guide/risk.md#approvals-per-tier). |
 | `sdlc reject <change> <intent\|spec\|plan> [-m comment]` | The same, setting `status: rejected`. |
+| `sdlc roadmap new <slug> --source <file\|url> [--title T]` | Scaffolds `changes/_roadmaps/<slug>/`: copies the technical plan (PDF, Markdown or text; a Google Doc stays as its URL) and writes the `roadmap.md` template. Then `/sdlc-roadmap <slug>` drafts the epics and stories. See [From a technical plan to tickets](../start/roadmap.md). |
+| `sdlc roadmap check <slug> [--json]` | Ids, epics and stories, acceptance criteria, risk values, dependencies (unknown ones, cycles) and unanswered open questions. Exits 1 on errors; warns on epics without stories and stories with more than 8 acceptance criteria. |
+| `sdlc roadmap approve\|reject <slug> [-m comment]` | Gate decision as a commit (`Gate: roadmap approved by …`). A person only, never an agent; `gates.roadmap` limits who. Approving needs a roadmap that passes the check, and any later edit other than the ticket keys needs a new approval. |
+| `sdlc roadmap apply <slug> [--dry-run]` | Creates what is missing in the tracker: epics, stories under them (Jira `parent` or `epic_link_field`, GitHub sub-issues, Linear parent issues) and "blocks" links for `depends`. Writes each key into `roadmap.md` and commits them, also after a failure halfway, so a rerun continues without duplicates. Exit 3 without a tracker. |
+| `sdlc roadmap status [<slug>] [--json]` | Each story: ticket, the change for it (matched by ticket) and its stage, or what blocks it. `sdlc next` suggests the first unblocked story (`/sdlc-intent <KEY>`). |
+| `sdlc roadmap find <KEY>` | The roadmap item behind a ticket, as JSON (`/sdlc-intent` uses it). |
+| `sdlc roadmap list` | Roadmaps, their status and how many items have tickets. |
 | `sdlc lock on\|off\|status` | Test-lock during a fix: test files (`test_globs`) cannot be edited while it is on. |
 | `sdlc ui [--port N] [--no-open]` | Local [dashboard](../guide/dashboard.md) (default port 4319). |
 
@@ -48,7 +55,7 @@ Every command works from any directory inside the repository. The project root i
 |---|---|
 | `sdlc hook <event> --agent claude\|cursor\|git` | Guardrail entry point, called by the generated hooks. It reads the agent's JSON payload on stdin. |
 | `sdlc vcs …` | PR/MR helper for GitHub (`gh`), GitLab (`glab`, or REST) and Bitbucket (REST). |
-| `sdlc tracker …` | Tracker helper: Jira (Cloud or Data Center), GitHub Issues or Linear, per `tracker.provider`. |
+| `sdlc tracker …` | Tracker helper: Jira (Cloud or Data Center), GitHub Issues or Linear, per `tracker.provider`. `create` accepts `--parent EPIC` and `--labels a,b`; `link BLOCKER BLOCKED` records a dependency. |
 | `sdlc ci <cmd>` | CI entry point. See [CI](./ci.md). |
 | `sdlc bands check` | Stage 6. See [Control bands](./bands.md). |
 | `sdlc notify <event> [--change ID] [--artifact A] [--decision D] [--by WHO] [-m NOTE] [--dry-run]` | Posts `gate.pending`, `gate.decided`, `spec.ready`, `review.done`, `change.merged` or `risk.raised` to Slack or a webhook (`SDLC_NOTIFY_WEBHOOK`). Always exits 0. See [Notifications](../guide/notifications.md). |
