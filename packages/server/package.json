@@ -13,7 +13,7 @@
   "dependencies": {
     "@ai-native-sdlc/core": "*",
     "@ai-native-sdlc/adapters": "*",
-    "hono": "^4.9.0",
+    "hono": "^4.13.16",
     "@hono/node-server": "^2.1.6"
   }
 }
