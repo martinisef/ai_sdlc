@@ -11,5 +11,7 @@
     "ai-sdlc": "0.0.0",
     "@ai-native-sdlc/webhook": "0.2.0"
   },
-  "changesets": []
+  "changesets": [
+    "stable-1-0"
+  ]
 }
