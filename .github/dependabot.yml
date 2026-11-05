@@ -8,6 +8,9 @@ updates:
     ignore:
       # must match engines.vscode in packages/vscode (Cursor runs an older VS Code base); raise both together
       - dependency-name: '@types/vscode'
+      # the types follow the oldest supported Node (engines.node >=22.18), not the newest
+      - dependency-name: '@types/node'
+        update-types: [version-update:semver-major]
     groups:
       dev-dependencies:
         dependency-type: development
@@ -19,10 +22,6 @@ updates:
     directory: /
     schedule:
       interval: weekly
-    ignore:
-      # v2 needs @changesets/cli 3; upgrade both together (see the @changesets/cli PR)
-      - dependency-name: changesets/action
-        update-types: [version-update:semver-major]
     groups:
       actions:
         patterns: ['*']

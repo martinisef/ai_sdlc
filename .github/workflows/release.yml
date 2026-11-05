@@ -33,16 +33,14 @@ jobs:
       - run: npm ci
       - run: git config --global user.name ci && git config --global user.email ci@example.com
       - run: npm test
-      # v1 while the repo is on @changesets/cli 2: action v2 requires CLI v3 and renames these inputs and outputs
+      # action v2 needs @changesets/cli 3 (they are upgraded together)
       - id: changesets
-        uses: changesets/action@v1
+        uses: changesets/action@v2
         with:
-          version: npm run version-packages
-          publish: npm run release
-          commit: 'chore: version packages'
-          title: 'chore: version packages'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          version-script: npm run version-packages
+          publish-script: npm run release
+          commit-message: 'chore: version packages'
+          pr-title: 'chore: version packages'
       # Editor extension: the .vsix goes on the GitHub release that changesets just created.
       - if: steps.changesets.outputs.published == 'true'
         env:
@@ -53,7 +51,7 @@ jobs:
           gh release upload "@morsadev/sdlc@$v" "packages/vscode/ai-sdlc-$v.vsix" --clobber
       # Tutorial media (docs/public/media) for the new version; a release made with GITHUB_TOKEN does not trigger it.
       # Release candidates (1.0.0-rc.N, npm tag rc) leave the docs and the :latest image alone.
-      - if: steps.changesets.outputs.published == 'true' && !contains(steps.changesets.outputs.publishedPackages, '-rc.')
+      - if: steps.changesets.outputs.published == 'true' && !contains(steps.changesets.outputs.published-packages, '-rc.')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh workflow run docs-media.yml --ref main
