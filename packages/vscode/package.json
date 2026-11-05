@@ -132,7 +132,7 @@
   },
   "devDependencies": {
     "@ai-native-sdlc/core": "*",
-    "@types/vscode": "1.90.0",
+    "@types/vscode": "1.144.0",
     "@vscode/test-electron": "^3.1.0",
     "@vscode/vsce": "^4.1.0"
   }
