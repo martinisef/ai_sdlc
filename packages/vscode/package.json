@@ -2,7 +2,7 @@
   "name": "ai-sdlc",
   "displayName": "AI SDLC",
   "description": "The AI-native SDLC loop in your editor: the next step, your pending gates and every change by stage.",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "type": "module",
   "publisher": "morsadev",
