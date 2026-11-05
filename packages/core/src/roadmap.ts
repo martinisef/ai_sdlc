@@ -1,6 +1,7 @@
 // Roadmaps: a technical plan broken into epics and stories (changes/_roadmaps/<slug>/roadmap.md), drafted by an
 // agent, approved by a person, then created in the tracker by `applyRoadmap`. Each story later enters the loop
 // with `/sdlc-intent <KEY>`. The file is the source of the breakdown; the tracker gets copies.
+import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { basename, extname, join } from 'node:path';
@@ -302,6 +303,8 @@ export function newRoadmap(root: string, slug: string, o: { source?: string; tit
     if (statSync(o.source).size > MAX_SOURCE_BYTES) throw new SdlcError(`source is larger than ${MAX_SOURCE_BYTES / 1024 / 1024} MB`);
     copyFileSync(o.source, join(dir, `source${ext}`));
     source = `${ROADMAPS_DIR}/${slug}/source${ext}`;
+    // agents without a PDF reader (Codex, some Cursor models) read the text beside it; without pdftotext they convert it
+    if (ext === '.pdf') spawnSync('pdftotext', ['-layout', join(dir, 'source.pdf'), join(dir, 'source.txt')], { stdio: 'ignore' });
   }
   const title = o.title ?? slug.replace(/-/g, ' ').replace(/^./, (c) => c.toUpperCase());
   writeFileSync(join(dir, 'roadmap.md'), roadmapTemplate({ slug, title, author: o.author ?? gitUser(root).name, source, locale: localeOf(o.loaded) }));

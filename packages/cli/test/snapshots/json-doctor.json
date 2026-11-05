@@ -1,0 +1,13 @@
+[
+  "agents",
+  "checks",
+  "checks[].id",
+  "checks[].level",
+  "checks[].message",
+  "checks[].ok",
+  "matrix",
+  "matrix[].agents-md",
+  "matrix[].claude",
+  "matrix[].cursor",
+  "matrix[].guardrail"
+]

@@ -17,7 +17,7 @@ CLI del loop: `sdlc` ({{sdlc_hint}}). Configuración del proyecto: `.sdlc/config
 - Archivos de Word: pedí una exportación a PDF.
 
 ## 1. Leer el documento
-- Leé la fuente completa (PDF: la herramienta Read lo lee página por página). Si es largo, andá por secciones y anotá: objetivos, alcance y lo que queda afuera, componentes, datos, integraciones, restricciones (seguridad, datos personales, rendimiento, fechas), hitos y todo lo que diga que está sin decidir.
+- Leé la fuente completa (PDF: la herramienta Read lo lee página por página; si no podés leer PDFs, leé `source.txt` al lado, o crealo con `pdftotext -layout source.pdf source.txt`). Si es largo, andá por secciones y anotá: objetivos, alcance y lo que queda afuera, componentes, datos, integraciones, restricciones (seguridad, datos personales, rendimiento, fechas), hitos y todo lo que diga que está sin decidir.
 - Si el repo tiene código, miralo para nombrar los módulos que toca el plan, pero no diseñes la solución: eso es la spec y el plan de cada historia.
 
 ## 2. Redactar la división

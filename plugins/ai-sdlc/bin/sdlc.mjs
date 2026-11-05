@@ -20661,6 +20661,12 @@ function pickAgent(flag, loaded, env = process.env) {
   if (!CI_AGENTS.includes(a)) throw new SdlcError(`unknown agent '${a}' (one of: ${CI_AGENTS.join(", ")})`);
   return a;
 }
+function localAgent(loaded, env = process.env) {
+  if (env.SDLC_CI_AGENT || loaded?.config.ci?.agent) return pickAgent(void 0, loaded, env);
+  const fromConfig = (loaded?.config.agents ?? []).map((a) => a === "agents-md" ? "codex" : a);
+  const order2 = [.../* @__PURE__ */ new Set([...fromConfig, "claude", "cursor", "codex"])];
+  return order2.find((a) => hasTool(agentBin(a, env), env)) ?? "claude";
+}
 function agentBin(agent, env = process.env) {
   if (agent !== "cursor") return AGENT_BIN[agent];
   const local = join2(env.HOME ?? homedir(), ".local/bin");
@@ -35196,7 +35202,7 @@ function startJob(root, slug, kind) {
   const key = `${root}#${slug}`;
   if (running.has(key)) throw new Error(`the agent is already working on ${slug}`);
   const loaded = loadConfig(root);
-  const agent = pickAgent(void 0, loaded);
+  const agent = localAgent(loaded);
   const job = { id: `${Date.now().toString(36)}-${randomBytes(3).toString("hex")}`, kind, roadmap: slug, agent, status: "running", started: (/* @__PURE__ */ new Date()).toISOString(), log: "", pid: process.pid };
   running.add(key);
   saveJob(root, job);
@@ -35240,6 +35246,11 @@ function brief(r) {
   };
 }
 function roadmapRoutes(app, ws) {
+  app.get("/api/agent", (c) => {
+    const agent = localAgent(loadConfig(ws(c)));
+    const bin = agentBin(agent);
+    return c.json({ agent, bin, installed: hasTool(bin) });
+  });
   app.get("/api/roadmaps", (c) => {
     const root = ws(c);
     const jobs = readJobs(root);
@@ -36902,7 +36913,7 @@ sdlc ci risk [--escalate]      risk tier of the PR/MR from the diff (sticky comm
                                risk.agent_escalation) asks the agent whether it needs another person: it can only raise it
 sdlc ci mention                answer an @claude comment on the PR/MR (triggered by \`sdlc webhook\`; ci.mention_mode read|edit)
 
-Options: --agent claude|codex|cursor (or SDLC_CI_AGENT, or ci.agent) \xB7 --model M \xB7 --dry-run (print, do not post/push)
+Options: --agent claude|codex|cursor (or SDLC_CI_AGENT, or ci.agent; codex and cursor are experimental) \xB7 --model M \xB7 --dry-run (print, do not post/push)
 Env: ANTHROPIC_API_KEY | OPENAI_API_KEY | CURSOR_API_KEY \xB7 GH_TOKEN | GITLAB_TOKEN | BITBUCKET_ACCESS_TOKEN
      JIRA_EMAIL + JIRA_API_TOKEN (or JIRA_PAT) \xB7 LINEAR_API_KEY \xB7 SDLC_PLUGIN_REPO_URL / SDLC_PLUGIN_TOKEN (private marketplace)
      SDLC_NOTIFY_WEBHOOK (Slack or generic webhook: gate.pending, gate.decided, spec.ready, review.done, change.merged, risk.raised)
@@ -38227,7 +38238,7 @@ Setup
 
 Loop
   next [--json]                      the one thing to do now: approve, ask the agent, ship, or start a change
-  status [--json | --metrics]        changes and their stage
+  status [--json]                    changes and their stage
   metrics [--json] [--funnel]        leading indicators from git + activity log; --funnel: how far changes get
           [--since 30d] [--prs]      window for the guardrails; --prs: refresh review rounds and comments from the forge
           [--value <name>]           one number for a control band (revert_rate, incident_rate, waiting_hours_p95, \u2026)
@@ -38253,8 +38264,10 @@ Integrations
   ci <cmd>                           CI entry point: bootstrap, review, intent-to-spec, triage, tracker-merged, gate, evals
   bands check [--json] [--dry-run]   Stage 6: evaluate ops/bands.yaml; log / diagnose / open an incident intent
   notify <event> [--change ID] [--dry-run]   gate.pending|gate.decided|spec.ready|review.done|change.merged \u2192 Slack or a webhook
-  webhook [--port N]                 @claude in GitLab/Bitbucket comments \u2192 triggers \`sdlc ci mention\` in CI
-  hosted [--port N]                  read-only org board over a GitHub App installation (docs/rfc/hosted.md)
+  webhook [--port N]                 experimental: @claude in GitLab/Bitbucket comments \u2192 triggers \`sdlc ci mention\` in CI
+  hosted [--port N]                  experimental: read-only org board over a GitHub App installation (docs/rfc/hosted.md)
+
+Stable within 1.x unless marked experimental: https://martinisef.github.io/ai_sdlc/reference/stability
 `;
 function parseArgs(argv) {
   const pos = [];
@@ -38433,7 +38446,10 @@ async function main() {
       console.log(JSON.stringify(configJsonSchema(), null, 2));
       return;
     case "status": {
-      if (flags.metrics) return printMetricsLegacy(root);
+      if (flags.metrics) {
+        process.stderr.write("sdlc: `status --metrics` is deprecated and goes in 2.0; use `sdlc metrics`\n");
+        return printMetricsLegacy(root);
+      }
       const loaded = loadConfig(root);
       const locale = localeOf(loaded);
       const changes = listChanges(root, { locale, defaultBranch: loaded?.config.vcs?.default_branch });

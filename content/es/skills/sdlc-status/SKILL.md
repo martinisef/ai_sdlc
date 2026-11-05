@@ -28,7 +28,7 @@ Marcá el activo con ▶.
 No corrijas nada automáticamente: listá y ofrecé arreglarlo.
 
 ## --metrics
-`sdlc status --metrics` y presentá los indicadores leading del playbook:
+`sdlc metrics` y presentá los indicadores leading del playbook:
 - Tiempo intent → spec (Stage 2: debería bajar de semanas a horas).
 - Tiempo spec → plan.
 - Rework de spec después del plan (commits a spec.md posteriores al primer plan.md: Stage 2 lagging).

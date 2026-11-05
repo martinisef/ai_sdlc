@@ -70,6 +70,7 @@ export default defineConfig({
             text: 'Reference',
             items: [
               { text: 'CLI', link: '/reference/cli' },
+              { text: 'Versions and stability', link: '/reference/stability' },
               { text: 'Configuration', link: '/reference/config' },
               { text: 'CI', link: '/reference/ci' },
               { text: 'CI · GitHub', link: '/reference/ci-github' },
@@ -120,6 +121,7 @@ export default defineConfig({
               { text: 'Para plataforma', link: '/es/guia-plataforma' },
               { text: 'Managed settings', link: '/es/managed-settings' },
               { text: 'Avisos', link: '/es/avisos' },
+              { text: 'Versiones y estabilidad', link: '/es/estabilidad' },
             ],
           },
           {

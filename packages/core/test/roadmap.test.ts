@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { delimiter, join } from 'node:path';
 import { test } from 'node:test';
 import {
   applyRoadmap,
@@ -172,6 +173,25 @@ test('new: copies the source, writes the template, refuses unknown formats', () 
   assert.throws(() => newRoadmap(root, 'other', { source: join(root, 'plan.docx') }), /export Word or Google Docs to PDF/);
   assert.equal(newRoadmap(root, 'doc', { source: 'https://docs.google.com/document/d/abc' }).source, 'https://docs.google.com/document/d/abc');
   assert.equal(listChanges(root).length, 0, 'roadmaps are not changes');
+});
+
+test('new: a PDF also gets a source.txt when pdftotext is installed', () => {
+  const root = repo();
+  const bin = mkdtempSync(join(tmpdir(), 'sdlc-pdftotext-'));
+  writeFileSync(join(bin, 'pdftotext'), `#!/bin/sh\nprintf 'Plan text' > "$3"\n`);
+  chmodSync(join(bin, 'pdftotext'), 0o755);
+  writeFileSync(join(root, 'plan.pdf'), '%PDF-1.4 fake');
+  const path = process.env.PATH;
+  process.env.PATH = `${bin}${delimiter}${path}`;
+  try {
+    newRoadmap(root, 'billing', { source: join(root, 'plan.pdf') });
+  } finally {
+    process.env.PATH = path;
+  }
+  assert.equal(readFileSync(join(root, 'changes/_roadmaps/billing/source.txt'), 'utf8'), 'Plan text');
+  writeFileSync(join(root, 'plan.md'), '# Plan');
+  newRoadmap(root, 'md', { source: join(root, 'plan.md') });
+  assert.equal(existsSync(join(root, 'changes/_roadmaps/md/source.txt')), false);
 });
 
 test('decide: a person approves a roadmap that passes the check; edits after that need a new approval', () => {

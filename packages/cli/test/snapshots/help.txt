@@ -1,0 +1,42 @@
+sdlc <version> — AI-native SDLC loop (intent → spec → plan → build → ship → incident)
+
+Setup
+  init [--preset solo|team-github|regulated] [--yes] [--no-ci] [--first-change "title"] [--locale en|es] [--verbose]
+                                     detect stack/VCS/agents, apply the preset, scaffold, sync, install CI
+  sync [--force] [--dry-run]         regenerate agent files (Claude, Cursor, AGENTS.md) and git hooks
+  doctor [--fix] [--json]            health checks + enforcement matrix per agent; --fix repairs what it can
+  migrate                            .claude/sdlc.json → .sdlc/config.json
+  schema                             JSON Schema of .sdlc/config.json
+
+Loop
+  next [--json]                      the one thing to do now: approve, ask the agent, ship, or start a change
+  status [--json]                    changes and their stage
+  metrics [--json] [--funnel]        leading indicators from git + activity log; --funnel: how far changes get
+          [--since 30d] [--prs]      window for the guardrails; --prs: refresh review rounds and comments from the forge
+          [--value <name>]           one number for a control band (revert_rate, incident_rate, waiting_hours_p95, …)
+  telemetry on|off|status [--payload]   opt-in anonymous counts (off by default; needs SDLC_TELEMETRY_URL)
+  new <slug> [--ticket KEY] [--title T] [--no-branch]
+  quick "<what>" [--ticket KEY] [--no-branch]   small change without spec/plan (limits checked on push)
+  quick --check [--json]             is the active quick change still within quick_lane limits?
+  promote [<change>]                 quick lane → full loop (intent back to draft for the PO)
+  risk [<change>] [--base B] [--json]   risk tier set by the change: diff against the base, paths the spec/plan name, declared risk
+  explainers [<path>…] [--json]      module explainers (docs/explainers, written by /sdlc-explain); with paths: the ones covering them
+  approve <change> <intent|spec|plan> [-m comment] [--auto]
+                                     --auto: record the approval when the risk tier needs no person (risk.profile graded)
+  reject  <change> <intent|spec|plan> [-m comment]
+  roadmap <new|check|approve|reject|apply|status|find|list> …
+                                     a technical plan → epics and stories → tickets (sdlc roadmap --help)
+  lock on|off|status                 test-lock during a fix
+  ui [--port N] [--no-open]          local dashboard
+
+Integrations
+  hook <event> --agent claude|cursor|git   guardrail entry point (called by generated hooks)
+  vcs <args…>                        PR/MR helper (github, gitlab, bitbucket)
+  tracker <args…>                    Jira helper
+  ci <cmd>                           CI entry point: bootstrap, review, intent-to-spec, triage, tracker-merged, gate, evals
+  bands check [--json] [--dry-run]   Stage 6: evaluate ops/bands.yaml; log / diagnose / open an incident intent
+  notify <event> [--change ID] [--dry-run]   gate.pending|gate.decided|spec.ready|review.done|change.merged → Slack or a webhook
+  webhook [--port N]                 experimental: @claude in GitLab/Bitbucket comments → triggers `sdlc ci mention` in CI
+  hosted [--port N]                  experimental: read-only org board over a GitHub App installation (docs/rfc/hosted.md)
+
+Stable within 1.x unless marked experimental: https://martinisef.github.io/ai_sdlc/reference/stability

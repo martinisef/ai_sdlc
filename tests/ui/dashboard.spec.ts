@@ -1,4 +1,6 @@
 import { execFileSync } from 'node:child_process';
+import { readdirSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { CONFIG, expect, read, test } from './fixtures.ts';
 
 const column = (page: import('@playwright/test').Page, name: string) => page.locator('section.col', { has: page.locator('h3', { hasText: name }) });
@@ -90,6 +92,7 @@ test('health, metrics and activity load', async ({ page, dashboard }) => {
 test('roadmaps: upload a plan, answer the agent, approve the breakdown and preview the tickets', async ({ page, dashboard, repo }) => {
   await page.goto(`${dashboard}#/roadmaps`);
   await expect(page.locator('main')).toContainText('No roadmaps yet');
+  await expect(page.locator('.agent-note')).toContainText('The agent: Claude Code (claude)');
   await page.getByLabel('Name (lowercase letters, digits and dashes)').fill('sharing');
   await page.locator('input[name="file"]').setInputFiles({ name: 'plan.md', mimeType: 'text/markdown', buffer: Buffer.from('# Plan\n\n## 2. Sharing\n') });
   await page.getByRole('button', { name: 'Upload and draft' }).click();
@@ -122,4 +125,18 @@ test('roadmaps: upload a plan, answer the agent, approve the breakdown and previ
   await expect(page.locator('.actions-list')).toContainText('story E1.S2 Import a list');
   await expect(page.locator('.actions-list')).toContainText('E1.S1 blocks E1.S2');
   await expect(page.getByRole('button', { name: 'Create tickets' })).toBeDisabled();
+});
+
+test('roadmaps: a Cursor project drafts with cursor-agent', async ({ page, dashboard, repo }) => {
+  writeFileSync(join(repo, '.sdlc/config.json'), JSON.stringify({ ...CONFIG, agents: ['cursor'] }, null, 2));
+  await page.goto(`${dashboard}#/roadmaps`);
+  await expect(page.locator('.agent-note')).toContainText('The agent: Cursor (cursor-agent)');
+  await page.getByLabel('Name (lowercase letters, digits and dashes)').fill('sharing');
+  await page.locator('input[name="file"]').setInputFiles({ name: 'plan.md', mimeType: 'text/markdown', buffer: Buffer.from('# Plan\n\n## 2. Sharing\n') });
+  await page.getByRole('button', { name: 'Upload and draft' }).click();
+  await expect(page.locator('.tree')).toContainText('Export a list');
+  const job = () => JSON.parse(read(repo, `.sdlc/jobs/${readdirSync(join(repo, '.sdlc/jobs'))[0]}`));
+  await expect.poll(() => job().status).toBe('done');
+  expect(job().agent).toBe('cursor');
+  expect(job().log).toContain('stub cursor-agent');
 });

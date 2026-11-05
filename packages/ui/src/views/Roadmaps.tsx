@@ -1,9 +1,26 @@
 import { useState, type FormEvent } from 'react';
-import { api, upload, useApi, type ApplyResult, type Job, type RoadmapDetail, type RoadmapNode, type RoadmapSummary } from '../api';
+import { api, upload, useApi, type AgentInfo, type ApplyResult, type Job, type RoadmapDetail, type RoadmapNode, type RoadmapSummary } from '../api';
 import { useT } from '../i18n';
 import { StatusPill } from './Board';
 
 const ACCEPT = '.pdf,.md,.markdown,.txt';
+const AGENT_NAME: Record<AgentInfo['agent'], string> = { claude: 'Claude Code', codex: 'Codex', cursor: 'Cursor' };
+
+/** Which CLI runs the dashboard's jobs on this machine. */
+function AgentNote() {
+  const t = useT();
+  const { data } = useApi<AgentInfo>('/agent');
+  if (!data) return null;
+  return data.installed ? (
+    <p className="muted small agent-note">
+      {t('The agent:')} <strong>{AGENT_NAME[data.agent]}</strong> (<code>{data.bin}</code>)
+    </p>
+  ) : (
+    <p className="issues small agent-note">
+      {t('No agent CLI found on this machine: install Claude Code, the Cursor CLI or Codex, or set ci.agent in .sdlc/config.json.')}
+    </p>
+  );
+}
 
 /** The agent's run on a roadmap: what it is doing, or why it stopped. */
 function JobPanel({ job }: { job: Job }) {
@@ -15,7 +32,8 @@ function JobPanel({ job }: { job: Job }) {
         {job.status === 'running'
           ? t(job.kind === 'draft' ? 'The agent is drafting the breakdown…' : 'The agent is updating the breakdown with your answers…')
           : t('The agent stopped')}
-      </strong>
+      </strong>{' '}
+      <span className="muted small">({AGENT_NAME[job.agent as AgentInfo['agent']] ?? job.agent})</span>
       {job.error && <div>{job.error}</div>}
       {job.log && <pre className="log">{job.log}</pre>}
     </div>
@@ -45,6 +63,7 @@ function NewRoadmap() {
     <form className="panel form new-roadmap" onSubmit={submit}>
       <h3>{t('New roadmap')}</h3>
       <p className="muted small">{t('Upload a technical plan: the agent breaks it into epics and stories, asks what is unclear, and nothing reaches the tracker until a person approves it.')}</p>
+      <AgentNote />
       <div className="row2">
         <label className="field">
           {t('Name (lowercase letters, digits and dashes)')}

@@ -28,6 +28,17 @@ export function pickAgent(flag: string | undefined, loaded: LoadedConfig | undef
   return a as CiAgent;
 }
 
+/**
+ * The agent for work started on this machine (dashboard jobs): an explicit choice wins, then the first of the
+ * project's `agents` whose CLI is installed, then any installed CLI. Defaults to claude so the error names one.
+ */
+export function localAgent(loaded: LoadedConfig | undefined, env = process.env): CiAgent {
+  if (env.SDLC_CI_AGENT || loaded?.config.ci?.agent) return pickAgent(undefined, loaded, env);
+  const fromConfig = (loaded?.config.agents ?? []).map((a): CiAgent => (a === 'agents-md' ? 'codex' : a));
+  const order = [...new Set<CiAgent>([...fromConfig, 'claude', 'cursor', 'codex'])];
+  return order.find((a) => hasTool(agentBin(a, env), env)) ?? 'claude';
+}
+
 export const AGENT_BIN: Record<CiAgent, string> = { claude: 'claude', codex: 'codex', cursor: 'cursor-agent' };
 
 /** The executable to run. Cursor's installer puts `agent` (and the older `cursor-agent`) in ~/.local/bin, often not on PATH yet. */

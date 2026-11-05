@@ -5,7 +5,7 @@ import { delimiter, join, resolve } from 'node:path';
 import { test as base, expect } from '@playwright/test';
 
 const CLI = resolve(import.meta.dirname, '../../packages/cli/dist/sdlc.mjs');
-// the dashboard's agent jobs run tests/ui/stub-agent/claude, never a real agent
+// the dashboard's agent jobs run tests/ui/stub-agent/{claude,cursor-agent}, never a real agent
 const STUB_AGENT = resolve(import.meta.dirname, 'stub-agent');
 
 export const CONFIG = {
@@ -42,10 +42,16 @@ function seed(): string {
   return root;
 }
 
+/** The project's config picks the agent, not the developer's shell. */
+function agentFree(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  const { SDLC_CI_AGENT: _agent, SDLC_CI_MODEL: _model, ...rest } = env;
+  return rest;
+}
+
 function start(root: string, home: string): Promise<{ url: string; proc: ChildProcess }> {
   const proc = spawn(process.execPath, [CLI, 'ui', '--port', '0', '--no-open'], {
     cwd: root,
-    env: { ...process.env, XDG_CONFIG_HOME: home, SDLC_PROJECT_DIR: root, PATH: `${STUB_AGENT}${delimiter}${process.env.PATH}`, SDLC_CI_AGENT: 'claude' },
+    env: { ...agentFree(process.env), XDG_CONFIG_HOME: home, SDLC_PROJECT_DIR: root, PATH: `${STUB_AGENT}${delimiter}${process.env.PATH}` },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   return new Promise((ok, fail) => {

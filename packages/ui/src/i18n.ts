@@ -83,6 +83,8 @@ const es: Record<string, string> = {
   'The agent is drafting the breakdown…': 'El agente está armando la división…',
   'The agent is updating the breakdown with your answers…': 'El agente está actualizando la división con tus respuestas…',
   'The agent stopped': 'El agente se detuvo',
+  'The agent:': 'El agente:',
+  'No agent CLI found on this machine: install Claude Code, the Cursor CLI or Codex, or set ci.agent in .sdlc/config.json.': 'No hay un CLI de agente en esta máquina: instalá Claude Code, el CLI de Cursor o Codex, o configurá ci.agent en .sdlc/config.json.',
   'Open questions': 'Preguntas abiertas',
   'Send answers': 'Enviar respuestas',
   'Answers saved; the agent is updating the breakdown': 'Respuestas guardadas; el agente está actualizando la división',
