@@ -1,5 +1,11 @@
 # @morsadev/sdlc
 
+## 1.0.1
+
+### Patch Changes
+
+- 673fae9: Dashboard: roadmaps say "1 epic · 1 story" instead of "1 epics · 1 stories" (also in Spanish).
+
 ## 1.0.0
 
 ### Major Changes
