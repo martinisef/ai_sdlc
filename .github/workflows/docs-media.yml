@@ -29,9 +29,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
+      # without a tape path, it only installs vhs
       - uses: charmbracelet/vhs-action@v2
-        with:
-          install-only: true
       - run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - run: npm run docs:media
       - name: open a PR when the media changed

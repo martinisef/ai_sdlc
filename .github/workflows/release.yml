@@ -33,8 +33,9 @@ jobs:
       - run: npm ci
       - run: git config --global user.name ci && git config --global user.email ci@example.com
       - run: npm test
+      # v1 while the repo is on @changesets/cli 2: action v2 requires CLI v3 and renames these inputs and outputs
       - id: changesets
-        uses: changesets/action@v2
+        uses: changesets/action@v1
         with:
           version: npm run version-packages
           publish: npm run release
