@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { api, upload, useApi, type AgentInfo, type ApplyResult, type Job, type RoadmapDetail, type RoadmapNode, type RoadmapSummary } from '../api';
-import { useT } from '../i18n';
+import { plural, useT } from '../i18n';
 import { StatusPill } from './Board';
 
 const ACCEPT = '.pdf,.md,.markdown,.txt';
@@ -111,7 +111,7 @@ export function Roadmaps() {
               </a>
               <span className="muted">
                 {r.job?.status === 'running' && <span className="pill wait">{t('agent working')}</span>}
-                <StatusPill status={r.status} /> {r.epics} {t('epics')} · {r.stories} {t('stories')} · {r.tickets}/{r.items} {t('tickets')}
+                <StatusPill status={r.status} /> {plural(t, r.epics, 'epic', 'epics')} · {plural(t, r.stories, 'story', 'stories')} · {r.tickets}/{r.items} {t('tickets')}
               </span>
             </li>
           ))}
@@ -360,7 +360,7 @@ export function RoadmapView({ slug }: { slug: string }) {
         <code>{r.path}</code>
         <StatusPill status={r.status} />
         <span>
-          {r.epics} {t('epics')} · {r.stories} {t('stories')}
+          {plural(t, r.epics, 'epic', 'epics')} · {plural(t, r.stories, 'story', 'stories')}
         </span>
         {r.source && (/^https?:/.test(r.source) ? <a href={r.source} target="_blank" rel="noreferrer">{t('source document')}</a> : <code>{r.source}</code>)}
         {r.tracker && <span className="tag">{r.tracker}</span>}

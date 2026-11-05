@@ -149,6 +149,7 @@ test('roadmaps: a Cursor project drafts with cursor-agent', async ({ page, dashb
   await page.locator('input[name="file"]').setInputFiles({ name: 'plan.md', mimeType: 'text/markdown', buffer: Buffer.from('# Plan\n\n## 2. Sharing\n') });
   await page.getByRole('button', { name: 'Upload and draft' }).click();
   await expect(page.locator('.tree')).toContainText('Export a list');
+  await expect(page.locator('main')).toContainText('1 epic · 1 story');
   const job = () => JSON.parse(read(repo, `.sdlc/jobs/${readdirSync(join(repo, '.sdlc/jobs'))[0]}`));
   await expect.poll(() => job().status).toBe('done');
   expect(job().agent).toBe('cursor');
