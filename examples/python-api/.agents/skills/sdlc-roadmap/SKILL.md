@@ -17,7 +17,7 @@ Loop CLI: `sdlc` (if it is not on the PATH: `.sdlc/bin/sdlc`). Project config: `
 - Word files: ask for a PDF export.
 
 ## 1. Read the document
-- Read the whole source (PDF: the Read tool reads it page by page). If it is long, go section by section and keep notes of: goals, scope and non-goals, components, data, integrations, constraints (security, PII, performance, deadlines), milestones and anything it says is undecided.
+- Read the whole source (PDF: the Read tool reads it page by page; if you cannot read PDFs, read `source.txt` beside it, or create it with `pdftotext -layout source.pdf source.txt`). If it is long, go section by section and keep notes of: goals, scope and non-goals, components, data, integrations, constraints (security, PII, performance, deadlines), milestones and anything it says is undecided.
 - If the repo has code, look at it to name the modules the plan touches, but do not design the solution: that is each story's spec and plan.
 
 ## 2. Draft the breakdown

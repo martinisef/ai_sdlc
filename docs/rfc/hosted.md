@@ -26,7 +26,7 @@ Status: **accepted for an MVP** (phase 1 implemented as `sdlc hosted`). Phases 2
   - reads `changes/*/{intent,spec,plan}.md` from the default branch and from every `change/*` branch through the Git Trees and Contents APIs.
 - **Board.** Repositories × changes, with stage, statuses, the pending gate, risk and branch. It is exposed as `GET /api/org` (JSON) and `/` (a server-rendered page). A change on its `change/*` branch wins over the copy on the default branch, as in `listChanges`.
 - **Cache.** Per repository, with a TTL of `SDLC_HOSTED_TTL` seconds (default 300). `POST /webhook` (push events, `X-Hub-Signature-256`) drops that repository's cache.
-- **Access.** Not provided by the MVP. Run it behind the organization's SSO proxy (for example oauth2-proxy or Cloudflare Access), or set `SDLC_HOSTED_TOKEN` to require a bearer token or `?token=`. The service shows artifact titles and statuses, not file contents.
+- **Access.** Not provided by the MVP. Run it behind the organization's SSO proxy (for example oauth2-proxy or Cloudflare Access), or set `SDLC_HOSTED_TOKEN` to require a bearer token or `?token=`. Without a token it listens on 127.0.0.1 only; behind a proxy, set `HOST=0.0.0.0`. The service shows artifact titles and statuses, not file contents.
 
 Configuration:
 
@@ -34,7 +34,7 @@ Configuration:
 |---|---|
 | `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY` (PEM, or `GITHUB_APP_PRIVATE_KEY_FILE`), `GITHUB_INSTALLATION_ID` | the GitHub App |
 | `GITHUB_API` | default `https://api.github.com` (GitHub Enterprise: `https://<host>/api/v3`) |
-| `SDLC_HOSTED_TOKEN` | optional viewer token |
+| `SDLC_HOSTED_TOKEN` | viewer token; without it the service listens on 127.0.0.1 unless `HOST` is set |
 | `SDLC_HOSTED_WEBHOOK_SECRET` | the app's webhook secret |
 | `SDLC_HOSTED_TTL` | cache TTL in seconds |
 

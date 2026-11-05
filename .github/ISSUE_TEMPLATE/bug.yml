@@ -1,0 +1,44 @@
+name: Bug report
+description: Something does not work as documented
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. npx sdlc init --preset solo
+        2. ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `npx sdlc --version`
+    validations:
+      required: true
+  - type: dropdown
+    id: agent
+    attributes:
+      label: Agent
+      multiple: true
+      options: [Claude Code, Cursor, Codex, Other AGENTS.md agent, None (CLI or CI only)]
+  - type: input
+    id: env
+    attributes:
+      label: OS and Node.js
+      placeholder: macOS 15, Node 22.18
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Output of `npx sdlc doctor`
+      description: Remove anything private before pasting. Never paste tokens.
+      render: text

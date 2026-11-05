@@ -1,6 +1,6 @@
 # ai-native-sdlc
 
-El loop del *AI-Native SDLC Playbook* de Anthropic, en tu repo. **intent → spec → plan → build → ship → incident**: los agentes producen cada artefacto y las personas son dueñas de los gates. Funciona con Claude Code, Cursor y cualquier agente que lea `AGENTS.md`.
+El loop del *AI-Native SDLC Playbook* de Anthropic, en tu repo (un proyecto independiente, sin afiliación con Anthropic). **intent → spec → plan → build → ship → incident**: los agentes producen cada artefacto y las personas son dueñas de los gates. Funciona con Claude Code, Cursor y cualquier agente que lea `AGENTS.md`.
 
 ```bash
 npm i -D @morsadev/sdlc
@@ -18,6 +18,7 @@ npx sdlc next                                     # lo único que hay que hacer 
 - [El loop en una página (equipos)](./guia-equipo.md)
 - [Guía de plataforma](./guia-plataforma.md)
 - [Managed settings](./managed-settings.md)
+- [Versiones y estabilidad](./estabilidad.md) · [Actualizar desde 0.x](./actualizar.md)
 - [Conectar Jira](./empezar/jira.md)
 - Integraciones: [trackers (Jira, GitHub Issues, Linear)](./integraciones/trackers.md), CI en [GitHub](./integraciones/ci-github.md), [GitLab](./integraciones/ci-gitlab.md) y [Bitbucket](./integraciones/ci-bitbucket.md)
 

@@ -48,7 +48,7 @@ Claude Code users can also install the plugin: `/plugin marketplace add martinis
 - [Introduction](docs/guide/introduction.md), with quickstarts for [Claude Code](docs/guide/quickstart-claude.md), [Cursor](docs/guide/quickstart-cursor.md) and [AGENTS.md agents](docs/guide/quickstart-agents-md.md)
 - [The loop](docs/guide/concepts.md), [Guardrails](docs/guide/guardrails.md), [Dashboard](docs/guide/dashboard.md), [Editor extension](docs/guide/editor.md)
 - [Team guide](docs/guide/team.md), [Platform guide](docs/guide/platform.md), [Managed settings](docs/guide/managed-settings.md)
-- Reference: [CLI](docs/reference/cli.md), [configuration](docs/reference/config.md), [CI](docs/reference/ci.md), [control bands](docs/reference/bands.md), [evals](docs/reference/evals.md), [telemetry](docs/reference/telemetry.md)
+- Reference: [CLI](docs/reference/cli.md), [versions and stability](docs/reference/stability.md), [configuration](docs/reference/config.md), [CI](docs/reference/ci.md), [control bands](docs/reference/bands.md), [evals](docs/reference/evals.md), [telemetry](docs/reference/telemetry.md)
 - Español: [docs/es](docs/es/index.md)
 
 ## Examples
@@ -57,6 +57,10 @@ Claude Code users can also install the plugin: `/plugin marketplace add martinis
 - [`examples/typescript-lib`](examples/typescript-lib): a money library (TypeScript, bigint) with generated code and a known bug to fix.
 
 Both are initialized with `sdlc` for all three agents, and the product evals in [`evals/`](evals/) run against them.
+
+## Versions
+
+`@morsadev/sdlc` follows semantic versioning from 1.0.0: the CLI commands and flags, exit codes, `--json` outputs, the config schema, the artifact formats and the skill names do not break within 1.x. `sdlc hosted`, `sdlc webhook` and Codex or Cursor as CI agents are experimental. Details in [Versions and stability](docs/reference/stability.md); coming from 0.x, see [Upgrading](docs/guide/upgrading.md). Release notes: [GitHub releases](https://github.com/martinisef/ai_sdlc/releases).
 
 ## Repository layout
 
@@ -85,6 +89,12 @@ npx changeset                 # describe user-facing changes; the release workfl
 
 Node ≥ 22.18. The TypeScript sources run directly (`--conditions=source`), with no build step for tests.
 
+## Contributing and security
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) and the [code of conduct](CODE_OF_CONDUCT.md). Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
+
 ## License
 
 [Apache-2.0](LICENSE)
+
+This is an independent open-source project. It is not affiliated with, endorsed by or sponsored by Anthropic or Anysphere (Cursor). Claude and Claude Code are trademarks of Anthropic; Cursor is a trademark of Anysphere. The *AI-Native SDLC Playbook* is Anthropic's publication; this project implements its loop.

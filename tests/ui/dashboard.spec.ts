@@ -49,6 +49,20 @@ test('rejecting a gate with a comment', async ({ page, dashboard, repo }) => {
   expect(execFileSync('git', ['log', '-1', '--format=%B'], { cwd: repo, encoding: 'utf8' })).toContain('Needs a column list');
 });
 
+test('an artifact cannot run script in the dashboard: raw HTML is text, unsafe links are dropped', async ({ page, dashboard, repo }) => {
+  writeFileSync(
+    join(repo, 'changes/claims-export/spec.md'),
+    `---\nstatus: draft\nauthor: Bo Writer\n---\n# Claims export\n\n<img src=x onerror='window.pwned=1'>\n\n[docs](docs/export.md) [bad](javascript:window.pwned=2) [tab](java\tscript:window.pwned=3)\n`,
+  );
+  execFileSync('git', ['commit', '-qam', 'hostile spec'], { cwd: repo });
+  await page.goto(`${dashboard}#/change/claims-export`);
+  await expect(page.locator('.md')).toContainText("<img src=x onerror='window.pwned=1'>");
+  await expect(page.locator('.md img')).toHaveCount(0);
+  await expect(page.locator('.md a')).toHaveCount(1);
+  await expect(page.locator('.md a')).toHaveAttribute('href', 'docs/export.md');
+  expect(await page.evaluate(() => (window as { pwned?: number }).pwned)).toBeUndefined();
+});
+
 test('settings: invalid JSON config shows the issues; a valid edit previews a diff and saves', async ({ page, dashboard, repo }) => {
   await page.goto(`${dashboard}#/settings`);
   await page.getByRole('button', { name: 'Raw JSON' }).click();

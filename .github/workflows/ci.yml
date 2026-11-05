@@ -14,11 +14,17 @@ concurrency:
 
 jobs:
   check:
+    # the ubuntu job names are required checks on main: keep them as check (<node>)
+    name: check (${{ matrix.node }}${{ matrix.os != 'ubuntu-latest' && format(', {0}', matrix.os) || '' }})
     strategy:
       fail-fast: false
       matrix:
         node: ['22.18', '24']
-    runs-on: ubuntu-latest
+        os: [ubuntu-latest]
+        include:
+          - node: '24'
+            os: macos-latest
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

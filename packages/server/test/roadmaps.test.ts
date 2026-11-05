@@ -217,6 +217,14 @@ test('roadmaps: uploads are validated (type, size, slug, link)', async () => {
   assert.equal(body.source, 'https://docs.google.com/document/d/abc');
   assert.equal(body.job, undefined, 'agent=false only scaffolds');
   await bad({ slug: 'from-doc', url: 'https://example.com/plan', agent: 'false' }, 400, /already exists/);
+
+  // every route takes the slug from the URL: no way out of changes/_roadmaps/<slug>/
+  const sneaky = encodeURIComponent('x/../../_roadmaps/from-doc');
+  assert.notEqual((await call(app, `/api/roadmaps/${sneaky}`)).status, 200);
+  const write = await post(app, `/api/roadmaps/${sneaky}/answers`, { answers: { Q1: 'pwned' }, rerun: false });
+  assert.equal(write.status, 400);
+  assert.match((await write.json()).error, /invalid roadmap/);
+  assert.doesNotMatch(readFileSync(join(root, 'changes/_roadmaps/from-doc/roadmap.md'), 'utf8'), /pwned/);
 });
 
 test('roadmaps: one agent run per roadmap; failures and interrupted runs are reported', async () => {

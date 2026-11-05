@@ -17,6 +17,9 @@ export default defineConfig({
       label: 'English',
       lang: 'en',
       themeConfig: {
+        footer: {
+          message: 'Apache-2.0. An independent project, not affiliated with or endorsed by Anthropic or Cursor.',
+        },
         nav: [
           { text: 'Start here', link: '/start/what-is-it' },
           { text: 'Guide', link: '/guide/introduction' },
@@ -63,6 +66,7 @@ export default defineConfig({
               { text: 'Running a pilot', link: '/guide/pilot' },
               { text: 'For platform teams', link: '/guide/platform' },
               { text: 'Managed settings', link: '/guide/managed-settings' },
+              { text: 'Upgrading from 0.x', link: '/guide/upgrading' },
               { text: 'Notifications', link: '/guide/notifications' },
             ],
           },
@@ -91,6 +95,9 @@ export default defineConfig({
       label: 'Español',
       lang: 'es',
       themeConfig: {
+        footer: {
+          message: 'Apache-2.0. Un proyecto independiente, sin afiliación ni respaldo de Anthropic ni de Cursor.',
+        },
         nav: [
           { text: 'Empezá acá', link: '/es/empezar/que-es' },
           { text: 'Guías', link: '/es/guia-equipo' },
@@ -122,6 +129,7 @@ export default defineConfig({
               { text: 'Managed settings', link: '/es/managed-settings' },
               { text: 'Avisos', link: '/es/avisos' },
               { text: 'Versiones y estabilidad', link: '/es/estabilidad' },
+              { text: 'Actualizar desde 0.x', link: '/es/actualizar' },
             ],
           },
           {

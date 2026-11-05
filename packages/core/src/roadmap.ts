@@ -20,6 +20,7 @@ export const ROADMAP_RISKS = ['low', 'medium', 'high'] as const;
 export const ITEM_FIELDS = ['risk', 'depends', 'source', 'labels', 'key', 'links'] as const;
 /** Above this many acceptance criteria a story is probably more than one change. */
 export const MAX_CRITERIA = 8;
+const SLUG = /^[a-z0-9][a-z0-9-]*$/;
 export const SOURCE_EXTENSIONS = ['.pdf', '.md', '.markdown', '.txt'];
 export const MAX_SOURCE_BYTES = 20 * 1024 * 1024;
 
@@ -284,6 +285,7 @@ export function listRoadmaps(root: string): Roadmap[] {
 
 export function getRoadmap(root: string, slug: string): Roadmap {
   const s = slug.replace(/^changes\/_roadmaps\//, '').replace(/\/(roadmap\.md)?$/, '');
+  if (!SLUG.test(s)) throw new SdlcError(`invalid roadmap '${slug}': lowercase letters, digits and dashes`);
   const p = join(root, roadmapPath(s));
   if (!existsSync(p)) throw new SdlcError(`roadmap not found: ${roadmapPath(s)} (create it with: sdlc roadmap new ${s} --source <file|url>)`);
   return parseRoadmap(readFileSync(p, 'utf8'), s);
@@ -291,7 +293,7 @@ export function getRoadmap(root: string, slug: string): Roadmap {
 
 /** Scaffold the folder: copy the source document (or keep its URL) and write the template. Does not commit. */
 export function newRoadmap(root: string, slug: string, o: { source?: string; title?: string; loaded?: LoadedConfig; author?: string } = {}): { path: string; source?: string } {
-  if (!/^[a-z0-9][a-z0-9-]*$/.test(slug)) throw new SdlcError(`invalid slug '${slug}': lowercase letters, digits and dashes`);
+  if (!SLUG.test(slug)) throw new SdlcError(`invalid slug '${slug}': lowercase letters, digits and dashes`);
   const dir = join(root, ROADMAPS_DIR, slug);
   if (existsSync(join(dir, 'roadmap.md'))) throw new SdlcError(`${roadmapPath(slug)} already exists`);
   mkdirSync(dir, { recursive: true });
