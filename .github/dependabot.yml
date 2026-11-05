@@ -19,6 +19,10 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    ignore:
+      # v2 needs @changesets/cli 3; upgrade both together (see the @changesets/cli PR)
+      - dependency-name: changesets/action
+        update-types: [version-update:semver-major]
     groups:
       actions:
         patterns: ['*']
