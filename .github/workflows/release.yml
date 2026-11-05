@@ -41,6 +41,8 @@ jobs:
           publish-script: npm run release
           commit-message: 'chore: version packages'
           pr-title: 'chore: version packages'
+          # the GitHub API cannot commit executable files, and the version script regenerates plugins/ai-sdlc/bin/sdlc.mjs
+          push-with-git-cli: true
       # Editor extension: the .vsix goes on the GitHub release that changesets just created.
       - if: steps.changesets.outputs.published == 'true'
         env:
