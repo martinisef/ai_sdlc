@@ -77,7 +77,9 @@ const es: Record<string, string> = {
   'Upload and draft': 'Subir y armar',
   'No roadmaps yet': 'Todavía no hay roadmaps',
   'agent working': 'agente trabajando',
+  epic: 'épica',
   epics: 'épicas',
+  story: 'historia',
   stories: 'historias',
   tickets: 'tickets',
   'The agent is drafting the breakdown…': 'El agente está armando la división…',
@@ -106,6 +108,9 @@ const es: Record<string, string> = {
 
 export type Lang = 'en' | 'es';
 export const LangContext = createContext<Lang>('en');
+/** "1 epic", "2 epics": `t` translates whichever form applies. */
+export const plural = (t: (s: string) => string, n: number, one: string, many: string) => `${n} ${t(n === 1 ? one : many)}`;
+
 export function useT() {
   const lang = useContext(LangContext);
   return (s: string) => (lang === 'es' ? (es[s] ?? s) : s);

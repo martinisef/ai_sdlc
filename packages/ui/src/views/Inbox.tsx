@@ -1,5 +1,5 @@
 import { useApi, type ChangeSummary, type RoadmapSummary, type State } from '../api';
-import { useT } from '../i18n';
+import { plural, useT } from '../i18n';
 
 /** Changes whose pending gate the current git user could decide (the server re-checks on submit). */
 export function Inbox({ state }: { state: State }) {
@@ -30,7 +30,7 @@ export function Inbox({ state }: { state: State }) {
               <strong>roadmap.md</strong> · {r.title}
             </a>
             <span className="muted">
-              {r.epics} {t('epics')} · {r.stories} {t('stories')}
+              {plural(t, r.epics, 'epic', 'epics')} · {plural(t, r.stories, 'story', 'stories')}
             </span>
           </li>
         ))}
