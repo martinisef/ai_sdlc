@@ -11,9 +11,9 @@
     }
   },
   "dependencies": {
-    "@ai-native-sdlc/core": "*",
     "@ai-native-sdlc/adapters": "*",
-    "hono": "^4.9.0",
-    "@hono/node-server": "^2.1.6"
+    "@ai-native-sdlc/core": "*",
+    "@hono/node-server": "^2.1.6",
+    "hono": "^4.13.16"
   }
 }
