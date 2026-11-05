@@ -265,7 +265,14 @@ export function createApp(opts: { root: string; token: string }) {
     const types: Record<string, string> = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png' };
     let body: string | Buffer = readFileSync(target);
     if (target.endsWith('index.html')) body = body.toString().replace('__SDLC_TOKEN__', opts.token);
-    return c.body(body as never, 200, { 'content-type': types[extname(target)] ?? 'application/octet-stream', 'cache-control': 'no-store' });
+    return c.body(body as never, 200, {
+      'content-type': types[extname(target)] ?? 'application/octet-stream',
+      'cache-control': 'no-store',
+      // the page holds the API token: no inline or third-party scripts, and the token never leaves in a Referer
+      'content-security-policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
+      'referrer-policy': 'no-referrer',
+      'x-content-type-options': 'nosniff',
+    });
   });
 
   return app;

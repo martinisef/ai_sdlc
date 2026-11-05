@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a vulnerability
+    url: https://github.com/martinisef/ai_sdlc/security/advisories/new
+    about: Report security problems privately, not in an issue.
+  - name: Documentation
+    url: https://martinisef.github.io/ai_sdlc/
+    about: Guides, tutorials and the CLI reference.

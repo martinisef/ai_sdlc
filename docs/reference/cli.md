@@ -6,6 +6,8 @@ npm i -g @morsadev/sdlc     # or global
 npx sdlc --help
 ```
 
+Everything on this page is stable within 1.x except what is marked *experimental*; see [Versions and stability](./stability.md).
+
 Every command works from any directory inside the repository. The project root is resolved from `SDLC_PROJECT_DIR`, then `CLAUDE_PROJECT_DIR`, then `CURSOR_PROJECT_DIR`, then the hook payload's `cwd`, then `git rev-parse --show-toplevel`.
 
 ## Setup
@@ -23,7 +25,7 @@ Every command works from any directory inside the repository. The project root i
 | Command | What it does |
 |---|---|
 | `sdlc next [--json]` | The one thing to do now, for you: approve a gate (`sdlc approve …`), ask the agent for the next skill, wait for someone, ship, switch to your open change or start one. Gates on other changes that you can decide are listed below. The same line appears in the session-start context, the dashboard and the editor. |
-| `sdlc status [--json \| --metrics]` | Changes and their stage. `*` marks the active change (current branch). |
+| `sdlc status [--json]` | Changes and their stage. `*` marks the active change (current branch). `--metrics` is deprecated: use `sdlc metrics`. |
 | `sdlc metrics [--json] [--since 30d]` | Leading indicators from git and the activity log, plus human time (approvals, waiting for a person, review rounds, human comments; median and p95) and the guardrails (revert rate, incidents per change). See [Telemetry](./telemetry.md#human-time-and-guardrails). |
 | `sdlc metrics --prs` | Refreshes review rounds and human comments from the forge into `.sdlc/pr-stats.json` (gitignored). |
 | `sdlc metrics --value <name> [--since 7d]` | Prints one number, for a [control band](./bands.md#circuit-breaker) `command` source: `revert_rate`, `reverts`, `incident_rate`, `incidents`, `human_approvals_median`, `human_approvals_p95`, `waiting_hours_median`, `waiting_hours_p95`, `review_rounds_median`, `review_rounds_p95`, `human_comments_median`, `spec_rework_rate`, `review_wrong_rate`. |
@@ -59,8 +61,8 @@ Every command works from any directory inside the repository. The project root i
 | `sdlc ci <cmd>` | CI entry point. See [CI](./ci.md). |
 | `sdlc bands check` | Stage 6. See [Control bands](./bands.md). |
 | `sdlc notify <event> [--change ID] [--artifact A] [--decision D] [--by WHO] [-m NOTE] [--dry-run]` | Posts `gate.pending`, `gate.decided`, `spec.ready`, `review.done`, `change.merged` or `risk.raised` to Slack or a webhook (`SDLC_NOTIFY_WEBHOOK`). Always exits 0. See [Notifications](../guide/notifications.md). |
-| `sdlc webhook [--port N]` | `@claude` for GitLab and Bitbucket: receives comment webhooks and triggers `sdlc ci mention` in CI. See [CI](./ci.md#claude-on-gitlab-and-bitbucket). |
-| `sdlc hosted [--port N]` | Read-only org board (every repository of a GitHub App installation, by stage and pending gate). See the [hosted RFC](../rfc/hosted.md). |
+| `sdlc webhook [--port N]` | *Experimental.* `@claude` for GitLab and Bitbucket: receives comment webhooks and triggers `sdlc ci mention` in CI. See [CI](./ci.md#claude-on-gitlab-and-bitbucket). |
+| `sdlc hosted [--port N]` | *Experimental.* Read-only org board (every repository of a GitHub App installation, by stage and pending gate). See the [hosted RFC](../rfc/hosted.md). |
 
 ### `sdlc vcs`
 

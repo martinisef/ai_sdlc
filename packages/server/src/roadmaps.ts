@@ -19,8 +19,10 @@ import {
   listRoadmaps,
   loadConfig,
   MAX_SOURCE_BYTES,
+  agentBin,
+  hasTool,
+  localAgent,
   newRoadmap,
-  pickAgent,
   roadmapPath,
   roadmapStatus,
   runAgentAsync,
@@ -91,7 +93,7 @@ export function startJob(root: string, slug: string, kind: Job['kind']): Job {
   const key = `${root}#${slug}`;
   if (running.has(key)) throw new Error(`the agent is already working on ${slug}`);
   const loaded = loadConfig(root);
-  const agent = pickAgent(undefined, loaded);
+  const agent = localAgent(loaded);
   const job: Job = { id: `${Date.now().toString(36)}-${randomBytes(3).toString('hex')}`, kind, roadmap: slug, agent, status: 'running', started: new Date().toISOString(), log: '', pid: process.pid };
   running.add(key);
   saveJob(root, job);
@@ -144,6 +146,12 @@ function brief(r: Roadmap) {
 }
 
 export function roadmapRoutes(app: Hono, ws: (c: Context) => string) {
+  app.get('/api/agent', (c) => {
+    const agent = localAgent(loadConfig(ws(c)));
+    const bin = agentBin(agent);
+    return c.json({ agent, bin, installed: hasTool(bin) });
+  });
+
   app.get('/api/roadmaps', (c) => {
     const root = ws(c);
     const jobs = readJobs(root);

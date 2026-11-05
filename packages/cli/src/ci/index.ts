@@ -64,7 +64,7 @@ sdlc ci risk [--escalate]      risk tier of the PR/MR from the diff (sticky comm
                                risk.agent_escalation) asks the agent whether it needs another person: it can only raise it
 sdlc ci mention                answer an @claude comment on the PR/MR (triggered by \`sdlc webhook\`; ci.mention_mode read|edit)
 
-Options: --agent claude|codex|cursor (or SDLC_CI_AGENT, or ci.agent) · --model M · --dry-run (print, do not post/push)
+Options: --agent claude|codex|cursor (or SDLC_CI_AGENT, or ci.agent; codex and cursor are experimental) · --model M · --dry-run (print, do not post/push)
 Env: ANTHROPIC_API_KEY | OPENAI_API_KEY | CURSOR_API_KEY · GH_TOKEN | GITLAB_TOKEN | BITBUCKET_ACCESS_TOKEN
      JIRA_EMAIL + JIRA_API_TOKEN (or JIRA_PAT) · LINEAR_API_KEY · SDLC_PLUGIN_REPO_URL / SDLC_PLUGIN_TOKEN (private marketplace)
      SDLC_NOTIFY_WEBHOOK (Slack or generic webhook: gate.pending, gate.decided, spec.ready, review.done, change.merged, risk.raised)

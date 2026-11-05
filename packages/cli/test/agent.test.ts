@@ -4,7 +4,8 @@ import { chmodSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from '
 import { tmpdir } from 'node:os';
 import { delimiter, dirname, join } from 'node:path';
 import { test } from 'node:test';
-import { agentBin, runAgent, type AgentTask } from '../src/ci/agent.ts';
+import type { LoadedConfig } from '@ai-native-sdlc/core';
+import { agentBin, localAgent, runAgent, type AgentTask } from '../src/ci/agent.ts';
 
 // Each stub records its argv as one JSON line; codex also writes --output-last-message.
 const STUB = `#!/usr/bin/env node
@@ -87,6 +88,22 @@ test('agentBin: cursor-agent or agent on PATH, then ~/.local/bin, else the defau
   writeFileSync(join(home, '.local/bin/agent'), STUB);
   chmodSync(join(home, '.local/bin/agent'), 0o755);
   assert.equal(agentBin('cursor', { PATH: [empty, node].join(delimiter), HOME: home }), join(home, '.local/bin/agent'), 'installed but not on PATH yet');
+});
+
+test('localAgent: ci.agent or SDLC_CI_AGENT, then the first configured agent that is installed, then any installed', () => {
+  const node = dirname(process.execPath);
+  const home = mkdtempSync(join(tmpdir(), 'sdlc-home-'));
+  const cfg = (config: object) => ({ config: { version: 1, ...config }, path: '.sdlc/config.json', legacy: false, issues: [] }) as unknown as LoadedConfig;
+  const env = (names: string[]) => ({ PATH: [stubs(names), node].join(delimiter), HOME: home });
+  const both = env(['claude', 'cursor-agent']);
+  assert.equal(localAgent(cfg({ agents: ['cursor', 'claude'] }), both), 'cursor');
+  assert.equal(localAgent(cfg({ agents: ['claude', 'cursor'] }), both), 'claude');
+  assert.equal(localAgent(cfg({ agents: ['claude', 'cursor'] }), env(['cursor-agent'])), 'cursor', 'claude is configured but not installed');
+  assert.equal(localAgent(cfg({ agents: ['agents-md'] }), env(['codex'])), 'codex');
+  assert.equal(localAgent(undefined, env(['codex'])), 'codex', 'no config: whatever is installed');
+  assert.equal(localAgent(cfg({ agents: ['cursor'] }), env([])), 'claude', 'nothing installed: claude, so the error names it');
+  assert.equal(localAgent(cfg({ agents: ['cursor'], ci: { agent: 'codex' } }), both), 'codex', 'ci.agent wins');
+  assert.equal(localAgent(cfg({ agents: ['cursor'] }), { ...both, SDLC_CI_AGENT: 'claude' }), 'claude', 'SDLC_CI_AGENT wins');
 });
 
 test('a missing agent CLI says how to install it', () => {

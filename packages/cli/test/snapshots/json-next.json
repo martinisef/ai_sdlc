@@ -1,0 +1,11 @@
+[
+  "artifact",
+  "change",
+  "command",
+  "inbox",
+  "inbox[].artifact",
+  "inbox[].change",
+  "kind",
+  "message",
+  "stage"
+]

@@ -127,7 +127,11 @@ export async function startHosted(opts: { port?: number; env?: HostedEnv } = {})
   const { serve } = await import('@hono/node-server');
   const app = createHostedApp(opts.env);
   const port = opts.port ?? Number(process.env.PORT ?? 8788);
-  serve({ fetch: app.fetch, port, hostname: process.env.HOST ?? '0.0.0.0' }, (info) => {
-    console.log(`sdlc hosted: org board on :${info.port} (GET /, GET /api/org, POST /webhook)`);
+  const env = opts.env ?? (process.env as HostedEnv);
+  // without a token the board is open to anyone who can reach it: only this machine, unless HOST says otherwise
+  const hostname = process.env.HOST ?? (env.SDLC_HOSTED_TOKEN ? '0.0.0.0' : '127.0.0.1');
+  if (!env.SDLC_HOSTED_TOKEN) console.warn(`sdlc hosted: SDLC_HOSTED_TOKEN is not set, so the board has no login; listening on ${hostname} only`);
+  serve({ fetch: app.fetch, port, hostname }, (info) => {
+    console.log(`sdlc hosted: org board on ${hostname}:${info.port} (GET /, GET /api/org, POST /webhook)`);
   });
 }

@@ -12,7 +12,7 @@ process.env.XDG_CONFIG_HOME = join(base, 'config');
 process.env.SDLC_UI_DIR = join(base, 'no-ui');
 for (const k of ['JIRA_EMAIL', 'JIRA_USER', 'JIRA_API_TOKEN', 'JIRA_PAT', 'JIRA_BASE_URL', 'SDLC_CI_AGENT', 'SDLC_CI_MODEL']) delete process.env[k];
 
-// A stand-in for `claude -p`: drafts the roadmap from the prompt (one open question), refines it once the question
+// A stand-in for `claude -p` and `cursor-agent -p`: drafts the roadmap from the prompt (one open question), refines it once the question
 // is answered, and commits. STUB_FAIL makes it exit 2; STUB_SLEEP keeps it busy.
 const bin = join(base, 'bin');
 mkdirSync(bin);
@@ -20,7 +20,9 @@ writeFileSync(
   join(bin, 'claude'),
   `#!/usr/bin/env node
 const fs = require('fs'), { execFileSync } = require('child_process');
-const prompt = process.argv[process.argv.indexOf('-p') + 1];
+if (process.argv.includes('--version')) process.exit(0);
+const prompt = process.argv.find((a) => / the roadmap /.test(a));
+process.stderr.write(require('path').basename(process.argv[1]) + '\\n');
 if (process.env.STUB_FAIL) { process.stderr.write('model overloaded\\n'); process.exit(2); }
 const slug = /the roadmap ([a-z0-9-]+)/.exec(prompt)[1];
 const f = 'changes/_roadmaps/' + slug + '/roadmap.md';
@@ -42,6 +44,8 @@ setTimeout(done, Number(process.env.STUB_SLEEP ?? 0));
 `,
 );
 chmodSync(join(bin, 'claude'), 0o755);
+writeFileSync(join(bin, 'cursor-agent'), readFileSync(join(bin, 'claude')));
+chmodSync(join(bin, 'cursor-agent'), 0o755);
 process.env.PATH = `${bin}${delimiter}${process.env.PATH}`;
 
 const { createApp, jobEvents, readJobs } = await import('@ai-native-sdlc/server');
@@ -69,8 +73,8 @@ async function settle(app: App, id: string) {
   }
   throw new Error(`job ${id} still running`);
 }
-const setup = () => {
-  const root = repo({ version: 1, locale: 'en' });
+const setup = (config: object = {}) => {
+  const root = repo({ version: 1, locale: 'en', ...config });
   return { root, app: createApp({ root, token: TOKEN }) };
 };
 
@@ -178,6 +182,21 @@ test('roadmaps: upload → the agent drafts → answers → the agent refines �
   assert.deepEqual([...new Set(events)], ['draft:running', 'draft:done', 'refine:running', 'refine:done'], 'progress reaches /api/stream');
 });
 
+test('roadmaps: a Cursor project drafts with cursor-agent, and the dashboard says so', async () => {
+  const { app } = setup({ agents: ['cursor', 'agents-md'] });
+  assert.deepEqual(await (await call(app, '/api/agent')).json(), { agent: 'cursor', bin: 'cursor-agent', installed: true });
+  const res = await upload(app, { slug: 'cursor-plan', file: new File(['# Plan\n'], 'plan.md') });
+  assert.equal(res.status, 201, await res.clone().text());
+  const created = await res.json();
+  assert.equal(created.job.agent, 'cursor');
+  const job = await settle(app, created.job.id);
+  assert.equal(job.status, 'done', job.error + job.log);
+  assert.match(job.log, /^cursor-agent$/m);
+
+  const pinned = setup({ agents: ['cursor'], ci: { agent: 'claude' } });
+  assert.equal((await (await call(pinned.app, '/api/agent')).json()).agent, 'claude', 'ci.agent wins');
+});
+
 test('roadmaps: uploads are validated (type, size, slug, link)', async () => {
   const { root, app } = setup();
   const bad = async (fields: Record<string, string | File>, status: number, error: RegExp) => {
@@ -198,6 +217,14 @@ test('roadmaps: uploads are validated (type, size, slug, link)', async () => {
   assert.equal(body.source, 'https://docs.google.com/document/d/abc');
   assert.equal(body.job, undefined, 'agent=false only scaffolds');
   await bad({ slug: 'from-doc', url: 'https://example.com/plan', agent: 'false' }, 400, /already exists/);
+
+  // every route takes the slug from the URL: no way out of changes/_roadmaps/<slug>/
+  const sneaky = encodeURIComponent('x/../../_roadmaps/from-doc');
+  assert.notEqual((await call(app, `/api/roadmaps/${sneaky}`)).status, 200);
+  const write = await post(app, `/api/roadmaps/${sneaky}/answers`, { answers: { Q1: 'pwned' }, rerun: false });
+  assert.equal(write.status, 400);
+  assert.match((await write.json()).error, /invalid roadmap/);
+  assert.doesNotMatch(readFileSync(join(root, 'changes/_roadmaps/from-doc/roadmap.md'), 'utf8'), /pwned/);
 });
 
 test('roadmaps: one agent run per roadmap; failures and interrupted runs are reported', async () => {

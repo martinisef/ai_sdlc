@@ -1,0 +1,15 @@
+{
+  "mode": "pre",
+  "tag": "rc",
+  "initialVersions": {
+    "@ai-native-sdlc/adapters": "0.2.0",
+    "@morsadev/sdlc": "0.7.0",
+    "@ai-native-sdlc/core": "0.2.0",
+    "@ai-native-sdlc/hosted": "0.2.0",
+    "@ai-native-sdlc/server": "0.2.0",
+    "@ai-native-sdlc/ui": "0.2.0",
+    "ai-sdlc": "0.0.0",
+    "@ai-native-sdlc/webhook": "0.2.0"
+  },
+  "changesets": []
+}

@@ -79,7 +79,7 @@ Setup
 
 Loop
   next [--json]                      the one thing to do now: approve, ask the agent, ship, or start a change
-  status [--json | --metrics]        changes and their stage
+  status [--json]                    changes and their stage
   metrics [--json] [--funnel]        leading indicators from git + activity log; --funnel: how far changes get
           [--since 30d] [--prs]      window for the guardrails; --prs: refresh review rounds and comments from the forge
           [--value <name>]           one number for a control band (revert_rate, incident_rate, waiting_hours_p95, …)
@@ -105,8 +105,10 @@ Integrations
   ci <cmd>                           CI entry point: bootstrap, review, intent-to-spec, triage, tracker-merged, gate, evals
   bands check [--json] [--dry-run]   Stage 6: evaluate ops/bands.yaml; log / diagnose / open an incident intent
   notify <event> [--change ID] [--dry-run]   gate.pending|gate.decided|spec.ready|review.done|change.merged → Slack or a webhook
-  webhook [--port N]                 @claude in GitLab/Bitbucket comments → triggers \`sdlc ci mention\` in CI
-  hosted [--port N]                  read-only org board over a GitHub App installation (docs/rfc/hosted.md)
+  webhook [--port N]                 experimental: @claude in GitLab/Bitbucket comments → triggers \`sdlc ci mention\` in CI
+  hosted [--port N]                  experimental: read-only org board over a GitHub App installation (docs/rfc/hosted.md)
+
+Stable within 1.x unless marked experimental: https://martinisef.github.io/ai_sdlc/reference/stability
 `;
 
 function parseArgs(argv: string[]) {
@@ -297,7 +299,10 @@ async function main() {
       return;
 
     case 'status': {
-      if (flags.metrics) return printMetricsLegacy(root);
+      if (flags.metrics) {
+        process.stderr.write('sdlc: `status --metrics` is deprecated and goes in 2.0; use `sdlc metrics`\n');
+        return printMetricsLegacy(root);
+      }
       const loaded = loadConfig(root);
       const locale = localeOf(loaded);
       const changes = listChanges(root, { locale, defaultBranch: loaded?.config.vcs?.default_branch });

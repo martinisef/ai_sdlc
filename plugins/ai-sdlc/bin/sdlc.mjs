@@ -20661,6 +20661,12 @@ function pickAgent(flag, loaded, env = process.env) {
   if (!CI_AGENTS.includes(a)) throw new SdlcError(`unknown agent '${a}' (one of: ${CI_AGENTS.join(", ")})`);
   return a;
 }
+function localAgent(loaded, env = process.env) {
+  if (env.SDLC_CI_AGENT || loaded?.config.ci?.agent) return pickAgent(void 0, loaded, env);
+  const fromConfig = (loaded?.config.agents ?? []).map((a) => a === "agents-md" ? "codex" : a);
+  const order2 = [.../* @__PURE__ */ new Set([...fromConfig, "claude", "cursor", "codex"])];
+  return order2.find((a) => hasTool(agentBin(a, env), env)) ?? "claude";
+}
 function agentBin(agent, env = process.env) {
   if (agent !== "cursor") return AGENT_BIN[agent];
   const local = join2(env.HOME ?? homedir(), ".local/bin");
@@ -29596,6 +29602,7 @@ var init_metrics = __esm({
 });
 
 // packages/core/src/roadmap.ts
+import { spawnSync as spawnSync2 } from "node:child_process";
 import { createHash } from "node:crypto";
 import { copyFileSync, existsSync as existsSync8, mkdirSync as mkdirSync4, readdirSync as readdirSync3, readFileSync as readFileSync10, statSync as statSync2, writeFileSync as writeFileSync6 } from "node:fs";
 import { basename, extname, join as join11 } from "node:path";
@@ -29795,12 +29802,13 @@ function listRoadmaps(root) {
 }
 function getRoadmap(root, slug) {
   const s = slug.replace(/^changes\/_roadmaps\//, "").replace(/\/(roadmap\.md)?$/, "");
+  if (!SLUG.test(s)) throw new SdlcError(`invalid roadmap '${slug}': lowercase letters, digits and dashes`);
   const p = join11(root, roadmapPath(s));
   if (!existsSync8(p)) throw new SdlcError(`roadmap not found: ${roadmapPath(s)} (create it with: sdlc roadmap new ${s} --source <file|url>)`);
   return parseRoadmap(readFileSync10(p, "utf8"), s);
 }
 function newRoadmap(root, slug, o = {}) {
-  if (!/^[a-z0-9][a-z0-9-]*$/.test(slug)) throw new SdlcError(`invalid slug '${slug}': lowercase letters, digits and dashes`);
+  if (!SLUG.test(slug)) throw new SdlcError(`invalid slug '${slug}': lowercase letters, digits and dashes`);
   const dir = join11(root, ROADMAPS_DIR, slug);
   if (existsSync8(join11(dir, "roadmap.md"))) throw new SdlcError(`${roadmapPath(slug)} already exists`);
   mkdirSync4(dir, { recursive: true });
@@ -29812,6 +29820,7 @@ function newRoadmap(root, slug, o = {}) {
     if (statSync2(o.source).size > MAX_SOURCE_BYTES) throw new SdlcError(`source is larger than ${MAX_SOURCE_BYTES / 1024 / 1024} MB`);
     copyFileSync(o.source, join11(dir, `source${ext}`));
     source = `${ROADMAPS_DIR}/${slug}/source${ext}`;
+    if (ext === ".pdf") spawnSync2("pdftotext", ["-layout", join11(dir, "source.pdf"), join11(dir, "source.txt")], { stdio: "ignore" });
   }
   const title = o.title ?? slug.replace(/-/g, " ").replace(/^./, (c) => c.toUpperCase());
   writeFileSync6(join11(dir, "roadmap.md"), roadmapTemplate({ slug, title, author: o.author ?? gitUser(root).name, source, locale: localeOf(o.loaded) }));
@@ -29979,7 +29988,7 @@ function findRoadmapItem(root, key) {
   }
   return void 0;
 }
-var ROADMAPS_DIR, ROADMAP_RISKS, ITEM_FIELDS, MAX_CRITERIA, SOURCE_EXTENSIONS, MAX_SOURCE_BYTES, HEADING, QUESTIONS, FIELD, CRITERION, QUESTION, ANSWER, roadmapPath;
+var ROADMAPS_DIR, ROADMAP_RISKS, ITEM_FIELDS, MAX_CRITERIA, SLUG, SOURCE_EXTENSIONS, MAX_SOURCE_BYTES, HEADING, QUESTIONS, FIELD, CRITERION, QUESTION, ANSWER, roadmapPath;
 var init_roadmap = __esm({
   "packages/core/src/roadmap.ts"() {
     "use strict";
@@ -29994,6 +30003,7 @@ var init_roadmap = __esm({
     ROADMAP_RISKS = ["low", "medium", "high"];
     ITEM_FIELDS = ["risk", "depends", "source", "labels", "key", "links"];
     MAX_CRITERIA = 8;
+    SLUG = /^[a-z0-9][a-z0-9-]*$/;
     SOURCE_EXTENSIONS = [".pdf", ".md", ".markdown", ".txt"];
     MAX_SOURCE_BYTES = 20 * 1024 * 1024;
     HEADING = /^(#{2,3})\s+(E\d+(?:\.S\d+)?)\s*[·:—–-]\s*(.+?)\s*$/;
@@ -35196,7 +35206,7 @@ function startJob(root, slug, kind) {
   const key = `${root}#${slug}`;
   if (running.has(key)) throw new Error(`the agent is already working on ${slug}`);
   const loaded = loadConfig(root);
-  const agent = pickAgent(void 0, loaded);
+  const agent = localAgent(loaded);
   const job = { id: `${Date.now().toString(36)}-${randomBytes(3).toString("hex")}`, kind, roadmap: slug, agent, status: "running", started: (/* @__PURE__ */ new Date()).toISOString(), log: "", pid: process.pid };
   running.add(key);
   saveJob(root, job);
@@ -35240,6 +35250,11 @@ function brief(r) {
   };
 }
 function roadmapRoutes(app, ws) {
+  app.get("/api/agent", (c) => {
+    const agent = localAgent(loadConfig(ws(c)));
+    const bin = agentBin(agent);
+    return c.json({ agent, bin, installed: hasTool(bin) });
+  });
   app.get("/api/roadmaps", (c) => {
     const root = ws(c);
     const jobs = readJobs(root);
@@ -35559,7 +35574,14 @@ function createApp(opts2) {
     const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png" };
     let body = readFileSync26(target);
     if (target.endsWith("index.html")) body = body.toString().replace("__SDLC_TOKEN__", opts2.token);
-    return c.body(body, 200, { "content-type": types[extname3(target)] ?? "application/octet-stream", "cache-control": "no-store" });
+    return c.body(body, 200, {
+      "content-type": types[extname3(target)] ?? "application/octet-stream",
+      "cache-control": "no-store",
+      // the page holds the API token: no inline or third-party scripts, and the token never leaves in a Referer
+      "content-security-policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
+      "referrer-policy": "no-referrer",
+      "x-content-type-options": "nosniff"
+    });
   });
   return app;
 }
@@ -35991,8 +36013,11 @@ async function startHosted(opts2 = {}) {
   const { serve: serve2 } = await Promise.resolve().then(() => (init_dist(), dist_exports));
   const app = createHostedApp(opts2.env);
   const port = opts2.port ?? Number(process.env.PORT ?? 8788);
-  serve2({ fetch: app.fetch, port, hostname: process.env.HOST ?? "0.0.0.0" }, (info) => {
-    console.log(`sdlc hosted: org board on :${info.port} (GET /, GET /api/org, POST /webhook)`);
+  const env = opts2.env ?? process.env;
+  const hostname3 = process.env.HOST ?? (env.SDLC_HOSTED_TOKEN ? "0.0.0.0" : "127.0.0.1");
+  if (!env.SDLC_HOSTED_TOKEN) console.warn(`sdlc hosted: SDLC_HOSTED_TOKEN is not set, so the board has no login; listening on ${hostname3} only`);
+  serve2({ fetch: app.fetch, port, hostname: hostname3 }, (info) => {
+    console.log(`sdlc hosted: org board on ${hostname3}:${info.port} (GET /, GET /api/org, POST /webhook)`);
   });
 }
 var esc2;
@@ -36031,14 +36056,14 @@ import { execFileSync as execFileSync8 } from "node:child_process";
 
 // packages/cli/src/ci/index.ts
 init_src();
-import { execFileSync as execFileSync7, spawnSync as spawnSync3 } from "node:child_process";
+import { execFileSync as execFileSync7, spawnSync as spawnSync4 } from "node:child_process";
 import { appendFileSync as appendFileSync4, existsSync as existsSync19, readdirSync as readdirSync10, readFileSync as readFileSync22, rmSync as rmSync5 } from "node:fs";
 import { homedir as homedir3 } from "node:os";
 import { dirname as dirname6, join as join24 } from "node:path";
 
 // packages/cli/src/ci/evals.ts
 init_src();
-import { execFileSync as execFileSync6, spawnSync as spawnSync2 } from "node:child_process";
+import { execFileSync as execFileSync6, spawnSync as spawnSync3 } from "node:child_process";
 import { existsSync as existsSync14, mkdtempSync as mkdtempSync3, readdirSync as readdirSync7, readFileSync as readFileSync17, rmSync as rmSync4, writeFileSync as writeFileSync10 } from "node:fs";
 import { tmpdir as tmpdir3 } from "node:os";
 import { join as join18 } from "node:path";
@@ -36056,7 +36081,7 @@ function applyChecks(e, dir, output2, env = process.env, base = "HEAD") {
   for (const c of e.checks ?? []) {
     switch (c.type) {
       case "command": {
-        const r = spawnSync2("sh", ["-c", c.run], { cwd: dir, env, stdio: "ignore", timeout: 15 * 6e4 });
+        const r = spawnSync3("sh", ["-c", c.run], { cwd: dir, env, stdio: "ignore", timeout: 15 * 6e4 });
         if (r.status !== 0) failures.push(`command failed: ${c.run}`);
         break;
       }
@@ -36117,7 +36142,7 @@ function runEvals(c, pattern, out, tags = []) {
     try {
       if (!existsSync14(dir)) throw new SdlcError(`cwd ${e.cwd} does not exist`);
       if (e.setup) {
-        const r = spawnSync2("sh", ["-c", e.setup], { cwd: dir, env, encoding: "utf8", timeout: 15 * 6e4 });
+        const r = spawnSync3("sh", ["-c", e.setup], { cwd: dir, env, encoding: "utf8", timeout: 15 * 6e4 });
         if (r.status !== 0) throw new SdlcError(`setup failed: ${(r.stderr || r.stdout).trim().slice(0, 500)}`);
       }
       const base = git(wt, ["rev-parse", "HEAD"]) ?? "HEAD";
@@ -36902,7 +36927,7 @@ sdlc ci risk [--escalate]      risk tier of the PR/MR from the diff (sticky comm
                                risk.agent_escalation) asks the agent whether it needs another person: it can only raise it
 sdlc ci mention                answer an @claude comment on the PR/MR (triggered by \`sdlc webhook\`; ci.mention_mode read|edit)
 
-Options: --agent claude|codex|cursor (or SDLC_CI_AGENT, or ci.agent) \xB7 --model M \xB7 --dry-run (print, do not post/push)
+Options: --agent claude|codex|cursor (or SDLC_CI_AGENT, or ci.agent; codex and cursor are experimental) \xB7 --model M \xB7 --dry-run (print, do not post/push)
 Env: ANTHROPIC_API_KEY | OPENAI_API_KEY | CURSOR_API_KEY \xB7 GH_TOKEN | GITLAB_TOKEN | BITBUCKET_ACCESS_TOKEN
      JIRA_EMAIL + JIRA_API_TOKEN (or JIRA_PAT) \xB7 LINEAR_API_KEY \xB7 SDLC_PLUGIN_REPO_URL / SDLC_PLUGIN_TOKEN (private marketplace)
      SDLC_NOTIFY_WEBHOOK (Slack or generic webhook: gate.pending, gate.decided, spec.ready, review.done, change.merged, risk.raised)
@@ -37014,7 +37039,7 @@ function bootstrap(c) {
   else {
     const [cmd, args] = INSTALL[c.agent];
     log4(`installing ${bin}: ${cmd} ${args.join(" ")}`);
-    const r = spawnSync3(cmd, args, { stdio: ["ignore", "ignore", "inherit"] });
+    const r = spawnSync4(cmd, args, { stdio: ["ignore", "ignore", "inherit"] });
     if (r.status !== 0) throw new SdlcError(`could not install ${bin}`);
     bin = agentBin(c.agent, c.env);
     const dir = dirname6(bin);
@@ -38227,7 +38252,7 @@ Setup
 
 Loop
   next [--json]                      the one thing to do now: approve, ask the agent, ship, or start a change
-  status [--json | --metrics]        changes and their stage
+  status [--json]                    changes and their stage
   metrics [--json] [--funnel]        leading indicators from git + activity log; --funnel: how far changes get
           [--since 30d] [--prs]      window for the guardrails; --prs: refresh review rounds and comments from the forge
           [--value <name>]           one number for a control band (revert_rate, incident_rate, waiting_hours_p95, \u2026)
@@ -38253,8 +38278,10 @@ Integrations
   ci <cmd>                           CI entry point: bootstrap, review, intent-to-spec, triage, tracker-merged, gate, evals
   bands check [--json] [--dry-run]   Stage 6: evaluate ops/bands.yaml; log / diagnose / open an incident intent
   notify <event> [--change ID] [--dry-run]   gate.pending|gate.decided|spec.ready|review.done|change.merged \u2192 Slack or a webhook
-  webhook [--port N]                 @claude in GitLab/Bitbucket comments \u2192 triggers \`sdlc ci mention\` in CI
-  hosted [--port N]                  read-only org board over a GitHub App installation (docs/rfc/hosted.md)
+  webhook [--port N]                 experimental: @claude in GitLab/Bitbucket comments \u2192 triggers \`sdlc ci mention\` in CI
+  hosted [--port N]                  experimental: read-only org board over a GitHub App installation (docs/rfc/hosted.md)
+
+Stable within 1.x unless marked experimental: https://martinisef.github.io/ai_sdlc/reference/stability
 `;
 function parseArgs(argv) {
   const pos = [];
@@ -38433,7 +38460,10 @@ async function main() {
       console.log(JSON.stringify(configJsonSchema(), null, 2));
       return;
     case "status": {
-      if (flags.metrics) return printMetricsLegacy(root);
+      if (flags.metrics) {
+        process.stderr.write("sdlc: `status --metrics` is deprecated and goes in 2.0; use `sdlc metrics`\n");
+        return printMetricsLegacy(root);
+      }
       const loaded = loadConfig(root);
       const locale = localeOf(loaded);
       const changes = listChanges(root, { locale, defaultBranch: loaded?.config.vcs?.default_branch });

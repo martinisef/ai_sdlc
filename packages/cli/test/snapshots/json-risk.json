@@ -1,0 +1,10 @@
+[
+  "change",
+  "computed",
+  "files",
+  "reasons",
+  "reasons[].reason",
+  "reasons[].tier",
+  "tier",
+  "weight"
+]

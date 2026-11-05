@@ -1,6 +1,7 @@
 // Roadmaps: a technical plan broken into epics and stories (changes/_roadmaps/<slug>/roadmap.md), drafted by an
 // agent, approved by a person, then created in the tracker by `applyRoadmap`. Each story later enters the loop
 // with `/sdlc-intent <KEY>`. The file is the source of the breakdown; the tracker gets copies.
+import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { basename, extname, join } from 'node:path';
@@ -19,6 +20,7 @@ export const ROADMAP_RISKS = ['low', 'medium', 'high'] as const;
 export const ITEM_FIELDS = ['risk', 'depends', 'source', 'labels', 'key', 'links'] as const;
 /** Above this many acceptance criteria a story is probably more than one change. */
 export const MAX_CRITERIA = 8;
+const SLUG = /^[a-z0-9][a-z0-9-]*$/;
 export const SOURCE_EXTENSIONS = ['.pdf', '.md', '.markdown', '.txt'];
 export const MAX_SOURCE_BYTES = 20 * 1024 * 1024;
 
@@ -283,6 +285,7 @@ export function listRoadmaps(root: string): Roadmap[] {
 
 export function getRoadmap(root: string, slug: string): Roadmap {
   const s = slug.replace(/^changes\/_roadmaps\//, '').replace(/\/(roadmap\.md)?$/, '');
+  if (!SLUG.test(s)) throw new SdlcError(`invalid roadmap '${slug}': lowercase letters, digits and dashes`);
   const p = join(root, roadmapPath(s));
   if (!existsSync(p)) throw new SdlcError(`roadmap not found: ${roadmapPath(s)} (create it with: sdlc roadmap new ${s} --source <file|url>)`);
   return parseRoadmap(readFileSync(p, 'utf8'), s);
@@ -290,7 +293,7 @@ export function getRoadmap(root: string, slug: string): Roadmap {
 
 /** Scaffold the folder: copy the source document (or keep its URL) and write the template. Does not commit. */
 export function newRoadmap(root: string, slug: string, o: { source?: string; title?: string; loaded?: LoadedConfig; author?: string } = {}): { path: string; source?: string } {
-  if (!/^[a-z0-9][a-z0-9-]*$/.test(slug)) throw new SdlcError(`invalid slug '${slug}': lowercase letters, digits and dashes`);
+  if (!SLUG.test(slug)) throw new SdlcError(`invalid slug '${slug}': lowercase letters, digits and dashes`);
   const dir = join(root, ROADMAPS_DIR, slug);
   if (existsSync(join(dir, 'roadmap.md'))) throw new SdlcError(`${roadmapPath(slug)} already exists`);
   mkdirSync(dir, { recursive: true });
@@ -302,6 +305,8 @@ export function newRoadmap(root: string, slug: string, o: { source?: string; tit
     if (statSync(o.source).size > MAX_SOURCE_BYTES) throw new SdlcError(`source is larger than ${MAX_SOURCE_BYTES / 1024 / 1024} MB`);
     copyFileSync(o.source, join(dir, `source${ext}`));
     source = `${ROADMAPS_DIR}/${slug}/source${ext}`;
+    // agents without a PDF reader (Codex, some Cursor models) read the text beside it; without pdftotext they convert it
+    if (ext === '.pdf') spawnSync('pdftotext', ['-layout', join(dir, 'source.pdf'), join(dir, 'source.txt')], { stdio: 'ignore' });
   }
   const title = o.title ?? slug.replace(/-/g, ' ').replace(/^./, (c) => c.toUpperCase());
   writeFileSync(join(dir, 'roadmap.md'), roadmapTemplate({ slug, title, author: o.author ?? gitUser(root).name, source, locale: localeOf(o.loaded) }));

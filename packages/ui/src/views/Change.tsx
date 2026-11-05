@@ -1,4 +1,4 @@
-import { marked } from 'marked';
+import { Marked } from 'marked';
 import { useMemo, useState } from 'react';
 import { api, useApi, type Artifact, type ChangeDetail } from '../api';
 import { useT } from '../i18n';
@@ -6,17 +6,37 @@ import { StatusPill } from './Board';
 
 const ARTIFACTS: Artifact[] = ['intent', 'spec', 'plan'];
 
+const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+/** http(s), mailto or relative; browsers ignore whitespace and control characters inside a scheme. */
+const safeUrl = (href: string) => {
+  const u = href.replace(/[\u0000-\u0020]/g, '');
+  return /^(https?|mailto):/i.test(u) || !/^[a-z][a-z0-9+.-]*:/i.test(u);
+};
+
+// Artifacts can come from any branch, including a contributor's pull request, and the page holds the API token:
+// raw HTML is shown as text and only http(s), mailto and relative links are kept.
+const md = new Marked({
+  renderer: {
+    html: ({ text }) => escapeHtml(text),
+    link({ href, title, tokens }) {
+      const label = this.parser.parseInline(tokens);
+      if (!safeUrl(href)) return label;
+      return `<a href="${escapeHtml(href)}"${title ? ` title="${escapeHtml(title)}"` : ''} rel="noreferrer">${label}</a>`;
+    },
+    image({ href, title, text }) {
+      if (!safeUrl(href)) return escapeHtml(text);
+      return `<img src="${escapeHtml(href)}" alt="${escapeHtml(text)}"${title ? ` title="${escapeHtml(title)}"` : ''}>`;
+    },
+  },
+});
+
 /** Rendered artifact; "Areas of concern" sections are highlighted for the reviewer. */
+export function renderMarkdown(text: string): string {
+  return (md.parse(text, { async: false }) as string).replace(/<h2>(Areas? of concern|Áreas? de preocupación)([^<]*)<\/h2>/gi, '<h2 class="concern">$1$2</h2>');
+}
+
 function Markdown({ text }: { text: string }) {
-  const html = useMemo(() => {
-    const raw = marked.parse(text, { async: false }) as string;
-    // artifacts are the repo's own files, but strip active content anyway
-    return raw
-      .replace(/<(script|iframe|object|embed|style)[\s\S]*?<\/\1>/gi, '')
-      .replace(/\son\w+="[^"]*"/gi, '')
-      .replace(/href="javascript:[^"]*"/gi, 'href="#"')
-      .replace(/<h2>(Areas? of concern|Áreas? de preocupación)([^<]*)<\/h2>/gi, '<h2 class="concern">$1$2</h2>');
-  }, [text]);
+  const html = useMemo(() => renderMarkdown(text), [text]);
   return <div className="md" dangerouslySetInnerHTML={{ __html: html }} />;
 }
 

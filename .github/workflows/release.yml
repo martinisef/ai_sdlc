@@ -51,14 +51,18 @@ jobs:
           npm run package:vscode
           gh release upload "@morsadev/sdlc@$v" "packages/vscode/ai-sdlc-$v.vsix" --clobber
       # Tutorial media (docs/public/media) for the new version; a release made with GITHUB_TOKEN does not trigger it.
-      - if: steps.changesets.outputs.published == 'true'
+      # Release candidates (1.0.0-rc.N, npm tag rc) leave the docs and the :latest image alone.
+      - if: steps.changesets.outputs.published == 'true' && !contains(steps.changesets.outputs.publishedPackages, '-rc.')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh workflow run docs-media.yml --ref main
       # Webhook image (sdlc webhook) for GitLab/Bitbucket @claude, built from the version just published.
       - if: steps.changesets.outputs.published == 'true' || github.event_name == 'workflow_dispatch'
         id: version
-        run: echo "v=$(node -p 'require("./packages/cli/package.json").version')" >> "$GITHUB_OUTPUT"
+        run: |
+          v=$(node -p 'require("./packages/cli/package.json").version')
+          echo "v=$v" >> "$GITHUB_OUTPUT"
+          case "$v" in *-*) echo "latest=false" >> "$GITHUB_OUTPUT" ;; *) echo "latest=true" >> "$GITHUB_OUTPUT" ;; esac
       # The image installs the version from npm, which only appears once a staged publish is approved on npmjs.com.
       - if: steps.changesets.outputs.published == 'true' || github.event_name == 'workflow_dispatch'
         timeout-minutes: 60
@@ -81,4 +85,4 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ github.repository_owner }}/sdlc-webhook:${{ steps.version.outputs.v }}
-            ghcr.io/${{ github.repository_owner }}/sdlc-webhook:latest
+            ${{ steps.version.outputs.latest == 'true' && format('ghcr.io/{0}/sdlc-webhook:latest', github.repository_owner) || '' }}

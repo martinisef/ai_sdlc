@@ -214,6 +214,12 @@ export interface Job {
   error?: string;
 }
 
+export interface AgentInfo {
+  agent: 'claude' | 'codex' | 'cursor';
+  bin: string;
+  installed: boolean;
+}
+
 export interface RoadmapSummary {
   slug: string;
   title: string;

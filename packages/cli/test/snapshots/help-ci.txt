@@ -1,0 +1,32 @@
+sdlc ci install [--provider github|gitlab|bitbucket] [--preset solo|team-github|regulated]
+                               copy the pipeline templates (stack setup filled in; never overwrites)
+sdlc ci bootstrap              install the agent CLI (and the Claude plugin when plugin.marketplace_repo is set)
+sdlc ci review                 review the PR/MR with REVIEW.md: one finder per pass, a verifier that votes, inline comments
+                               and a summary; depth by risk tier (ci.review.depth), at most ci.review.max_rounds (3) rounds
+sdlc ci security               the same, read-only, with security passes only (injection, access control, data and secrets)
+sdlc ci review-status          set the sdlc/review commit status: failure while an Important or security finding is open
+                               (closed when fixed, or by a maintainer's "resolved: <reason>" reply)
+sdlc ci nightly-review [--module M] [--pr]   review existing code, one module per night (ci.nightly.modules, else every
+                               code directory): Important findings become intents (origin: review) on change/review-*
+sdlc ci intent-to-spec         for accepted intents without spec.md: write the spec headless, commit, push
+sdlc ci triage <log>           summarize a failed build and comment on the PR/MR
+sdlc ci tracker-merged         move the merged change's tickets to tracker.transitions.merged (alias: jira-merged)
+sdlc ci evals [pattern] [--tags a,b] [--out results.json]   run evals/*.json against the agent; fail below ci.min_pass_rate (0.8)
+sdlc ci capture-eval <commit> [--origin incident|revert] [--expect "<finding>"]   a reviewer eval from the commit that
+                               caused an incident: its patch, re-applied, must get an Important finding
+sdlc ci capture-eval --reverts [--since 30d]   the same for every reverted commit on the default branch (skips captured ones)
+sdlc ci matrix [--only agent]  agents with credentials here, as JSON (the evals workflow's matrix)
+sdlc ci scorecard <report.json…> [--out docs/reference/agent-scorecard.md]   eval × agent table; rewritten only when a result changed
+sdlc ci gate                   /approve|/reject intent|spec|plan in a PR/MR comment → gate commit on the branch + reply
+sdlc ci gate-status            set the sdlc/gates commit status (success once the plan is approved or the change is quick,
+                               and the PR description has ci.pr_sections: Testing, Risk, How to revert)
+sdlc ci merge-queue            GitHub merge_group: carry sdlc/gates and sdlc/review to the queue commit once they are
+                               green on every PR in the group
+sdlc ci risk [--escalate]      risk tier of the PR/MR from the diff (sticky comment, risk.json); --escalate (or
+                               risk.agent_escalation) asks the agent whether it needs another person: it can only raise it
+sdlc ci mention                answer an @claude comment on the PR/MR (triggered by `sdlc webhook`; ci.mention_mode read|edit)
+
+Options: --agent claude|codex|cursor (or SDLC_CI_AGENT, or ci.agent; codex and cursor are experimental) · --model M · --dry-run (print, do not post/push)
+Env: ANTHROPIC_API_KEY | OPENAI_API_KEY | CURSOR_API_KEY · GH_TOKEN | GITLAB_TOKEN | BITBUCKET_ACCESS_TOKEN
+     JIRA_EMAIL + JIRA_API_TOKEN (or JIRA_PAT) · LINEAR_API_KEY · SDLC_PLUGIN_REPO_URL / SDLC_PLUGIN_TOKEN (private marketplace)
+     SDLC_NOTIFY_WEBHOOK (Slack or generic webhook: gate.pending, gate.decided, spec.ready, review.done, change.merged, risk.raised)

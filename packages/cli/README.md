@@ -13,4 +13,8 @@ Then run `/sdlc-setup` in your agent, and `/sdlc-intent …` to start a change.
 
 The package is self-contained: one bundled file with no runtime dependencies, plus the skills and the dashboard. It requires Node ≥ 22.18.
 
+Semantic versioning from 1.0.0; what is stable and what is experimental: [Versions and stability](https://martinisef.github.io/ai_sdlc/reference/stability). Coming from 0.x: [Upgrading](https://martinisef.github.io/ai_sdlc/guide/upgrading).
+
 Documentation: https://martinisef.github.io/ai_sdlc/ · Source: https://github.com/martinisef/ai_sdlc · License: Apache-2.0
+
+An independent project, not affiliated with or endorsed by Anthropic or Anysphere (Cursor).

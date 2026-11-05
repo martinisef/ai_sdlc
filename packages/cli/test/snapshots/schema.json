@@ -1,0 +1,446 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "number",
+      "const": 1
+    },
+    "locale": {
+      "type": "string",
+      "enum": [
+        "en",
+        "es"
+      ]
+    },
+    "agents": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "claude",
+          "cursor",
+          "agents-md"
+        ]
+      }
+    },
+    "vcs": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "type": "string",
+          "enum": [
+            "github",
+            "gitlab",
+            "bitbucket"
+          ]
+        },
+        "host": {
+          "type": "string"
+        },
+        "workspace": {
+          "type": "string"
+        },
+        "repo": {
+          "type": "string"
+        },
+        "default_branch": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "tracker": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "type": "string",
+          "enum": [
+            "jira",
+            "github",
+            "linear",
+            "none"
+          ]
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "linkage",
+            "jira-sot",
+            "repo-sot"
+          ]
+        },
+        "base_url": {
+          "type": "string"
+        },
+        "project_key": {
+          "type": "string"
+        },
+        "team_key": {
+          "type": "string"
+        },
+        "repo": {
+          "type": "string"
+        },
+        "default_issue_type": {
+          "type": "string"
+        },
+        "incident_issue_type": {
+          "type": "string"
+        },
+        "epic_issue_type": {
+          "type": "string"
+        },
+        "epic_link_field": {
+          "type": "string"
+        },
+        "transitions": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": {}
+    },
+    "stack": {
+      "type": "object",
+      "properties": {
+        "language": {
+          "type": "string"
+        },
+        "package_manager": {
+          "type": "string"
+        },
+        "project_type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "commands": {
+      "type": "object",
+      "properties": {
+        "build": {
+          "type": "string"
+        },
+        "test": {
+          "type": "string"
+        },
+        "lint": {
+          "type": "string"
+        },
+        "format": {
+          "type": "string"
+        },
+        "run": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "format_on_edit": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "protected_paths": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "append_only_paths": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "test_globs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "secret_patterns_extra": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "risk": {
+      "type": "object",
+      "properties": {
+        "high_risk_paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "always_human_paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "profile": {
+          "type": "string",
+          "enum": [
+            "strict",
+            "graded"
+          ]
+        },
+        "tiers": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "approvals": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 5
+              }
+            },
+            "required": [
+              "approvals"
+            ],
+            "additionalProperties": {}
+          }
+        },
+        "trusted_authors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "size": {
+          "type": "object",
+          "properties": {
+            "low_max_lines": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "high_min_lines": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "additionalProperties": {}
+        },
+        "agent_escalation": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "production_gate": {
+      "type": "object",
+      "properties": {
+        "patterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "approval_env": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "gates": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "enum": [
+          "intent",
+          "spec",
+          "plan",
+          "roadmap"
+        ]
+      },
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    },
+    "gates_self_approval": {
+      "type": "boolean"
+    },
+    "roles": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    },
+    "plugin": {
+      "type": "object",
+      "properties": {
+        "marketplace_repo": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "quick_lane": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "max_files": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "forbid_paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": {}
+    },
+    "notify": {
+      "type": "object",
+      "properties": {
+        "webhook_env": {
+          "type": "string"
+        },
+        "format": {
+          "type": "string",
+          "enum": [
+            "slack",
+            "generic"
+          ]
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "gate.pending",
+              "gate.decided",
+              "spec.ready",
+              "review.done",
+              "change.merged",
+              "risk.raised"
+            ]
+          }
+        },
+        "people": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": {}
+    },
+    "ci": {
+      "type": "object",
+      "properties": {
+        "agent": {
+          "type": "string",
+          "enum": [
+            "claude",
+            "codex",
+            "cursor"
+          ]
+        },
+        "model": {
+          "type": "string"
+        },
+        "min_pass_rate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "mention_mode": {
+          "type": "string",
+          "enum": [
+            "read",
+            "edit"
+          ]
+        },
+        "pr_sections": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "review": {
+          "type": "object",
+          "properties": {
+            "depth": {
+              "type": "string",
+              "enum": [
+                "auto",
+                "quick",
+                "standard",
+                "deep"
+              ]
+            },
+            "max_rounds": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10
+            }
+          },
+          "additionalProperties": {}
+        },
+        "nightly": {
+          "type": "object",
+          "properties": {
+            "modules": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "max_intents": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 20
+            }
+          },
+          "additionalProperties": {}
+        }
+      },
+      "additionalProperties": {}
+    }
+  },
+  "required": [
+    "version"
+  ],
+  "additionalProperties": {}
+}
