@@ -103,18 +103,33 @@ function answer(inv: Invocation, stdout: string): string {
   return stdout.trim();
 }
 
-const failure = (bin: string, error: Error | undefined, status: number | null): SdlcError | undefined =>
+/** The provider refused the account (no quota or credit, bad key): every run fails the same way, it says nothing about the agent. */
+export class AgentAccountError extends SdlcError {}
+
+const ACCOUNT_ERROR = /quota exceeded|insufficient_quota|exceeded your current quota|credit balance is too low|invalid api key|incorrect api key|invalid x-api-key|authentication_error/i;
+
+function accountError(bin: string, stderr: string): AgentAccountError | undefined {
+  const line = stderr.split('\n').find((l) => ACCOUNT_ERROR.test(l));
+  if (!line) return undefined;
+  const reason = line.replace(/\b(sk|key|ghp|crsr)[-_][A-Za-z0-9_*.-]+/gi, '***').trim().slice(0, 200);
+  return new AgentAccountError(`${bin}: the provider refused the account (${reason}); check the API key and its plan or billing`);
+}
+
+const failure = (bin: string, error: Error | undefined, status: number | null, stderr = ''): SdlcError | undefined =>
   error
     ? new SdlcError(`${bin}: ${(error as NodeJS.ErrnoException).code === 'ENOENT' ? 'not installed (run: sdlc ci bootstrap)' : error.message}`)
     : status !== 0
-      ? new SdlcError(`${bin} exited with ${status}`)
+      ? (accountError(bin, stderr) ?? new SdlcError(`${bin} exited with ${status}`))
       : undefined;
+
+const STDERR_TAIL = 16 * 1024;
 
 export function runAgent(agent: CiAgent, task: AgentTask, model?: string, env = process.env): string {
   const inv = invocation(agent, task, model, env);
   try {
-    const r = spawnSync(inv.bin, inv.args, { cwd: task.cwd, env: inv.env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'], maxBuffer: 64 * 1024 * 1024 });
-    const err = failure(inv.bin, r.error, r.status);
+    const r = spawnSync(inv.bin, inv.args, { cwd: task.cwd, env: inv.env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 64 * 1024 * 1024 });
+    if (r.stderr) process.stderr.write(r.stderr);
+    const err = failure(inv.bin, r.error, r.status, r.stderr?.slice(-STDERR_TAIL));
     if (err) throw err;
     return answer(inv, r.stdout);
   } finally {
@@ -126,14 +141,19 @@ export function runAgent(agent: CiAgent, task: AgentTask, model?: string, env = 
 export function runAgentAsync(agent: CiAgent, task: AgentTask, model?: string, env = process.env): Promise<string> {
   const inv = invocation(agent, task, model, env);
   return new Promise<string>((resolve, reject) => {
-    const child = spawn(inv.bin, inv.args, { cwd: task.cwd, env: inv.env, stdio: ['ignore', 'pipe', task.log ? 'pipe' : 'inherit'], signal: task.signal });
+    const child = spawn(inv.bin, inv.args, { cwd: task.cwd, env: inv.env, stdio: ['ignore', 'pipe', 'pipe'], signal: task.signal });
     let stdout = '';
-    if (task.log) child.stderr?.setEncoding('utf8').on('data', task.log);
+    let stderr = '';
+    child.stderr?.setEncoding('utf8').on('data', (d: string) => {
+      stderr = (stderr + d).slice(-STDERR_TAIL);
+      if (task.log) task.log(d);
+      else process.stderr.write(d);
+    });
     let spawnError: Error | undefined;
     child.stdout?.setEncoding('utf8').on('data', (d: string) => (stdout += d));
     child.on('error', (e) => (spawnError = e));
     child.on('close', (status) => {
-      const err = failure(inv.bin, spawnError, spawnError ? null : status);
+      const err = failure(inv.bin, spawnError, spawnError ? null : status, stderr);
       if (err) reject(err);
       else resolve(answer(inv, stdout));
     });

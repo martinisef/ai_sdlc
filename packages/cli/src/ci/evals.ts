@@ -6,7 +6,7 @@ import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSy
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { git, globMatch, lines, SdlcError, type CiAgent } from '@ai-native-sdlc/core';
-import { runAgent, skillRef } from './agent.ts';
+import { AgentAccountError, runAgent, skillRef } from './agent.ts';
 import type { CiEnv } from './index.ts';
 
 export type EvalCheck =
@@ -119,6 +119,7 @@ export function runEvals(c: CiEnv, pattern?: string, out?: string, tags: string[
   }
   const min = Number(c.env.EVAL_MIN_PASS_RATE ?? c.loaded?.config.ci?.min_pass_rate ?? 0.8);
   const results: EvalResult[] = [];
+  let aborted: string | undefined;
   for (const e of evals) {
     const wt = join(mkdtempSync(join(tmpdir(), 'sdlc-eval-')), 'wt');
     execFileSync('git', ['worktree', 'add', '-q', '--detach', wt, 'HEAD'], { cwd: c.root, stdio: 'ignore' });
@@ -137,6 +138,7 @@ export function runEvals(c: CiEnv, pattern?: string, out?: string, tags: string[
       failures = applyChecks(e, dir, output, env, base);
     } catch (err) {
       failures = [(err as Error).message];
+      if (err instanceof AgentAccountError) aborted = err.message;
     } finally {
       git(c.root, ['worktree', 'remove', '--force', wt]);
       rmSync(join(wt, '..'), { recursive: true, force: true });
@@ -144,10 +146,13 @@ export function runEvals(c: CiEnv, pattern?: string, out?: string, tags: string[
     results.push({ name: e.name, passed: !failures.length, failures, seconds: Math.round((Date.now() - started) / 1000) });
     console.log(`${failures.length ? 'FAIL' : 'PASS'} ${e.name}`);
     for (const f of failures) console.log(`  ${f}`);
+    if (aborted) break;
   }
   const passed = results.filter((r) => r.passed).length;
   const rate = passed / results.length;
-  console.log(`pass rate: ${passed}/${results.length} = ${rate.toFixed(2)} (minimum ${min})`);
-  if (out) writeFileSync(out, JSON.stringify({ agent: c.agent, model: c.model, rate, min, date: new Date().toISOString().slice(0, 10), results }, null, 2) + '\n');
-  return rate >= min ? 0 : 1;
+  if (aborted) {
+    console.log(`${c.env.GITHUB_ACTIONS ? '::error::' : ''}evals not run: ${aborted}. This is not an agent result; fix the account and run them again.`);
+  } else console.log(`pass rate: ${passed}/${results.length} = ${rate.toFixed(2)} (minimum ${min})`);
+  if (out) writeFileSync(out, JSON.stringify({ agent: c.agent, model: c.model, rate, min, date: new Date().toISOString().slice(0, 10), ...(aborted ? { error: aborted } : {}), results }, null, 2) + '\n');
+  return !aborted && rate >= min ? 0 : 1;
 }

@@ -274,7 +274,9 @@ async function intentToSpec(c: CiEnv): Promise<number> {
 }
 
 function scorecard(c: CiEnv, files: string[], out: string): number {
-  const reports = files.filter((f) => existsSync(f)).map((f) => JSON.parse(readFileSync(f, 'utf8')) as EvalReport);
+  const all = files.filter((f) => existsSync(f)).map((f) => JSON.parse(readFileSync(f, 'utf8')) as EvalReport);
+  for (const r of all.filter((r) => r.error)) console.log(`skipped ${r.agent}: ${r.error}`);
+  const reports = all.filter((r) => !r.error);
   if (!reports.length) throw new SdlcError('usage: sdlc ci scorecard <report.json…> (no reports found)');
   const prs = Object.values(readPrStats(c.root)).filter((p) => p.outcomes);
   const outcomes = prs.length ? { prs: prs.length, totals: sumOutcomes(prs.map((p) => p.outcomes)) } : undefined;

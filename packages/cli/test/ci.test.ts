@@ -264,6 +264,15 @@ test('ci evals: worktree per case, checks, pass rate', async () => {
 
   assert.equal((await sdlc(root, ['ci', 'evals', 'writes-*'], { STUB_LOG: log })).code, 0, 'pattern filter');
   assert.equal((await sdlc(root, ['ci', 'evals'], { STUB_LOG: log, EVAL_MIN_PASS_RATE: '0.5' })).code, 0);
+
+  const quota = stubLog();
+  const out = join(mkdtempSync(join(tmpdir(), 'sdlc-evals-')), 'evals.json');
+  const refused = await sdlc(root, ['ci', 'evals', '--out', out], { STUB_LOG: quota, STUB_ACCOUNT_ERROR: 'Quota exceeded. Check your plan and billing details.', EVAL_MIN_PASS_RATE: '0' });
+  assert.equal(refused.code, 1, 'not a pass, even with no minimum');
+  assert.equal(read(quota).trim().split('\n').length, 1, 'stops at the first refusal instead of running every case');
+  assert.match(refused.out, /evals not run: claude: the provider refused the account \(ERROR: Quota exceeded\. Check your plan and billing details\.\); check the API key and its plan or billing\. This is not an agent result/);
+  assert.doesNotMatch(refused.out, /pass rate/);
+  assert.match(JSON.parse(read(out)).error, /refused the account/);
 });
 
 test('ci mention: read-only by default, replies without re-mentioning; edit mode commits and pushes', async () => {
@@ -296,4 +305,19 @@ test('ci mention: read-only by default, replies without re-mentioning; edit mode
   const missing = await sdlc(root, ['ci', 'mention'], { STUB_LOG: log2 });
   assert.equal(missing.code, 1);
   assert.match(missing.err, /needs PR_NUMBER and SDLC_MENTION_BODY/);
+});
+
+test('ci scorecard: a run stopped by a refused account does not change the scorecard', async () => {
+  const root = project({});
+  const dir = mkdtempSync(join(tmpdir(), 'sdlc-reports-'));
+  const result = [{ name: 'py-intent', passed: true, failures: [] }];
+  writeFileSync(join(dir, 'claude.json'), JSON.stringify({ agent: 'claude', rate: 1, min: 0.8, date: '2026-11-09', results: result }));
+  writeFileSync(join(dir, 'codex.json'), JSON.stringify({ agent: 'codex', rate: 0, min: 0.8, date: '2026-11-09', error: 'codex: the provider refused the account', results: [{ ...result[0], passed: false }] }));
+  const out = join(root, 'scorecard.md');
+  writeFileSync(out, '# Agent scorecard\n');
+  const r = await sdlc(root, ['ci', 'scorecard', join(dir, 'claude.json'), join(dir, 'codex.json'), '--out', 'scorecard.md']);
+  assert.equal(r.code, 0, r.err);
+  assert.match(r.out, /skipped codex: codex: the provider refused the account/);
+  assert.match(read(out), /Claude Code/);
+  assert.doesNotMatch(read(out), /Codex/);
 });

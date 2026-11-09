@@ -102,7 +102,8 @@ jobs:
           node -e '
             const r = require(`./evals-${process.env.AGENT}.json`);
             const rows = r.results.map(x => `| ${x.passed ? "✅" : "❌"} | ${x.name} | ${x.seconds ?? ""}s | ${x.failures.join("<br>")} |`);
-            console.log(`### Evals: ${(r.rate * 100).toFixed(0)}% (minimum ${r.min * 100}%) · ${r.agent}${r.model ? " · " + r.model : ""}\n\n| | eval | time | failures |\n|---|---|---|---|\n${rows.join("\n")}`);
+            if (r.error) console.log(`### Evals not run · ${r.agent}\n\n${r.error}\n\nNot an agent result: fix the account (API key, plan or billing) and re-run the failed jobs.`);
+            else console.log(`### Evals: ${(r.rate * 100).toFixed(0)}% (minimum ${r.min * 100}%) · ${r.agent}${r.model ? " · " + r.model : ""}\n\n| | eval | time | failures |\n|---|---|---|---|\n${rows.join("\n")}`);
           ' >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v7
         if: always()

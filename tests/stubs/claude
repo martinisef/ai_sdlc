@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # claude stub: logs args to $STUB_LOG and answers by prompt type (the prompt follows -p).
 printf 'claude %s\n' "$*" >> "$STUB_LOG"
+# $STUB_ACCOUNT_ERROR: fail like a provider that refuses the account (no quota, bad key)
+if [ -n "$STUB_ACCOUNT_ERROR" ]; then echo "ERROR: $STUB_ACCOUNT_ERROR" >&2; exit 1; fi
 prompt="$2"
 case "$prompt" in
   *"review finder"*)
