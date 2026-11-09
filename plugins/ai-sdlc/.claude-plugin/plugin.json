@@ -1,6 +1,6 @@
 {
   "name": "ai-sdlc",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "AI-native loop: intent → spec → plan → build → ship → maintain, with guardrails, guided setup and GitHub/GitLab/Bitbucket and Jira integration.",
   "author": {
     "name": "ai-native-sdlc"
