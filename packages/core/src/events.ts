@@ -20,6 +20,7 @@ export interface SdlcEvent {
     | 'change.promote'
     | 'roadmap.new'
     | 'roadmap.apply'
+    | 'roadmap.delete'
     | 'setup.init'
     | 'setup.fix';
   metric?: string;

@@ -230,7 +230,7 @@ The same steps work without the terminal. Open the dashboard (`npx sdlc ui`) and
 
 1. **New roadmap**: give it a name and upload the plan. The agent drafts the breakdown in the background (it needs Claude Code, Codex or the Cursor CLI installed).
 2. When it has questions, they appear as a form. Answer them and press **Send answers**; the agent updates the breakdown.
-3. Read the epics and stories, then **Approve** or **Reject**.
+3. Read the epics and stories, then **Approve** or **Reject**. If you are the author of a rejected roadmap (its `author:` is your git name or email), **Delete roadmap** removes its folder in a commit; git history keeps it. A roadmap with tickets already created cannot be deleted, so the tickets stay linked.
 4. **Preview tickets** shows what would be created; **Create tickets** creates them.
 
 ## If something fails

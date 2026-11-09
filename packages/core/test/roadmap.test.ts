@@ -17,6 +17,9 @@ import {
   parseRoadmap,
   roadmapStatus,
   setAnswers,
+  canDeleteRoadmap,
+  deleteRoadmap,
+  readEvents,
   type CreateIssue,
   type Tracker,
 } from '../src/index.ts';
@@ -337,4 +340,29 @@ test('status, next story and find: stories follow their tickets through the loop
   assert.equal(found?.item.id, 'E1.S1');
   assert.equal(found?.roadmap.slug, 'payments');
   assert.equal(findRoadmapItem(root, 'PAY-999'), undefined);
+});
+
+test('delete: only the author removes a rejected roadmap without tickets, in its own commit', () => {
+  const root = setup();
+  const loaded = loadConfig(root);
+  assert.throws(() => deleteRoadmap(root, 'payments'), /is draft; only a rejected roadmap can be deleted/);
+  decideRoadmap(root, loaded, 'payments', 'rejected', { comment: 'out of scope' });
+  const r = getRoadmap(root, 'payments');
+  assert.deepEqual(canDeleteRoadmap(r, { name: 'Bo Dev', email: 'bo@example.com' }), { ok: false, reason: 'only its author (Ana Product) can delete it' });
+  assert.match(canDeleteRoadmap(r, { name: 'Claude', email: 'noreply@anthropic.com' }).reason!, /agent/);
+  assert.deepEqual(canDeleteRoadmap(r, { name: 'ana product' }), { ok: true }, 'name match ignores case');
+
+  writeFileSync(join(root, 'notes.md'), 'mine\n');
+  gitIn(root, 'add', 'notes.md');
+  const d = deleteRoadmap(root, 'payments');
+  assert.equal(d.by, 'Ana Product');
+  assert.equal(existsSync(join(root, 'changes/_roadmaps/payments')), false);
+  assert.match(gitIn(root, 'log', '-1', '--format=%B'), /^chore\(roadmap-payments\): delete rejected roadmap\n\nDeleted by Ana Product <ana@example.com>/);
+  assert.equal(gitIn(root, 'show', '--name-only', '--format=', 'HEAD').trim(), 'changes/_roadmaps/payments/roadmap.md');
+  assert.equal(gitIn(root, 'diff', '--cached', '--name-only').trim(), 'notes.md', 'what else was staged stays staged');
+  assert.equal(readEvents(root)[0]?.type, 'roadmap.delete');
+
+  const keyed = setup(ROADMAP.replace('- labels: api', '- labels: api\n- key: PAY-7'));
+  decideRoadmap(keyed, loadConfig(keyed), 'payments', 'rejected');
+  assert.throws(() => deleteRoadmap(keyed, 'payments'), /tickets were already created for E1\.S1/);
 });

@@ -23,6 +23,8 @@ import {
   hasTool,
   localAgent,
   isGoogleDocUrl,
+  canDeleteRoadmap,
+  deleteRoadmap,
   newRoadmap,
   roadmapPath,
   roadmapStatus,
@@ -208,6 +210,7 @@ export function roadmapRoutes(app: Hono, ws: (c: Context) => string) {
       questions: r.questions,
       tree: r.items.map((i) => ({ id: i.id, kind: i.kind, title: i.title, epic: i.epic, fields: i.fields, description: i.description, criteria: i.criteria, depends: i.depends })),
       canDecide: canDecideRoadmap(gitUser(root), loaded),
+      canDelete: canDeleteRoadmap(r, gitUser(root)),
       holds: approvalHolds(r),
       progress: roadmapStatus(root, loaded, slug),
       tracker: trackerEnabled(loaded) ? loaded!.config.tracker!.provider : undefined,
@@ -238,6 +241,15 @@ export function roadmapRoutes(app: Hono, ws: (c: Context) => string) {
     busy(root, slug);
     const body = await c.req.json<{ decision: 'approved' | 'rejected'; comment?: string }>();
     return c.json(decideRoadmap(root, loadConfig(root), slug, body.decision === 'rejected' ? 'rejected' : 'approved', { comment: body.comment }));
+  });
+
+  app.delete('/api/roadmaps/:slug', (c) => {
+    const root = ws(c);
+    const slug = c.req.param('slug');
+    busy(root, slug);
+    const res = deleteRoadmap(root, slug);
+    for (const j of readJobs(root).filter((j) => j.roadmap === res.slug)) rmSync(join(root, JOBS_DIR, `${j.id}.json`), { force: true });
+    return c.json(res);
   });
 
   app.post('/api/roadmaps/:slug/apply', async (c) => {

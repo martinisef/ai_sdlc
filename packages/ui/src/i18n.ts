@@ -18,6 +18,8 @@ const es: Record<string, string> = {
   Approve: 'Aprobar',
   Accept: 'Aceptar',
   Reject: 'Rechazar',
+  'Delete roadmap': 'Eliminar roadmap',
+  'Delete this roadmap? Its folder is removed in a commit; git history keeps it.': '¿Eliminar este roadmap? Su carpeta se borra en un commit; el historial de git la conserva.',
   'Comment (optional)': 'Comentario (opcional)',
   'Next step': 'Siguiente paso',
   Open: 'Abrir',

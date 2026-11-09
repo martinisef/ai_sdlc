@@ -29613,7 +29613,7 @@ var init_metrics = __esm({
 // packages/core/src/roadmap.ts
 import { spawnSync as spawnSync2 } from "node:child_process";
 import { createHash } from "node:crypto";
-import { copyFileSync, existsSync as existsSync8, mkdirSync as mkdirSync4, readdirSync as readdirSync3, readFileSync as readFileSync10, statSync as statSync2, writeFileSync as writeFileSync6 } from "node:fs";
+import { copyFileSync, existsSync as existsSync8, mkdirSync as mkdirSync4, readdirSync as readdirSync3, readFileSync as readFileSync10, rmSync as rmSync3, statSync as statSync2, writeFileSync as writeFileSync6 } from "node:fs";
 import { basename, extname, join as join11 } from "node:path";
 async function downloadGoogleDoc(url2, fetchFn = fetch) {
   const id = GOOGLE_DOC.exec(url2)?.[1];
@@ -29894,6 +29894,29 @@ ${c.errors.map((e) => `  - ${e}`).join("\n")}`);
   gitOrThrow(root, ["commit", "-m", msg, "--", dir]);
   recordEvent(root, { type: decision === "approved" ? "gate.approve" : "gate.reject", change: dir, artifact: "roadmap", by, detail: o.comment });
   return { slug: r.slug, decision, by, commit: gitOrThrow(root, ["rev-parse", "--short", "HEAD"]) };
+}
+function canDeleteRoadmap(r, who) {
+  if (r.data.status !== "rejected") return { ok: false, reason: `${r.path} is ${r.data.status || "draft"}; only a rejected roadmap can be deleted` };
+  if (isAgent(who)) return { ok: false, reason: "an agent cannot delete a roadmap" };
+  if (!r.data.author || !personMatches([r.data.author], who)) return { ok: false, reason: `only its author (${r.data.author || "unknown"}) can delete it` };
+  const keyed = r.items.filter((i) => i.fields.key).map((i) => i.id);
+  if (keyed.length) return { ok: false, reason: `tickets were already created for ${keyed.join(", ")}; keep the roadmap so they stay linked` };
+  return { ok: true };
+}
+function deleteRoadmap(root, slug, o = {}) {
+  const r = getRoadmap(root, slug);
+  const who = o.who ?? gitUser(root);
+  const can = canDeleteRoadmap(r, who);
+  if (!can.ok) throw new SdlcError(can.reason);
+  const dir = `${ROADMAPS_DIR}/${r.slug}`;
+  const by = who.name ?? who.email ?? `@${who.login}`;
+  gitOrThrow(root, ["rm", "-r", "-q", "--ignore-unmatch", "--", dir]);
+  rmSync3(join11(root, dir), { recursive: true, force: true });
+  gitOrThrow(root, ["commit", "-q", "-m", `chore(roadmap-${r.slug}): delete rejected roadmap
+
+Deleted by ${by}${who.email ? ` <${who.email}>` : ""}`, "--", dir]);
+  recordEvent(root, { type: "roadmap.delete", change: dir, by });
+  return { slug: r.slug, by, commit: gitOrThrow(root, ["rev-parse", "--short", "HEAD"]) };
 }
 function approvalHolds(r) {
   if (r.data.status !== "approved") return { ok: false, reason: `${r.path} is ${r.data.status || "draft"}; a person approves it first (sdlc roadmap approve ${r.slug})` };
@@ -31022,7 +31045,7 @@ var init_content = __esm({
 
 // packages/adapters/src/render.ts
 import { createHash as createHash2 } from "node:crypto";
-import { chmodSync, existsSync as existsSync12, mkdirSync as mkdirSync6, readdirSync as readdirSync5, readFileSync as readFileSync15, rmdirSync, rmSync as rmSync3, writeFileSync as writeFileSync9 } from "node:fs";
+import { chmodSync, existsSync as existsSync12, mkdirSync as mkdirSync6, readdirSync as readdirSync5, readFileSync as readFileSync15, rmdirSync, rmSync as rmSync4, writeFileSync as writeFileSync9 } from "node:fs";
 import { dirname as dirname4, join as join16 } from "node:path";
 function skillFiles(skills, base, hint) {
   return skills.flatMap(
@@ -31214,7 +31237,7 @@ function sync(root, loaded, opts2 = {}) {
       continue;
     }
     if (!opts2.dryRun) {
-      rmSync3(full);
+      rmSync4(full);
       for (let dir = dirname4(full); dir.startsWith(root + "/") && readdirSync5(dir).length === 0; dir = dirname4(dir)) rmdirSync(dir);
     }
     report.removed.push(path);
@@ -35237,7 +35260,7 @@ var init_body_limit = __esm({
 // packages/server/src/roadmaps.ts
 import { randomBytes } from "node:crypto";
 import { EventEmitter } from "node:events";
-import { existsSync as existsSync22, mkdirSync as mkdirSync10, mkdtempSync as mkdtempSync4, readdirSync as readdirSync11, readFileSync as readFileSync25, rmSync as rmSync7, writeFileSync as writeFileSync18 } from "node:fs";
+import { existsSync as existsSync22, mkdirSync as mkdirSync10, mkdtempSync as mkdtempSync4, readdirSync as readdirSync11, readFileSync as readFileSync25, rmSync as rmSync8, writeFileSync as writeFileSync18 } from "node:fs";
 import { tmpdir as tmpdir4 } from "node:os";
 import { extname as extname2, join as join27 } from "node:path";
 function saveJob(root, job) {
@@ -35349,7 +35372,7 @@ function roadmapRoutes(app, ws) {
       try {
         created = await newRoadmap(root, slug, { source, title, loaded: loadConfig(root) });
       } finally {
-        if (tmp) rmSync7(tmp, { recursive: true, force: true });
+        if (tmp) rmSync8(tmp, { recursive: true, force: true });
       }
       const job = body.agent === "false" ? void 0 : startJob(root, slug, "draft");
       return c.json({ slug, path: created.path, source: created.source, job }, 201);
@@ -35369,6 +35392,7 @@ function roadmapRoutes(app, ws) {
       questions: r.questions,
       tree: r.items.map((i) => ({ id: i.id, kind: i.kind, title: i.title, epic: i.epic, fields: i.fields, description: i.description, criteria: i.criteria, depends: i.depends })),
       canDecide: canDecideRoadmap(gitUser(root), loaded),
+      canDelete: canDeleteRoadmap(r, gitUser(root)),
       holds: approvalHolds(r),
       progress: roadmapStatus(root, loaded, slug),
       tracker: trackerEnabled(loaded) ? loaded.config.tracker.provider : void 0,
@@ -35397,6 +35421,14 @@ function roadmapRoutes(app, ws) {
     busy(root, slug);
     const body = await c.req.json();
     return c.json(decideRoadmap(root, loadConfig(root), slug, body.decision === "rejected" ? "rejected" : "approved", { comment: body.comment }));
+  });
+  app.delete("/api/roadmaps/:slug", (c) => {
+    const root = ws(c);
+    const slug = c.req.param("slug");
+    busy(root, slug);
+    const res = deleteRoadmap(root, slug);
+    for (const j of readJobs(root).filter((j2) => j2.roadmap === res.slug)) rmSync8(join27(root, JOBS_DIR, `${j.id}.json`), { force: true });
+    return c.json(res);
   });
   app.post("/api/roadmaps/:slug/apply", async (c) => {
     const root = ws(c);
@@ -36098,7 +36130,7 @@ var init_src5 = __esm({
 // packages/cli/src/main.ts
 init_src2();
 init_src();
-import { existsSync as existsSync24, mkdirSync as mkdirSync12, readFileSync as readFileSync28, rmSync as rmSync8, writeFileSync as writeFileSync20 } from "node:fs";
+import { existsSync as existsSync24, mkdirSync as mkdirSync12, readFileSync as readFileSync28, rmSync as rmSync9, writeFileSync as writeFileSync20 } from "node:fs";
 import { join as join29 } from "node:path";
 
 // packages/cli/src/metrics.ts
@@ -36119,14 +36151,14 @@ import { execFileSync as execFileSync8 } from "node:child_process";
 // packages/cli/src/ci/index.ts
 init_src();
 import { execFileSync as execFileSync7, spawnSync as spawnSync4 } from "node:child_process";
-import { appendFileSync as appendFileSync5, existsSync as existsSync19, readdirSync as readdirSync10, readFileSync as readFileSync22, rmSync as rmSync5 } from "node:fs";
+import { appendFileSync as appendFileSync5, existsSync as existsSync19, readdirSync as readdirSync10, readFileSync as readFileSync22, rmSync as rmSync6 } from "node:fs";
 import { homedir as homedir3 } from "node:os";
 import { dirname as dirname6, join as join24 } from "node:path";
 
 // packages/cli/src/ci/evals.ts
 init_src();
 import { execFileSync as execFileSync6, spawnSync as spawnSync3 } from "node:child_process";
-import { existsSync as existsSync14, mkdtempSync as mkdtempSync3, readdirSync as readdirSync7, readFileSync as readFileSync17, rmSync as rmSync4, writeFileSync as writeFileSync10 } from "node:fs";
+import { existsSync as existsSync14, mkdtempSync as mkdtempSync3, readdirSync as readdirSync7, readFileSync as readFileSync17, rmSync as rmSync5, writeFileSync as writeFileSync10 } from "node:fs";
 import { tmpdir as tmpdir3 } from "node:os";
 import { join as join18 } from "node:path";
 function touched(dir, base) {
@@ -36214,7 +36246,7 @@ function runEvals(c, pattern, out, tags = []) {
       failures = [err.message];
     } finally {
       git(c.root, ["worktree", "remove", "--force", wt]);
-      rmSync4(join18(wt, ".."), { recursive: true, force: true });
+      rmSync5(join18(wt, ".."), { recursive: true, force: true });
     }
     results.push({ name: e.name, passed: !failures.length, failures, seconds: Math.round((Date.now() - started) / 1e3) });
     console.log(`${failures.length ? "FAIL" : "PASS"} ${e.name}`);
@@ -37128,7 +37160,7 @@ function bootstrap(c) {
   }
   if (c.env.SDLC_PLUGIN_TOKEN) url2 = url2.replace("https://", `https://${c.env.SDLC_PLUGIN_TOKEN_USER || "x-access-token"}:${c.env.SDLC_PLUGIN_TOKEN}@`);
   const home = c.env.SDLC_HOME || join24(homedir3(), ".ai-sdlc");
-  rmSync5(home, { recursive: true, force: true });
+  rmSync6(home, { recursive: true, force: true });
   execFileSync7("git", ["clone", "-q", "--depth", "1", url2, home], { stdio: ["ignore", "ignore", "inherit"] });
   execFileSync7("claude", ["plugin", "marketplace", "add", home], { stdio: ["ignore", "ignore", "inherit"] });
   execFileSync7("claude", ["plugin", "install", "ai-sdlc@ai-native-sdlc"], { stdio: ["ignore", "ignore", "inherit"] });
@@ -37838,18 +37870,18 @@ async function refreshPrStats(root, loaded) {
 // packages/cli/src/doctor-fix.ts
 init_src2();
 init_src();
-import { existsSync as existsSync20, readFileSync as readFileSync23, rmSync as rmSync6, writeFileSync as writeFileSync17 } from "node:fs";
+import { existsSync as existsSync20, readFileSync as readFileSync23, rmSync as rmSync7, writeFileSync as writeFileSync17 } from "node:fs";
 import { join as join26 } from "node:path";
 function migrateLegacy(root) {
   const config2 = JSON.parse(readFileSync23(join26(root, LEGACY_CONFIG_PATH), "utf8"));
   config2.locale ??= "es";
   config2.agents ??= ["claude"];
   writeConfig(root, config2);
-  rmSync6(join26(root, LEGACY_CONFIG_PATH));
+  rmSync7(join26(root, LEGACY_CONFIG_PATH));
   if (existsSync20(join26(root, ".claude/.sdlc-fix-lock"))) {
     ensureSdlcDir(root);
     writeFileSync17(join26(root, ".sdlc/fix-lock"), "");
-    rmSync6(join26(root, ".claude/.sdlc-fix-lock"));
+    rmSync7(join26(root, ".claude/.sdlc-fix-lock"));
   }
 }
 var SYNC_FIXES = /* @__PURE__ */ new Set(["git-hooks", "shim", "cursor", "agents-md"]);
@@ -38690,7 +38722,7 @@ async function main() {
         writeFileSync20(lock, (/* @__PURE__ */ new Date()).toISOString() + "\n");
         console.log("test-lock ON: test files cannot be edited until `sdlc lock off`");
       } else if (pos[0] === "off") {
-        for (const p of FIX_LOCKS) rmSync8(join29(root, p), { force: true });
+        for (const p of FIX_LOCKS) rmSync9(join29(root, p), { force: true });
         console.log("test-lock OFF");
       } else {
         console.log(FIX_LOCKS.some((p) => existsSync24(join29(root, p))) ? "on" : "off");

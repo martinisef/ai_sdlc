@@ -254,6 +254,7 @@ export interface RoadmapDetail extends RoadmapSummary {
   questions: { id: string; text: string; answer?: string }[];
   tree: RoadmapNode[];
   canDecide: { ok: boolean; reason?: string };
+  canDelete: { ok: boolean; reason?: string };
   holds: { ok: boolean; reason?: string };
   progress: { id: string; title: string; key?: string; change?: string; stage?: string; blockedBy: string[] }[];
   tracker?: string;
