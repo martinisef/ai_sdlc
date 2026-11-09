@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { fillCommands, fillStack, installCi, stackCi } from '../src/ci/install.ts';
-import { detectConfig, presetConfig } from '../src/init.ts';
+import { detectConfig, ignoreNodeModules, presetConfig } from '../src/init.ts';
 import { parsePeople } from '../src/presets.ts';
 import { sdlc } from './helpers.ts';
 
@@ -124,4 +124,21 @@ test('sdlc init without a remote skips CI and says how to add it', async () => {
   assert.match(r.out, /preset solo/);
   assert.match(r.out, /no remote detected/);
   assert.ok(!existsSync(join(root, '.github')));
+});
+
+test('sdlc init keeps node_modules/ out of the first commit', async () => {
+  process.env.GIT_CONFIG_GLOBAL = '/dev/null';
+  const root = bare();
+  const r = await sdlc(root, ['init', '--yes']);
+  assert.equal(r.code, 0, r.err);
+  assert.match(r.out, /added node_modules\/ to \.gitignore/);
+  assert.equal(readFileSync(join(root, '.gitignore'), 'utf8'), 'node_modules/\n');
+  assert.equal(ignoreNodeModules(root), false, 'only once');
+
+  const other = bare();
+  writeFileSync(join(other, '.gitignore'), 'dist');
+  assert.equal(ignoreNodeModules(other), true);
+  assert.equal(readFileSync(join(other, '.gitignore'), 'utf8'), 'dist\nnode_modules/\n');
+  writeFileSync(join(other, '.gitignore'), '/node_modules\n');
+  assert.equal(ignoreNodeModules(other), false, 'any spelling git honours');
 });

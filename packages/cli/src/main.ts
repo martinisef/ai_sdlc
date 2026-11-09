@@ -50,7 +50,7 @@ import {
   type Artifact,
 } from '@ai-native-sdlc/core';
 import { refreshPrStats } from './metrics.ts';
-import { askConfig, detectConfig, presetConfig, scaffold, templateFor } from './init.ts';
+import { askConfig, detectConfig, ignoreNodeModules, presetConfig, scaffold, templateFor } from './init.ts';
 import { defaultPreset, isPreset, PRESET_SPECS, PRESETS, type Preset } from './presets.ts';
 import { ciSecrets, installCi } from './ci/install.ts';
 import { fixDoctor, migrateLegacy } from './doctor-fix.ts';
@@ -234,6 +234,7 @@ async function main() {
       writeConfig(root, config);
       recordEvent(root, { type: 'setup.init', detail: preset });
       const created = scaffold(root, { claudeMd: (config.agents ?? []).includes('claude'), locale });
+      const ignored = ignoreNodeModules(root);
       const report = sync(root, requireConfig(root));
       const provider = config.vcs?.provider;
       const ci = flags['no-ci'] || !provider ? undefined : installCi(root, config, { provider, locale, files: PRESET_SPECS[preset].github });
@@ -245,6 +246,7 @@ async function main() {
       console.log(`✓ ai-sdlc ready · preset ${preset} · ${config.stack?.language ?? 'unknown stack'} · agents: ${(config.agents ?? []).join(', ')}`);
       console.log(`  config   ${CONFIG_PATH} (${created.length} scaffold files, ${report.written.length} agent files; --verbose lists them)`);
       console.log(`  gates    ${Object.keys(config.gates ?? {}).length ? (roles.length ? roles.join(' · ') : 'by role, nobody assigned yet: any person') : 'any person (never an agent)'}`);
+      if (ignored) console.log('  git      added node_modules/ to .gitignore');
       console.log(
         `  CI       ${ci ? `${ci.written.length} file(s) for ${provider}${ci.conflicts.length ? `, ${ci.conflicts.length} kept` : ''}; secret ${ciSecrets(config).join(', ')}` : provider ? 'skipped (--no-ci)' : 'no remote detected: `sdlc ci install --provider github|gitlab|bitbucket` later'}`,
       );

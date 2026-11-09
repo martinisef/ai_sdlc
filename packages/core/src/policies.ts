@@ -61,10 +61,10 @@ const POSIX_CLASSES: Record<string, string> = {
 };
 
 /** POSIX ERE (as written in configs for grep -E) → JS RegExp, case-insensitive like `grep -Ei`. */
-export function ereToRegExp(ere: string): RegExp | undefined {
+export function ereToRegExp(ere: string, flags = 'i'): RegExp | undefined {
   const src = ere.replace(/\[:([a-z]+):\]/g, (m, name: string) => POSIX_CLASSES[name] ?? m);
   try {
-    return new RegExp(src, 'i');
+    return new RegExp(src, flags);
   } catch {
     return undefined;
   }
@@ -83,11 +83,14 @@ export function checkProtected(ctx: PolicyContext, path: string, locale: Locale,
   return { action: 'deny', policy: 'protected-paths', message: t(locale, 'appendonly.deny', { path: rel, glob: append, config: ctx.loaded!.path }) };
 }
 
+/** `apiKey: "OPENAI_API_KEY"` names a variable, it does not hold a key. */
+const envVarName = (match: string) => /^[A-Z][A-Z0-9]*(_[A-Z0-9]+)+$/.test(/["']([^"']+)["']$/.exec(match)?.[1] ?? '');
+
 export function checkSecrets(ctx: PolicyContext, content: string | undefined, locale: Locale): Decision {
   if (!content) return ALLOW;
   for (const pattern of [...BUILTIN_SECRET_PATTERNS, ...(ctx.loaded?.config.secret_patterns_extra ?? [])]) {
-    const m = ereToRegExp(pattern)?.exec(content);
-    if (m) {
+    for (const m of content.matchAll(ereToRegExp(pattern, 'gi') ?? /$^/g)) {
+      if (envVarName(m[0])) continue;
       // only a prefix, so the secret is not echoed back in full
       return { action: 'deny', policy: 'secrets', message: t(locale, 'secret.deny', { preview: m[0].slice(0, 12), pattern }) };
     }

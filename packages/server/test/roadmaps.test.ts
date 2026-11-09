@@ -211,12 +211,23 @@ test('roadmaps: uploads are validated (type, size, slug, link)', async () => {
   await bad({ slug: 'big', file: new File([new Uint8Array(21 * 1024 * 1024)], 'plan.pdf') }, 413, /larger than 20 MB/);
   assert.equal(existsSync(join(root, 'changes/_roadmaps/big')), false);
 
-  const linked = await upload(app, { slug: 'from-doc', url: 'https://docs.google.com/document/d/abc', agent: 'false' });
-  assert.equal(linked.status, 201);
-  const body = await linked.json();
-  assert.equal(body.source, 'https://docs.google.com/document/d/abc');
-  assert.equal(body.job, undefined, 'agent=false only scaffolds');
-  await bad({ slug: 'from-doc', url: 'https://example.com/plan', agent: 'false' }, 400, /already exists/);
+  await bad({ slug: 'a', url: 'https://example.com/plan' }, 400, /reads Google Docs links/);
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = (async (u: string) =>
+    String(u).includes('/d/private/') ? new Response('<html>Sign in</html>', { headers: { 'content-type': 'text/html' } }) : new Response('# Plan\n', { headers: { 'content-type': 'text/x-markdown' } })) as typeof fetch;
+  try {
+    await bad({ slug: 'secret', url: 'https://docs.google.com/document/d/private/edit', agent: 'false' }, 400, /Anyone with the link/);
+    assert.equal(existsSync(join(root, 'changes/_roadmaps/secret')), false, 'nothing is left behind');
+    const linked = await upload(app, { slug: 'from-doc', url: 'https://docs.google.com/document/d/abc/edit', agent: 'false' });
+    assert.equal(linked.status, 201);
+    const body = await linked.json();
+    assert.equal(body.source, 'changes/_roadmaps/from-doc/source.md');
+    assert.equal(readFileSync(join(root, body.source), 'utf8'), '# Plan\n');
+    assert.equal(body.job, undefined, 'agent=false only scaffolds');
+    await bad({ slug: 'from-doc', url: 'https://docs.google.com/document/d/abc', agent: 'false' }, 400, /already exists/);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
 
   // every route takes the slug from the URL: no way out of changes/_roadmaps/<slug>/
   const sneaky = encodeURIComponent('x/../../_roadmaps/from-doc');
@@ -260,4 +271,21 @@ test('roadmaps: one agent run per roadmap; failures and interrupted runs are rep
   assert.equal((await call(app, '/api/jobs/nope')).status, 404);
   assert.equal((await call(app, '/api/roadmaps/nope')).status, 404);
   assert.match(gitIn(root, 'check-ignore', '.sdlc/jobs/old.json'), /old\.json/, 'jobs stay out of git');
+});
+
+test('roadmaps: the author deletes a rejected roadmap from the dashboard', async () => {
+  const { root, app } = setup();
+  assert.equal((await upload(app, { slug: 'dropped', file: new File(['# Plan'], 'plan.md'), agent: 'false' })).status, 201);
+  gitIn(root, 'add', '-A');
+  gitIn(root, 'commit', '-qm', 'roadmap: dropped');
+  const draft = await call(app, '/api/roadmaps/dropped', { method: 'DELETE' });
+  assert.equal(draft.status, 400);
+  assert.match((await draft.json()).error, /only a rejected roadmap/);
+  assert.equal((await post(app, '/api/roadmaps/dropped/gate', { decision: 'rejected' })).status, 200);
+  assert.deepEqual((await (await call(app, '/api/roadmaps/dropped')).json()).canDelete, { ok: true });
+  const del = await call(app, '/api/roadmaps/dropped', { method: 'DELETE' });
+  assert.equal(del.status, 200, await del.clone().text());
+  assert.match((await del.json()).commit, /^[0-9a-f]+$/);
+  assert.equal((await call(app, '/api/roadmaps/dropped')).status, 404);
+  assert.deepEqual(await (await call(app, '/api/roadmaps')).json(), []);
 });

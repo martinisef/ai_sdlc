@@ -235,6 +235,18 @@ function RoadmapGate({ r }: { r: RoadmapDetail }) {
       setBusy(false);
     }
   };
+  const remove = async () => {
+    if (!confirm(t('Delete this roadmap? Its folder is removed in a commit; git history keeps it.'))) return;
+    setBusy(true);
+    setMsg(undefined);
+    try {
+      await api(`/roadmaps/${encodeURIComponent(r.slug)}`, { method: 'DELETE' });
+      location.hash = '/roadmaps';
+    } catch (e) {
+      setMsg((e as Error).message);
+      setBusy(false);
+    }
+  };
   if (r.status === 'approved' && r.holds.ok)
     return (
       <div className="gate done">
@@ -262,6 +274,14 @@ function RoadmapGate({ r }: { r: RoadmapDetail }) {
           {t('Not yours to approve')}: {r.canDecide.reason}
         </span>
       )}
+      {r.status === 'rejected' &&
+        (r.canDelete.ok ? (
+          <button className="danger" disabled={busy || r.job?.status === 'running'} onClick={remove}>
+            {t('Delete roadmap')}
+          </button>
+        ) : (
+          <span className="muted">{r.canDelete.reason}</span>
+        ))}
       {msg && <span className="gate-msg">{msg}</span>}
     </div>
   );

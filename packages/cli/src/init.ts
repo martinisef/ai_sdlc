@@ -1,6 +1,6 @@
 // `sdlc init`: the deterministic half of setup (detect → config → scaffold → sync).
 // Judgment calls (CLAUDE.md content, REVIEW.md, CI wiring) stay in the /sdlc-setup skill.
-import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { appendFileSync, copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { createInterface } from 'node:readline/promises';
 import { localeDir } from '@ai-native-sdlc/adapters';
@@ -194,6 +194,16 @@ export function scaffold(root: string, opts: { claudeMd: boolean; locale: Locale
   };
   walk(src);
   return created;
+}
+
+/** `npm i -D` puts the tool in node_modules/; make sure the first `git add -A` does not commit it. Returns true if .gitignore changed. */
+export function ignoreNodeModules(root: string): boolean {
+  if (git(root, ['check-ignore', '-q', 'node_modules/']) !== undefined) return false;
+  const path = join(root, '.gitignore');
+  const current = existsSync(path) ? readFileSync(path, 'utf8') : '';
+  if (/^\/?node_modules\/?$/m.test(current)) return false;
+  appendFileSync(path, `${current && !current.endsWith('\n') ? '\n' : ''}node_modules/\n`);
+  return true;
 }
 
 export function templateFor(root: string, artifact: string, locale: Locale): string {

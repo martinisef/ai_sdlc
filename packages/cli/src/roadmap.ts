@@ -36,8 +36,8 @@ export async function roadmapCommand(root: string, pos: string[], flags: Flags):
   switch (sub) {
     case 'new': {
       const slug = need('new <slug> --source <file|url>');
-      const r = newRoadmap(root, slug, { source: str(flags.source), title: str(flags.title), loaded });
-      console.log(`created ${r.path}${r.source ? ` (source: ${r.source})` : ''}`);
+      const r = await newRoadmap(root, slug, { source: str(flags.source), title: str(flags.title), loaded });
+      console.log(`created ${r.path}${r.source ? ` (source: ${r.source}${r.sourceUrl ? `, downloaded from ${r.sourceUrl}` : ''})` : ''}`);
       console.log(`Next: /sdlc-roadmap ${slug} in your agent: it reads the document, asks what is missing and drafts the epics and stories.`);
       return 0;
     }

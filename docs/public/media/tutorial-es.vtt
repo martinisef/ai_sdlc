@@ -6,12 +6,12 @@ Instalar: npm i -D @morsadev/sdlc y después npx sdlc init. sdlc doctor verifica
 00:00:35.200 --> 00:01:09.067
 Un cambio chico va por el carril rápido: sin spec ni plan, con límites en cada push.
 
-00:01:09.067 --> 00:02:04.933
+00:01:09.067 --> 00:02:04.800
 Una funcionalidad de verdad: el agente escribe intent, spec y plan; vos aprobás cada uno. Los pasos del agente están acelerados.
 
-00:02:04.933 --> 00:02:25.766
+00:02:04.800 --> 00:02:25.733
 El hook de git bloquea el código que se sube antes de aprobar el plan.
 
-00:02:25.766 --> 00:02:40.599
+00:02:25.733 --> 00:02:40.566
 Las mismas decisiones en el dashboard local: npx sdlc ui.
 
