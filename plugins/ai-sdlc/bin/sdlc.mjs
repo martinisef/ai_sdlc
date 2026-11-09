@@ -38282,7 +38282,7 @@ async function bandsCommand(root, args) {
 }
 
 // packages/cli/src/main.ts
-var VERSION = true ? "1.0.1" : JSON.parse(readFileSync28(new URL("../package.json", import.meta.url), "utf8")).version;
+var VERSION = true ? "1.0.2" : JSON.parse(readFileSync28(new URL("../package.json", import.meta.url), "utf8")).version;
 var HELP = `sdlc ${VERSION} \u2014 AI-native SDLC loop (intent \u2192 spec \u2192 plan \u2192 build \u2192 ship \u2192 incident)
 
 Setup
