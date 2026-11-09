@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { CONFIG, expect, read, test } from './fixtures.ts';
 
@@ -154,4 +154,22 @@ test('roadmaps: a Cursor project drafts with cursor-agent', async ({ page, dashb
   await expect.poll(() => job().status).toBe('done');
   expect(job().agent).toBe('cursor');
   expect(job().log).toContain('stub cursor-agent');
+});
+
+test('roadmaps: the author deletes a rejected roadmap', async ({ page, dashboard, repo }) => {
+  await page.goto(`${dashboard}#/roadmaps`);
+  await page.getByLabel('Name (lowercase letters, digits and dashes)').fill('dropped');
+  await page.locator('input[name="file"]').setInputFiles({ name: 'plan.md', mimeType: 'text/markdown', buffer: Buffer.from('# Plan\n\n## 2. Sharing\n') });
+  await page.getByRole('button', { name: 'Upload and draft' }).click();
+  await expect(page.locator('.tree')).toContainText('Export a list');
+  await expect(page.getByRole('button', { name: 'Delete roadmap' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Reject' })).toBeEnabled();
+  await page.getByRole('button', { name: 'Reject' }).click();
+  await expect(page.locator('.gate-msg')).toContainText('rejected');
+  page.once('dialog', (d) => d.accept());
+  await page.getByRole('button', { name: 'Delete roadmap' }).click();
+  await expect(page).toHaveURL(/#\/roadmaps$/);
+  await expect(page.locator('main')).toContainText('No roadmaps yet');
+  expect(existsSync(join(repo, 'changes/_roadmaps/dropped'))).toBe(false);
+  expect(execFileSync('git', ['log', '-1', '--format=%s'], { cwd: repo, encoding: 'utf8' })).toContain('delete rejected roadmap');
 });

@@ -3,7 +3,7 @@
 // with `/sdlc-intent <KEY>`. The file is the source of the breakdown; the tracker gets copies.
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { basename, extname, join } from 'node:path';
 import { listChanges } from './changes.ts';
 import { localeOf, type LoadedConfig } from './config.ts';
@@ -396,6 +396,31 @@ export function decideRoadmap(
   gitOrThrow(root, ['commit', '-m', msg, '--', dir]);
   recordEvent(root, { type: decision === 'approved' ? 'gate.approve' : 'gate.reject', change: dir, artifact: 'roadmap', by, detail: o.comment });
   return { slug: r.slug, decision, by, commit: gitOrThrow(root, ['rev-parse', '--short', 'HEAD']) };
+}
+
+/** Only its author deletes a roadmap, and only once rejected and before any ticket exists. */
+export function canDeleteRoadmap(r: Roadmap, who: Approver): { ok: boolean; reason?: string } {
+  if (r.data.status !== 'rejected') return { ok: false, reason: `${r.path} is ${r.data.status || 'draft'}; only a rejected roadmap can be deleted` };
+  if (isAgent(who)) return { ok: false, reason: 'an agent cannot delete a roadmap' };
+  if (!r.data.author || !personMatches([r.data.author], who)) return { ok: false, reason: `only its author (${r.data.author || 'unknown'}) can delete it` };
+  const keyed = r.items.filter((i) => i.fields.key).map((i) => i.id);
+  if (keyed.length) return { ok: false, reason: `tickets were already created for ${keyed.join(', ')}; keep the roadmap so they stay linked` };
+  return { ok: true };
+}
+
+/** `git rm` the roadmap folder and commit it; the history keeps it. */
+export function deleteRoadmap(root: string, slug: string, o: { who?: Approver } = {}): { slug: string; by: string; commit: string } {
+  const r = getRoadmap(root, slug);
+  const who: Approver = o.who ?? gitUser(root);
+  const can = canDeleteRoadmap(r, who);
+  if (!can.ok) throw new SdlcError(can.reason!);
+  const dir = `${ROADMAPS_DIR}/${r.slug}`;
+  const by = who.name ?? who.email ?? `@${who.login}`;
+  gitOrThrow(root, ['rm', '-r', '-q', '--ignore-unmatch', '--', dir]);
+  rmSync(join(root, dir), { recursive: true, force: true });
+  gitOrThrow(root, ['commit', '-q', '-m', `chore(roadmap-${r.slug}): delete rejected roadmap\n\nDeleted by ${by}${who.email ? ` <${who.email}>` : ''}`, '--', dir]);
+  recordEvent(root, { type: 'roadmap.delete', change: dir, by });
+  return { slug: r.slug, by, commit: gitOrThrow(root, ['rev-parse', '--short', 'HEAD']) };
 }
 
 /** Approved, and nothing but keys changed since: anything else needs a new approval. */

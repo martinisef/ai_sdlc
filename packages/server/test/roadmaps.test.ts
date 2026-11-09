@@ -272,3 +272,20 @@ test('roadmaps: one agent run per roadmap; failures and interrupted runs are rep
   assert.equal((await call(app, '/api/roadmaps/nope')).status, 404);
   assert.match(gitIn(root, 'check-ignore', '.sdlc/jobs/old.json'), /old\.json/, 'jobs stay out of git');
 });
+
+test('roadmaps: the author deletes a rejected roadmap from the dashboard', async () => {
+  const { root, app } = setup();
+  assert.equal((await upload(app, { slug: 'dropped', file: new File(['# Plan'], 'plan.md'), agent: 'false' })).status, 201);
+  gitIn(root, 'add', '-A');
+  gitIn(root, 'commit', '-qm', 'roadmap: dropped');
+  const draft = await call(app, '/api/roadmaps/dropped', { method: 'DELETE' });
+  assert.equal(draft.status, 400);
+  assert.match((await draft.json()).error, /only a rejected roadmap/);
+  assert.equal((await post(app, '/api/roadmaps/dropped/gate', { decision: 'rejected' })).status, 200);
+  assert.deepEqual((await (await call(app, '/api/roadmaps/dropped')).json()).canDelete, { ok: true });
+  const del = await call(app, '/api/roadmaps/dropped', { method: 'DELETE' });
+  assert.equal(del.status, 200, await del.clone().text());
+  assert.match((await del.json()).commit, /^[0-9a-f]+$/);
+  assert.equal((await call(app, '/api/roadmaps/dropped')).status, 404);
+  assert.deepEqual(await (await call(app, '/api/roadmaps')).json(), []);
+});
