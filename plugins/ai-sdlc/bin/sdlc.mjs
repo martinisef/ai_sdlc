@@ -29615,6 +29615,22 @@ import { spawnSync as spawnSync2 } from "node:child_process";
 import { createHash } from "node:crypto";
 import { copyFileSync, existsSync as existsSync8, mkdirSync as mkdirSync4, readdirSync as readdirSync3, readFileSync as readFileSync10, statSync as statSync2, writeFileSync as writeFileSync6 } from "node:fs";
 import { basename, extname, join as join11 } from "node:path";
+async function downloadGoogleDoc(url2, fetchFn = fetch) {
+  const id = GOOGLE_DOC.exec(url2)?.[1];
+  if (!id) return void 0;
+  let res;
+  try {
+    res = await fetchFn(`https://docs.google.com/document/d/${id}/export?format=md`, { redirect: "follow", signal: AbortSignal.timeout(3e4) });
+  } catch (e) {
+    throw new SdlcError(`could not download the Google Doc (${e.message}): try again, ${DOWNLOAD_HINT}`);
+  }
+  if (!res.ok || /text\/html/.test(res.headers.get("content-type") ?? "")) {
+    throw new SdlcError(`could not read the Google Doc (HTTP ${res.status}): share it with "Anyone with the link" (Viewer), ${DOWNLOAD_HINT}`);
+  }
+  const body = await res.text();
+  if (body.length > MAX_SOURCE_BYTES) throw new SdlcError(`the Google Doc is larger than ${MAX_SOURCE_BYTES / 1024 / 1024} MB: ${DOWNLOAD_HINT}`);
+  return body.replace(/^(\[[^\]]+\]):\s*<data:image\/[^>]*>[ \t]*$/gm, "$1: <image omitted>");
+}
 function parseRoadmap(raw2, slug = "", path = roadmapPath(slug)) {
   const { data, body, hasFrontmatter } = parseFrontmatter(raw2);
   const offset = hasFrontmatter ? raw2.split("\n").length - body.split("\n").length : 0;
@@ -29779,7 +29795,8 @@ roadmap: ${o.slug}
 status: draft            # draft \u2192 approved | rejected (sdlc roadmap approve)
 author: ${o.author ?? ""}
 source: ${o.source ?? ""}
-created: ${(/* @__PURE__ */ new Date()).toISOString().slice(0, 10)}
+${o.sourceUrl ? `source_url: ${o.sourceUrl}
+` : ""}created: ${(/* @__PURE__ */ new Date()).toISOString().slice(0, 10)}
 ---
 # Roadmap: ${o.title}
 
@@ -29816,13 +29833,20 @@ function getRoadmap(root, slug) {
   if (!existsSync8(p)) throw new SdlcError(`roadmap not found: ${roadmapPath(s)} (create it with: sdlc roadmap new ${s} --source <file|url>)`);
   return parseRoadmap(readFileSync10(p, "utf8"), s);
 }
-function newRoadmap(root, slug, o = {}) {
+async function newRoadmap(root, slug, o = {}) {
   if (!SLUG.test(slug)) throw new SdlcError(`invalid slug '${slug}': lowercase letters, digits and dashes`);
   const dir = join11(root, ROADMAPS_DIR, slug);
   if (existsSync8(join11(dir, "roadmap.md"))) throw new SdlcError(`${roadmapPath(slug)} already exists`);
+  const isUrl = !!o.source && /^https?:\/\//.test(o.source);
+  const doc = isUrl ? await downloadGoogleDoc(o.source, o.fetch) : void 0;
   mkdirSync4(dir, { recursive: true });
   let source = o.source;
-  if (o.source && !/^https?:\/\//.test(o.source)) {
+  let sourceUrl;
+  if (doc !== void 0) {
+    writeFileSync6(join11(dir, "source.md"), doc);
+    sourceUrl = o.source;
+    source = `${ROADMAPS_DIR}/${slug}/source.md`;
+  } else if (o.source && !isUrl) {
     const ext = extname(o.source).toLowerCase();
     if (!SOURCE_EXTENSIONS.includes(ext)) throw new SdlcError(`unsupported source ${basename(o.source)}: use ${SOURCE_EXTENSIONS.join(", ")} (export Word or Google Docs to PDF)`);
     if (!existsSync8(o.source)) throw new SdlcError(`source not found: ${o.source}`);
@@ -29832,9 +29856,9 @@ function newRoadmap(root, slug, o = {}) {
     if (ext === ".pdf") spawnSync2("pdftotext", ["-layout", join11(dir, "source.pdf"), join11(dir, "source.txt")], { stdio: "ignore" });
   }
   const title = o.title ?? slug.replace(/-/g, " ").replace(/^./, (c) => c.toUpperCase());
-  writeFileSync6(join11(dir, "roadmap.md"), roadmapTemplate({ slug, title, author: o.author ?? gitUser(root).name, source, locale: localeOf(o.loaded) }));
-  recordEvent(root, { type: "roadmap.new", change: `${ROADMAPS_DIR}/${slug}`, detail: source });
-  return { path: roadmapPath(slug), source };
+  writeFileSync6(join11(dir, "roadmap.md"), roadmapTemplate({ slug, title, author: o.author ?? gitUser(root).name, source, sourceUrl, locale: localeOf(o.loaded) }));
+  recordEvent(root, { type: "roadmap.new", change: `${ROADMAPS_DIR}/${slug}`, detail: sourceUrl ?? source });
+  return { path: roadmapPath(slug), source, sourceUrl };
 }
 function canDecideRoadmap(who, loaded) {
   const id = `${who.name ?? ""} <${who.email ?? ""}>${who.login ? ` @${who.login}` : ""}`;
@@ -29997,7 +30021,7 @@ function findRoadmapItem(root, key) {
   }
   return void 0;
 }
-var ROADMAPS_DIR, ROADMAP_RISKS, ITEM_FIELDS, MAX_CRITERIA, SLUG, SOURCE_EXTENSIONS, MAX_SOURCE_BYTES, HEADING, QUESTIONS, FIELD, CRITERION, QUESTION, ANSWER, roadmapPath;
+var ROADMAPS_DIR, ROADMAP_RISKS, ITEM_FIELDS, MAX_CRITERIA, SLUG, SOURCE_EXTENSIONS, MAX_SOURCE_BYTES, GOOGLE_DOC, isGoogleDocUrl, DOWNLOAD_HINT, HEADING, QUESTIONS, FIELD, CRITERION, QUESTION, ANSWER, roadmapPath;
 var init_roadmap = __esm({
   "packages/core/src/roadmap.ts"() {
     "use strict";
@@ -30015,6 +30039,9 @@ var init_roadmap = __esm({
     SLUG = /^[a-z0-9][a-z0-9-]*$/;
     SOURCE_EXTENSIONS = [".pdf", ".md", ".markdown", ".txt"];
     MAX_SOURCE_BYTES = 20 * 1024 * 1024;
+    GOOGLE_DOC = /^https:\/\/docs\.google\.com\/document\/(?:u\/\d+\/)?d\/([A-Za-z0-9_-]+)/;
+    isGoogleDocUrl = (url2) => GOOGLE_DOC.test(url2);
+    DOWNLOAD_HINT = "or export it to PDF or Markdown (File \u2192 Download) and use that file";
     HEADING = /^(#{2,3})\s+(E\d+(?:\.S\d+)?)\s*[·:—–-]\s*(.+?)\s*$/;
     QUESTIONS = /^##\s+(Open questions|Preguntas abiertas)\s*$/i;
     FIELD = /^-\s+([a-z_]+):\s*(.*)$/;
@@ -35307,6 +35334,7 @@ function roadmapRoutes(app, ws) {
       const file2 = body.file instanceof File ? body.file : void 0;
       if (url2 && !/^https?:\/\//.test(url2)) throw new Error("the link must start with http:// or https://");
       if (!file2 && !url2) throw new Error("upload the technical plan (PDF, Markdown or text) or give its link");
+      if (url2 && !file2 && !isGoogleDocUrl(url2)) throw new Error("the dashboard reads Google Docs links; for other links, download the document and upload it");
       let tmp;
       let source = url2;
       if (file2) {
@@ -35319,7 +35347,7 @@ function roadmapRoutes(app, ws) {
       }
       let created;
       try {
-        created = newRoadmap(root, slug, { source, title, loaded: loadConfig(root) });
+        created = await newRoadmap(root, slug, { source, title, loaded: loadConfig(root) });
       } finally {
         if (tmp) rmSync7(tmp, { recursive: true, force: true });
       }
@@ -38033,8 +38061,8 @@ async function roadmapCommand(root, pos, flags) {
   switch (sub) {
     case "new": {
       const slug = need("new <slug> --source <file|url>");
-      const r = newRoadmap(root, slug, { source: str(flags.source), title: str(flags.title), loaded });
-      console.log(`created ${r.path}${r.source ? ` (source: ${r.source})` : ""}`);
+      const r = await newRoadmap(root, slug, { source: str(flags.source), title: str(flags.title), loaded });
+      console.log(`created ${r.path}${r.source ? ` (source: ${r.source}${r.sourceUrl ? `, downloaded from ${r.sourceUrl}` : ""})` : ""}`);
       console.log(`Next: /sdlc-roadmap ${slug} in your agent: it reads the document, asks what is missing and drafts the epics and stories.`);
       return 0;
     }

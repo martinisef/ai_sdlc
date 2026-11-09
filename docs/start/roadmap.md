@@ -16,7 +16,8 @@ The agent never creates tickets on its own: nothing reaches the tracker until a 
 
 - The project already set up ([Install](./install.md)) and the [tutorial](./tutorial.md) done once, so the loop is familiar.
 - A tracker connected: [Jira](./jira.md), or GitHub Issues or Linear (see [Trackers](../reference/trackers.md)). Without one you can still draft and approve the breakdown, and start each story by its title.
-- The plan as a file: PDF, Markdown or plain text, up to 20 MB. From Google Docs or Word, export it as PDF (in Google Docs: **File** → **Download** → **PDF**). If the agent has the Google Drive MCP, you can pass the document's link instead.
+- The plan as a file: PDF, Markdown or plain text, up to 20 MB. From Word, export it as PDF.
+- Or the link to a Google Doc shared with **Anyone with the link** (Share → General access → Anyone with the link, Viewer). The tool downloads it as Markdown into `source.md` next to the roadmap, so the agent reads a local file. A private doc fails with `share it with "Anyone with the link"`; in that case share it that way, or download it (**File** → **Download** → **PDF**) and upload the file. The dashboard does not read other links (Notion, Confluence, a wiki): download the page and upload it.
 
 The examples on this page use the to-do app from the tutorial and a Jira project with the key `PROJ`.
 

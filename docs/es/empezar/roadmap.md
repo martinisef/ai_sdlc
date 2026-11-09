@@ -16,7 +16,8 @@ El agente nunca crea tickets por su cuenta: nada llega al tracker hasta que una 
 
 - El proyecto ya configurado ([Instalar](./instalar.md)) y el [tutorial](./tutorial.md) hecho una vez, para conocer el loop.
 - Un tracker conectado: [Jira](./jira.md), o GitHub Issues o Linear (ver [Trackers](../integraciones/trackers.md)). Sin tracker igual podés armar y aprobar la división, y empezar cada historia por su título.
-- El plan como archivo: PDF, Markdown o texto, hasta 20 MB. Desde Google Docs o Word, exportalo como PDF (en Google Docs: **Archivo** → **Descargar** → **PDF**). Si el agente tiene el MCP de Google Drive, podés pasarle el link del documento.
+- El plan como archivo: PDF, Markdown o texto, hasta 20 MB. Desde Word, exportalo como PDF.
+- O el link a un Google Doc compartido con **Cualquier persona con el vínculo** (Compartir → Acceso general → Cualquier persona con el vínculo, Lector). La herramienta lo descarga como Markdown en `source.md` al lado del roadmap, así el agente lee un archivo local. Un documento privado falla con `share it with "Anyone with the link"`; en ese caso compartilo así, o descargalo (**Archivo** → **Descargar** → **PDF**) y subí el archivo. El dashboard no lee otros links (Notion, Confluence, una wiki): descargá la página y subila.
 
 Los ejemplos de esta página usan la app de tareas del tutorial y un proyecto de Jira con la clave `PROJ`.
 
