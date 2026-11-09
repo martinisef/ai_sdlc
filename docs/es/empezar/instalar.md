@@ -43,7 +43,7 @@ npm i -D @morsadev/sdlc
 npx sdlc init --locale es --preset solo
 ```
 
-- `npm i -D` agrega la herramienta solo a este proyecto (en `node_modules/`). No se instala nada en el sistema.
+- `npm i -D` agrega la herramienta solo a este proyecto (en `node_modules/`). No se instala nada en el sistema. `node_modules/` nunca va a git: si tu `.gitignore` todavía no lo excluye, `init` lo agrega y muestra `git added node_modules/ to .gitignore`.
 - `npx sdlc` la ejecuta. Todos los comandos de estas páginas empiezan con `npx sdlc`.
 - `--locale es` deja las plantillas y los mensajes del loop en español.
 - `init` pregunta qué agentes usás. Apretá Enter para aceptar la sugerencia, o escribí `claude`, `cursor` o los dos (`claude,cursor`).
@@ -75,6 +75,8 @@ Línea por línea:
 ```bash
 git add -A && git commit -m "chore: ai-sdlc"
 ```
+
+Antes de commitear, `git status` no debería listar `node_modules/`. Si lo lista, mirá [Problemas frecuentes](./problemas.md#al-instalar).
 
 ## 5. Verificá que funciona
 
