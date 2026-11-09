@@ -22,6 +22,7 @@ import {
   agentBin,
   hasTool,
   localAgent,
+  isGoogleDocUrl,
   newRoadmap,
   roadmapPath,
   roadmapStatus,
@@ -171,6 +172,7 @@ export function roadmapRoutes(app: Hono, ws: (c: Context) => string) {
       const file = body.file instanceof File ? body.file : undefined;
       if (url && !/^https?:\/\//.test(url)) throw new Error('the link must start with http:// or https://');
       if (!file && !url) throw new Error('upload the technical plan (PDF, Markdown or text) or give its link');
+      if (url && !file && !isGoogleDocUrl(url)) throw new Error('the dashboard reads Google Docs links; for other links, download the document and upload it');
       let tmp: string | undefined;
       let source = url;
       if (file) {
@@ -181,9 +183,9 @@ export function roadmapRoutes(app: Hono, ws: (c: Context) => string) {
         source = join(tmp, `plan${ext}`);
         writeFileSync(source, Buffer.from(await file.arrayBuffer()));
       }
-      let created: ReturnType<typeof newRoadmap>;
+      let created: Awaited<ReturnType<typeof newRoadmap>>;
       try {
-        created = newRoadmap(root, slug, { source, title, loaded: loadConfig(root) });
+        created = await newRoadmap(root, slug, { source, title, loaded: loadConfig(root) });
       } finally {
         if (tmp) rmSync(tmp, { recursive: true, force: true });
       }

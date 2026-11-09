@@ -23,6 +23,29 @@ export const MAX_CRITERIA = 8;
 const SLUG = /^[a-z0-9][a-z0-9-]*$/;
 export const SOURCE_EXTENSIONS = ['.pdf', '.md', '.markdown', '.txt'];
 export const MAX_SOURCE_BYTES = 20 * 1024 * 1024;
+const GOOGLE_DOC = /^https:\/\/docs\.google\.com\/document\/(?:u\/\d+\/)?d\/([A-Za-z0-9_-]+)/;
+export const isGoogleDocUrl = (url: string) => GOOGLE_DOC.test(url);
+const DOWNLOAD_HINT = 'or export it to PDF or Markdown (File → Download) and use that file';
+
+/** A Google Doc shared with "Anyone with the link", as Markdown. Not a Google Doc link → undefined. */
+export async function downloadGoogleDoc(url: string, fetchFn: typeof fetch = fetch): Promise<string | undefined> {
+  const id = GOOGLE_DOC.exec(url)?.[1];
+  if (!id) return undefined;
+  let res: Response;
+  try {
+    res = await fetchFn(`https://docs.google.com/document/d/${id}/export?format=md`, { redirect: 'follow', signal: AbortSignal.timeout(30_000) });
+  } catch (e) {
+    throw new SdlcError(`could not download the Google Doc (${(e as Error).message}): try again, ${DOWNLOAD_HINT}`);
+  }
+  // a private doc redirects to the sign-in page
+  if (!res.ok || /text\/html/.test(res.headers.get('content-type') ?? '')) {
+    throw new SdlcError(`could not read the Google Doc (HTTP ${res.status}): share it with "Anyone with the link" (Viewer), ${DOWNLOAD_HINT}`);
+  }
+  const body = await res.text();
+  if (body.length > MAX_SOURCE_BYTES) throw new SdlcError(`the Google Doc is larger than ${MAX_SOURCE_BYTES / 1024 / 1024} MB: ${DOWNLOAD_HINT}`);
+  // the export inlines every image as a base64 data URI
+  return body.replace(/^(\[[^\]]+\]):\s*<data:image\/[^>]*>[ \t]*$/gm, '$1: <image omitted>');
+}
 
 export interface RoadmapItem {
   id: string;
@@ -241,14 +264,14 @@ export function setAnswers(raw: string, answers: Record<string, string>): string
   return out.join('\n');
 }
 
-export function roadmapTemplate(o: { slug: string; title: string; author?: string; source?: string; locale?: 'en' | 'es' }): string {
+export function roadmapTemplate(o: { slug: string; title: string; author?: string; source?: string; sourceUrl?: string; locale?: 'en' | 'es' }): string {
   const es = o.locale === 'es';
   return `---
 roadmap: ${o.slug}
 status: draft            # draft → approved | rejected (sdlc roadmap approve)
 author: ${o.author ?? ''}
 source: ${o.source ?? ''}
-created: ${new Date().toISOString().slice(0, 10)}
+${o.sourceUrl ? `source_url: ${o.sourceUrl}\n` : ''}created: ${new Date().toISOString().slice(0, 10)}
 ---
 # Roadmap: ${o.title}
 
@@ -291,14 +314,25 @@ export function getRoadmap(root: string, slug: string): Roadmap {
   return parseRoadmap(readFileSync(p, 'utf8'), s);
 }
 
-/** Scaffold the folder: copy the source document (or keep its URL) and write the template. Does not commit. */
-export function newRoadmap(root: string, slug: string, o: { source?: string; title?: string; loaded?: LoadedConfig; author?: string } = {}): { path: string; source?: string } {
+/** Scaffold the folder: copy the source document (a Google Doc is downloaded, other URLs are kept) and write the template. Does not commit. */
+export async function newRoadmap(
+  root: string,
+  slug: string,
+  o: { source?: string; title?: string; loaded?: LoadedConfig; author?: string; fetch?: typeof fetch } = {},
+): Promise<{ path: string; source?: string; sourceUrl?: string }> {
   if (!SLUG.test(slug)) throw new SdlcError(`invalid slug '${slug}': lowercase letters, digits and dashes`);
   const dir = join(root, ROADMAPS_DIR, slug);
   if (existsSync(join(dir, 'roadmap.md'))) throw new SdlcError(`${roadmapPath(slug)} already exists`);
+  const isUrl = !!o.source && /^https?:\/\//.test(o.source);
+  const doc = isUrl ? await downloadGoogleDoc(o.source!, o.fetch) : undefined;
   mkdirSync(dir, { recursive: true });
   let source = o.source;
-  if (o.source && !/^https?:\/\//.test(o.source)) {
+  let sourceUrl: string | undefined;
+  if (doc !== undefined) {
+    writeFileSync(join(dir, 'source.md'), doc);
+    sourceUrl = o.source;
+    source = `${ROADMAPS_DIR}/${slug}/source.md`;
+  } else if (o.source && !isUrl) {
     const ext = extname(o.source).toLowerCase();
     if (!SOURCE_EXTENSIONS.includes(ext)) throw new SdlcError(`unsupported source ${basename(o.source)}: use ${SOURCE_EXTENSIONS.join(', ')} (export Word or Google Docs to PDF)`);
     if (!existsSync(o.source)) throw new SdlcError(`source not found: ${o.source}`);
@@ -309,9 +343,9 @@ export function newRoadmap(root: string, slug: string, o: { source?: string; tit
     if (ext === '.pdf') spawnSync('pdftotext', ['-layout', join(dir, 'source.pdf'), join(dir, 'source.txt')], { stdio: 'ignore' });
   }
   const title = o.title ?? slug.replace(/-/g, ' ').replace(/^./, (c) => c.toUpperCase());
-  writeFileSync(join(dir, 'roadmap.md'), roadmapTemplate({ slug, title, author: o.author ?? gitUser(root).name, source, locale: localeOf(o.loaded) }));
-  recordEvent(root, { type: 'roadmap.new', change: `${ROADMAPS_DIR}/${slug}`, detail: source });
-  return { path: roadmapPath(slug), source };
+  writeFileSync(join(dir, 'roadmap.md'), roadmapTemplate({ slug, title, author: o.author ?? gitUser(root).name, source, sourceUrl, locale: localeOf(o.loaded) }));
+  recordEvent(root, { type: 'roadmap.new', change: `${ROADMAPS_DIR}/${slug}`, detail: sourceUrl ?? source });
+  return { path: roadmapPath(slug), source, sourceUrl };
 }
 
 export interface RoadmapDecision {
