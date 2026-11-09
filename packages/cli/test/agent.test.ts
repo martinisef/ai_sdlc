@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { delimiter, dirname, join } from 'node:path';
 import { test } from 'node:test';
 import type { LoadedConfig } from '@ai-native-sdlc/core';
-import { agentBin, localAgent, runAgent, type AgentTask } from '../src/ci/agent.ts';
+import { AgentAccountError, agentBin, localAgent, runAgent, runAgentAsync, type AgentTask } from '../src/ci/agent.ts';
 
 // Each stub records its argv as one JSON line; codex also writes --output-last-message.
 const STUB = `#!/usr/bin/env node
@@ -109,4 +109,16 @@ test('localAgent: ci.agent or SDLC_CI_AGENT, then the first configured agent tha
 test('a missing agent CLI says how to install it', () => {
   const empty = mkdtempSync(join(tmpdir(), 'sdlc-empty-'));
   assert.throws(() => runAgent('claude', { prompt: 'p', mode: 'read', cwd: WORK }, undefined, { PATH: empty }), /claude: not installed \(run: sdlc ci bootstrap\)/);
+});
+
+test('a refused account (quota, bad key) is its own error, with the key masked; other failures keep the exit code', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'sdlc-agent-bin-'));
+  writeFileSync(join(dir, 'codex'), `#!/bin/sh\necho "$STUB_ERR" >&2\nexit \${STUB_CODE:-1}\n`);
+  chmodSync(join(dir, 'codex'), 0o755);
+  const env = (err: string, code = '1') => ({ PATH: [dir, dirname(process.execPath), '/bin', '/usr/bin'].join(delimiter), STUB_ERR: err, STUB_CODE: code });
+  const task = { prompt: 'p', mode: 'read' as const, cwd: WORK };
+  assert.throws(() => runAgent('codex', task, undefined, env('ERROR: Quota exceeded. Check your plan and billing details.')), (e: Error) => e instanceof AgentAccountError && /refused the account \(ERROR: Quota exceeded/.test(e.message));
+  assert.throws(() => runAgent('codex', task, undefined, env('Incorrect API key provided: sk-proj-abc123XYZ.')), (e: Error) => e instanceof AgentAccountError && !e.message.includes('abc123') && /\*\*\*/.test(e.message));
+  await assert.rejects(runAgentAsync('codex', { ...task, log: () => {} }, undefined, env('Your credit balance is too low to access the API')), AgentAccountError);
+  assert.throws(() => runAgent('codex', task, undefined, env('panic: something else', '2')), (e: Error) => !(e instanceof AgentAccountError) && /codex exited with 2/.test(e.message));
 });
