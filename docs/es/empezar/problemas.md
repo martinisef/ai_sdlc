@@ -11,6 +11,7 @@ Buscá el mensaje que ves y hacé lo que dice la columna de la derecha. Ante la 
 | `This repo is not set up for the loop → sdlc init` | Estás en una carpeta sin la herramienta. | Entrá a tu proyecto con `cd`, o corré `npx sdlc init`. |
 | `✗ not a git repository` (en `doctor`) | La carpeta no es un repositorio git. | `git init -b main && git add -A && git commit -m initial`, y después `npx sdlc init` de nuevo. |
 | `ai-sdlc: sdlc CLI not found (npm i -D @morsadev/sdlc); guardrail skipped` | El proyecto tiene los archivos de la herramienta pero no la herramienta (por ejemplo, después de clonarlo). | `npm install` (o `npm i -D @morsadev/sdlc`). |
+| `Blocked by ai-sdlc: the content looks like it contains a credential` en el primer commit, con archivos de `node_modules/` en el stage | Tu `.gitignore` no excluye `node_modules/`, así que `git add -A` agregó los paquetes instalados, y las versiones hasta 1.0.1 confunden un nombre de variable que hay ahí con una clave. | `printf 'node_modules/\n' >> .gitignore && git rm -r --cached -q node_modules`, y commiteá de nuevo. |
 | `! VCS provider unknown` | No hay un remoto de GitHub, GitLab ni Bitbucket. | Para probar está bien. Para pull requests, agregá el remoto (`git remote add origin …`) y corré `npx sdlc ci install --provider github`. |
 | `! generated files edited by hand: …` | Alguien editó un archivo que genera la herramienta (skills, hooks). | `npx sdlc sync --force` los regenera. Tus notas van en `CLAUDE.md`. |
 

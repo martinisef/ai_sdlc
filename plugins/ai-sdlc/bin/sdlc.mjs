@@ -30244,10 +30244,10 @@ var init_project = __esm({
 import { execSync } from "node:child_process";
 import { existsSync as existsSync9, readFileSync as readFileSync11 } from "node:fs";
 import { basename as basename2, join as join12 } from "node:path";
-function ereToRegExp(ere) {
+function ereToRegExp(ere, flags = "i") {
   const src = ere.replace(/\[:([a-z]+):\]/g, (m, name) => POSIX_CLASSES[name] ?? m);
   try {
-    return new RegExp(src, "i");
+    return new RegExp(src, flags);
   } catch {
     return void 0;
   }
@@ -30263,8 +30263,8 @@ function checkProtected(ctx, path, locale, isNew) {
 function checkSecrets(ctx, content, locale) {
   if (!content) return ALLOW;
   for (const pattern of [...BUILTIN_SECRET_PATTERNS, ...ctx.loaded?.config.secret_patterns_extra ?? []]) {
-    const m = ereToRegExp(pattern)?.exec(content);
-    if (m) {
+    for (const m of content.matchAll(ereToRegExp(pattern, "gi") ?? /$^/g)) {
+      if (envVarName(m[0])) continue;
       return { action: "deny", policy: "secrets", message: t(locale, "secret.deny", { preview: m[0].slice(0, 12), pattern }) };
     }
   }
@@ -30382,7 +30382,7 @@ function evaluate(event, ctx) {
       return run3(() => sessionContext(ctx, locale));
   }
 }
-var ALLOW, BUILTIN_SECRET_PATTERNS, POSIX_CLASSES, FIX_LOCKS, fixLockActive, MENTION_ONLY, shellQuote;
+var ALLOW, BUILTIN_SECRET_PATTERNS, POSIX_CLASSES, FIX_LOCKS, fixLockActive, envVarName, MENTION_ONLY, shellQuote;
 var init_policies = __esm({
   "packages/core/src/policies.ts"() {
     "use strict";
@@ -30419,6 +30419,7 @@ var init_policies = __esm({
     };
     FIX_LOCKS = [".sdlc/fix-lock", ".claude/.sdlc-fix-lock"];
     fixLockActive = (root) => FIX_LOCKS.some((p) => existsSync9(join12(root, p)));
+    envVarName = (match2) => /^[A-Z][A-Z0-9]*(_[A-Z0-9]+)+$/.test(/["']([^"']+)["']$/.exec(match2)?.[1] ?? "");
     MENTION_ONLY = /* @__PURE__ */ new Set(["git", "gh", "glab", "echo", "printf", "cat", "grep", "rg", "jq"]);
     shellQuote = (s) => `'${s.replace(/'/g, `'\\''`)}'`;
   }
@@ -36090,7 +36091,7 @@ import { execFileSync as execFileSync8 } from "node:child_process";
 // packages/cli/src/ci/index.ts
 init_src();
 import { execFileSync as execFileSync7, spawnSync as spawnSync4 } from "node:child_process";
-import { appendFileSync as appendFileSync4, existsSync as existsSync19, readdirSync as readdirSync10, readFileSync as readFileSync22, rmSync as rmSync5 } from "node:fs";
+import { appendFileSync as appendFileSync5, existsSync as existsSync19, readdirSync as readdirSync10, readFileSync as readFileSync22, rmSync as rmSync5 } from "node:fs";
 import { homedir as homedir3 } from "node:os";
 import { dirname as dirname6, join as join24 } from "node:path";
 
@@ -36452,13 +36453,13 @@ function captureCommand(c, sha2, flags) {
 
 // packages/cli/src/ci/nightly.ts
 init_src();
-import { appendFileSync as appendFileSync3, writeFileSync as writeFileSync14 } from "node:fs";
+import { appendFileSync as appendFileSync4, writeFileSync as writeFileSync14 } from "node:fs";
 import { join as join22 } from "node:path";
 
 // packages/cli/src/init.ts
 init_src2();
 init_src();
-import { copyFileSync as copyFileSync2, existsSync as existsSync18, mkdirSync as mkdirSync9, readdirSync as readdirSync9, readFileSync as readFileSync21, statSync as statSync4 } from "node:fs";
+import { appendFileSync as appendFileSync3, copyFileSync as copyFileSync2, existsSync as existsSync18, mkdirSync as mkdirSync9, readdirSync as readdirSync9, readFileSync as readFileSync21, statSync as statSync4 } from "node:fs";
 import { join as join21, relative as relative3 } from "node:path";
 import { createInterface } from "node:readline/promises";
 
@@ -36665,6 +36666,15 @@ function scaffold(root, opts2) {
   walk2(src);
   return created;
 }
+function ignoreNodeModules(root) {
+  if (git(root, ["check-ignore", "-q", "node_modules/"]) !== void 0) return false;
+  const path = join21(root, ".gitignore");
+  const current = existsSync18(path) ? readFileSync21(path, "utf8") : "";
+  if (/^\/?node_modules\/?$/m.test(current)) return false;
+  appendFileSync3(path, `${current && !current.endsWith("\n") ? "\n" : ""}node_modules/
+`);
+  return true;
+}
 function templateFor(root, artifact, locale) {
   const local = join21(root, "changes", "_templates", `${artifact}.md`);
   if (existsSync18(local)) return readFileSync21(local, "utf8");
@@ -36800,7 +36810,7 @@ ${NIGHTLY_TRAILER}: ${fp}`, from);
   writeFileSync14(join22(c.root, "nightly-review.json"), JSON.stringify(result, null, 2) + "\n");
   const report = renderNightly(result, modules.length);
   console.log(report);
-  if (c.env.GITHUB_STEP_SUMMARY) appendFileSync3(c.env.GITHUB_STEP_SUMMARY, report + "\n");
+  if (c.env.GITHUB_STEP_SUMMARY) appendFileSync4(c.env.GITHUB_STEP_SUMMARY, report + "\n");
   return 0;
 }
 function renderNightly(r, total) {
@@ -37076,7 +37086,7 @@ function bootstrap(c) {
     if (r.status !== 0) throw new SdlcError(`could not install ${bin}`);
     bin = agentBin(c.agent, c.env);
     const dir = dirname6(bin);
-    if (dir !== "." && c.env.GITHUB_PATH) appendFileSync4(c.env.GITHUB_PATH, `${dir}
+    if (dir !== "." && c.env.GITHUB_PATH) appendFileSync5(c.env.GITHUB_PATH, `${dir}
 `);
   }
   if (c.agent !== "claude") {
@@ -38433,6 +38443,7 @@ async function main() {
       writeConfig(root, config2);
       recordEvent(root, { type: "setup.init", detail: preset });
       const created = scaffold(root, { claudeMd: (config2.agents ?? []).includes("claude"), locale });
+      const ignored = ignoreNodeModules(root);
       const report = sync(root, requireConfig(root));
       const provider = config2.vcs?.provider;
       const ci = flags["no-ci"] || !provider ? void 0 : installCi(root, config2, { provider, locale, files: PRESET_SPECS[preset].github });
@@ -38444,6 +38455,7 @@ async function main() {
       console.log(`\u2713 ai-sdlc ready \xB7 preset ${preset} \xB7 ${config2.stack?.language ?? "unknown stack"} \xB7 agents: ${(config2.agents ?? []).join(", ")}`);
       console.log(`  config   ${CONFIG_PATH} (${created.length} scaffold files, ${report.written.length} agent files; --verbose lists them)`);
       console.log(`  gates    ${Object.keys(config2.gates ?? {}).length ? roles.length ? roles.join(" \xB7 ") : "by role, nobody assigned yet: any person" : "any person (never an agent)"}`);
+      if (ignored) console.log("  git      added node_modules/ to .gitignore");
       console.log(
         `  CI       ${ci ? `${ci.written.length} file(s) for ${provider}${ci.conflicts.length ? `, ${ci.conflicts.length} kept` : ""}; secret ${ciSecrets(config2).join(", ")}` : provider ? "skipped (--no-ci)" : "no remote detected: `sdlc ci install --provider github|gitlab|bitbucket` later"}`
       );

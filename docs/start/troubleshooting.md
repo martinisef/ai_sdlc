@@ -11,6 +11,7 @@ Find the message you see, then do what the right-hand side says. When in doubt, 
 | `This repo is not set up for the loop → sdlc init` | You are in a folder without the tool. | `cd` into your project, or run `npx sdlc init`. |
 | `✗ not a git repository` (in `doctor`) | The folder is not a git repository. | `git init -b main && git add -A && git commit -m initial`, then `npx sdlc init` again. |
 | `ai-sdlc: sdlc CLI not found (npm i -D @morsadev/sdlc); guardrail skipped` | The project has the tool's files but not the tool (for example after a fresh clone). | `npm install` (or `npm i -D @morsadev/sdlc`). |
+| `Blocked by ai-sdlc: the content looks like it contains a credential` on the first commit, with files under `node_modules/` staged | Your `.gitignore` does not exclude `node_modules/`, so `git add -A` staged the installed packages, and versions up to 1.0.1 misread a variable name in them as a key. | `printf 'node_modules/\n' >> .gitignore && git rm -r --cached -q node_modules`, then commit again. |
 | `! VCS provider unknown` | There is no GitHub, GitLab or Bitbucket remote. | Fine for trying it out. For pull requests, add the remote (`git remote add origin …`) and run `npx sdlc ci install --provider github`. |
 | `! generated files edited by hand: …` | Someone edited a file the tool generates (skills, hooks). | `npx sdlc sync --force` regenerates them. Put your own notes in `CLAUDE.md` instead. |
 

@@ -43,7 +43,7 @@ npm i -D @morsadev/sdlc
 npx sdlc init --preset solo
 ```
 
-- `npm i -D` adds the tool to this project only (in `node_modules/`). Nothing is installed system-wide.
+- `npm i -D` adds the tool to this project only (in `node_modules/`). Nothing is installed system-wide. `node_modules/` never goes into git: if your `.gitignore` does not already exclude it, `init` adds it and prints `git added node_modules/ to .gitignore`.
 - `npx sdlc` runs it. Every command in these pages starts with `npx sdlc`.
 - `init` asks which agents you use. Press Enter for the suggestion, or type `claude`, `cursor` or both (`claude,cursor`).
 - `--preset solo` means you work alone: you approve your own changes. For a team, use `--preset team-github`; it asks who approves what.
@@ -74,6 +74,8 @@ Line by line:
 ```bash
 git add -A && git commit -m "chore: ai-sdlc"
 ```
+
+`git status` before committing should not list `node_modules/`. If it does, see [Troubleshooting](./troubleshooting.md#installing).
 
 ## 5. Check that it works
 
