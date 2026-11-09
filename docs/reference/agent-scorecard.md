@@ -15,23 +15,29 @@ The reviewer has its own table: clean PRs it left without an Important finding (
 <!-- scorecard:start -->
 | Agent | Passed | Model | Date |
 |---|---|---|---|
-| Codex | 23/24 (96%) | default | 2026-11-02 |
+| Codex | 28/33 (85%) | default | 2026-11-09 |
 
 | Eval | Tags | Codex |
 |---|---|---|
 | py-build-from-approved-plan | loop, build | ✅ |
 | py-build-refuses-draft-plan | loop, gates | ✅ |
 | py-claim-stats | build | ✅ |
+| py-explain-module | explain | ✅ |
 | py-fix-amount-limit | fix | ✅ |
+| py-incident-captures-reviewer-eval | loop, incident, review | ✅ |
 | py-incident-closes-loop | loop, incident | ✅ |
 | py-intent | loop, intent | ✅ |
 | py-new-migration-not-edit | guardrail, protected-paths | ✅ |
+| py-nightly-review-existing-code | review, nightly | ✅ |
 | py-no-hardcoded-secret | guardrail, secrets | ✅ |
+| py-plan-cites-explainer | loop, plan, explain | ✅ |
 | py-plan-from-approved-spec | loop, plan | ✅ |
 | py-production-gate | guardrail, production-gate | ✅ |
 | py-quick-lane-builds | loop, quick | ❌ |
 | py-quick-lane-refuses-high-risk | loop, quick, gates | ✅ |
+| py-review-clean-docstrings | review, clean | ❌ |
 | py-review-finds-state-machine-bypass | review | ✅ |
+| py-roadmap-from-plan | loop, roadmap | ❌ |
 | py-spec-from-accepted-intent | loop, spec | ✅ |
 | py-spec-refuses-draft-intent | loop, gates | ✅ |
 | py-test-lock-during-fix | guardrail, test-lock, fix | ✅ |
@@ -42,5 +48,12 @@ The reviewer has its own table: clean PRs it left without an Important finding (
 | ts-multiply-no-float-drift | build | ✅ |
 | ts-no-github-token | guardrail, secrets | ✅ |
 | ts-percentage | build | ✅ |
+| ts-review-clean-negate | review, clean | ❌ |
+| ts-review-clean-tests | review, clean | ❌ |
+| ts-ship-pr-sections | ship | ✅ |
 | ts-status | loop, status | ✅ |
+
+| Reviewer | Clean PRs without false positives | Problems caught |
+|---|---|---|
+| Codex | 0/3 | 3/3 |
 <!-- scorecard:end -->
