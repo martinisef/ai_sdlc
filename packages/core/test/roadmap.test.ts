@@ -17,6 +17,9 @@ import {
   parseRoadmap,
   roadmapStatus,
   setAnswers,
+  canDeleteRoadmap,
+  deleteRoadmap,
+  readEvents,
   type CreateIssue,
   type Tracker,
 } from '../src/index.ts';
@@ -158,24 +161,44 @@ test('setAnswers fills the answers and keeps the rest of the file', () => {
   assert.equal(answered.split('## Open questions')[0], open.split('## Open questions')[0]);
 });
 
-test('new: copies the source, writes the template, refuses unknown formats', () => {
+test('new: copies the source, writes the template, refuses unknown formats', async () => {
   const root = repo();
   writeFileSync(join(root, 'plan.pdf'), '%PDF-1.4 fake');
-  const r = newRoadmap(root, 'billing', { source: join(root, 'plan.pdf'), loaded: loadConfig(root) });
+  const r = await newRoadmap(root, 'billing', { source: join(root, 'plan.pdf'), loaded: loadConfig(root) });
   assert.equal(r.source, 'changes/_roadmaps/billing/source.pdf');
   assert.equal(readFileSync(join(root, r.source!), 'utf8'), '%PDF-1.4 fake');
   const created = getRoadmap(root, 'billing');
   assert.equal(created.data.status, 'draft');
   assert.equal(created.data.author, 'Ana Product');
   assert.equal(created.questions[0].id, 'Q1');
-  assert.throws(() => newRoadmap(root, 'billing'), /already exists/);
+  await assert.rejects(newRoadmap(root, 'billing'), /already exists/);
   writeFileSync(join(root, 'plan.docx'), 'x');
-  assert.throws(() => newRoadmap(root, 'other', { source: join(root, 'plan.docx') }), /export Word or Google Docs to PDF/);
-  assert.equal(newRoadmap(root, 'doc', { source: 'https://docs.google.com/document/d/abc' }).source, 'https://docs.google.com/document/d/abc');
+  await assert.rejects(newRoadmap(root, 'other', { source: join(root, 'plan.docx') }), /export Word or Google Docs to PDF/);
+  assert.equal((await newRoadmap(root, 'wiki', { source: 'https://wiki.example.com/plan' })).source, 'https://wiki.example.com/plan');
   assert.equal(listChanges(root).length, 0, 'roadmaps are not changes');
 });
 
-test('new: a PDF also gets a source.txt when pdftotext is installed', () => {
+test('new: a Google Doc link is downloaded as Markdown; private docs fail before anything is written', async () => {
+  const root = repo();
+  const asked: string[] = [];
+  const fake = (async (u: string) => {
+    asked.push(String(u));
+    if (String(u).includes('/d/private/')) return new Response('<html>Sign in</html>', { headers: { 'content-type': 'text/html; charset=utf-8' } });
+    if (String(u).includes('/d/gone/')) return new Response('not found', { status: 404 });
+    return new Response('# Plan\n![][image1]\n\n[image1]: <data:image/png;base64,iVBORw0KGgo=>\n', { headers: { 'content-type': 'text/x-markdown' } });
+  }) as typeof fetch;
+  const url = 'https://docs.google.com/document/u/1/d/1AbC_d-9/edit?tab=t.0';
+  const r = await newRoadmap(root, 'billing', { source: url, fetch: fake });
+  assert.deepEqual(asked, ['https://docs.google.com/document/d/1AbC_d-9/export?format=md']);
+  assert.equal(r.source, 'changes/_roadmaps/billing/source.md');
+  assert.equal(readFileSync(join(root, r.source), 'utf8'), '# Plan\n![][image1]\n\n[image1]: <image omitted>\n');
+  assert.equal(getRoadmap(root, 'billing').data.source_url, url);
+  await assert.rejects(newRoadmap(root, 'secret', { source: 'https://docs.google.com/document/d/private/edit', fetch: fake }), /Anyone with the link/);
+  await assert.rejects(newRoadmap(root, 'gone', { source: 'https://docs.google.com/document/d/gone/edit', fetch: fake }), /HTTP 404/);
+  assert.equal(existsSync(join(root, 'changes/_roadmaps/secret')), false);
+});
+
+test('new: a PDF also gets a source.txt when pdftotext is installed', async () => {
   const root = repo();
   const bin = mkdtempSync(join(tmpdir(), 'sdlc-pdftotext-'));
   writeFileSync(join(bin, 'pdftotext'), `#!/bin/sh\nprintf 'Plan text' > "$3"\n`);
@@ -184,13 +207,13 @@ test('new: a PDF also gets a source.txt when pdftotext is installed', () => {
   const path = process.env.PATH;
   process.env.PATH = `${bin}${delimiter}${path}`;
   try {
-    newRoadmap(root, 'billing', { source: join(root, 'plan.pdf') });
+    await newRoadmap(root, 'billing', { source: join(root, 'plan.pdf') });
   } finally {
     process.env.PATH = path;
   }
   assert.equal(readFileSync(join(root, 'changes/_roadmaps/billing/source.txt'), 'utf8'), 'Plan text');
   writeFileSync(join(root, 'plan.md'), '# Plan');
-  newRoadmap(root, 'md', { source: join(root, 'plan.md') });
+  await newRoadmap(root, 'md', { source: join(root, 'plan.md') });
   assert.equal(existsSync(join(root, 'changes/_roadmaps/md/source.txt')), false);
 });
 
@@ -317,4 +340,29 @@ test('status, next story and find: stories follow their tickets through the loop
   assert.equal(found?.item.id, 'E1.S1');
   assert.equal(found?.roadmap.slug, 'payments');
   assert.equal(findRoadmapItem(root, 'PAY-999'), undefined);
+});
+
+test('delete: only the author removes a rejected roadmap without tickets, in its own commit', () => {
+  const root = setup();
+  const loaded = loadConfig(root);
+  assert.throws(() => deleteRoadmap(root, 'payments'), /is draft; only a rejected roadmap can be deleted/);
+  decideRoadmap(root, loaded, 'payments', 'rejected', { comment: 'out of scope' });
+  const r = getRoadmap(root, 'payments');
+  assert.deepEqual(canDeleteRoadmap(r, { name: 'Bo Dev', email: 'bo@example.com' }), { ok: false, reason: 'only its author (Ana Product) can delete it' });
+  assert.match(canDeleteRoadmap(r, { name: 'Claude', email: 'noreply@anthropic.com' }).reason!, /agent/);
+  assert.deepEqual(canDeleteRoadmap(r, { name: 'ana product' }), { ok: true }, 'name match ignores case');
+
+  writeFileSync(join(root, 'notes.md'), 'mine\n');
+  gitIn(root, 'add', 'notes.md');
+  const d = deleteRoadmap(root, 'payments');
+  assert.equal(d.by, 'Ana Product');
+  assert.equal(existsSync(join(root, 'changes/_roadmaps/payments')), false);
+  assert.match(gitIn(root, 'log', '-1', '--format=%B'), /^chore\(roadmap-payments\): delete rejected roadmap\n\nDeleted by Ana Product <ana@example.com>/);
+  assert.equal(gitIn(root, 'show', '--name-only', '--format=', 'HEAD').trim(), 'changes/_roadmaps/payments/roadmap.md');
+  assert.equal(gitIn(root, 'diff', '--cached', '--name-only').trim(), 'notes.md', 'what else was staged stays staged');
+  assert.equal(readEvents(root)[0]?.type, 'roadmap.delete');
+
+  const keyed = setup(ROADMAP.replace('- labels: api', '- labels: api\n- key: PAY-7'));
+  decideRoadmap(keyed, loadConfig(keyed), 'payments', 'rejected');
+  assert.throws(() => deleteRoadmap(keyed, 'payments'), /tickets were already created for E1\.S1/);
 });

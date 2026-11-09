@@ -12,7 +12,7 @@ Loop CLI: `sdlc` (if `sdlc` is not on the PATH: `node <this skill's base directo
 
 ## 0. Input
 - **A file** (`plan.pdf`, `design.md`): `sdlc roadmap new <slug> --source <file>` copies it into `changes/_roadmaps/<slug>/` and writes the template. Slug: short kebab-case from the plan's title.
-- **A Google Doc URL**: read it with the Google Drive MCP if the session has it, and run `sdlc roadmap new <slug> --source <url>`. Without the MCP, ask for a PDF or Markdown export (File → Download) and use that file.
+- **A Google Doc URL**: `sdlc roadmap new <slug> --source <url>` downloads it as `source.md` (the doc must be shared with "Anyone with the link"). Read that file, not the link. If the download fails, read the doc with the Google Drive MCP if the session has it; otherwise ask for a PDF or Markdown export (File → Download) and use that file.
 - **An existing slug** (`changes/_roadmaps/<slug>/roadmap.md` exists): continue that draft. Read it first; answered questions are decisions, keep them.
 - Word files: ask for a PDF export.
 

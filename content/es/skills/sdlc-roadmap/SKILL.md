@@ -12,7 +12,7 @@ CLI del loop: `sdlc` ({{sdlc_hint}}). Configuración del proyecto: `.sdlc/config
 
 ## 0. Entrada
 - **Un archivo** (`plan.pdf`, `diseño.md`): `sdlc roadmap new <slug> --source <archivo>` lo copia en `changes/_roadmaps/<slug>/` y escribe la plantilla. Slug: kebab-case corto a partir del título del plan.
-- **Una URL de Google Doc**: leelo con el MCP de Google Drive si la sesión lo tiene, y corré `sdlc roadmap new <slug> --source <url>`. Sin el MCP, pedí una exportación a PDF o Markdown (Archivo → Descargar) y usá ese archivo.
+- **Una URL de Google Doc**: `sdlc roadmap new <slug> --source <url>` lo descarga como `source.md` (el documento tiene que estar compartido con "Cualquier persona con el vínculo"). Leé ese archivo, no el link. Si la descarga falla, leelo con el MCP de Google Drive si la sesión lo tiene; si no, pedí una exportación a PDF o Markdown (Archivo → Descargar) y usá ese archivo.
 - **Un slug existente** (existe `changes/_roadmaps/<slug>/roadmap.md`): seguí ese borrador. Leelo primero; las preguntas respondidas son decisiones, conservalas.
 - Archivos de Word: pedí una exportación a PDF.
 
