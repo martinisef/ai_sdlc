@@ -1,5 +1,16 @@
 # @morsadev/sdlc
 
+## 1.1.0
+
+### Minor Changes
+
+- 37250ff: Dashboard: the author of a rejected roadmap can delete it (**Delete roadmap**). The folder is removed with `git rm` in its own commit, so the history keeps it; a roadmap with tickets already created cannot be deleted. New `DELETE /api/roadmaps/:slug`.
+
+### Patch Changes
+
+- 95e9529: `sdlc ci evals` stops at the first case when the agent's provider refuses the account (quota exceeded, credit too low, invalid key) and says so, instead of running every case and reporting a 0% pass rate as if the agent had misbehaved. The report carries an `error`, the workflow summary explains it, and `sdlc ci scorecard` skips that report so the scorecard keeps the agent's last real result. Agent runs now capture stderr (still printed) to detect it, with keys masked.
+- 9cf83bd: Roadmaps from a Google Doc link work without the Google Drive MCP: `sdlc roadmap new --source <url>` and the dashboard download a doc shared with "Anyone with the link" as `source.md` (link kept in `source_url`), so headless dashboard jobs read the real document instead of drafting from nothing. A private doc fails up front with how to share or export it, and the dashboard rejects links it cannot read.
+
 ## 1.0.2
 
 ### Patch Changes
