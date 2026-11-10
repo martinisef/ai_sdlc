@@ -20719,11 +20719,18 @@ function answer(inv, stdout) {
   }
   return stdout.trim();
 }
+function accountError(bin, stderr) {
+  const line = stderr.split("\n").find((l) => ACCOUNT_ERROR.test(l));
+  if (!line) return void 0;
+  const reason = line.replace(/\b(sk|key|ghp|crsr)[-_][A-Za-z0-9_*.-]+/gi, "***").trim().slice(0, 200);
+  return new AgentAccountError(`${bin}: the provider refused the account (${reason}); check the API key and its plan or billing`);
+}
 function runAgent(agent, task, model, env = process.env) {
   const inv = invocation(agent, task, model, env);
   try {
-    const r = spawnSync(inv.bin, inv.args, { cwd: task.cwd, env: inv.env, encoding: "utf8", stdio: ["ignore", "pipe", "inherit"], maxBuffer: 64 * 1024 * 1024 });
-    const err = failure2(inv.bin, r.error, r.status);
+    const r = spawnSync(inv.bin, inv.args, { cwd: task.cwd, env: inv.env, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], maxBuffer: 64 * 1024 * 1024 });
+    if (r.stderr) process.stderr.write(r.stderr);
+    const err = failure2(inv.bin, r.error, r.status, r.stderr?.slice(-STDERR_TAIL));
     if (err) throw err;
     return answer(inv, r.stdout);
   } finally {
@@ -20733,20 +20740,25 @@ function runAgent(agent, task, model, env = process.env) {
 function runAgentAsync(agent, task, model, env = process.env) {
   const inv = invocation(agent, task, model, env);
   return new Promise((resolve4, reject) => {
-    const child = spawn(inv.bin, inv.args, { cwd: task.cwd, env: inv.env, stdio: ["ignore", "pipe", task.log ? "pipe" : "inherit"], signal: task.signal });
+    const child = spawn(inv.bin, inv.args, { cwd: task.cwd, env: inv.env, stdio: ["ignore", "pipe", "pipe"], signal: task.signal });
     let stdout = "";
-    if (task.log) child.stderr?.setEncoding("utf8").on("data", task.log);
+    let stderr = "";
+    child.stderr?.setEncoding("utf8").on("data", (d) => {
+      stderr = (stderr + d).slice(-STDERR_TAIL);
+      if (task.log) task.log(d);
+      else process.stderr.write(d);
+    });
     let spawnError;
     child.stdout?.setEncoding("utf8").on("data", (d) => stdout += d);
     child.on("error", (e) => spawnError = e);
     child.on("close", (status) => {
-      const err = failure2(inv.bin, spawnError, spawnError ? null : status);
+      const err = failure2(inv.bin, spawnError, spawnError ? null : status, stderr);
       if (err) reject(err);
       else resolve4(answer(inv, stdout));
     });
   }).finally(() => rmSync(inv.tmp, { recursive: true, force: true }));
 }
-var READ_TOOLS, AGENT_BIN, failure2;
+var READ_TOOLS, AGENT_BIN, AgentAccountError, ACCOUNT_ERROR, failure2, STDERR_TAIL;
 var init_agent = __esm({
   "packages/core/src/agent.ts"() {
     "use strict";
@@ -20754,7 +20766,11 @@ var init_agent = __esm({
     init_http();
     READ_TOOLS = "Read,Grep,Glob,Bash(git diff:*),Bash(git log:*),Bash(git show:*)";
     AGENT_BIN = { claude: "claude", codex: "codex", cursor: "cursor-agent" };
-    failure2 = (bin, error62, status) => error62 ? new SdlcError(`${bin}: ${error62.code === "ENOENT" ? "not installed (run: sdlc ci bootstrap)" : error62.message}`) : status !== 0 ? new SdlcError(`${bin} exited with ${status}`) : void 0;
+    AgentAccountError = class extends SdlcError {
+    };
+    ACCOUNT_ERROR = /quota exceeded|insufficient_quota|exceeded your current quota|credit balance is too low|invalid api key|incorrect api key|invalid x-api-key|authentication_error/i;
+    failure2 = (bin, error62, status, stderr = "") => error62 ? new SdlcError(`${bin}: ${error62.code === "ENOENT" ? "not installed (run: sdlc ci bootstrap)" : error62.message}`) : status !== 0 ? accountError(bin, stderr) ?? new SdlcError(`${bin} exited with ${status}`) : void 0;
+    STDERR_TAIL = 16 * 1024;
   }
 });
 
@@ -36226,6 +36242,7 @@ function runEvals(c, pattern, out, tags = []) {
   }
   const min = Number(c.env.EVAL_MIN_PASS_RATE ?? c.loaded?.config.ci?.min_pass_rate ?? 0.8);
   const results = [];
+  let aborted2;
   for (const e of evals) {
     const wt = join18(mkdtempSync3(join18(tmpdir3(), "sdlc-eval-")), "wt");
     execFileSync6("git", ["worktree", "add", "-q", "--detach", wt, "HEAD"], { cwd: c.root, stdio: "ignore" });
@@ -36244,6 +36261,7 @@ function runEvals(c, pattern, out, tags = []) {
       failures = applyChecks(e, dir, output2, env, base);
     } catch (err) {
       failures = [err.message];
+      if (err instanceof AgentAccountError) aborted2 = err.message;
     } finally {
       git(c.root, ["worktree", "remove", "--force", wt]);
       rmSync5(join18(wt, ".."), { recursive: true, force: true });
@@ -36251,12 +36269,15 @@ function runEvals(c, pattern, out, tags = []) {
     results.push({ name: e.name, passed: !failures.length, failures, seconds: Math.round((Date.now() - started) / 1e3) });
     console.log(`${failures.length ? "FAIL" : "PASS"} ${e.name}`);
     for (const f of failures) console.log(`  ${f}`);
+    if (aborted2) break;
   }
   const passed = results.filter((r) => r.passed).length;
   const rate = passed / results.length;
-  console.log(`pass rate: ${passed}/${results.length} = ${rate.toFixed(2)} (minimum ${min})`);
-  if (out) writeFileSync10(out, JSON.stringify({ agent: c.agent, model: c.model, rate, min, date: (/* @__PURE__ */ new Date()).toISOString().slice(0, 10), results }, null, 2) + "\n");
-  return rate >= min ? 0 : 1;
+  if (aborted2) {
+    console.log(`${c.env.GITHUB_ACTIONS ? "::error::" : ""}evals not run: ${aborted2}. This is not an agent result; fix the account and run them again.`);
+  } else console.log(`pass rate: ${passed}/${results.length} = ${rate.toFixed(2)} (minimum ${min})`);
+  if (out) writeFileSync10(out, JSON.stringify({ agent: c.agent, model: c.model, rate, min, date: (/* @__PURE__ */ new Date()).toISOString().slice(0, 10), ...aborted2 ? { error: aborted2 } : {}, results }, null, 2) + "\n");
+  return !aborted2 && rate >= min ? 0 : 1;
 }
 
 // packages/cli/src/ci/scorecard.ts
@@ -37214,7 +37235,9 @@ async function intentToSpec(c) {
   return 0;
 }
 function scorecard(c, files, out) {
-  const reports = files.filter((f) => existsSync19(f)).map((f) => JSON.parse(readFileSync22(f, "utf8")));
+  const all = files.filter((f) => existsSync19(f)).map((f) => JSON.parse(readFileSync22(f, "utf8")));
+  for (const r of all.filter((r2) => r2.error)) console.log(`skipped ${r.agent}: ${r.error}`);
+  const reports = all.filter((r) => !r.error);
   if (!reports.length) throw new SdlcError("usage: sdlc ci scorecard <report.json\u2026> (no reports found)");
   const prs = Object.values(readPrStats(c.root)).filter((p) => p.outcomes);
   const outcomes = prs.length ? { prs: prs.length, totals: sumOutcomes(prs.map((p) => p.outcomes)) } : void 0;
@@ -38342,7 +38365,7 @@ async function bandsCommand(root, args) {
 }
 
 // packages/cli/src/main.ts
-var VERSION = true ? "1.0.2" : JSON.parse(readFileSync28(new URL("../package.json", import.meta.url), "utf8")).version;
+var VERSION = true ? "1.1.0" : JSON.parse(readFileSync28(new URL("../package.json", import.meta.url), "utf8")).version;
 var HELP = `sdlc ${VERSION} \u2014 AI-native SDLC loop (intent \u2192 spec \u2192 plan \u2192 build \u2192 ship \u2192 incident)
 
 Setup

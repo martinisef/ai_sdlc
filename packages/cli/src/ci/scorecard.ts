@@ -24,6 +24,8 @@ export interface EvalReport {
   rate: number;
   min: number;
   date?: string;
+  /** Set when the run stopped because the agent's account was refused; it says nothing about the agent. */
+  error?: string;
   results: { name: string; passed: boolean; failures: string[]; seconds?: number }[];
 }
 
