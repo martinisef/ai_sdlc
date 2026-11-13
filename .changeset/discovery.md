@@ -1,0 +1,5 @@
+---
+'@morsadev/sdlc': minor
+---
+
+Discovery (experimental): keep the project state from meeting transcripts in `changes/_discovery/`. `sdlc discovery add` registers a transcript (PDF, Markdown, text, VTT or SRT) and refuses one already processed or older than the last; the new `/sdlc-discovery` skill merges it into topics (features, action items, decisions, questions, risks, each with a quote as evidence), checking every feature against the tracker, the code on the base branch and unmerged branches. `sdlc discovery validate|status|seed|branches|search|followup` check the topics, write `STATUS.md`, seed a baseline for projects already under way and draft the client follow-up. `sdlc roadmap new <slug> --from-discovery` turns requested features into a roadmap, `sdlc tracker search` lists open and closed issues (Jira, GitHub Issues, Linear), and the dashboard has a **Discovery** view. New optional `discovery.*` config. Guide: [From meetings to project state](https://martinisef.github.io/ai_sdlc/start/discovery).

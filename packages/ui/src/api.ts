@@ -203,7 +203,7 @@ export interface Workspace {
 
 export interface Job {
   id: string;
-  kind: 'draft' | 'refine';
+  kind: 'draft' | 'refine' | 'discovery';
   roadmap: string;
   agent: string;
   status: 'running' | 'done' | 'failed';
@@ -267,6 +267,54 @@ export interface ApplyResult {
   linked: number;
   dryRun: boolean;
   commit?: string;
+}
+
+export interface DiscoveryItem {
+  ref: string;
+  topic: string;
+  id: string;
+  text: string;
+  status: string;
+  repo?: string;
+  tickets?: string[];
+  blockedBy?: string[];
+  owner?: string;
+  to?: string;
+  since?: string;
+  silentFor?: number;
+}
+
+export interface DiscoveryState {
+  dir: string;
+  started: boolean;
+  status: {
+    lastSource?: string;
+    sources: number;
+    topics: { slug: string; title: string }[];
+    todo: DiscoveryItem[];
+    outOfScope: DiscoveryItem[];
+    questions: DiscoveryItem[];
+    risks: DiscoveryItem[];
+    actions: DiscoveryItem[];
+    done: DiscoveryItem[];
+    baseline: Record<string, number>;
+  };
+  errors: string[];
+  warnings: string[];
+  sources: { date: string; name: string; type: string; label: string }[];
+  topics: { slug: string; title: string; rows: number }[];
+  followup?: { path: string; body: string };
+  tracker?: string;
+  job?: Job;
+}
+
+export interface SeedResult {
+  path: string;
+  added: string[];
+  updated: string[];
+  unchanged: number;
+  counts: { tracker: number; changes: number; stories: number; branches: number };
+  warnings: string[];
 }
 
 /** Multipart upload: the browser sets the boundary, so no JSON content type. */

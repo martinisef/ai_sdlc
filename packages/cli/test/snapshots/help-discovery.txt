@@ -1,0 +1,9 @@
+sdlc discovery add <file> --name N [--date YYYY-MM-DD] [--type client|review|daily|internal|other] [--check] [--force]
+                                                 register a transcript (pdf, md, txt, vtt, srt): refuses one already processed or older than the last
+sdlc discovery validate [--json]                 format, closed statuses, evidence, append-only history (exit 1 on errors)
+sdlc discovery status [--json]                   rewrite STATUS.md from the topics
+sdlc discovery seed [--dry-run] [--limit N] [--json]
+                                                 baseline (topics/_baseline.md) from tracker issues, changes/, roadmap stories and unmerged branches
+sdlc discovery branches [--json]                 unmerged branches against the base: last commit, files, tickets
+sdlc discovery search <words…> [--json]          rows of every topic that mention the words
+sdlc discovery followup [--write] [--json]       draft of the client follow-up: open questions and their action items

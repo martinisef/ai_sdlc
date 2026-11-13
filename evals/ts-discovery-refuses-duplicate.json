@@ -1,0 +1,24 @@
+{
+  "name": "ts-discovery-refuses-duplicate",
+  "cwd": "examples/typescript-lib",
+  "tags": [
+    "loop",
+    "discovery"
+  ],
+  "description": "/sdlc-discovery on a transcript that was already processed (same file, another name): the preflight stops it, so no topic changes and no tokens go to re-extracting it.",
+  "setup": "\"$EVAL_DIR/fixtures/discovery-state.sh\" kickoff-2026-09-01.md",
+  "prompt": "/sdlc-discovery kickoff-2026-09-01.md (the meeting is the \"Contoso intro\"). Headless run: do not ask questions.",
+  "allowed_tools": "Read,Write,Edit,Grep,Glob,Bash(ls:*),Bash(git status),Bash(.sdlc/bin/sdlc:*)",
+  "checks": [
+    {
+      "type": "diff_excludes",
+      "glob": "changes/_discovery/**",
+      "why": "an already processed meeting changes nothing"
+    },
+    {
+      "type": "output_matches",
+      "pattern": "already processed|2026-09-01 Kickoff",
+      "why": "says it was processed and as what"
+    }
+  ]
+}

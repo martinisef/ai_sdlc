@@ -366,6 +366,34 @@
       },
       "additionalProperties": {}
     },
+    "discovery": {
+      "type": "object",
+      "properties": {
+        "dir": {
+          "type": "string"
+        },
+        "base_branch": {
+          "type": "string"
+        },
+        "team": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "followup_locale": {
+          "type": "string",
+          "enum": [
+            "en",
+            "es"
+          ]
+        },
+        "commit_transcripts": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": {}
+    },
     "ci": {
       "type": "object",
       "properties": {

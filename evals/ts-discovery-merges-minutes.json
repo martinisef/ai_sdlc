@@ -1,0 +1,82 @@
+{
+  "name": "ts-discovery-merges-minutes",
+  "cwd": "examples/typescript-lib",
+  "tags": [
+    "loop",
+    "discovery"
+  ],
+  "description": "/sdlc-discovery on Spanish minutes without timestamps over a discovery already running: the answer closes the open question and unblocks its feature, the request to add amounts is seen as already built, the new question and risk are filed, the earlier rows and Changes lines stay, and only the discovery folder is committed.",
+  "setup": "\"$EVAL_DIR/fixtures/discovery-state.sh\" acta-2026-09-15.md",
+  "prompt": "/sdlc-discovery acta-2026-09-15.md (the meeting is the \"Weekly\" with Contoso; Ada is on our team). Headless run: do not ask questions. Commit when done.",
+  "allowed_tools": "Read,Write,Edit,Grep,Glob,Bash(ls:*),Bash(git status),Bash(git grep:*),Bash(git show:*),Bash(git add:*),Bash(git commit:*),Bash(.sdlc/bin/sdlc:*)",
+  "checks": [
+    {
+      "type": "command",
+      "run": ".sdlc/bin/sdlc discovery validate",
+      "why": "includes the append-only check against the setup commit's rows and Changes lines"
+    },
+    {
+      "type": "command",
+      "run": "git diff --quiet HEAD && test -z \"$(git status --porcelain -- changes/_discovery)\"",
+      "why": "committed"
+    },
+    {
+      "type": "command",
+      "run": "test -z \"$(git diff --name-only HEAD~1 HEAD | grep -v '^changes/_discovery/')\"",
+      "why": "the commit holds only the discovery folder"
+    },
+    {
+      "type": "file_matches",
+      "glob": "changes/_discovery/topics/currencies.md",
+      "pattern": "^\\| Q1 \\|[^\\n]*\\| answered \\| 2026-09-01 \\| [^|]*(first|primera)[^|]*\\|",
+      "ignore_case": true,
+      "why": "Q1 answered, with the answer, and keeps its original Since"
+    },
+    {
+      "type": "file_matches",
+      "glob": "changes/_discovery/topics/currencies.md",
+      "pattern": "^\\| F1 \\|[^\\n]*\\| no ticket \\| *-? *\\|",
+      "why": "F1 is no longer blocked by Q1"
+    },
+    {
+      "type": "file_matches",
+      "glob": "changes/_discovery/topics/currencies.md",
+      "pattern": "^\\| F2 \\| Support the Brazilian real",
+      "why": "earlier rows stay"
+    },
+    {
+      "type": "file_matches",
+      "glob": "changes/_discovery/topics/*.md",
+      "pattern": "^\\| F\\d+ \\|[^|]*(add|sum|sumar)[^|]*\\| (done|requested|in progress) \\| exists \\|",
+      "ignore_case": true,
+      "why": "add() is already in src/money.ts"
+    },
+    {
+      "type": "file_matches",
+      "glob": "changes/_discovery/topics/*.md",
+      "pattern": "^\\| Q\\d+ \\|[^|]*(thousand|miles)[^|]*\\| Client: Paula[^|]*\\| open \\|",
+      "ignore_case": true
+    },
+    {
+      "type": "file_matches",
+      "glob": "changes/_discovery/topics/*.md",
+      "pattern": "^\\| R\\d+ \\|[^|]*(reconcil|concilia|rounding|redondeo)",
+      "ignore_case": true
+    },
+    {
+      "type": "file_matches",
+      "glob": "changes/_discovery/topics/currencies.md",
+      "pattern": "^- 2026-09-01 Kickoff: F1, F2, A1, Q1 added\\n(.*\\n)*- 2026-09-15 Weekly: ",
+      "why": "the Changes log only grows, one line for the new source"
+    },
+    {
+      "type": "file_matches",
+      "glob": "changes/_discovery/STATUS.md",
+      "pattern": "2026-09-15 Weekly · 2 sources processed"
+    },
+    {
+      "type": "diff_excludes",
+      "glob": "src/**"
+    }
+  ]
+}

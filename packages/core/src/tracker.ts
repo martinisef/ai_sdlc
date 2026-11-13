@@ -20,6 +20,18 @@ export interface Issue {
   type: string;
   description: string | null;
   url: string;
+  /** Where the status sits in the workflow, the same for every provider (set by search). */
+  category?: IssueCategory;
+  assignee?: string | null;
+}
+
+export type IssueCategory = 'todo' | 'in_progress' | 'done' | 'cancelled';
+
+export interface SearchIssues {
+  /** Free text (Jira `text ~`, GitHub search, Linear title or description). Empty: every issue of the project. */
+  query?: string;
+  /** Most recently updated first; default 200. */
+  limit?: number;
 }
 
 export interface CreateIssue {
@@ -49,7 +61,11 @@ export interface Tracker {
   link(blocker: string, blocked: string): Promise<void>;
   setDescription(key: string, body: string): Promise<void>;
   statuses(): Promise<string[]>;
+  /** Read only: open and closed issues of the project, for checking a new request against what already exists. */
+  search(o?: SearchIssues): Promise<Issue[]>;
 }
+
+const DEFAULT_SEARCH_LIMIT = 200;
 
 export function trackerProvider(loaded: LoadedConfig | undefined): TrackerProvider | undefined {
   const p = loaded?.config.tracker?.provider;
@@ -130,6 +146,46 @@ export function jira(loaded: LoadedConfig | undefined, env: NodeJS.ProcessEnv = 
       const r = await call('GET', `/project/${projectKey()}/statuses`);
       return [...new Set<string>(r.flatMap((t: any) => t.statuses.map((s: any) => s.name)))].sort();
     },
+    async search(o = {}) {
+      const limit = o.limit ?? DEFAULT_SEARCH_LIMIT;
+      const text = o.query?.trim() ? ` AND text ~ "${o.query.trim().replace(/["\\]/g, '\\$&')}"` : '';
+      const jql = `project = "${projectKey()}"${text} ORDER BY updated DESC`;
+      const fields = ['summary', 'status', 'issuetype', 'assignee'];
+      const category: Record<string, IssueCategory> = { new: 'todo', indeterminate: 'in_progress', done: 'done' };
+      const out: Issue[] = [];
+      // Cloud pages /rest/api/3/search/jql with a token; Data Center only has /rest/api/2/search, paged by offset
+      let cloud = true;
+      let token: string | undefined;
+      while (out.length < limit) {
+        const maxResults = Math.min(100, limit - out.length);
+        let r: any;
+        if (cloud) {
+          try {
+            r = await httpJson('POST', `${base}/rest/api/3/search/jql`, { authorization: auth }, { jql, fields, maxResults, ...(token ? { nextPageToken: token } : {}) });
+          } catch (e) {
+            if (out.length || !/HTTP 404/.test((e as Error).message)) throw e;
+            cloud = false;
+            continue;
+          }
+        } else r = await call('POST', '/search', { jql, fields, maxResults, startAt: out.length });
+        const issues: any[] = r?.issues ?? [];
+        for (const i of issues) {
+          out.push({
+            key: i.key,
+            summary: i.fields.summary,
+            status: i.fields.status?.name,
+            type: i.fields.issuetype?.name,
+            description: null,
+            url: `${base}/browse/${i.key}`,
+            category: category[i.fields.status?.statusCategory?.key] ?? 'todo',
+            assignee: i.fields.assignee?.displayName ?? null,
+          });
+        }
+        token = r?.nextPageToken;
+        if (!issues.length || (cloud ? !token || r.isLast : out.length >= (r.total ?? 0))) break;
+      }
+      return out.slice(0, limit);
+    },
   };
 }
 
@@ -149,29 +205,31 @@ function githubIssues(loaded: LoadedConfig, env: NodeJS.ProcessEnv, root: string
   const token = env.GH_TOKEN ?? env.GITHUB_TOKEN ?? fail('missing GitHub credentials (GH_TOKEN or GITHUB_TOKEN)');
   const api = (env.GITHUB_API_URL ?? 'https://api.github.com').replace(/\/$/, '');
   const repo = githubRepo(loaded, env, root);
-  const call = (method: string, path: string, body?: unknown) =>
-    httpJson(method, `${api}/repos/${repo}${path}`, { authorization: `Bearer ${token}`, 'x-github-api-version': '2022-11-28' }, body);
+  const headers = { authorization: `Bearer ${token}`, 'x-github-api-version': '2022-11-28' };
+  const call = (method: string, path: string, body?: unknown) => httpJson(method, `${api}/repos/${repo}${path}`, headers, body);
   const label = (stage: string) => tracker.transitions?.[stage] ?? `sdlc:${stage}`;
   const stageLabels = () => TRACKER_STAGES.map(label);
   const num = (key: string) => {
     const m = /^(?:[\w.-]+\/[\w.-]+)?#?(\d+)$/.exec(key.trim());
     return m ? m[1] : fail(`not a GitHub issue: ${key} (use #123 or owner/repo#123)`);
   };
+  const toIssue = (i: any): Issue => {
+    const labels: string[] = (i.labels ?? []).map((l: any) => (typeof l === 'string' ? l : l.name));
+    const stage = labels.find((l) => stageLabels().includes(l));
+    return {
+      key: `#${i.number}`,
+      summary: i.title,
+      status: i.state === 'closed' ? 'closed' : (stage ?? 'open'),
+      type: labels.find((l) => !stageLabels().includes(l)) ?? 'issue',
+      description: i.body ?? null,
+      url: i.html_url,
+    };
+  };
 
   return {
     provider: 'github',
     async get(key) {
-      const i = await call('GET', `/issues/${num(key)}`);
-      const labels: string[] = (i.labels ?? []).map((l: any) => (typeof l === 'string' ? l : l.name));
-      const stage = labels.find((l) => stageLabels().includes(l));
-      return {
-        key: `#${i.number}`,
-        summary: i.title,
-        status: i.state === 'closed' ? 'closed' : (stage ?? 'open'),
-        type: labels.find((l) => !stageLabels().includes(l)) ?? 'issue',
-        description: i.body ?? null,
-        url: i.html_url,
-      };
+      return toIssue(await call('GET', `/issues/${num(key)}`));
     },
     async transitions() {
       return TRACKER_STAGES.map((s) => ({ id: label(s), name: s, to: label(s) }));
@@ -214,6 +272,26 @@ function githubIssues(loaded: LoadedConfig, env: NodeJS.ProcessEnv, root: string
     },
     async statuses() {
       return [...stageLabels(), 'closed'];
+    },
+    async search(o = {}) {
+      const limit = o.limit ?? DEFAULT_SEARCH_LIMIT;
+      const q = o.query?.trim();
+      const out: Issue[] = [];
+      for (let page = 1; out.length < limit; page++) {
+        const items: any[] = q
+          ? ((await httpJson('GET', `${api}/search/issues?q=${encodeURIComponent(`repo:${repo} is:issue ${q}`)}&sort=updated&per_page=100&page=${page}`, headers))?.items ?? [])
+          : ((await call('GET', `/issues?state=all&sort=updated&per_page=100&page=${page}`)) ?? []);
+        for (const i of items.filter((x) => !x.pull_request)) {
+          const issue = toIssue(i);
+          const started = issue.status !== 'open' && issue.status !== label('intent');
+          issue.category = i.state === 'closed' ? (i.state_reason === 'not_planned' ? 'cancelled' : 'done') : started ? 'in_progress' : 'todo';
+          issue.assignee = i.assignee?.login ?? null;
+          issue.description = null;
+          out.push(issue);
+        }
+        if (items.length < 100) break;
+      }
+      return out.slice(0, limit);
     },
   };
 }
@@ -275,6 +353,35 @@ function linear(loaded: LoadedConfig, env: NodeJS.ProcessEnv): Tracker {
     },
     async statuses() {
       return (await getTeam()).states.map((s) => s.name).sort();
+    },
+    async search(o = {}) {
+      const limit = o.limit ?? DEFAULT_SEARCH_LIMIT;
+      const q = o.query?.trim();
+      const filter = { team: { key: { eq: teamKey() } }, ...(q ? { or: [{ title: { containsIgnoreCase: q } }, { description: { containsIgnoreCase: q } }] } : {}) };
+      const category: Record<string, IssueCategory> = { started: 'in_progress', completed: 'done', canceled: 'cancelled' };
+      const out: Issue[] = [];
+      let after: string | null = null;
+      while (out.length < limit) {
+        const d: any = await gql(
+          'query($filter: IssueFilter, $first: Int, $after: String) { issues(filter: $filter, first: $first, after: $after, orderBy: updatedAt) { nodes { identifier title url state { name type } labels { nodes { name } } assignee { name } } pageInfo { hasNextPage endCursor } } }',
+          { filter, first: Math.min(100, limit - out.length), after },
+        );
+        for (const i of d.issues.nodes) {
+          out.push({
+            key: i.identifier,
+            summary: i.title,
+            status: i.state?.name,
+            type: i.labels?.nodes?.[0]?.name ?? 'issue',
+            description: null,
+            url: i.url,
+            category: category[i.state?.type] ?? 'todo',
+            assignee: i.assignee?.name ?? null,
+          });
+        }
+        if (!d.issues.pageInfo?.hasNextPage) break;
+        after = d.issues.pageInfo.endCursor;
+      }
+      return out.slice(0, limit);
     },
   };
 }

@@ -19,6 +19,7 @@ export interface SdlcEvent {
     | 'change.quick'
     | 'change.promote'
     | 'roadmap.new'
+    | 'discovery.source'
     | 'roadmap.apply'
     | 'roadmap.delete'
     | 'setup.init'

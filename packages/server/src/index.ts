@@ -35,8 +35,10 @@ import {
   type PullRequest,
 } from '@ai-native-sdlc/core';
 import { jobEvents, roadmapRoutes, type Job } from './roadmaps.ts';
+import { discoveryRoutes } from './discovery.ts';
 
 export { jobEvents, readJobs, roadmapPrompt, type Job } from './roadmaps.ts';
+export { discoveryPrompt } from './discovery.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -226,6 +228,7 @@ export function createApp(opts: { root: string; token: string }) {
   });
 
   roadmapRoutes(app, ws);
+  discoveryRoutes(app, ws);
 
   app.get('/api/stream', (c) => {
     const root = ws(c);

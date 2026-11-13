@@ -2,6 +2,8 @@ export * from './agent.ts';
 export * from './bands.ts';
 export * from './changes.ts';
 export * from './config.ts';
+export * from './discovery.ts';
+export * from './discovery-seed.ts';
 export * from './events.ts';
 export * from './explainers.ts';
 export * from './frontmatter.ts';

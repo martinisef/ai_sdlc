@@ -33,6 +33,7 @@ sdlc tracker create --summary S --body-file F [--type T] [--parent EPIC] [--labe
 sdlc tracker link BLOCKER BLOCKED                   → BLOCKER blocks BLOCKED
 sdlc tracker set-description KEY --body-file F
 sdlc tracker statuses                               → project workflow statuses
+sdlc tracker search [text] [--limit N]              → open and closed issues, newest first (JSON lines; read only)
 Keys: PROJ-123 (Jira), #123 or owner/repo#123 (GitHub Issues), ENG-123 (Linear).
 Auth: Jira JIRA_EMAIL + JIRA_API_TOKEN (Cloud) or JIRA_PAT (Data Center) · GitHub GH_TOKEN · Linear LINEAR_API_KEY.
 Exit 3 = tracker not configured.`;
@@ -138,6 +139,11 @@ export async function trackerCommand(root: string, args: string[]): Promise<numb
     case 'statuses':
       for (const s of await t().statuses()) console.log(s);
       return 0;
+    case 'search': {
+      const limit = typeof o.limit === 'string' ? number(o.limit, 'search [text] [--limit N]') : undefined;
+      for (const { description: _, ...i } of await t().search({ query: pos.join(' '), limit })) console.log(JSON.stringify(i));
+      return 0;
+    }
     default:
       console.error(TRACKER_HELP);
       return 1;
