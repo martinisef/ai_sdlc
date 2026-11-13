@@ -33299,7 +33299,7 @@ var init_url = __esm({
       const hashIndex = url2.indexOf("#", 8);
       if (hashIndex !== -1) url2 = url2.slice(0, hashIndex);
       let encoded;
-      if (!multiple && key && key.indexOf("%") === -1 && key.indexOf("+") === -1) {
+      if (!multiple && key && !/[%+&=]/.test(key)) {
         const queryIndex = url2.indexOf("?", 8);
         let keyIndex2 = queryIndex;
         if (keyIndex2 === -1) return;
