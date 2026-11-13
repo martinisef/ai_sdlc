@@ -1,4 +1,5 @@
 sdlc roadmap new <slug> --source <file.pdf|file.md|url> [--title T]   scaffold changes/_roadmaps/<slug>/
+sdlc roadmap new <slug> --from-discovery [topic…] [--title T]       draft it from the discovery features ready to build (experimental)
 sdlc roadmap check <slug> [--json]               structure, dependencies, open questions (exit 1 on errors)
 sdlc roadmap approve|reject <slug> [-m comment]  a person decides; approving needs a roadmap that passes the check
 sdlc roadmap apply <slug> [--dry-run]            create the missing epics, stories and links in the tracker

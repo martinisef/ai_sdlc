@@ -46,6 +46,14 @@ Every command works from any directory inside the repository. The project root i
 | `sdlc roadmap status [<slug>] [--json]` | Each story: ticket, the change for it (matched by ticket) and its stage, or what blocks it. `sdlc next` suggests the first unblocked story (`/sdlc-intent <KEY>`). |
 | `sdlc roadmap find <KEY>` | The roadmap item behind a ticket, as JSON (`/sdlc-intent` uses it). |
 | `sdlc roadmap list` | Roadmaps, their status and how many items have tickets. |
+| `sdlc roadmap new <slug> --from-discovery [topic…] [--title T]` | Drafts a roadmap from the project state in `changes/_discovery/` instead of a document: each requested feature without a ticket becomes a story (with its quotes and `source: <topic>#F<n>`), and each blocked one becomes an open question naming what it waits on. Validates the discovery folder first. See [From meetings to project state](../start/discovery.md). |
+| `sdlc discovery add <file> --name N [--date YYYY-MM-DD] [--type T] [--check] [--force]` | *Experimental.* Registers a meeting transcript (PDF, Markdown, text, VTT or SRT) in `changes/_discovery/_sources.md` and copies it to `transcripts/`. Refuses one already processed (same SHA-256 or same date and name) and, without `--force`, one older than the last. `--check` only says whether it is new. The date comes from the file name when it has one. |
+| `sdlc discovery validate [--json]` | *Experimental.* Checks the topics: table format, closed statuses, evidence that cites a registered source, feature rules (`done` needs code or a confirmed ticket, `reimplement` needs a reason), and that no row, topic or source was removed since `HEAD`. Exits 1 on errors. |
+| `sdlc discovery status [--json]` | *Experimental.* Rewrites `STATUS.md` from the topics: to do, open questions (oldest first), risks, action items by owner, done. |
+| `sdlc discovery seed [--dry-run] [--limit N] [--json]` | *Experimental.* For a project already under way: writes `topics/_baseline.md` from the tracker's issues, `changes/`, roadmap stories and unmerged branches. Rerunning it refreshes those rows and never deletes one. |
+| `sdlc discovery branches [--json]` | *Experimental.* Branches not merged into the base (`discovery.base_branch`, else `vcs.default_branch`): last commit, author, files and the tickets they carry. |
+| `sdlc discovery search <words…> [--json]` | *Experimental.* Rows of every topic that mention the words, best match first. |
+| `sdlc discovery followup [--write] [--json]` | *Experimental.* Draft of the follow-up to the client: new and pending questions and their action items, by recipient. `--write` saves it in `followups/`. Nothing is sent. |
 | `sdlc lock on\|off\|status` | Test-lock during a fix: test files (`test_globs`) cannot be edited while it is on. |
 | `sdlc ui [--port N] [--no-open]` | Local [dashboard](../guide/dashboard.md) (default port 4319). |
 
@@ -88,6 +96,7 @@ sdlc tracker comment KEY --body-file F
 sdlc tracker create --summary S --body-file F [--type T]   → new key
 sdlc tracker set-description KEY --body-file F
 sdlc tracker statuses                         → project workflow statuses
+sdlc tracker search [text] [--limit N]        → open and closed issues, newest first (JSON lines: key, summary, status, category, type, assignee, url)
 ```
 
 Keys: `PROJ-123` (Jira), `#123` or `owner/repo#123` (GitHub Issues), `ENG-123` (Linear). On GitHub a transition swaps the `sdlc:<stage>` label and `merged` closes the issue.

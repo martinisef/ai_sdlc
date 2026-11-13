@@ -40,8 +40,9 @@ import {
 
 export interface Job {
   id: string;
-  /** draft: from the document · refine: after the person answered the open questions. */
-  kind: 'draft' | 'refine';
+  /** draft: from the document · refine: after the person answered the open questions · discovery: a meeting transcript. */
+  kind: 'draft' | 'refine' | 'discovery';
+  /** The roadmap slug, or `_discovery`. */
   roadmap: string;
   agent: CiAgent;
   status: 'running' | 'done' | 'failed';
@@ -84,7 +85,7 @@ export function readJobs(root: string): Job[] {
   return jobs.sort((a, b) => b.started.localeCompare(a.started));
 }
 
-export function roadmapPrompt(agent: CiAgent, slug: string, kind: Job['kind']): string {
+export function roadmapPrompt(agent: CiAgent, slug: string, kind: 'draft' | 'refine'): string {
   const file = roadmapPath(slug);
   const headless = `Headless run from the dashboard: do not ask questions; write each open question with an empty \`A:\` line, the person answers them in the dashboard. Run \`.sdlc/bin/sdlc roadmap check ${slug}\`, then commit only changes/_roadmaps/${slug}/. Never approve the roadmap or create tickets.`;
   return kind === 'draft'
@@ -92,7 +93,7 @@ export function roadmapPrompt(agent: CiAgent, slug: string, kind: Job['kind']): 
     : `Use ${skillRef(agent, 'sdlc-roadmap')} on the roadmap ${slug}: the person answered open questions in ${file}. Keep the answers, update the epics and stories they affect, and add a question only if an answer opens a new one. ${headless}`;
 }
 
-export function startJob(root: string, slug: string, kind: Job['kind']): Job {
+export function startJob(root: string, slug: string, kind: Job['kind'], o: { prompt?: string; tools?: string } = {}): Job {
   const key = `${root}#${slug}`;
   if (running.has(key)) throw new Error(`the agent is already working on ${slug}`);
   const loaded = loadConfig(root);
@@ -109,7 +110,8 @@ export function startJob(root: string, slug: string, kind: Job['kind']): Job {
     }
   };
   const model = process.env.SDLC_CI_MODEL || loaded?.config.ci?.model;
-  runAgentAsync(agent, { prompt: roadmapPrompt(agent, slug, kind), mode: 'edit', allowedTools: EDIT_TOOLS, cwd: root, log }, model)
+  const prompt = o.prompt ?? roadmapPrompt(agent, slug, kind === 'refine' ? 'refine' : 'draft');
+  runAgentAsync(agent, { prompt, mode: 'edit', allowedTools: o.tools ?? EDIT_TOOLS, cwd: root, log }, model)
     .then((answer) => {
       job.status = 'done';
       job.answer = answer.slice(-4000);

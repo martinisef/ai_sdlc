@@ -26,6 +26,8 @@ Loop
   reject  <change> <intent|spec|plan> [-m comment]
   roadmap <new|check|approve|reject|apply|status|find|list> …
                                      a technical plan → epics and stories → tickets (sdlc roadmap --help)
+  discovery <add|validate|status|seed|branches|search|followup> …
+                                     experimental: project state from meeting transcripts (sdlc discovery --help)
   lock on|off|status                 test-lock during a fix
   ui [--port N] [--no-open]          local dashboard
 

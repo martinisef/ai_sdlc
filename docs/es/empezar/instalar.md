@@ -53,7 +53,7 @@ Cuando termina vas a ver algo así:
 
 ```text
 ✓ ai-sdlc ready · preset solo · typescript · agents: claude
-  config   .sdlc/config.json (10 scaffold files, 58 agent files; --verbose lists them)
+  config   .sdlc/config.json (10 scaffold files, 60 agent files; --verbose lists them)
   gates    any person (never an agent)
   CI       no remote detected: `sdlc ci install --provider github|gitlab|bitbucket` later
 Next: sdlc next (it always tells you what to do), or sdlc new <slug> to start a change.
@@ -66,7 +66,7 @@ Línea por línea:
 | `✓ ai-sdlc ready · preset solo · typescript · agents: claude` | Funcionó. Detectó un proyecto JavaScript/TypeScript y lo configuró para Claude Code. |
 | `config .sdlc/config.json` | Tu configuración. La podés editar después, a mano o en el dashboard. |
 | `10 scaffold files` | `changes/` (donde viven los cambios), `CLAUDE.md` (notas para el agente), `REVIEW.md`, `lessons/`, `evals/`, `ops/`. |
-| `58 agent files` | Las skills y los hooks de tu agente, en `.claude/` (Claude Code) o en `.cursor/` y `.agents/` (Cursor). |
+| `60 agent files` | Las skills y los hooks de tu agente, en `.claude/` (Claude Code) o en `.cursor/` y `.agents/` (Cursor). |
 | `gates any person (never an agent)` | Quién puede aprobar: cualquier persona, incluido vos. Nunca una IA. |
 | `CI no remote detected` | No encontró GitHub ni GitLab. Para aprender está bien; lo podés agregar después. |
 
