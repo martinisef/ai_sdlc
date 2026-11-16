@@ -7,6 +7,24 @@ import { execFileSync } from 'node:child_process';
 
 if (process.argv.includes('--version')) process.exit(0);
 console.error(`stub ${process.argv[1].split('/').pop()}`);
+// a meeting: one topic citing the registered source, with a question for the client
+const meeting = /registered as "([^"]+)"/.exec(process.argv.find((a) => /sdlc-discovery/.test(a)) ?? '');
+if (meeting) {
+  const label = meeting[1];
+  const date = label.slice(0, 10);
+  fs.mkdirSync('changes/_discovery/topics', { recursive: true });
+  fs.writeFileSync(
+    'changes/_discovery/topics/photos.md',
+    `---\ntopic: photos\ntitle: Claim photos\ncreated: ${date}\n---\n# Claim photos\n\n## Features\n| ID | Feature | Status | Repo | Ticket | Blocked by | Evidence |\n|---|---|---|---|---|---|---|\n| F1 | Attach photos to a claim | requested | missing | no ticket | Q1 | ${label} · 02:00 · Dana: "attach photos" |\n\n## Questions\n| ID | Question | To | Status | Since | Answer | Evidence |\n|---|---|---|---|---|---|---|\n| Q1 | Maximum photo size? | Client: Dana | open | ${date} | | ${label} · 02:30 · Sam: "maximum size?" |\n\n## Changes\n- ${label}: F1, Q1 added\n`,
+  );
+  setTimeout(() => {
+    execFileSync('git', ['add', '--', 'changes/_discovery']);
+    execFileSync('git', ['commit', '-qm', `discovery: ${label}`]);
+    console.log(`merged ${label}`);
+  }, 1500);
+} else roadmap();
+
+function roadmap() {
 const prompt = process.argv.find((a) => / the roadmap /.test(a)) ?? '';
 const m = /the roadmap ([a-z0-9-]+)/.exec(prompt);
 if (!m) {
@@ -29,3 +47,4 @@ setTimeout(() => {
   execFileSync('git', ['commit', '-qm', `docs(roadmap-${m[1]}): breakdown`]);
   console.log(`drafted ${f}`);
 }, 1500);
+}

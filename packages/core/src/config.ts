@@ -110,6 +110,21 @@ export const ConfigSchema = z.looseObject({
       people: z.record(z.string(), z.string()).optional(),
     })
     .optional(),
+  /** `sdlc discovery` (experimental): project state kept from meeting transcripts. */
+  discovery: z
+    .looseObject({
+      /** Where topics, sources and STATUS.md live (default `changes/_discovery`). */
+      dir: z.string().optional(),
+      /** Branch the code and the unmerged branches are compared against (default `vcs.default_branch`). */
+      base_branch: z.string().optional(),
+      /** Names of the people on the team side; owners and recipients are checked against it (default: everyone in `roles`). */
+      team: z.array(z.string()).optional(),
+      /** Language of the follow-up drafts sent to the client (default: the project locale). */
+      followup_locale: z.enum(['en', 'es']).optional(),
+      /** Commit the transcripts next to the topics (default true); false keeps them local and gitignored. */
+      commit_transcripts: z.boolean().optional(),
+    })
+    .optional(),
   /** Headless runs in CI (`sdlc ci …`): which agent CLI to drive. */
   ci: z
     .looseObject({

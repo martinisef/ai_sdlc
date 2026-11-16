@@ -7,7 +7,7 @@ const ACCEPT = '.pdf,.md,.markdown,.txt';
 const AGENT_NAME: Record<AgentInfo['agent'], string> = { claude: 'Claude Code', codex: 'Codex', cursor: 'Cursor' };
 
 /** Which CLI runs the dashboard's jobs on this machine. */
-function AgentNote() {
+export function AgentNote() {
   const t = useT();
   const { data } = useApi<AgentInfo>('/agent');
   if (!data) return null;
@@ -22,16 +22,20 @@ function AgentNote() {
   );
 }
 
-/** The agent's run on a roadmap: what it is doing, or why it stopped. */
-function JobPanel({ job }: { job: Job }) {
+const RUNNING: Record<Job['kind'], string> = {
+  draft: 'The agent is drafting the breakdown…',
+  refine: 'The agent is updating the breakdown with your answers…',
+  discovery: 'The agent is merging the meeting into the project state…',
+};
+
+/** The agent's run on a roadmap or a meeting: what it is doing, or why it stopped. */
+export function JobPanel({ job }: { job: Job }) {
   const t = useT();
   if (job.status === 'done') return null;
   return (
     <div className={`job ${job.status}`}>
       <strong>
-        {job.status === 'running'
-          ? t(job.kind === 'draft' ? 'The agent is drafting the breakdown…' : 'The agent is updating the breakdown with your answers…')
-          : t('The agent stopped')}
+        {job.status === 'running' ? t(RUNNING[job.kind]) : t('The agent stopped')}
       </strong>{' '}
       <span className="muted small">({AGENT_NAME[job.agent as AgentInfo['agent']] ?? job.agent})</span>
       {job.error && <div>{job.error}</div>}

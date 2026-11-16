@@ -27,6 +27,7 @@ Se puede usar, pero puede cambiar en una versión minor. Cada una aparece marcad
 |---|---|
 | `sdlc hosted` | Es la fase 1 del [RFC del servicio hosted](../rfc/hosted.md); las fases 2 y 3 están abiertas. |
 | `sdlc webhook` | Su configuración para GitLab y Bitbucket puede cambiar con el servicio hosted. |
+| Discovery: `sdlc discovery`, `/sdlc-discovery`, `roadmap new --from-discovery` y el formato de `changes/_discovery/` | Es nuevo: las tablas de los topics y su vocabulario pueden cambiar a medida que más proyectos lo usen ([De las reuniones al estado del proyecto](./empezar/discovery.md)). |
 | Codex y Cursor como agentes headless (`ci.agent`, `SDLC_CI_AGENT`, trabajos del dashboard) | Claude Code es la referencia; los otros CLIs tienen modelos de permisos más gruesos y cambian seguido. |
 | La API HTTP del dashboard (`/api/*`) | Es interna de `sdlc ui`; la UI y el servidor se publican juntos. |
 | El payload de telemetría | Apagada por defecto; los campos pueden cambiar ([Telemetry](../reference/telemetry.md)). |

@@ -11,6 +11,7 @@
 - Loop status: `sdlc status`; what next: `sdlc next`. Guardrails: if a hook or git hook blocks, do not work around it; read the message.
 
 ### Stages
+- **sdlc-discovery** — Discovery stage of the AI-native loop (experimental). → `.agents/skills/sdlc-discovery/SKILL.md`
 - **sdlc-roadmap** — Stage 0 of the AI-native loop. → `.agents/skills/sdlc-roadmap/SKILL.md`
 - **sdlc-intent** — Stage 1 (Plan) of the AI-native loop. → `.agents/skills/sdlc-intent/SKILL.md`
 - **sdlc-spec** — Stage 2 (Design) of the AI-native loop. → `.agents/skills/sdlc-spec/SKILL.md`

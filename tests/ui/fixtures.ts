@@ -83,8 +83,8 @@ export const test = base.extend<{ repo: string; dashboard: string; consoleErrors
     async ({ page }, use) => {
       const errors: string[] = [];
       page.on('pageerror', (e) => errors.push(e.message));
-      // a 422 is how the server answers an invalid config; the browser logs it as a failed resource
-      page.on('console', (m) => m.type() === 'error' && !/status of 422/.test(m.text()) && errors.push(m.text()));
+      // a 422 (invalid config) or 409 (transcript already processed) is an answer the UI shows; the browser logs it as a failed resource
+      page.on('console', (m) => m.type() === 'error' && !/status of (422|409)/.test(m.text()) && errors.push(m.text()));
       await use(errors);
       expect(errors, 'no console errors').toEqual([]);
     },

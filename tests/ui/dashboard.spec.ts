@@ -173,3 +173,22 @@ test('roadmaps: the author deletes a rejected roadmap', async ({ page, dashboard
   expect(existsSync(join(repo, 'changes/_roadmaps/dropped'))).toBe(false);
   expect(execFileSync('git', ['log', '-1', '--format=%s'], { cwd: repo, encoding: 'utf8' })).toContain('delete rejected roadmap');
 });
+
+test('discovery: upload a transcript, the agent merges it, the state and its open question show up', async ({ page, dashboard, repo }) => {
+  await page.goto(`${dashboard}#/discovery`);
+  await expect(page.locator('main')).toContainText('No meetings yet');
+  await page.locator('input[name="file"]').setInputFiles({ name: 'weekly 2026-09-14.vtt', mimeType: 'text/vtt', buffer: Buffer.from('WEBVTT\n\n00:02:00.000 --> 00:02:05.000\n<v Dana>attach photos\n') });
+  await page.getByLabel('Meeting name').fill('Weekly sync');
+  await page.getByRole('button', { name: 'Upload and process' }).click();
+  await expect(page.locator('.job')).toContainText('The agent is merging the meeting');
+  await expect(page.locator('main')).toContainText('photos#F1');
+  await expect(page.locator('.job')).toHaveCount(0);
+  await expect(page.locator('main')).toContainText('Last meeting: 2026-09-14 Weekly sync');
+  await expect(page.locator('main')).toContainText('Maximum photo size?');
+  expect(read(repo, 'changes/_discovery/_sources.md')).toMatch(/^\| 2026-09-14 \| Weekly sync \| client \|/m);
+
+  await page.locator('input[name="file"]').setInputFiles({ name: 'weekly 2026-09-14.vtt', mimeType: 'text/vtt', buffer: Buffer.from('WEBVTT\n\n00:02:00.000 --> 00:02:05.000\n<v Dana>attach photos\n') });
+  await page.getByLabel('Meeting name').fill('Again');
+  await page.getByRole('button', { name: 'Upload and process' }).click();
+  await expect(page.locator('main .issues')).toContainText("already processed as '2026-09-14 Weekly sync'");
+});

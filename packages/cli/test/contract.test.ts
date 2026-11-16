@@ -87,7 +87,7 @@ test('sdlc --help', async () => {
   snapshot('help.txt', r.out.replace(/^sdlc \S+/, 'sdlc <version>') + '\n');
 });
 
-for (const cmd of ['roadmap', 'ci', 'tracker', 'vcs']) {
+for (const cmd of ['roadmap', 'discovery', 'ci', 'tracker', 'vcs']) {
   test(`sdlc ${cmd} --help`, async () => {
     const r = await sdlc(root, [cmd, '--help'], ENV);
     snapshot(`help-${cmd}.txt`, r.out + '\n');
@@ -122,6 +122,7 @@ const JSON_CMDS: [string, string[]][] = [
   ['risk', ['risk', '--json']],
   ['roadmap-check', ['roadmap', 'check', 'demo', '--json']],
   ['roadmap-status', ['roadmap', 'status', 'demo', '--json']],
+  ['discovery-validate', ['discovery', 'validate', '--json']],
 ];
 for (const [name, args] of JSON_CMDS) {
   test(`sdlc ${args.join(' ')} keeps its keys`, async () => {

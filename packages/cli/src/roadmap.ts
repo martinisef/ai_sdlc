@@ -5,21 +5,30 @@ import {
   approvalHolds,
   checkRoadmap,
   decideRoadmap,
+  discoveryRoadmap,
   findRoadmapItem,
   getRoadmap,
   listRoadmaps,
   loadConfig,
+  loadDiscovery,
+  localeOf,
   newRoadmap,
   roadmapStatus,
   SdlcError,
+  setFrontmatter,
   tracker,
   trackerEnabled,
   TRACKER_DISABLED,
+  validateDiscovery,
+  type LoadedConfig,
 } from '@ai-native-sdlc/core';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 const count = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 export const ROADMAP_HELP = `sdlc roadmap new <slug> --source <file.pdf|file.md|url> [--title T]   scaffold changes/_roadmaps/<slug>/
+sdlc roadmap new <slug> --from-discovery [topic…] [--title T]       draft it from the discovery features ready to build (experimental)
 sdlc roadmap check <slug> [--json]               structure, dependencies, open questions (exit 1 on errors)
 sdlc roadmap approve|reject <slug> [-m comment]  a person decides; approving needs a roadmap that passes the check
 sdlc roadmap apply <slug> [--dry-run]            create the missing epics, stories and links in the tracker
@@ -36,6 +45,7 @@ export async function roadmapCommand(root: string, pos: string[], flags: Flags):
   switch (sub) {
     case 'new': {
       const slug = need('new <slug> --source <file|url>');
+      if (flags['from-discovery']) return fromDiscovery(root, loaded, slug, pos.slice(2), str(flags.title));
       const r = await newRoadmap(root, slug, { source: str(flags.source), title: str(flags.title), loaded });
       console.log(`created ${r.path}${r.source ? ` (source: ${r.source}${r.sourceUrl ? `, downloaded from ${r.sourceUrl}` : ''})` : ''}`);
       console.log(`Next: /sdlc-roadmap ${slug} in your agent: it reads the document, asks what is missing and drafts the epics and stories.`);
@@ -135,6 +145,23 @@ export async function roadmapCommand(root: string, pos: string[], flags: Flags):
       console.error(ROADMAP_HELP);
       return 1;
   }
+}
+
+/** A roadmap whose stories are the discovery features ready to build; the blocked ones become its open questions. */
+async function fromDiscovery(root: string, loaded: LoadedConfig | undefined, slug: string, topics: string[], title?: string): Promise<number> {
+  const d = loadDiscovery(root, loaded);
+  const problems = validateDiscovery(root, loaded, d).errors;
+  if (problems.length) fail(`discovery has ${count(problems.length, 'problem')}: fix them first (sdlc discovery validate)`);
+  const t = title ?? slug.replace(/-/g, ' ').replace(/^./, (c) => c.toUpperCase());
+  const plan = discoveryRoadmap(d, { slug, title: t, topics, locale: localeOf(loaded) });
+  if (!plan.stories.length) fail(`no features ready to build in ${topics.join(', ') || d.dir} (requested or reimplement, no ticket, not blocked)${plan.blocked.length ? `; blocked: ${plan.blocked.join(', ')}` : ''}`);
+  const r = await newRoadmap(root, slug, { title: t, loaded });
+  const file = join(root, r.path);
+  const head = readFileSync(file, 'utf8').split(/^# Roadmap: .*$/m)[0];
+  writeFileSync(file, setFrontmatter(head, { source: `${d.dir}/STATUS.md` }) + plan.body);
+  console.log(`created ${r.path}: ${count(plan.epics, 'epic')}, ${count(plan.stories.length, 'story', 'stories')} from ${d.dir}${plan.blocked.length ? `; ${count(plan.blocked.length, 'open question')} for the blocked ${plan.blocked.join(', ')}` : ''}`);
+  console.log(`Next: /sdlc-roadmap ${slug} in your agent completes the acceptance criteria, risk and dependencies.`);
+  return 0;
 }
 
 const str = (v: string | true | undefined) => (typeof v === 'string' ? v : undefined);

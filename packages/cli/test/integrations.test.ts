@@ -28,12 +28,31 @@ function respond(method: string, url: string, data = ''): unknown {
   if (m === 'GET /gh/repos/acme/app/issues/5')
     return { number: 5, title: 'Claims status', state: 'open', labels: [{ name: 'sdlc:spec' }, { name: 'enhancement' }], body: 'b', html_url: 'https://github.com/acme/app/issues/5' };
   if (m === 'POST /gh/repos/acme/app/issues') return { number: 9, id: 909 };
+  if (m.startsWith('GET /gh/repos/acme/app/issues?state=all'))
+    return [
+      { number: 5, title: 'Claims status', state: 'open', labels: [{ name: 'sdlc:spec' }], html_url: 'u5', assignee: { login: 'ana' } },
+      { number: 6, title: 'A pull request', state: 'open', labels: [], html_url: 'u6', pull_request: {} },
+      { number: 4, title: 'Old export', state: 'closed', state_reason: 'not_planned', labels: [], html_url: 'u4' },
+    ];
+  if (m.startsWith('GET /gh/search/issues?q=')) return { items: [{ number: 3, title: 'Refund by card', state: 'closed', state_reason: 'completed', labels: [], html_url: 'u3' }] };
   if (url.startsWith('/gh/')) return method === 'DELETE' ? undefined : {};
   if (url === '/linear') {
     const q = JSON.parse(data).query as string;
     if (q.includes('teams(')) return { data: { teams: { nodes: [{ id: 'team-1', states: { nodes: [{ id: 's1', name: 'Todo' }, { id: 's2', name: 'In Design' }, { id: 's3', name: 'Done' }] } }] } } };
     if (q.includes('issue(id: $id) { id }')) return { data: { issue: { id: 'uuid-1' } } };
     if (q.includes('issue(id: $id)')) return { data: { issue: { identifier: 'ENG-7', title: 'Claims status', description: null, url: 'https://linear.app/acme/issue/ENG-7', state: { name: 'Todo' }, labels: { nodes: [] } } } };
+    if (q.includes('issues(filter'))
+      return {
+        data: {
+          issues: {
+            nodes: [
+              { identifier: 'ENG-7', title: 'Claims status', url: 'l7', state: { name: 'In Design', type: 'started' }, labels: { nodes: [] }, assignee: { name: 'Ana' } },
+              { identifier: 'ENG-2', title: 'Old export', url: 'l2', state: { name: 'Canceled', type: 'canceled' }, labels: { nodes: [] }, assignee: null },
+            ],
+            pageInfo: { hasNextPage: false, endCursor: null },
+          },
+        },
+      };
     if (q.includes('issueCreate')) return { data: { issueCreate: { issue: { identifier: 'ENG-8' } } } };
     if (q.includes('commentCreate') && data.includes('fail me')) return { errors: [{ message: 'Entity not found' }] };
     return { data: { issueUpdate: { success: true }, commentCreate: { success: true } } };
@@ -57,6 +76,10 @@ function respond(method: string, url: string, data = ''): unknown {
     return { transitions: [{ id: '21', name: 'Start design', to: { name: 'In Design' } }, { id: '31', name: 'Start', to: { name: 'In Progress' } }] };
   if (/^POST .*\/transitions$/.test(m) || method === 'PUT') return undefined;
   if (/^POST .*\/rest\/api\/2\/issue$/.test(m)) return { key: 'PROJ-9' };
+  const jiraIssue = (key: string, status: string, category: string) => ({ key, fields: { summary: `Issue ${key}`, status: { name: status, statusCategory: { key: category } }, issuetype: { name: 'Story' }, assignee: null } });
+  if (m === 'POST /jira/rest/api/3/search/jql')
+    return data.includes('"nextPageToken":"p2"') ? { issues: [jiraIssue('PROJ-2', 'Done', 'done')], isLast: true } : { issues: [jiraIssue('PROJ-1', 'In Progress', 'indeterminate')], nextPageToken: 'p2' };
+  if (m === 'POST /jiradc/rest/api/2/search') return { issues: [jiraIssue('PROJ-3', 'To Do', 'new')], total: 1 };
   return {};
 }
 
@@ -68,6 +91,11 @@ before(async () => {
       calls.push(`${req.method} ${req.url} ${data} ${req.headers.authorization ?? req.headers['private-token'] ?? ''}`);
       if (failOn && req.url!.includes(failOn)) {
         res.writeHead(403).end('forbidden');
+        return;
+      }
+      // Data Center has no API v3
+      if (req.url!.startsWith('/jiradc/rest/api/3/')) {
+        res.writeHead(404).end('not found');
         return;
       }
       const out = respond(req.method!, req.url!, data);
@@ -280,4 +308,32 @@ test('tracker: linear over GraphQL (workflow states, errors surface)', async () 
   const r = await sdlc(['tracker', 'comment', 'ENG-7', '--body-file', join(tmp, 'fail.md')], env);
   assert.equal(r.code, 1);
   assert.match(r.err, /Linear: Entity not found/);
+});
+
+test('tracker search: open and closed issues, one category for every provider, read only', async () => {
+  const lines = (out: string) => out.split('\n').filter(Boolean).map((l) => JSON.parse(l));
+  config('github', { provider: 'jira', base_url: 'https://acme.atlassian.net', project_key: 'PROJ' });
+  reset();
+  const cloud = lines((await sdlc(['tracker', 'search', 'refund "card"', '--limit', '5'])).out);
+  assert.deepEqual(cloud.map((i) => [i.key, i.category]), [['PROJ-1', 'in_progress'], ['PROJ-2', 'done']], 'two pages');
+  assert.ok(logged('"jql":"project = \\"PROJ\\" AND text ~ \\"refund \\\\\\"card\\\\\\"\\" ORDER BY updated DESC"'), 'the text is quoted for JQL');
+  assert.ok(!('description' in cloud[0]));
+  reset();
+  const dc = lines((await sdlc(['tracker', 'search'], { JIRA_BASE_URL: `${api}/jiradc` })).out);
+  assert.deepEqual(dc.map((i) => [i.key, i.category]), [['PROJ-3', 'todo']], 'Data Center: falls back to API v2');
+  assert.ok(!calls.some((c) => /^(PUT|PATCH|DELETE)|\/issue /.test(c)), 'nothing written');
+
+  config('github', { provider: 'github' });
+  const gh = { GH_TOKEN: 'g', GITHUB_API_URL: `${api}/gh` };
+  reset();
+  assert.deepEqual(lines((await sdlc(['tracker', 'search'], gh)).out).map((i) => [i.key, i.category, i.assignee]), [['#5', 'in_progress', 'ana'], ['#4', 'cancelled', null]], 'pull requests are left out');
+  reset();
+  assert.deepEqual(lines((await sdlc(['tracker', 'search', 'refund'], gh)).out).map((i) => [i.key, i.category]), [['#3', 'done']]);
+  assert.ok(logged(`GET /gh/search/issues?q=${encodeURIComponent('repo:acme/app is:issue refund')}`));
+
+  config('github', { provider: 'linear', team_key: 'ENG' });
+  reset();
+  const lin = lines((await sdlc(['tracker', 'search', 'claims'], { LINEAR_API_KEY: 'lin_x', LINEAR_API_URL: `${api}/linear` })).out);
+  assert.deepEqual(lin.map((i) => [i.key, i.category, i.status]), [['ENG-7', 'in_progress', 'In Design'], ['ENG-2', 'cancelled', 'Canceled']]);
+  assert.ok(logged('"filter":{"team":{"key":{"eq":"ENG"}},"or":[{"title":{"containsIgnoreCase":"claims"}},{"description":{"containsIgnoreCase":"claims"}}]}'));
 });

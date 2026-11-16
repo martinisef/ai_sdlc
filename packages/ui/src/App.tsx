@@ -3,6 +3,7 @@ import { api, setWorkspace, useApi, type NextAction, type State, type Workspace 
 import { LangContext, useT } from './i18n';
 import { Activity } from './views/Activity';
 import { Board } from './views/Board';
+import { Discovery } from './views/Discovery';
 import { ChangeView } from './views/Change';
 import { Health } from './views/Health';
 import { Inbox } from './views/Inbox';
@@ -23,6 +24,7 @@ function useHash() {
 const NAV = [
   ['/', 'Board'],
   ['/inbox', 'Inbox'],
+  ['/discovery', 'Discovery'],
   ['/roadmaps', 'Roadmaps'],
   ['/metrics', 'Metrics'],
   ['/activity', 'Activity'],
@@ -40,6 +42,7 @@ function Shell({ state, workspaces, onWorkspace }: { state: State; workspaces: W
   else if (!state.configured && section !== '/health') view = <NotConfigured />;
   else if (section === '/inbox') view = <Inbox state={state} />;
   else if (section === '/roadmaps') view = <Roadmaps />;
+  else if (section === '/discovery') view = <Discovery />;
   else if (section === '/metrics') view = <MetricsView />;
   else if (section === '/activity') view = <Activity />;
   else if (section === '/settings') view = <Settings />;

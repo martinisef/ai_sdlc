@@ -56,6 +56,7 @@ import { ciSecrets, installCi } from './ci/install.ts';
 import { fixDoctor, migrateLegacy } from './doctor-fix.ts';
 import { trackerCommand, vcsCommand } from './integrations.ts';
 import { ROADMAP_HELP, roadmapCommand } from './roadmap.ts';
+import { DISCOVERY_HELP, discoveryCommand } from './discovery.ts';
 import { bandsCommand } from './bands.ts';
 import { ciCommand } from './ci/index.ts';
 import { notifyCommand } from './notify.ts';
@@ -95,6 +96,8 @@ Loop
   reject  <change> <intent|spec|plan> [-m comment]
   roadmap <new|check|approve|reject|apply|status|find|list> …
                                      a technical plan → epics and stories → tickets (sdlc roadmap --help)
+  discovery <add|validate|status|seed|branches|search|followup> …
+                                     experimental: project state from meeting transcripts (sdlc discovery --help)
   lock on|off|status                 test-lock during a fix
   ui [--port N] [--no-open]          local dashboard
 
@@ -121,7 +124,7 @@ function parseArgs(argv: string[]) {
     else if (a.startsWith('--')) {
       const [k, v] = a.slice(2).split('=', 2);
       if (v !== undefined) flags[k] = v;
-      else if (['agent', 'port', 'ticket', 'title', 'locale', 'preset', 'first-change', 'change', 'artifact', 'decision', 'by', 'pr-url', 'base', 'value', 'since', 'source'].includes(k)) flags[k] = argv[++i] ?? '';
+      else if (['agent', 'port', 'ticket', 'title', 'locale', 'preset', 'first-change', 'change', 'artifact', 'decision', 'by', 'pr-url', 'base', 'value', 'since', 'source', 'name', 'date', 'type', 'limit'].includes(k)) flags[k] = argv[++i] ?? '';
       else flags[k] = true;
     } else pos.push(a);
   }
@@ -191,6 +194,7 @@ async function main() {
 
   // ci, vcs, tracker and bands print their own help
   if ((flags.help || flags.h) && cmd === 'roadmap') return void console.log(ROADMAP_HELP);
+  if ((flags.help || flags.h) && cmd === 'discovery') return void console.log(DISCOVERY_HELP);
   if ((flags.help || flags.h) && cmd && !['ci', 'vcs', 'tracker', 'bands'].includes(cmd)) {
     const usage = HELP.split('\n').filter((l) => l.trimStart().startsWith(`${cmd} `));
     process.stdout.write(usage.length ? usage.map((l) => `sdlc ${l.trim()}`).join('\n') + '\n' : HELP);
@@ -503,6 +507,9 @@ async function main() {
       return;
     case 'roadmap':
       process.exitCode = await roadmapCommand(root, pos, flags);
+      return;
+    case 'discovery':
+      process.exitCode = await discoveryCommand(root, pos, flags);
       return;
     case 'ci':
       process.exitCode = await ciCommand(root, rest);
