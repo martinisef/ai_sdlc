@@ -97,6 +97,26 @@ function Gate({ change, artifact }: { change: ChangeDetail; artifact: Artifact }
   );
 }
 
+/** Open and accepted review findings (spec-reviewer S…, verifier V…); resolved ones stay in the artifact. */
+function Findings({ change }: { change: ChangeDetail }) {
+  const t = useT();
+  const shown = (change.findings ?? []).filter((f) => f.status !== 'resolved');
+  if (!shown.length) return null;
+  return (
+    <section className="findings">
+      <h3>{t('Findings')}</h3>
+      <ul>
+        {shown.map((f) => (
+          <li key={f.id} className={f.status === 'open' && f.severity === 'blocking' ? 'blocking' : f.status}>
+            <strong>{f.id}</strong> <span className="tag">{t(f.severity ?? '?')}</span> <span className="tag">{t(f.status ?? '?')}</span> {f.finding}
+            {f.note && <div className="muted">{f.note}</div>}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 export function ChangeView({ dir }: { dir: string }) {
   const t = useT();
   const { data: c, error } = useApi<ChangeDetail>(`/changes/${encodeURIComponent(dir)}`);
@@ -143,6 +163,7 @@ export function ChangeView({ dir }: { dir: string }) {
           )}
         </section>
         <aside className="timeline">
+          <Findings change={c} />
           <h3>{t('Timeline')}</h3>
           <ol>
             {c.timeline.map((e) => (

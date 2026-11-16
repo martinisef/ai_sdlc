@@ -30,7 +30,7 @@ From `changes/_templates/spec.md`. Rules:
 - `risk: high` if the design touches paths in `risk.high_risk_paths` of `.sdlc/config.json` or changes auth, sensitive data or public contracts.
 
 ## 3. Adversarial review
-Before showing it, run the `spec-reviewer` subagent on intent.md + spec.md. Incorporate what it finds (or add it as a concern if it cannot be resolved).
+Before showing it, run the `spec-reviewer` subagent on intent.md + spec.md. Incorporate what it finds (or add it as a concern if it cannot be resolved), then write its table to the spec's **Review findings** section as returned, keeping the IDs. When the spec is revised, run it again on the updated spec: it reuses the IDs, so the PO sees what was resolved. Do not approve with a `Blocking` finding open; `sdlc findings <slug>` lists them.
 
 ## 4. Commit and tracker
 - Commit: `spec(<slug>): <title>` (+ key). `status: draft`.

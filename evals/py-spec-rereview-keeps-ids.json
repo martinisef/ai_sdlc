@@ -1,0 +1,40 @@
+{
+  "name": "py-spec-rereview-keeps-ids",
+  "cwd": "examples/python-api",
+  "tags": [
+    "loop",
+    "spec",
+    "findings"
+  ],
+  "setup": "\"$EVAL_DIR/fixtures/stage.sh\" 2026-10-claim-notes claim-notes intent && \"$EVAL_DIR/fixtures/stage.sh\" 2026-10-claim-notes claim-notes-rereview spec",
+  "prompt": "/sdlc-spec for changes/2026-10-claim-notes: spec.md was revised after its last review (see Review findings). Run the adversarial review again on the current spec and update the Review findings table. Headless run: do not ask questions and do not approve the spec.",
+  "allowed_tools": "Read,Write,Edit,Grep,Glob,Task,Bash(git log:*),Bash(.sdlc/bin/sdlc:*)",
+  "checks": [
+    {
+      "type": "file_matches",
+      "glob": "changes/2026-10-claim-notes/spec.md",
+      "pattern": "^\\| S1 \\|[^|]*\\|[^|]*\\| *resolved *\\|",
+      "why": "R2 already caps text at 500 characters, so S1 is resolved, not renumbered or dropped"
+    },
+    {
+      "type": "file_matches",
+      "glob": "changes/2026-10-claim-notes/spec.md",
+      "pattern": "^\\| S2 \\| *Minor *\\|.*created_at"
+    },
+    {
+      "type": "command",
+      "run": ".sdlc/bin/sdlc findings 2026-10-claim-notes --json | grep -q '\"problems\": \\[\\]'",
+      "why": "no duplicate or renumbered IDs, and the vocabulary is the one the gate reads"
+    },
+    {
+      "type": "file_matches",
+      "glob": "changes/2026-10-claim-notes/spec.md",
+      "pattern": "^status: draft"
+    },
+    {
+      "type": "diff_excludes",
+      "glob": "src/**",
+      "why": "reviewing a spec does not implement"
+    }
+  ]
+}

@@ -6,6 +6,7 @@ export * from './discovery.ts';
 export * from './discovery-seed.ts';
 export * from './events.ts';
 export * from './explainers.ts';
+export * from './findings.ts';
 export * from './frontmatter.ts';
 export * from './funnel.ts';
 export * from './gates.ts';

@@ -14,4 +14,8 @@ Leé `intent.md` y `spec.md` del cambio que te indiquen, y CLAUDE.md. Revisá:
 6. ¿El diseño inventa algo que ya existe en el repo?
 7. ¿El `risk` es correcto según `risk.high_risk_paths` de `.sdlc/config.json`?
 
-Devolvé una lista de findings con severidad (Bloqueante / Importante / Menor) y una línea de veredicto: LISTA PARA EL PO / NECESITA CAMBIOS.
+Devolvé la tabla **Hallazgos de la revisión** de la spec y después una línea de veredicto: LISTA PARA EL PO / NECESITA CAMBIOS.
+- Columnas `| ID | Severidad | Hallazgo | Estado | Nota |`, severidad `Bloqueante`, `Importante` o `Menor`, estado `abierto`, `resuelto` o `aceptado`.
+- Si spec.md ya tiene la tabla, es una nueva revisión: conservá cada fila con su ID. Marcá `resuelto` lo que la spec ahora resuelve (decí cómo en Nota), dejá los `aceptado` como están y numerá lo nuevo después del ID más alto. Nunca renumeres, reuses ni borres un ID.
+- En la primera revisión, numerá desde `S1`.
+- Bloqueante quiere decir que el PO no debería aprobar así: la spec no se puede aprobar con uno abierto.

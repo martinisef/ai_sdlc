@@ -32,3 +32,8 @@ approved_by:
 
 ## Desvíos durante la implementación
 <!-- Se completa en /sdlc-build si la implementación se aparta del plan, en el mismo commit. -->
+
+## Hallazgos de la verificación
+<!-- verifier, al final de /sdlc-build. Mismas reglas que los hallazgos de la spec, con IDs V1, V2…: /sdlc-ship no abre el PR con uno Bloqueante abierto, y los aceptados van a la sección Risk del PR. -->
+| ID | Severidad | Hallazgo | Estado | Nota |
+|---|---|---|---|---|

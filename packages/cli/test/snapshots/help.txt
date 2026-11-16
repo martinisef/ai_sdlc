@@ -24,6 +24,7 @@ Loop
   learn "<rule>" [--change C] [--stage S]   keep a confirmed correction in CLAUDE.md (and AGENTS.md) for next time
   learn list [--json]                the learnings every agent reads
   trace [<change>] [--json]          every requirement of spec.md (R1…) covered by the plan's Verification (exit 1 if not)
+  findings [<change>] [--json]       experimental: review findings of spec.md (S1…) and plan.md (V1…); exit 1 if a Blocking one is open
   approve <change> <intent|spec|plan> [-m comment] [--auto]
                                      --auto: record the approval when the risk tier needs no person (risk.profile graded)
   reject  <change> <intent|spec|plan> [-m comment]

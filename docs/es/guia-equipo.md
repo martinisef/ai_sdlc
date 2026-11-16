@@ -34,6 +34,7 @@ Los gates son commits: `sdlc approve` / `sdlc reject` (o los botones del dashboa
 - **Nada se implementa sin un plan aprobado.** Corregir un documento es más barato que rehacer un diff.
 - **Si te desviás del plan, actualizás `plan.md` en el mismo commit.** El review compara el diff contra el plan.
 - **Cada requerimiento de la spec tiene su prueba en el plan.** La spec numera (`- R1: …`) y la sección **Prueba** del plan dice qué test o check demuestra cada uno (`- R1: …`, `- R3–R5: …`). `sdlc trace <cambio>` lo verifica, y aprobar el plan se rechaza si falta alguno o si el plan nombra uno que la spec no tiene.
+- **Los hallazgos de la revisión tienen ID estable** (experimental). El `spec-reviewer` los anota en la spec (`S1`, `S2`…) y el `verifier` en el plan (`V1`…). Una nueva revisión conserva los IDs y marca `resuelto` lo que ya no aplica. La spec no se aprueba con uno `Bloqueante` abierto. Aprobar con hallazgos `Importante` o `Menor` abiertos los marca `aceptado` y suma el trailer `Accepted-risk: S2` al commit del gate. `sdlc findings <cambio>` los lista.
 - **Si el agente comete el mismo error dos veces, la corrección va a `CLAUDE.md`** (o `AGENTS.md`). Si insiste, se vuelve un eval en `evals/`.
 - **Los hooks no se rodean.** Si bloquean (ruta protegida, secreto, test durante un fix, deploy a prod), el mensaje dice el camino correcto.
 - **El agente llega hasta el gate de producción y no lo pasa.** Aprobar y mergear es de una persona.

@@ -32,3 +32,8 @@ approved_by:
 
 ## Deviations during implementation
 <!-- Filled in during /sdlc-build if the implementation departs from the plan, in the same commit. -->
+
+## Verification findings
+<!-- verifier, at the end of /sdlc-build. Same rules as the spec's Review findings, with IDs V1, V2…: /sdlc-ship does not open the PR while a Blocking one is open, and the accepted ones go to the PR's Risk section. -->
+| ID | Severity | Finding | Status | Note |
+|---|---|---|---|---|

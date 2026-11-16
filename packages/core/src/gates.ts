@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { getChange, type Change } from './changes.ts';
 import { localeOf, type Artifact, type LoadedConfig } from './config.ts';
 import { recordEvent } from './events.ts';
+import { acceptFindings, openFindings, parseFindings } from './findings.ts';
 import { setFrontmatter } from './frontmatter.ts';
 import { commitFiles, git, gitOrThrow, gitUser } from './git.ts';
 import { changeRisk, type RiskTier } from './risk.ts';
@@ -223,6 +224,15 @@ export function decideGate(
     if (graded && decision === 'approved') approvers = [...humanApprovers(info!.data.approved_by), by];
   }
   const enough = !graded || opts.auto || approvers.length >= need;
+  let accepted: string[] = [];
+  if (artifact === 'spec' && decision === 'approved' && info) {
+    const found = parseFindings(info.raw, 'spec', info.path);
+    if (found.problems.length) throw new Error(`fix the Review findings table first:\n${found.problems.map((p) => `  - ${p}`).join('\n')}`);
+    const { blocking, acceptable } = openFindings(found);
+    if (blocking.length) throw new Error(`${blocking.map((f) => f.id).join(', ')} ${blocking.length === 1 ? 'is a Blocking finding' : 'are Blocking findings'} still open in ${info.path}: resolve ${blocking.length === 1 ? 'it' : 'them'} (status: resolved) before approving`);
+    if (opts.auto && acceptable.some((f) => f.severity === 'important')) throw new Error(`open Important findings (${acceptable.filter((f) => f.severity === 'important').map((f) => f.id).join(', ')}) need a person to accept them: sdlc approve ${change.slug} spec`);
+    if (enough) accepted = acceptable.map((f) => f.id);
+  }
   // intents are "accepted" in the playbook vocabulary; spec and plan are "approved"
   const done = artifact === 'intent' ? 'accepted' : 'approved';
   const status = decision === 'rejected' ? 'rejected' : enough ? done : (info!.status ?? 'draft');
@@ -236,20 +246,21 @@ export function decideGate(
   } else if (graded && info?.data.approved_by) fields.approved_by = '';
   const verb = decision === 'approved' ? 'approve' : 'reject';
   const count = graded && decision === 'approved' && !opts.auto ? ` (${approvers.length}/${need}, ${tier} risk)` : '';
-  const msg = [`chore(${change.slug}): ${verb} ${artifact}`, '', opts.comment ?? '', `Gate: ${artifact} ${enough || decision === 'rejected' ? status : 'approval'} by ${by}${who.email ? ` <${who.email}>` : ''}${count}`]
-    .filter((l, i) => i !== 2 || l)
-    .join('\n');
-  const commit =
-    change.source === 'worktree'
-      ? commitInWorktree(root, info!.path, fields, msg)
-      : commitOnBranch(root, change.source.branch, info!.path, fields, msg);
+  const trailers = [`Gate: ${artifact} ${enough || decision === 'rejected' ? status : 'approval'} by ${by}${who.email ? ` <${who.email}>` : ''}${count}`];
+  if (accepted.length) trailers.push(`Accepted-risk: ${accepted.join(', ')}`);
+  const msg = [`chore(${change.slug}): ${verb} ${artifact}`, '', opts.comment ?? '', ...trailers].filter((l, i) => i !== 2 || l).join('\n');
+  const edit = (text: string) => {
+    const next = setFrontmatter(text, fields);
+    return accepted.length ? acceptFindings(next, accepted, `accepted by ${by} at approval`) : next;
+  };
+  const commit = change.source === 'worktree' ? commitInWorktree(root, info!.path, edit, msg) : commitOnBranch(root, change.source.branch, info!.path, edit, msg);
   recordEvent(root, { type: decision === 'approved' ? 'gate.approve' : 'gate.reject', change: change.id, artifact, by, detail: opts.comment ?? (opts.auto ? `automatic at ${tier} risk` : undefined) });
   return { change: change.id, artifact, decision, commit, by, ...(graded && decision === 'approved' ? { approvals: { have: opts.auto ? 0 : approvers.length, need } } : {}) };
 }
 
-function commitInWorktree(root: string, path: string, fields: Record<string, string>, msg: string): string {
+function commitInWorktree(root: string, path: string, edit: (text: string) => string, msg: string): string {
   const full = join(root, path);
-  writeFileSync(full, setFrontmatter(readFileSync(full, 'utf8'), fields));
+  writeFileSync(full, edit(readFileSync(full, 'utf8')));
   gitOrThrow(root, ['add', '--', path]);
   gitOrThrow(root, ['commit', '-m', msg, '--', path]);
   return gitOrThrow(root, ['rev-parse', '--short', 'HEAD']);
@@ -259,7 +270,7 @@ function commitInWorktree(root: string, path: string, fields: Record<string, str
  * Commits the gate decision on a change/* branch that is not checked out, without touching the
  * working tree (temporary index + commit-tree), so the dashboard can decide gates on any branch.
  */
-function commitOnBranch(root: string, branch: string, path: string, fields: Record<string, string>, msg: string): string {
+function commitOnBranch(root: string, branch: string, path: string, edit: (text: string) => string, msg: string): string {
   const current = gitOrThrow(root, ['show', `refs/heads/${branch}:${path}`]);
-  return commitFiles(root, branch, { [path]: setFrontmatter(current + '\n', fields) }, msg);
+  return commitFiles(root, branch, { [path]: edit(current + '\n') }, msg);
 }

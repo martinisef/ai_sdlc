@@ -29,6 +29,7 @@ Usable, but they can change in a minor release. Each one is marked *experimental
 | `sdlc webhook` | Its setup for GitLab and Bitbucket may change with the hosted service. |
 | Discovery: `sdlc discovery`, `/sdlc-discovery`, `roadmap new --from-discovery` and the `changes/_discovery/` format | New: the topic tables and their vocabulary may change as more projects use them ([From meetings to project state](../start/discovery.md)). |
 | Codex and Cursor as headless agents (`ci.agent`, `SDLC_CI_AGENT`, dashboard jobs) | Claude Code is the reference; the other CLIs have coarser permission models and change often. |
+| Review findings: the `## Review findings` / `## Verification findings` tables, `sdlc findings` and the `Accepted-risk` trailer | New: the columns and vocabulary may change once more teams use them ([Review findings](../guide/concepts.md#review-findings)). |
 | The dashboard's HTTP API (`/api/*`) | Internal to `sdlc ui`; the UI and the server ship together. |
 | The telemetry payload | Off by default; the fields may change ([Telemetry](./telemetry.md)). |
 

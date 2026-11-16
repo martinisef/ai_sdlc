@@ -39,6 +39,22 @@ Who may approve is set by `gates` (role names per artifact) and `roles` (role �
 
 The spec numbers its requirements (`- R1: …`) and the plan's **Verification** section says which test or check proves each one (`- R1: tests/test_notes.py`, `- R3–R5: …`). `sdlc trace <change>` checks both directions: every requirement has a line, and the plan names no requirement the spec lacks. Only the Verification section counts, so an `R2` mentioned in the steps does not cover it. Approving the plan (`sdlc approve`, `/approve plan` or the dashboard) is refused while `sdlc trace` reports an error. `/sdlc-plan` runs it before recording the plan, the `verifier` reports each requirement by ID, and `sdlc ci gate-status` logs the coverage without blocking, so plans approved before this check keep passing. A spec that numbers no requirements, or a change without a spec, only gets a warning.
 
+### Review findings
+
+*Experimental: the table format may change in a minor release.* The `spec-reviewer` writes its findings to the spec's **Review findings** table and the `verifier` to the plan's **Verification findings**:
+
+| ID | Severity | Finding | Status | Note |
+|---|---|---|---|---|
+| S1 | Blocking | R2 does not bound the length of `text` | resolved | R2 now caps it at 500 |
+| S2 | Important | the 400 error does not say which field failed | accepted | accepted by Ana Dev at approval |
+
+IDs are stable (`S1…` in the spec, `V1…` in the plan). A re-review keeps every row, marks `resolved` what the artifact now addresses and numbers new findings after the highest ID, so the reviewer sees what changed since the last round. `sdlc findings <change>` lists them.
+
+- **Approving a spec with an open `Blocking` finding is refused.** Resolve it, or lower its severity and say why in the Note.
+- **Approving with `Important` or `Minor` findings open accepts them:** the gate commit marks them `accepted`, notes who accepted them and adds an `Accepted-risk: S2, S3` trailer. An automatic approval (`--auto`) refuses open `Important` findings, because a person has to accept them.
+- **`/sdlc-ship` does not open the PR with an open `Blocking` finding**, and the accepted ones go to the PR's Risk section.
+- The dashboard shows the open and accepted findings next to the change's timeline.
+
 ## Stage by stage
 
 | # | Command | Who | Human gate |

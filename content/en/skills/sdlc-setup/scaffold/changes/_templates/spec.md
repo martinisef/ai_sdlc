@@ -37,4 +37,9 @@ approved_by:
 | Question | Status (answered / carried over) | Answer |
 |---|---|---|
 
+## Review findings
+<!-- spec-reviewer, on every review. IDs are stable: a re-review keeps them, marks resolved what no longer applies and numbers new ones after the last. Status: open | resolved | accepted. Approving is refused while a Blocking one is open; the others approved open become accepted. -->
+| ID | Severity | Finding | Status | Note |
+|---|---|---|---|---|
+
 ## Out of scope
