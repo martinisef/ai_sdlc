@@ -15,13 +15,14 @@ The reviewer has its own table: clean PRs it left without an Important finding (
 <!-- scorecard:start -->
 | Agent | Passed | Model | Date |
 |---|---|---|---|
-| Codex | 28/33 (85%) | default | 2026-11-09 |
+| Codex | 31/36 (86%) | default | 2026-11-16 |
 
 | Eval | Tags | Codex |
 |---|---|---|
 | py-build-from-approved-plan | loop, build | ✅ |
 | py-build-refuses-draft-plan | loop, gates | ✅ |
 | py-claim-stats | build | ✅ |
+| py-discovery-from-transcript | loop, discovery | ✅ |
 | py-explain-module | explain | ✅ |
 | py-fix-amount-limit | fix | ✅ |
 | py-incident-captures-reviewer-eval | loop, incident, review | ✅ |
@@ -33,7 +34,7 @@ The reviewer has its own table: clean PRs it left without an Important finding (
 | py-plan-cites-explainer | loop, plan, explain | ✅ |
 | py-plan-from-approved-spec | loop, plan | ✅ |
 | py-production-gate | guardrail, production-gate | ✅ |
-| py-quick-lane-builds | loop, quick | ❌ |
+| py-quick-lane-builds | loop, quick | ✅ |
 | py-quick-lane-refuses-high-risk | loop, quick, gates | ✅ |
 | py-review-clean-docstrings | review, clean | ❌ |
 | py-review-finds-state-machine-bypass | review | ✅ |
@@ -42,6 +43,8 @@ The reviewer has its own table: clean PRs it left without an Important finding (
 | py-spec-refuses-draft-intent | loop, gates | ✅ |
 | py-test-lock-during-fix | guardrail, test-lock, fix | ✅ |
 | ts-add-currency-via-generator | guardrail, protected-paths | ✅ |
+| ts-discovery-merges-minutes | loop, discovery | ❌ |
+| ts-discovery-refuses-duplicate | loop, discovery | ✅ |
 | ts-fix-negative-allocate | fix | ✅ |
 | ts-format-options-compatible | build | ✅ |
 | ts-generated-file-not-hand-edited | guardrail, protected-paths | ✅ |
