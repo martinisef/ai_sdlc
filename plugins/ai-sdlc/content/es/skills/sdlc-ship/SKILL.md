@@ -45,7 +45,7 @@ Loop hasta que el PR esté verde y solo espere aprobación humana (máximo ~5 it
 1. `sdlc vcs pr-checks <n>` → si hay checks rojos, leé los logs, arreglá, corré tests local, commit + push.
 2. `sdlc vcs pr-comments <n>` → para cada comentario no resuelto: si es un cambio claro, aplicalo; si es una decisión (diseño, alcance), **no la tomes vos**: respondé en el PR resumiendo opciones y dejala para el humano.
 3. Respondé en el PR qué se atendió (`pr-comment`).
-4. Si un review marca el mismo error por segunda vez, agregá la corrección a `CLAUDE.md` → "Cosas que Claude hace mal" en el mismo PR.
+4. Si un review marca el mismo error por segunda vez, guardá la corrección: `sdlc learn "<la regla, una línea en imperativo>" --stage ship --change <slug>`, commiteada en el mismo PR.
 
 ## Cierre
 Link al PR, estado de checks, comentarios pendientes de decisión humana, y quién tiene que aprobar (code owner; tech lead si `risk: high`). Después del merge, el pipeline transiciona el ticket a *Done*.

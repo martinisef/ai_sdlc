@@ -41,5 +41,8 @@ Con `risk.profile: graded`, el nivel decide cuántas personas (`sdlc risk <slug>
 Ya fuera de plan mode, escribí `changes/<slug>/plan.md` desde el template con el plan aceptado, `status: approved`, `approved_by: <engineer>`, `risk`. Commit: `plan(<slug>): <título>` (+ key).
 Tracker: transición `plan` + comentario con path y SHA (`jira-sot`: también resumen). Si falla, avisá y seguí.
 
+## Guardar lo aprendido
+Si la persona corrigió lo que hiciste o supusiste en esta etapa de una forma que valdría la próxima vez (un término, una convención, un chequeo para correr, algo que nunca hay que hacer), preguntá una vez por corrección, con sus palabras: "Me pediste <…>. ¿Lo guardo para la próxima?". Si dice que sí: `sdlc learn "<la regla, una línea en imperativo>" --stage plan --change <slug>`. No preguntes por arreglos puntuales (un typo, un nombre mal puesto, un valor), y nunca en corridas headless. Si te pide directamente que guardes algo ("la próxima usá las fixtures compartidas"), corrélo sin preguntar y decí en una línea dónde quedó. Commiteá `CLAUDE.md` (y `AGENTS.md`) con el cambio.
+
 ## Cierre
 Una línea con el siguiente paso: "`/sdlc-build` para implementar contra el plan" (o, si hay pasos independientes, sugerir `claude --worktree <nombre>` por paso).

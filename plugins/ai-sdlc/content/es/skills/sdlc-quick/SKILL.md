@@ -30,5 +30,8 @@ Si no es rápido: no implementes. Corré `sdlc promote` (si ya existe el cambio 
 
 Los hooks siguen aplicando: rutas protegidas, secretos, el production gate. Si un hook bloquea, no lo esquives.
 
+## Guardar lo aprendido
+Si la persona corrigió lo que hiciste o supusiste en esta etapa de una forma que valdría la próxima vez (un término, una convención, un chequeo para correr, algo que nunca hay que hacer), preguntá una vez por corrección, con sus palabras: "Me pediste <…>. ¿Lo guardo para la próxima?". Si dice que sí: `sdlc learn "<la regla, una línea en imperativo>" --stage quick --change <slug>`. No preguntes por arreglos puntuales (un typo, un nombre mal puesto, un valor), y nunca en corridas headless. Si te pide directamente que guardes algo ("la próxima usá las fixtures compartidas"), corrélo sin preguntar y decí en una línea dónde quedó. Commiteá `CLAUDE.md` (y `AGENTS.md`) con el cambio.
+
 ## 3. Cerrar
 Resumí qué cambió y la salida de los tests, y después el **siguiente paso**: "`/sdlc-ship` para abrir el PR". La revisión vuelve a chequear los límites del carril rápido.

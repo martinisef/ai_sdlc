@@ -47,5 +47,8 @@ How many people depends on `risk.profile` in `.sdlc/config.json`. With `strict` 
 ## Headless mode (CI)
 If you run with `claude -p` (no user): do not ask questions; write the spec, leave anything doubtful as a concern, commit and finish. The pipeline opens/updates the PR.
 
+## Keep what you learned
+If the person corrected what you did or assumed in this stage in a way that would hold next time (a term, a convention, a check to run, something to never do), ask once per correction, in their words: "You asked me to <…>. Keep that for next time?". On yes: `sdlc learn "<the rule, one imperative line>" --stage spec --change <slug>`. Do not ask about one-off fixes (a typo, a wrong name, one value), and never in headless runs. If they ask outright to keep something ("next time, use the shared fixtures"), run it without asking and say in one line where it went. Commit `CLAUDE.md` (and `AGENTS.md`) with the change.
+
 ## Wrap-up
 One line: spec written, number of open concerns, link to the PR/ticket, and **next step**: "When the PO approves it → `/sdlc-plan`".

@@ -2,7 +2,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { BANDS_PATH, detectProvider, git, loadBands, loadConfig, type AgentId, type Provider } from '@ai-native-sdlc/core';
+import { BANDS_PATH, detectProvider, git, learningsSize, LEARN_MAX_LINES, loadBands, loadConfig, type AgentId, type Provider } from '@ai-native-sdlc/core';
 import { detectDrift } from './render.ts';
 
 export type Enforcement = 'blocks' | 'post-hoc' | 'commit' | 'push' | 'ci' | 'advisory';
@@ -100,6 +100,8 @@ export function doctor(root: string): { checks: Check[]; agents: AgentId[]; matr
       add('bands', false, (e as Error).message);
     }
   }
+  const learned = learningsSize(root);
+  if (learned > LEARN_MAX_LINES) add('learnings', false, `CLAUDE.md has ${learned} learnings (more than ${LEARN_MAX_LINES}): merge the ones that say the same thing or move them into Conventions, so it stays one page`, 'warn');
   const drift = detectDrift(root);
   add('drift', drift.length === 0, drift.length ? `generated files edited by hand: ${drift.join(', ')} (sdlc sync --force to regenerate)` : 'generated files in sync', drift.length ? 'warn' : 'info');
   return { checks, agents, matrix: ENFORCEMENT_MATRIX };

@@ -30,5 +30,8 @@ If it is not quick: do not implement. Run `sdlc promote` (if a quick change exis
 
 Hooks still apply: protected paths, secrets, the production gate. If a hook blocks, do not work around it.
 
+## Keep what you learned
+If the person corrected what you did or assumed in this stage in a way that would hold next time (a term, a convention, a check to run, something to never do), ask once per correction, in their words: "You asked me to <…>. Keep that for next time?". On yes: `sdlc learn "<the rule, one imperative line>" --stage quick --change <slug>`. Do not ask about one-off fixes (a typo, a wrong name, one value), and never in headless runs. If they ask outright to keep something ("next time, use the shared fixtures"), run it without asking and say in one line where it went. Commit `CLAUDE.md` (and `AGENTS.md`) with the change.
+
 ## 3. Close
 Summarize what changed and the test output, then **next step**: "`/sdlc-ship` to open the PR". The review checks the quick lane limits again.

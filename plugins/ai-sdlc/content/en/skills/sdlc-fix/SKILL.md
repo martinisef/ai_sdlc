@@ -28,6 +28,9 @@ Loop CLI: `sdlc` ({{sdlc_hint}}). Commands: `.sdlc/config.json → commands`.
 - Run the full suite: the fix must not break anything else.
 - If you become convinced the test is written wrong, **do not change it yourself**: explain it to the engineer; they decide whether to release the lock.
 
+## Keep what you learned
+If the person corrected what you did or assumed in this stage in a way that would hold next time (a term, a convention, a check to run, something to never do), ask once per correction, in their words: "You asked me to <…>. Keep that for next time?". On yes: `sdlc learn "<the rule, one imperative line>" --stage fix --change <slug>`. Do not ask about one-off fixes (a typo, a wrong name, one value), and never in headless runs. If they ask outright to keep something ("next time, use the shared fixtures"), run it without asking and say in one line where it went. Commit `CLAUDE.md` (and `AGENTS.md`) with the change.
+
 ## 4. Close
 1. With everything green, `sdlc lock off`.
 2. Commit the fix: `fix(<slug>): <what>` (+ key).

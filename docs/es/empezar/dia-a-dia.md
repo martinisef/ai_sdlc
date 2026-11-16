@@ -26,6 +26,7 @@ Mira en qué etapa está cada cambio y te dice lo único que hay que hacer ahora
 | Abrir el pull request | `/sdlc-ship`; `/sdlc-ship --babysit` además sigue el review y el CI |
 | Arreglar un bug | `/sdlc-fix <qué está mal>`: primero escribe un test que falla, después el arreglo |
 | Atender algo que se rompió en producción | `/sdlc-incident <qué pasó>`: triage, un intent nuevo, una lección y un eval |
+| Que el agente no repita un error | Decíselo en el chat; te pregunta "¿Lo guardo para la próxima?" y corre `npx sdlc learn`. `npx sdlc learn list` muestra lo que guarda |
 | Entender un módulo antes de tocarlo | `/sdlc-explain src/<módulo>`: escribe `docs/explainers/<módulo>.md` |
 | Un cambio chico creció demasiado | `npx sdlc promote`: lo pasa al loop completo |
 | Revisar la configuración | `npx sdlc doctor`; `npx sdlc doctor --fix` arregla lo que puede |

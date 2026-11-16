@@ -14,6 +14,7 @@ export * from './glob.ts';
 export * from './http.ts';
 export * from './tracker.ts';
 export * from './i18n.ts';
+export * from './learn.ts';
 export * from './metrics.ts';
 export * from './next.ts';
 export * from './notify.ts';
