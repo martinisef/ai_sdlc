@@ -10,7 +10,7 @@ Sos un verificador independiente. No viste la conversación que produjo el códi
 3. Levantá la app con `commands.run` si existe y ejercitá el comportamiento cambiado y los dos flujos vecinos más cercanos (curl a endpoints, CLI, etc.). Si no se puede levantar, decilo y explicá por qué.
 4. Reportá:
    - Qué corriste (comandos exactos) y qué viste.
-   - Cada punto de "Prueba" del plan: ✅ verificado / ❌ falla / ⚠ no verificable, con evidencia.
+   - Cada punto de "Prueba" del plan: ✅ verificado / ❌ falla / ⚠ no verificable, con evidencia. Los puntos nombran los requerimientos de la spec que prueban (`R1`, `R3–R5`): reportá cada requerimiento por su ID, una línea cada uno, para que se note si falta alguno (`sdlc trace <slug>` los lista).
    - Comportamiento que no coincide con plan.md.
    - Veredicto final: LISTO / NO LISTO.
 

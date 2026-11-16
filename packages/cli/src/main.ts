@@ -8,6 +8,7 @@ import {
   ARTIFACTS,
   addLearning,
   listLearnings,
+  traceChange,
   CONFIG_PATH,
   LEGACY_CONFIG_PATH,
   configJsonSchema,
@@ -95,6 +96,7 @@ Loop
   explainers [<path>…] [--json]      module explainers (docs/explainers, written by /sdlc-explain); with paths: the ones covering them
   learn "<rule>" [--change C] [--stage S]   keep a confirmed correction in CLAUDE.md (and AGENTS.md) for next time
   learn list [--json]                the learnings every agent reads
+  trace [<change>] [--json]          every requirement of spec.md (R1…) covered by the plan's Verification (exit 1 if not)
   approve <change> <intent|spec|plan> [-m comment] [--auto]
                                      --auto: record the approval when the risk tier needs no person (risk.profile graded)
   reject  <change> <intent|spec|plan> [-m comment]
@@ -441,6 +443,27 @@ async function main() {
       } catch (e) {
         fail((e as Error).message);
       }
+      return;
+    }
+
+    case 'trace': {
+      const loaded = loadConfig(root);
+      const changes = listChanges(root, { locale: localeOf(loaded), defaultBranch: loaded?.config.vcs?.default_branch });
+      const id = pos[0];
+      const change = id ? changes.find((c) => c.dir === id.replace(/^changes\//, '') || c.slug === id) : changes.find((c) => c.active);
+      if (!change) fail(id ? `change not found: ${id}` : 'no active change: pass one (sdlc trace <change>)');
+      const r = traceChange(root, change!);
+      if (flags.json) console.log(JSON.stringify(r, null, 2));
+      else {
+        for (const e of r.errors) console.log(`✗ ${e}`);
+        for (const w of r.warnings) console.log(`! ${w}`);
+        const n = r.requirements.length;
+        if (n && !r.errors.length) {
+          console.log(`✓ ${r.change}: ${n} requirement${n === 1 ? '' : 's'}, all covered by the plan`);
+          for (const req of r.requirements) console.log(`  ${req.padEnd(4)} ${r.covered[req]}`);
+        } else if (n && !change!.artifacts.plan) console.log(`${r.change}: ${n} requirement${n === 1 ? '' : 's'}, no plan.md yet`);
+      }
+      if (r.errors.length) process.exitCode = 1;
       return;
     }
 

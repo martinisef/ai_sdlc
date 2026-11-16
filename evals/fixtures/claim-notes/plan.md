@@ -23,7 +23,9 @@ approved_by: Sam (tech lead)
 - `to_dict` must serialize the notes list (dataclass `asdict` handles nested dataclasses).
 
 ## Verification
-`make test` covers R1–R4; `make lint` clean.
+- R1–R4: `tests/test_notes.py` (`make test`): create, validation, unknown claim, notes in `GET /claims/{id}`.
+- R5: `make test` checks there is no PUT, PATCH or DELETE route for notes.
+- Also: `make lint` clean.
 
 ## Discarded alternatives
 - Notes as a separate store keyed by claim id — more code, no benefit in memory.

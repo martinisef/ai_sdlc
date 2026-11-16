@@ -25,4 +25,5 @@ export * from './quick.ts';
 export * from './risk.ts';
 export * from './roadmap.ts';
 export * from './telemetry.ts';
+export * from './trace.ts';
 export * from './vcs.ts';

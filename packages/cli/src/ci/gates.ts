@@ -22,6 +22,7 @@ import {
   prComment,
   requiredPrSections,
   SdlcError,
+  traceChange,
   type Approver,
   type Artifact,
   type Change,
@@ -155,6 +156,11 @@ export async function gateStatus(c: CiEnv, announce = false): Promise<number> {
   if (g.state === 'success' && n !== undefined) {
     const problem = await descriptionProblem(c, change, n, opts.tier);
     if (problem) g = { state: 'failure', description: problem };
+  }
+  if (change?.artifacts.plan) {
+    const t = traceChange(c.root, change);
+    const reqs = t.requirements.length;
+    if (reqs) log(t.errors.length ? `trace: ${t.errors.join('; ')} (the plan gate checks this on approval; sdlc trace ${change.slug})` : `trace: ${reqs}/${reqs} requirements covered by the plan`);
   }
   const waiting = waitingArtifact(change);
   const pending = waiting && (announce || touched(c, change!.artifacts[waiting]!.path));
