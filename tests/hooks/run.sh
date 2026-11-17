@@ -9,7 +9,7 @@ SDLC="${SDLC:-node --conditions=source $REPO/packages/cli/src/main.ts}"
 # guardrail (as the old per-script hooks were named) → hook event
 event_of() {
   case "$1" in
-    protect-paths.sh|secrets-guard.sh|test-lock.sh|production-gate.sh) echo pre-tool ;;
+    protect-paths.sh|secrets-guard.sh|test-lock.sh|production-gate.sh|plan-first) echo pre-tool ;;
     format-on-edit.sh) echo post-tool ;;
     plan-sync.sh) echo stop ;;
     session-start.sh) echo session-start ;;
@@ -96,10 +96,21 @@ printf 'x' > "$PROJ/a.bad"
 expect "reports formatter failure" format-on-edit.sh 2 "$(write "$PROJ/a.bad" x)" "formatter"
 expect "no formatter → ok"         format-on-edit.sh 0 "$(write "$PROJ/src/app.py" x)"
 
-echo "plan-sync"
+echo "plan-first"
 git -C "$PROJ" checkout -q -b change/claims-status
+printf -- '---\nstatus: draft\n---\n# Plan\n' > "$PROJ/changes/2026-11-claims-status/plan.md"
+expect "draft plan → blocks code"  plan-first 2 "$(edit "$PROJ/src/app.py" y)" "/sdlc-plan"
+expect "draft plan → allows plan"  plan-first 0 "$(edit "$PROJ/changes/2026-11-claims-status/plan.md" y)"
+expect "draft plan → allows docs"  plan-first 0 "$(edit "$PROJ/README.md" y)"
+expect "outside the project → ok"  plan-first 0 "$(write "$TMP/scratch.py" x)"
+git -C "$PROJ" checkout -q main
+expect "main branch → ok"          plan-first 0 "$(edit "$PROJ/src/app.py" y)"
+git -C "$PROJ" checkout -q change/claims-status
+
+echo "plan-sync"
 printf -- '---\nstatus: approved\n---\n# Plan\n' > "$PROJ/changes/2026-11-claims-status/plan.md"
 git -C "$PROJ" add -A && git -C "$PROJ" -c user.email=t@t -c user.name=t commit -qm plan
+expect "approved plan → allows code" plan-first 0 "$(edit "$PROJ/src/app.py" y)"
 expect "clean tree → ok"           plan-sync.sh 0 '{"stop_hook_active":false}'
 printf 'code' > "$PROJ/src/app.py"
 expect "code w/o plan → remind"    plan-sync.sh 2 '{"stop_hook_active":false}' "plan.md"

@@ -22,7 +22,7 @@ export const ENFORCEMENT_MATRIX: MatrixRow[] = [
   { guardrail: 'production-gate', claude: ['blocks'], cursor: ['blocks'], 'agents-md': ['ci', 'advisory'] },
   { guardrail: 'format-on-edit', claude: ['post-hoc'], cursor: ['post-hoc'], 'agents-md': ['advisory'] },
   { guardrail: 'plan-sync', claude: ['blocks'], cursor: ['blocks'], 'agents-md': ['advisory'] },
-  { guardrail: 'plan-first', claude: ['advisory', 'push'], cursor: ['advisory', 'push'], 'agents-md': ['advisory', 'push'] },
+  { guardrail: 'plan-first', claude: ['blocks', 'commit', 'push'], cursor: ['blocks', 'commit', 'push'], 'agents-md': ['commit', 'push'] },
 ];
 
 export interface Check {

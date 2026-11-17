@@ -109,8 +109,7 @@ function tape(seg, loc, work) {
   }
   if (seg === 'guardrail') {
     type('npx sdlc next', '2.5s');
-    type(`echo "// wip" >> src/todos.js && git commit -qam "${s.sneak}"`, '2s');
-    type(`git push -u origin change/${s.slug}`, '6s');
+    type(`echo "// wip" >> src/todos.js && git commit -qam "${s.sneak}"`, '6s');
   }
   lines.push('Sleep 2s');
   return [...header, ...lines].join('\n') + '\n';

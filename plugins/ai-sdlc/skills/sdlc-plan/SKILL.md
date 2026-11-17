@@ -13,7 +13,11 @@ Loop CLI: `sdlc` (if `sdlc` is not on the PATH: `node <this skill's base directo
 ## 0. Prerequisites
 1. Active change (branch `change/<slug>`) or `$ARGUMENTS`.
 2. `spec.md` with `status: approved`. If it does not exist: for small changes without a spec (bugfix, scoped refactor) you can plan from an accepted `intent.md`; say so explicitly. If the spec is in draft, stop (only `status` counts, not `approved_by`).
-3. **Plan mode**: if the session is not in plan mode, ask the user to enable it (Shift+Tab until "plan mode") before continuing. In plan mode Claude can read the repo but cannot change anything until the plan is accepted. If that is not possible (e.g. headless), work read-only until step 4.
+3. **Read-only until the plan is accepted.** Use the agent's planning mode if it has one; if it is not on, ask once before continuing:
+   - Claude Code: plan mode (Shift+Tab until "plan mode", or start with `claude --permission-mode plan`).
+   - Cursor: Plan mode (switch to it yourself if you can).
+   - Codex: a read-only sandbox (`codex --sandbox read-only`).
+   If none is available (e.g. headless), work read-only until step 4. Either way, the `plan-first` guardrail refuses edits to code on the change branch until the plan is approved; only files under `changes/<slug>/`, docs and agent configuration can change.
 
 ## 1. Build the plan
 Read intent.md, spec.md, CLAUDE.md and the relevant code. The plan must name:
@@ -33,12 +37,12 @@ Before presenting it, answer for yourself and show:
 Invite the engineer to correct it. Iterate until **someone who never saw this conversation could implement the change with only the plan**.
 
 ## 3. Acceptance (gate)
-The engineer accepts the plan (when exiting plan mode). If `risk: high`, a tech lead or architect is also needed: leave it in `status: draft` and request that approval.
+The engineer accepts the plan (in Claude Code and Cursor, when leaving plan mode). If `risk: high`, a tech lead or architect is also needed: leave it in `status: draft` and request that approval.
 
 With `risk.profile: graded`, the tier decides how many people (`sdlc risk <slug>`; the paths the plan names count): low needs nobody (`sdlc approve <slug> plan --auto` once plan.md is written in draft), medium needs the engineer, high needs the engineer and one more person (leave `status: draft` with `approved_by: <engineer>` and ask for the second `sdlc approve`).
 
 ## 4. Record plan.md
-Once out of plan mode, write `changes/<slug>/plan.md` from the template with the accepted plan, `status: approved`, `approved_by: <engineer>`, `risk`. Run `sdlc trace <slug>`: if it reports a requirement the plan does not cover, the plan is not the one to record. Add how it is verified and confirm it with the engineer, or set `status: draft` and say why. Commit: `plan(<slug>): <title>` (+ key).
+Once the plan is accepted (out of plan mode), write `changes/<slug>/plan.md` from the template with the accepted plan, `status: approved`, `approved_by: <engineer>`, `risk`. Run `sdlc trace <slug>`: if it reports a requirement the plan does not cover, the plan is not the one to record. Add how it is verified and confirm it with the engineer, or set `status: draft` and say why. Commit: `plan(<slug>): <title>` (+ key).
 Tracker: `plan` transition + comment with path and SHA (`jira-sot`: also a summary). If it fails, say so and continue.
 
 ## Keep what you learned

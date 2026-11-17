@@ -78,6 +78,9 @@ expect() {
 edit() { printf '{"hook_event_name":"PreToolUse","cwd":"%s","tool_name":"Edit","tool_input":{"file_path":"%s/%s","old_string":"a","new_string":"%s"}}' "$P" "$P" "$1" "$2"; }
 write() { printf '{"hook_event_name":"PreToolUse","cwd":"%s","tool_name":"Write","tool_input":{"file_path":"%s/%s","content":"%s"}}' "$P" "$P" "$1" "$2"; }
 bashcmd() { printf '{"hook_event_name":"PreToolUse","cwd":"%s","tool_name":"Bash","tool_input":{"command":"%s"}}' "$P" "$1"; }
+expect "blocks code before the plan"           2 "$(edit src/claims/store.py 'x = 1')"
+# the rest exercises the other guardrails, with a plan approved
+printf -- '---\nstatus: approved\n---\n# Plan\n' > "changes/$CHANGE/plan.md"
 expect "blocks editing an applied migration"   2 "$(edit migrations/versions/0001_create_claims.sql 'DROP TABLE claims;')"
 expect "allows a new migration"                0 "$(write migrations/versions/0002_add_currency.sql 'ALTER TABLE claims ADD currency TEXT;')"
 expect "allows editing application code"       0 "$(edit src/claims/store.py 'x = 1')"
@@ -89,6 +92,7 @@ sdlc lock on >/dev/null
 expect "test-lock blocks tests during a fix"   2 "$(edit tests/test_store.py 'assert True')"
 sdlc lock off >/dev/null
 expect "no lock: tests are editable"           0 "$(edit tests/test_store.py 'assert True')"
+rm "changes/$CHANGE/plan.md"
 ctx="$(printf '{"hook_event_name":"SessionStart","cwd":"%s"}' "$P" | sh -c "$START" 2>/dev/null)"
 printf '%s' "$ctx" | grep -q "$CHANGE" && ok "session-start reports the active change" || ko "session-start reports the active change" "$ctx"
 

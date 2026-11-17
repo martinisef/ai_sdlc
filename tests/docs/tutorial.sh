@@ -72,12 +72,14 @@ for loc in en es; do
   agent /sdlc-spec >/dev/null
   out="$(npx sdlc approve "$SLUG" spec 2>&1)"; shows "approve spec" "$out" "spec.md approved by Ana Dev"
 
-  echo "// wip" >> src/todos.js && git commit -qam "feat($SLUG): before the plan"
-  out="$(npx sdlc hook pre-push --agent git </dev/null 2>&1)"; code=$?
-  if [ "$loc" = es ]; then both "push before the plan is blocked" "$out" "Bloqueado por ai-sdlc: la rama change/$SLUG tiene cambios de código pero changes/$today-$SLUG/plan.md no está aprobado (etapa: spec-approved)"
-  else both "push before the plan is blocked" "$out" "Blocked by ai-sdlc: branch change/$SLUG has code changes but changes/$today-$SLUG/plan.md is not approved (stage: spec-approved)"; fi
-  [ "$code" != 0 ] && ok "blocked push exits non-zero" || ko "blocked push exits non-zero" "exit $code"
-  git reset -q --hard HEAD~1
+  echo "// wip" >> src/todos.js
+  out="$(git commit -qam "feat($SLUG): before the plan" 2>&1)"; code=$?
+  if [ "$loc" = es ]; then both "commit before the plan is blocked" "$out" "Bloqueado por ai-sdlc: la rama change/$SLUG tiene cambios de código pero changes/$today-$SLUG/plan.md no está aprobado (etapa: spec-approved)"
+  else both "commit before the plan is blocked" "$out" "Blocked by ai-sdlc: branch change/$SLUG has code changes but changes/$today-$SLUG/plan.md is not approved (stage: spec-approved)"; fi
+  [ "$code" != 0 ] && ok "blocked commit exits non-zero" || ko "blocked commit exits non-zero" "exit $code"
+  echo '{"hook_event_name":"PreToolUse","tool_name":"Edit","tool_input":{"file_path":"src/todos.js","new_string":"// wip"}}' | npx sdlc hook pre-tool --agent claude >/dev/null 2>&1; code=$?
+  [ "$code" = 2 ] && ok "agent edit before the plan is blocked" || ko "agent edit before the plan is blocked" "exit $code"
+  git checkout -q -- src/todos.js
 
   agent /sdlc-plan >/dev/null
   out="$(npx sdlc approve "$SLUG" plan 2>&1)"; shows "approve plan" "$out" "plan.md approved by Ana Dev"

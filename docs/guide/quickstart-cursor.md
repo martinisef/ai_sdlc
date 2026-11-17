@@ -45,13 +45,14 @@ The Cursor hooks block the same things as Claude Code before they happen:
 - secrets in file content;
 - editing tests while the test-lock is on;
 - shell commands that match the production gate.
+- editing code on a `change/*` branch before its `plan.md` is approved.
 
 Cursor has two extra hooks:
 
 - `beforeReadFile` refuses to load a file whose content contains a credential.
 - `beforeSubmitPrompt` stops a prompt that contains one.
 
-The git hooks repeat the path, secret and test-lock checks at commit time. Run `npx sdlc doctor` to see the matrix.
+The git hooks repeat the path, secret, test-lock and plan-first checks at commit time. Run `npx sdlc doctor` to see the matrix.
 
 ## Cursor in CI
 

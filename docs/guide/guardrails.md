@@ -10,7 +10,7 @@ Every guardrail lives in one place (`sdlc hook`) and is configured in `.sdlc/con
 | `production-gate` | `production_gate.patterns`, `approval_env` | Blocks shell commands that match (for example `deploy.*prod` or `terraform apply`) unless the approval variable (default `RELEASE_APPROVAL`) is set. Mentions inside `echo` or `git commit -m` do not count. |
 | `format-on-edit` | `format_on_edit` | Runs the formatter on each edited file (glob → command, with `{file}` replaced by the path). |
 | `plan-sync` | — | Before the agent stops: if code changed but `plan.md` did not, the agent is asked to update the plan in the same commit. |
-| `plan-first` | — | `pre-push` on `change/*` branches refuses code until `plan.md` is approved. |
+| `plan-first` | `plan_first` | On `change/*` branches, code waits for an approved `plan.md`: the agent's edit is refused, then the commit, then the push. Only the change's own files (`changes/…`), docs (`*.md`) and agent configuration can change before that. A quick change (`sdlc quick`) passes while it stays within `quick_lane`. `plan_first: "commit"` or `"push"` starts the check later, for teams that sketch code on the branch before planning. |
 
 ## Enforcement per agent
 
@@ -24,7 +24,7 @@ Every guardrail lives in one place (`sdlc hook`) and is configured in `.sdlc/con
 | production-gate | blocks | blocks | ci + advisory |
 | format-on-edit | post-hoc | post-hoc | advisory |
 | plan-sync | blocks | blocks | advisory |
-| plan-first | advisory + push | advisory + push | advisory + push |
+| plan-first | blocks + commit + push | blocks + commit + push | commit + push |
 
 The values mean:
 

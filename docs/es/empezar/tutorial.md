@@ -125,14 +125,14 @@ npx sdlc approve marcar-hecha spec
 /sdlc-plan
 ```
 
-En Claude Code, primero pasá a plan mode (Shift+Tab hasta que diga "plan mode"): el agente puede leer pero no cambiar nada. El plan lista los archivos que cambian, el orden del trabajo y los tests. Preguntá en el chat hasta que te quede claro, y después:
+Primero pasá el agente a su modo de planificación, así puede leer pero no cambiar nada: en Claude Code, Shift+Tab hasta que diga "plan mode" (o arrancalo con `claude --permission-mode plan`); en Cursor, el modo Plan. Si te olvidás, `/sdlc-plan` te lo pide, y de todos modos el agente no puede editar código en la rama del cambio hasta que el plan esté aprobado. El plan lista los archivos que cambian, el orden del trabajo y los tests. Preguntá en el chat hasta que te quede claro, y después:
 
 ```bash
 npx sdlc approve marcar-hecha plan
 ```
 
 ::: warning El código antes del plan se bloquea
-Si alguien (agente o persona) intenta subir código en `change/marcar-hecha` antes de que el plan esté aprobado, git lo frena:
+Las ediciones de código del agente en `change/marcar-hecha` se rechazan hasta que el plan esté aprobado. Si el código llega por otro lado (una persona, un comando de shell), git frena el commit, y después el push:
 
 ```text
 Bloqueado por ai-sdlc: la rama change/marcar-hecha tiene cambios de código pero changes/2026-11-marcar-hecha/plan.md no está aprobado (etapa: spec-approved). Plan antes que código: …
@@ -140,7 +140,7 @@ Bloqueado por ai-sdlc: la rama change/marcar-hecha tiene cambios de código pero
 
 Es el guardrail haciendo su trabajo. Aprobá el plan primero.
 
-![Un push antes de aprobar el plan, bloqueado](../../media/guardrail-es.gif)
+![Un commit antes de aprobar el plan, bloqueado](../../media/guardrail-es.gif)
 :::
 
 ### Paso 8. Construilo

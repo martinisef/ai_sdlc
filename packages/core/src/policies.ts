@@ -2,14 +2,16 @@
 // and the resulting Decision back into its own protocol.
 import { execSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
-import { basename, join } from 'node:path';
-import { activeChange, isCodePath, listChanges } from './changes.ts';
-import { localeOf, type LoadedConfig } from './config.ts';
+import { basename, isAbsolute, join } from 'node:path';
+import { activeChange, getChange, isApproved, isCodePath, listChanges } from './changes.ts';
+import { localeOf, PLAN_FIRST_AT, type LoadedConfig, type PlanFirstAt } from './config.ts';
+import { parseFrontmatter } from './frontmatter.ts';
 import { currentBranch, git, lines } from './git.ts';
 import { globMatch, matchAny } from './glob.ts';
 import { t, type Locale } from './i18n.ts';
 import { formatNext, nextAction } from './next.ts';
 import { relPath } from './project.ts';
+import { checkQuick } from './quick.ts';
 
 export type HookEvent =
   | { kind: 'file.edit'; phase: 'pre' | 'post'; path: string; content?: string }
@@ -147,6 +149,48 @@ export function runFormatOnEdit(ctx: PolicyContext, path: string, locale: Locale
   }
 }
 
+/**
+ * Plan before code: on a change/* branch, implementation files wait for an approved plan.md, except a quick change
+ * within `quick_lane`. One rule at the agent's edit, the commit and the push; `plan_first` sets where it starts.
+ * Edits and commits read the change from the working tree (cheap, and what is about to be committed); the push
+ * reads it from the branch.
+ */
+export function checkPlanFirst(ctx: PolicyContext, at: PlanFirstAt, files: string[], locale: Locale): Decision {
+  const { root, loaded } = ctx;
+  if (!loaded || PLAN_FIRST_AT.indexOf(at) < PLAN_FIRST_AT.indexOf(loaded.config.plan_first ?? 'edit')) return ALLOW;
+  const branch = currentBranch(root);
+  if (!branch?.startsWith('change/')) return ALLOW;
+  // files outside the project (an agent's own scratch or plan files) are not the change's code
+  const code = files.map((f) => relPath(root, f)).filter((f) => !isAbsolute(f) && !f.startsWith('../') && isCodePath(f));
+  if (!code.length) return ALLOW;
+  const base = loaded.config.vcs?.default_branch ?? 'main';
+  let id: string;
+  let state: { intent?: Record<string, string>; spec?: Record<string, string>; plan?: Record<string, string> };
+  if (at === 'push') {
+    const change = listChanges(root, { locale, defaultBranch: base }).find((c) => c.active);
+    if (!change) return ALLOW;
+    id = change.id;
+    state = { intent: change.artifacts.intent?.data, spec: change.artifacts.spec?.data, plan: change.artifacts.plan?.data };
+  } else {
+    id = activeChange(root)!;
+    const read = (name: string) => {
+      const p = join(root, id, `${name}.md`);
+      return existsSync(p) ? parseFrontmatter(readFileSync(p, 'utf8')).data : undefined;
+    };
+    state = { intent: read('intent'), spec: read('spec'), plan: read('plan') };
+    if (!state.intent && !state.spec && !state.plan) return ALLOW;
+  }
+  if (isApproved(state.plan?.status)) return ALLOW;
+  const slug = branch.slice('change/'.length);
+  if (state.intent?.lane === 'quick' && !state.spec && !state.plan) {
+    const q = checkQuick(loaded, [...new Set([...lines(git(root, ['diff', '--name-only', `${base}...HEAD`])), ...code])]);
+    return q.ok ? ALLOW : { action: 'deny', policy: 'plan-first', message: t(locale, 'prepush.quick', { change: slug, reason: q.reason ?? '' }) };
+  }
+  if (at === 'edit') return { action: 'deny', policy: 'plan-first', message: t(locale, 'planfirst.edit', { path: code[0], change: id }) };
+  const stage = getChange(root, id, { locale, defaultBranch: base })?.stage ?? 'plan';
+  return { action: 'deny', policy: 'plan-first', message: t(locale, 'prepush.noplan', { branch, change: id, stage }) };
+}
+
 /** Files changed in the working tree (porcelain; for renames, the new path). */
 function dirtyFiles(root: string): string[] {
   return lines(git(root, ['status', '--porcelain'])).map((l) => l.slice(3).split(' -> ').pop()!.replace(/^"|"$/g, ''));
@@ -214,6 +258,7 @@ export function evaluate(event: HookEvent, ctx: PolicyContext): Decision[] {
         () => checkProtected(ctx, event.path, locale),
         () => checkSecrets(ctx, event.content, locale),
         () => checkTestLock(ctx, event.path, locale),
+        () => checkPlanFirst(ctx, 'edit', [event.path], locale),
       );
     case 'file.read':
       return run(() => checkSecrets(ctx, event.content, locale));

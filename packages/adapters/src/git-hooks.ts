@@ -1,23 +1,17 @@
 // Git hooks: the agent-independent layer. They enforce at commit/push time what agents without
 // pre-action hooks (Cursor edits, AGENTS.md agents) cannot be stopped from doing at edit time.
 import {
+  checkPlanFirst,
   checkProtected,
-  checkQuick,
   checkSecrets,
   checkTestLock,
-  currentBranch,
   git,
-  isApproved,
-  isCodePath,
-  isQuick,
   lines,
-  listChanges,
   loadConfig,
   localeOf,
   recordEvent,
   t,
   type Decision,
-  type PolicyId,
 } from '@ai-native-sdlc/core';
 import type { HookOutput } from './hooks.ts';
 
@@ -35,7 +29,7 @@ function block(root: string, d: Extract<Decision, { action: 'deny' }>, env: Node
   return { stderr: `${d.message}\n${t(locale, 'git.override', { policy: d.policy })}`, exitCode: 1 };
 }
 
-/** pre-commit: protected paths, test-lock and secrets over the staged changes. */
+/** pre-commit: protected paths, test-lock, secrets and plan-first over the staged changes. */
 export function preCommit(root: string, env: NodeJS.ProcessEnv = process.env): HookOutput {
   const loaded = loadConfig(root);
   if (!loaded) return { exitCode: 0 };
@@ -56,10 +50,11 @@ export function preCommit(root: string, env: NodeJS.ProcessEnv = process.env): H
     .filter((l) => l.startsWith('+') && !l.startsWith('+++'))
     .map((l) => l.slice(1))
     .join('\n');
-  const d = checkSecrets(ctx, added, locale);
-  if (d.action === 'deny') {
-    const out = block(root, d, env, locale);
-    if (out) return out;
+  for (const d of [checkSecrets(ctx, added, locale), checkPlanFirst(ctx, 'commit', staged, locale)]) {
+    if (d.action === 'deny') {
+      const out = block(root, d, env, locale);
+      if (out) return out;
+    }
   }
   return { exitCode: 0 };
 }
@@ -69,20 +64,7 @@ export function prePush(root: string, env: NodeJS.ProcessEnv = process.env): Hoo
   const loaded = loadConfig(root);
   if (!loaded) return { exitCode: 0 };
   const locale = localeOf(loaded);
-  const branch = currentBranch(root);
-  if (!branch?.startsWith('change/')) return { exitCode: 0 };
   const base = loaded.config.vcs?.default_branch ?? 'main';
-  const code = lines(git(root, ['diff', '--name-only', `${base}...HEAD`])).filter(isCodePath);
-  if (code.length === 0) return { exitCode: 0 };
-  const change = listChanges(root, { locale, defaultBranch: base }).find((c) => c.active);
-  if (!change || isApproved(change.artifacts.plan?.status)) return { exitCode: 0 };
-  const policy: PolicyId = 'plan-first';
-  if (isQuick(change)) {
-    const q = checkQuick(loaded, code);
-    if (q.ok) return { exitCode: 0 };
-    const d: Decision = { action: 'deny', policy, message: t(locale, 'prepush.quick', { change: change.slug, reason: q.reason ?? '' }) };
-    return block(root, d, env, locale) ?? { exitCode: 0 };
-  }
-  const d: Decision = { action: 'deny', policy, message: t(locale, 'prepush.noplan', { branch, change: change.id, stage: change.stage }) };
-  return block(root, d, env, locale) ?? { exitCode: 0 };
+  const d = checkPlanFirst({ root, loaded, env }, 'push', lines(git(root, ['diff', '--name-only', `${base}...HEAD`])), locale);
+  return (d.action === 'deny' && block(root, d, env, locale)) || { exitCode: 0 };
 }
