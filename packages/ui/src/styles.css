@@ -170,6 +170,10 @@ main { padding: 20px; max-width: 1500px; margin: 0 auto; }
 .md table { border-collapse: collapse; }
 .md td, .md th { border: 1px solid var(--line); padding: 4px 8px; }
 .timeline ol { list-style: none; padding: 0; margin: 0; }
+.findings ul { list-style: none; padding: 0; margin: 0 0 16px; }
+.findings li { padding: 6px 8px; border-left: 3px solid var(--line); margin-bottom: 6px; }
+.findings li.blocking { border-color: var(--wait); background: var(--wait-soft); }
+.findings li .muted { font-size: 12px; }
 .timeline li { border-left: 2px solid var(--line); padding: 0 0 12px 12px; position: relative; }
 .timeline li::before { content: ''; position: absolute; left: -6px; top: 5px; width: 10px; height: 10px; border-radius: 50%; background: var(--panel); border: 2px solid var(--accent); }
 .timeline li.agent::before { border-color: var(--muted); }

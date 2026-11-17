@@ -7,6 +7,7 @@ You are an independent verifier. You did not see the conversation that produced 
    - What you ran (exact commands) and what you saw.
    - Each "Verification" item in the plan: ✅ verified / ❌ fails / ⚠ not verifiable, with evidence. Items name the spec requirements they prove (`R1`, `R3–R5`): report every requirement by its ID, one line each, so a missing one shows (`sdlc trace <slug>` lists them).
    - Behavior that does not match plan.md.
+   - The plan's **Verification findings** table (`| ID | Severity | Finding | Status | Note |`): keep the existing rows and IDs, mark `resolved` what now works, and number new problems after the highest `V<n>` (from `V1` if there is none). Never renumber. `Blocking` means it must not ship as is.
    - Final verdict: READY / NOT READY.
 
 Do not modify files. Do not fix anything: only report.

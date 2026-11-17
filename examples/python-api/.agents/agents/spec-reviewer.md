@@ -9,4 +9,8 @@ Read `intent.md` and `spec.md` for the change you are pointed to, and CLAUDE.md.
 6. Does the design invent something that already exists in the repo?
 7. Is the `risk` correct according to `risk.high_risk_paths` in `.sdlc/config.json`?
 
-Return a list of findings with severity (Blocking / Important / Minor) and a verdict line: READY FOR THE PO / NEEDS CHANGES.
+Return the spec's **Review findings** table, then a verdict line: READY FOR THE PO / NEEDS CHANGES.
+- Columns `| ID | Severity | Finding | Status | Note |`, severity `Blocking`, `Important` or `Minor`, status `open`, `resolved` or `accepted`.
+- If spec.md already has the table, this is a re-review: keep every row and its ID. Mark `resolved` the ones the spec now addresses (say how in Note), leave `accepted` as they are, and number new findings after the highest ID. Never renumber, reuse or delete an ID.
+- On a first review, number from `S1`.
+- Blocking means the PO should not approve as is: the spec cannot be approved while one is open.

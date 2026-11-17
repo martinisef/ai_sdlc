@@ -29262,8 +29262,8 @@ function validateDiscovery(root, loaded, d = loadDiscovery(root, loaded)) {
   const errors = [...d.problems];
   const warnings = [];
   const labels = new Set(d.sources.map((s) => s.label));
-  const rows = allRows(d);
-  const byRef = new Map(rows.map((r) => [rowRef(r), r]));
+  const rows2 = allRows(d);
+  const byRef = new Map(rows2.map((r) => [rowRef(r), r]));
   const team = teamNames(loaded);
   const commitTranscripts = loaded?.config.discovery?.commit_transcripts !== false;
   const seenLabels = /* @__PURE__ */ new Set();
@@ -29334,7 +29334,7 @@ function validateDiscovery(root, loaded, d = loadDiscovery(root, loaded)) {
   if (d.topics.length && (!existsSync5(status) || readFileSync6(status, "utf8") !== renderStatus(discoveryStatus(d), d.locale))) {
     warnings.push(`${d.dir}/STATUS.md is out of date: run sdlc discovery status`);
   }
-  return { errors, warnings, topics: d.topics.length, rows: rows.length, sources: d.sources.length };
+  return { errors, warnings, topics: d.topics.length, rows: rows2.length, sources: d.sources.length };
 }
 function checkFeature(r, at2, byRef, errors) {
   if (!repoKey(r.cells.repo ?? "")) errors.push(`${at2}: ${r.id}: Repo '${r.cells.repo ?? ""}' is not one of ${Object.values(REPO_STATES).map((n) => n.en).join(", ")}`);
@@ -29393,14 +29393,14 @@ function item(r) {
 function discoveryStatus(d) {
   const last = d.sources.at(-1);
   const topics = d.topics.filter((t2) => t2.slug !== BASELINE_TOPIC).sort((a, b) => Number(a.slug === UNSORTED_TOPIC) - Number(b.slug === UNSORTED_TOPIC) || a.slug.localeCompare(b.slug));
-  const rows = topics.flatMap((t2) => t2.rows);
-  const of = (table, keep) => rows.filter((r) => r.table === table && keep(r.status)).map(item);
+  const rows2 = topics.flatMap((t2) => t2.rows);
+  const of = (table, keep) => rows2.filter((r) => r.table === table && keep(r.status)).map(item);
   const silentFor = (r) => {
     const dates = evidencePieces(r.cells.evidence ?? "").map((p) => evidenceSource(p).slice(0, 10)).filter(isDate).sort();
     const lastMention = dates.at(-1) ?? r.cells.since ?? "";
     return d.sources.filter((s) => s.date > lastMention).length;
   };
-  const questions = rows.filter((r) => r.table === "questions" && (r.status === "open" || r.status === "contradiction")).map((r) => ({ ...item(r), silentFor: silentFor(r) })).sort((a, b) => (a.since ?? "").localeCompare(b.since ?? "") || a.ref.localeCompare(b.ref));
+  const questions = rows2.filter((r) => r.table === "questions" && (r.status === "open" || r.status === "contradiction")).map((r) => ({ ...item(r), silentFor: silentFor(r) })).sort((a, b) => (a.since ?? "").localeCompare(b.since ?? "") || a.ref.localeCompare(b.ref));
   const byRecipient = {};
   for (const q of questions) (byRecipient[recipientKey(q.to, d.locale)] ??= []).push(q);
   const actions = of("actions", (s) => s === "open" || s === "scheduled" || s === "verify").sort((a, b) => recipientKey(a.owner, d.locale).localeCompare(recipientKey(b.owner, d.locale)));
@@ -29564,21 +29564,21 @@ ${subjects}`),
 function followupDraft(d, locale) {
   const f = F[locale];
   const last = d.sources.at(-1);
-  const rows = d.topics.filter((t2) => t2.slug !== BASELINE_TOPIC).flatMap((t2) => t2.rows);
+  const rows2 = d.topics.filter((t2) => t2.slug !== BASELINE_TOPIC).flatMap((t2) => t2.rows);
   const toClient = (cell2) => {
     const p = cell2 ? parseParty(cell2) : void 0;
     return p?.party === "client" ? `${PARTIES.client[locale]}: ${p.names.join(", ")}` : void 0;
   };
   const groups = /* @__PURE__ */ new Map();
   const group = (k) => groups.get(k) ?? groups.set(k, { fresh: [], pending: [], actions: [] }).get(k);
-  const questions = rows.filter((r) => r.table === "questions" && (r.status === "open" || r.status === "contradiction")).sort((a, b) => (a.cells.since ?? "").localeCompare(b.cells.since ?? ""));
+  const questions = rows2.filter((r) => r.table === "questions" && (r.status === "open" || r.status === "contradiction")).sort((a, b) => (a.cells.since ?? "").localeCompare(b.cells.since ?? ""));
   for (const q of questions) {
     const k = toClient(q.cells.to);
     if (!k) continue;
     if (last && q.cells.since === last.date) group(k).fresh.push(`${q.cells.text} (${rowRef(q)})`);
     else group(k).pending.push(`${q.cells.text} \u2014 ${f.since(q.cells.since ?? "?")} (${rowRef(q)})`);
   }
-  for (const a of rows.filter((r) => r.table === "actions" && (r.status === "open" || r.status === "scheduled"))) {
+  for (const a of rows2.filter((r) => r.table === "actions" && (r.status === "open" || r.status === "scheduled"))) {
     const k = toClient(a.cells.owner);
     if (k) group(k).actions.push(`${a.cells.text} (${rowRef(a)})`);
   }
@@ -29595,8 +29595,8 @@ function followupDraft(d, locale) {
 }
 function discoveryRoadmap(d, o) {
   const es2 = o.locale === "es";
-  const rows = allRows(d);
-  const byRef = new Map(rows.map((r) => [rowRef(r), r]));
+  const rows2 = allRows(d);
+  const byRef = new Map(rows2.map((r) => [rowRef(r), r]));
   const wanted = o.topics?.length ? o.topics : d.topics.map((t2) => t2.slug).filter((s) => s !== BASELINE_TOPIC && s !== UNSORTED_TOPIC);
   const unknown2 = wanted.filter((s) => !d.topics.some((t2) => t2.slug === s));
   if (unknown2.length) throw new SdlcError(`no discovery topic ${unknown2.join(", ")} (topics: ${d.topics.map((t2) => t2.slug).join(", ") || "none"})`);
@@ -29650,7 +29650,7 @@ function discoveryRoadmap(d, o) {
   return { body: `${out.join("\n")}
 `, epics: epic, stories, blocked: blocked.map((b) => b.ref) };
 }
-function replaceTableRows(raw2, table, rows, locale) {
+function replaceTableRows(raw2, table, rows2, locale) {
   const all = raw2.split("\n");
   const def = TABLES[table];
   const start = all.findIndex((l) => {
@@ -29658,7 +29658,7 @@ function replaceTableRows(raw2, table, rows, locale) {
     return !!h && tableOf(h[1]) === table;
   });
   const cols = def.columns.map(([k]) => k);
-  const body = rows.map((r) => tableLine(cols.map((k) => r[k] ?? "")));
+  const body = rows2.map((r) => tableLine(cols.map((k) => r[k] ?? "")));
   const fresh = [tableLine(def.columns.map(([, n]) => n[locale])), `|${cols.map(() => "---").join("|")}|`, ...body];
   if (start === -1) return `${raw2.replace(/\n*$/, "\n")}
 ## ${def.title[locale]}
@@ -29672,7 +29672,7 @@ ${fresh.join("\n")}
     const header = splitCells(all[i]);
     const keys = header.map((c) => def.columns.find(([, n]) => matches(c, n))?.[0] ?? "");
     const keep = [all[i], all[i + 1] && isSeparator(all[i + 1]) ? all[i + 1] : `|${keys.map(() => "---").join("|")}|`];
-    all.splice(i, end - i, ...keep, ...rows.map((r) => tableLine(keys.map((k) => r[k] ?? ""))));
+    all.splice(i, end - i, ...keep, ...rows2.map((r) => tableLine(keys.map((k) => r[k] ?? ""))));
   } else all.splice(start + 1, 0, ...fresh);
   return all.join("\n");
 }
@@ -29848,9 +29848,89 @@ var init_discovery = __esm({
         nothing: "Nada pendiente con el cliente."
       }
     };
-    nextId = (rows, table) => `${TABLES[table].prefix}${Math.max(0, ...rows.filter((r) => r.table === table).map((r) => Number(r.id.slice(1)) || 0)) + 1}`;
+    nextId = (rows2, table) => `${TABLES[table].prefix}${Math.max(0, ...rows2.filter((r) => r.table === table).map((r) => Number(r.id.slice(1)) || 0)) + 1}`;
     repoLabel = (k, locale) => REPO_STATES[k][locale];
     noTicketLabel = (locale) => NO_TICKET[locale];
+  }
+});
+
+// packages/core/src/findings.ts
+function rows(text) {
+  const lines2 = text.split("\n");
+  const out = [];
+  let inside = false;
+  let comment = false;
+  for (let i = 0; i < lines2.length; i++) {
+    const line = lines2[i];
+    if (comment) {
+      if (line.includes("-->")) comment = false;
+      continue;
+    }
+    if (line.includes("<!--") && !line.includes("-->")) {
+      comment = true;
+      continue;
+    }
+    if (/^#{1,2}\s/.test(line)) inside = HEADING.test(line.trim());
+    else if (inside && line.trim().startsWith("|")) {
+      const cells = cellsOf(line);
+      if (/^[A-Z]\d+$/.test(cells[0] ?? "") && cells[2]) out.push({ i, cells });
+    }
+  }
+  return out;
+}
+function parseFindings(text, artifact, path = `${artifact}.md`) {
+  const r = { findings: [], problems: [] };
+  const prefix = PREFIX[artifact];
+  for (const { cells } of rows(text)) {
+    const [id, sev = "", finding, st = "", note = ""] = cells;
+    if (!id.startsWith(prefix)) r.problems.push(`${path}: ${id} should be numbered ${prefix}1, ${prefix}2\u2026 in this file`);
+    if (r.findings.some((f) => f.id === id)) r.problems.push(`${path}: ${id} appears twice; IDs are never reused or renumbered`);
+    const severity = SEVERITY[sev.toLowerCase().replace(/\*/g, "")];
+    const status = STATUS[st.toLowerCase().replace(/\*/g, "")];
+    if (!severity) r.problems.push(`${path}: ${id} has severity "${sev}" (Blocking, Important or Minor)`);
+    if (!status) r.problems.push(`${path}: ${id} has status "${st}" (open, resolved or accepted)`);
+    r.findings.push({ id, severity, finding, status, note, path });
+  }
+  return r;
+}
+function changeFindings(change) {
+  const r = { findings: [], problems: [] };
+  for (const a of ["spec", "plan"]) {
+    const info = change.artifacts[a];
+    if (!info) continue;
+    const p = parseFindings(info.raw, a, info.path);
+    r.findings.push(...p.findings);
+    r.problems.push(...p.problems);
+  }
+  return r;
+}
+function openFindings(r) {
+  const open2 = r.findings.filter((f) => f.status === "open");
+  return { blocking: open2.filter((f) => f.severity === "blocking"), acceptable: open2.filter((f) => f.severity !== "blocking") };
+}
+function acceptFindings(text, ids, note) {
+  const lines2 = text.split("\n");
+  for (const { i, cells } of rows(text)) {
+    if (!ids.includes(cells[0])) continue;
+    const word = ACCEPTED[(cells[3] ?? "").toLowerCase().replace(/\*/g, "")];
+    if (!word) continue;
+    while (cells.length < 5) cells.push("");
+    cells[3] = word;
+    if (!cells[4]) cells[4] = note;
+    lines2[i] = `| ${cells.join(" | ")} |`;
+  }
+  return lines2.join("\n");
+}
+var HEADING, SEVERITY, STATUS, ACCEPTED, PREFIX, cellsOf;
+var init_findings = __esm({
+  "packages/core/src/findings.ts"() {
+    "use strict";
+    HEADING = /^##\s+(review findings|verification findings|hallazgos de la revisi[oó]n|hallazgos de la verificaci[oó]n)\s*$/i;
+    SEVERITY = { blocking: "blocking", bloqueante: "blocking", important: "important", importante: "important", minor: "minor", menor: "minor" };
+    STATUS = { open: "open", abierto: "open", resolved: "resolved", resuelto: "resolved", accepted: "accepted", aceptado: "accepted" };
+    ACCEPTED = { open: "accepted", abierto: "aceptado" };
+    PREFIX = { spec: "S", plan: "V" };
+    cellsOf = (line) => line.trim().replace(/^\|/, "").replace(/(?<!\\)\|$/, "").split(/(?<!\\)\|/).map((c) => c.trim());
   }
 });
 
@@ -30259,6 +30339,16 @@ ${trace.errors.map((e) => `  - ${e}`).join("\n")}`);
     if (graded && decision === "approved") approvers = [...humanApprovers(info.data.approved_by), by];
   }
   const enough = !graded || opts2.auto || approvers.length >= need;
+  let accepted = [];
+  if (artifact === "spec" && decision === "approved" && info) {
+    const found = parseFindings(info.raw, "spec", info.path);
+    if (found.problems.length) throw new Error(`fix the Review findings table first:
+${found.problems.map((p) => `  - ${p}`).join("\n")}`);
+    const { blocking: blocking2, acceptable } = openFindings(found);
+    if (blocking2.length) throw new Error(`${blocking2.map((f) => f.id).join(", ")} ${blocking2.length === 1 ? "is a Blocking finding" : "are Blocking findings"} still open in ${info.path}: resolve ${blocking2.length === 1 ? "it" : "them"} (status: resolved) before approving`);
+    if (opts2.auto && acceptable.some((f) => f.severity === "important")) throw new Error(`open Important findings (${acceptable.filter((f) => f.severity === "important").map((f) => f.id).join(", ")}) need a person to accept them: sdlc approve ${change.slug} spec`);
+    if (enough) accepted = acceptable.map((f) => f.id);
+  }
   const done = artifact === "intent" ? "accepted" : "approved";
   const status = decision === "rejected" ? "rejected" : enough ? done : info.status ?? "draft";
   const fields = { status };
@@ -30271,21 +30361,27 @@ ${trace.errors.map((e) => `  - ${e}`).join("\n")}`);
   } else if (graded && info?.data.approved_by) fields.approved_by = "";
   const verb = decision === "approved" ? "approve" : "reject";
   const count2 = graded && decision === "approved" && !opts2.auto ? ` (${approvers.length}/${need}, ${tier} risk)` : "";
-  const msg = [`chore(${change.slug}): ${verb} ${artifact}`, "", opts2.comment ?? "", `Gate: ${artifact} ${enough || decision === "rejected" ? status : "approval"} by ${by}${who.email ? ` <${who.email}>` : ""}${count2}`].filter((l, i) => i !== 2 || l).join("\n");
-  const commit = change.source === "worktree" ? commitInWorktree(root, info.path, fields, msg) : commitOnBranch(root, change.source.branch, info.path, fields, msg);
+  const trailers = [`Gate: ${artifact} ${enough || decision === "rejected" ? status : "approval"} by ${by}${who.email ? ` <${who.email}>` : ""}${count2}`];
+  if (accepted.length) trailers.push(`Accepted-risk: ${accepted.join(", ")}`);
+  const msg = [`chore(${change.slug}): ${verb} ${artifact}`, "", opts2.comment ?? "", ...trailers].filter((l, i) => i !== 2 || l).join("\n");
+  const edit = (text) => {
+    const next = setFrontmatter(text, fields);
+    return accepted.length ? acceptFindings(next, accepted, `accepted by ${by} at approval`) : next;
+  };
+  const commit = change.source === "worktree" ? commitInWorktree(root, info.path, edit, msg) : commitOnBranch(root, change.source.branch, info.path, edit, msg);
   recordEvent(root, { type: decision === "approved" ? "gate.approve" : "gate.reject", change: change.id, artifact, by, detail: opts2.comment ?? (opts2.auto ? `automatic at ${tier} risk` : void 0) });
   return { change: change.id, artifact, decision, commit, by, ...graded && decision === "approved" ? { approvals: { have: opts2.auto ? 0 : approvers.length, need } } : {} };
 }
-function commitInWorktree(root, path, fields, msg) {
+function commitInWorktree(root, path, edit, msg) {
   const full = join10(root, path);
-  writeFileSync5(full, setFrontmatter(readFileSync8(full, "utf8"), fields));
+  writeFileSync5(full, edit(readFileSync8(full, "utf8")));
   gitOrThrow(root, ["add", "--", path]);
   gitOrThrow(root, ["commit", "-m", msg, "--", path]);
   return gitOrThrow(root, ["rev-parse", "--short", "HEAD"]);
 }
-function commitOnBranch(root, branch, path, fields, msg) {
+function commitOnBranch(root, branch, path, edit, msg) {
   const current = gitOrThrow(root, ["show", `refs/heads/${branch}:${path}`]);
-  return commitFiles(root, branch, { [path]: setFrontmatter(current + "\n", fields) }, msg);
+  return commitFiles(root, branch, { [path]: edit(current + "\n") }, msg);
 }
 var AGENT_IDENTITY, isAgent, AUTO_APPROVER, TIER_APPROVALS, isGraded;
 var init_gates = __esm({
@@ -30294,6 +30390,7 @@ var init_gates = __esm({
     init_changes();
     init_config();
     init_events();
+    init_findings();
     init_frontmatter();
     init_git();
     init_risk();
@@ -30342,7 +30439,7 @@ function parseRoadmap(raw2, slug = "", path = roadmapPath(slug)) {
   let epic;
   for (let i = 0; i < lines2.length; i++) {
     const line = lines2[i];
-    const h = HEADING.exec(line);
+    const h = HEADING2.exec(line);
     if (h) {
       const kind = h[2].includes(".") ? "story" : "epic";
       if (kind === "epic") epic = h[2];
@@ -30436,7 +30533,7 @@ function roadmapHash(raw2) {
 }
 function setItemField(raw2, id, name, value) {
   const lines2 = raw2.split("\n");
-  const start = lines2.findIndex((l) => HEADING.exec(l)?.[2] === id);
+  const start = lines2.findIndex((l) => HEADING2.exec(l)?.[2] === id);
   if (start === -1) throw new SdlcError(`no item ${id} in the roadmap`);
   let i = start + 1;
   for (; i < lines2.length; i++) {
@@ -30743,7 +30840,7 @@ function findRoadmapItem(root, key) {
   }
   return void 0;
 }
-var ROADMAPS_DIR, ROADMAP_RISKS, ITEM_FIELDS, MAX_CRITERIA, SLUG2, SOURCE_EXTENSIONS, MAX_SOURCE_BYTES, GOOGLE_DOC, isGoogleDocUrl, DOWNLOAD_HINT, HEADING, QUESTIONS, FIELD, CRITERION, QUESTION, ANSWER, roadmapPath;
+var ROADMAPS_DIR, ROADMAP_RISKS, ITEM_FIELDS, MAX_CRITERIA, SLUG2, SOURCE_EXTENSIONS, MAX_SOURCE_BYTES, GOOGLE_DOC, isGoogleDocUrl, DOWNLOAD_HINT, HEADING2, QUESTIONS, FIELD, CRITERION, QUESTION, ANSWER, roadmapPath;
 var init_roadmap = __esm({
   "packages/core/src/roadmap.ts"() {
     "use strict";
@@ -30764,7 +30861,7 @@ var init_roadmap = __esm({
     GOOGLE_DOC = /^https:\/\/docs\.google\.com\/document\/(?:u\/\d+\/)?d\/([A-Za-z0-9_-]+)/;
     isGoogleDocUrl = (url2) => GOOGLE_DOC.test(url2);
     DOWNLOAD_HINT = "or export it to PDF or Markdown (File \u2192 Download) and use that file";
-    HEADING = /^(#{2,3})\s+(E\d+(?:\.S\d+)?)\s*[·:—–-]\s*(.+?)\s*$/;
+    HEADING2 = /^(#{2,3})\s+(E\d+(?:\.S\d+)?)\s*[·:—–-]\s*(.+?)\s*$/;
     QUESTIONS = /^##\s+(Open questions|Preguntas abiertas)\s*$/i;
     FIELD = /^-\s+([a-z_]+):\s*(.*)$/;
     CRITERION = /^\s*-\s+\[[ xX]\]\s+(.+)$/;
@@ -30844,9 +30941,9 @@ async function seedDiscovery(root, loaded, o = {}) {
   const today = o.today ?? (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
   const raw2 = existsSync9(file2) ? readFileSync10(file2, "utf8") : topicTemplate({ slug: BASELINE_TOPIC, title: BASELINE_TITLE[locale], created: today, locale, intro: BASELINE_INTRO[locale] });
   const topic = parseTopic(raw2, BASELINE_TOPIC, path);
-  const rows = topic.rows.filter((r) => r.table === "features");
-  const cells = rows.map((r) => ({ ...r.cells }));
-  const index = new Map(rows.map((r, i) => [seedIdentity(r.cells.evidence ?? ""), i]));
+  const rows2 = topic.rows.filter((r) => r.table === "features");
+  const cells = rows2.map((r) => ({ ...r.cells }));
+  const index = new Map(rows2.map((r, i) => [seedIdentity(r.cells.evidence ?? ""), i]));
   const added = [];
   const updated = [];
   let unchanged = 0;
@@ -30868,7 +30965,7 @@ async function seedDiscovery(root, loaded, o = {}) {
     }
     const cur = cells[at2];
     const next = { ...cur, ...row };
-    if (KEPT.has(rows[at2].status ?? "")) next.status = cur.status;
+    if (KEPT.has(rows2[at2].status ?? "")) next.status = cur.status;
     const pieces = evidencePieces(cur.evidence ?? "").map((p) => seedIdentity(p) === c.identity ? p.replace(/^seed · \S+ \S+(?: \([^)]*\))?/, note) : p);
     next.evidence = (pieces.some((p) => seedIdentity(p) === c.identity) ? pieces : [note, ...pieces]).join(" <br> ");
     if (JSON.stringify(next) === JSON.stringify(cur)) unchanged++;
@@ -32180,6 +32277,7 @@ var init_src = __esm({
     init_discovery_seed();
     init_events();
     init_explainers();
+    init_findings();
     init_frontmatter();
     init_funnel();
     init_gates();
@@ -36879,7 +36977,7 @@ function createApp(opts2) {
     const who = gitUser(root);
     const gates = Object.fromEntries(ARTIFACTS.filter((a) => ch.artifacts[a]).map((a) => [a, canApprove(ch, a, who, loaded)]));
     const pr = ch.branch ? cachedPr(root, ch.branch, loaded) : void 0;
-    return c.json({ ...summary(ch, pr), artifacts: ch.artifacts, gates, timeline: timeline(root, ch) });
+    return c.json({ ...summary(ch, pr), artifacts: ch.artifacts, gates, findings: changeFindings(ch).findings, timeline: timeline(root, ch) });
   });
   app.post("/api/changes/:dir/gates/:artifact", async (c) => {
     const root = ws(c);
@@ -37334,7 +37432,7 @@ function client(env) {
   return new GithubClient({ appId: env.GITHUB_APP_ID, privateKey, installationId: env.GITHUB_INSTALLATION_ID, api: env.GITHUB_API });
 }
 function renderBoard(repos) {
-  const rows = repos.flatMap(
+  const rows2 = repos.flatMap(
     (r) => r.error ? [`<tr><td>${esc2(r.repo)}</td><td colspan="5" class="err">${esc2(r.error)}</td></tr>`] : r.changes.map(
       (c) => `<tr><td>${esc2(r.repo)}</td><td><b>${esc2(c.title ?? c.slug)}</b><br><small>${esc2(c.dir)}${c.branch ? ` \xB7 ${esc2(c.branch)}` : ""}</small></td><td><span class="stage ${esc2(c.stage)}">${esc2(c.stage)}</span></td><td><code>${esc2(c.statuses)}</code></td><td>${c.waitingFor ? `${esc2(c.waitingFor)} gate` : ""}</td><td>${esc2(c.risk ?? "")}</td></tr>`
     )
@@ -37346,7 +37444,7 @@ th,td{border-bottom:1px solid #d0d7de;padding:.5rem;text-align:left;vertical-ali
 .stage{padding:.1rem .4rem;border-radius:1rem;background:#eaeef2}.merged{background:#dafbe1}.building{background:#ddf4ff}.err{color:#cf222e}
 </style></head><body><h1>Org board</h1><p>${repos.length} repositories \xB7 ${repos.reduce((n, r) => n + r.changes.length, 0)} changes \xB7 ${waiting} waiting for a gate</p>
 <table><thead><tr><th>Repository</th><th>Change</th><th>Stage</th><th>intent/spec/plan</th><th>Waiting for</th><th>Risk</th></tr></thead><tbody>
-${rows || '<tr><td colspan="6">No changes yet.</td></tr>'}</tbody></table></body></html>`;
+${rows2 || '<tr><td colspan="6">No changes yet.</td></tr>'}</tbody></table></body></html>`;
 }
 function createHostedApp(env = process.env, gh = client(env)) {
   const ttl = Number(env.SDLC_HOSTED_TTL ?? 300) * 1e3;
@@ -37601,7 +37699,7 @@ function renderScorecard(reports, evals, date5, outcomes) {
   });
   const names = [.../* @__PURE__ */ new Set([...evals.map((e) => e.name), ...reports.flatMap((r) => r.results.map((x) => x.name))])].sort();
   const tags = new Map(evals.map((e) => [e.name, e.tags ?? []]));
-  const rows = names.map((n) => {
+  const rows2 = names.map((n) => {
     const cells = agents.map((a) => {
       const x = by.get(a).results.find((y) => y.name === n);
       return !x ? "\u2014" : x.passed ? "\u2705" : "\u274C";
@@ -37616,7 +37714,7 @@ function renderScorecard(reports, evals, date5, outcomes) {
     "",
     `| Eval | Tags | ${agents.map((a) => NAME[a]).join(" | ")} |`,
     `|---|---|${agents.map(() => "---").join("|")}|`,
-    ...rows,
+    ...rows2,
     ...reviewerRows(reports, agents, tags, outcomes),
     SCORECARD_END
   ].join("\n");
@@ -38113,7 +38211,7 @@ async function nightlyReview(c, flags) {
   }
   log2(`nightly review of ${module} (${modules.length} module${modules.length === 1 ? "" : "s"} in rotation)`);
   const run3 = (prompt) => runAgentAsync(c.agent, { mode: "read", allowedTools: READ_TOOLS, cwd: c.root, prompt }, c.model).catch((e) => (log2(e.message), ""));
-  const found = (await Promise.all(NIGHTLY_PASSES.map(async (p) => parseFindings(await run3(finderPrompt(module, p)), p)))).flat();
+  const found = (await Promise.all(NIGHTLY_PASSES.map(async (p) => parseFindings2(await run3(finderPrompt(module, p)), p)))).flat();
   const candidates = [];
   for (const f of found)
     if (f.severity !== "pre_existing" && !candidates.some((k) => sameFinding(k, f))) candidates.push({ ...f, id: `n${candidates.length + 1}` });
@@ -38856,7 +38954,7 @@ function parseJsonArray(out) {
     return void 0;
   }
 }
-function parseFindings(out, pass) {
+function parseFindings2(out, pass) {
   return (parseJsonArray(out) ?? []).flatMap((x) => {
     const f = x;
     const severity = String(f.severity ?? "").toLowerCase().replace(/[- ]/g, "_");
@@ -39050,7 +39148,7 @@ async function review(c, kind = "review") {
   const run3 = (prompt) => runAgentAsync(c.agent, { mode: "read", allowedTools: READ_TOOLS, cwd: c.root, prompt }, c.model).catch((e) => (log6(e.message), ""));
   const passes = spec.passes[depth];
   const votes = spec.votes[depth];
-  const found = capped ? [] : (await Promise.all(passes.map(async (p) => parseFindings(await run3(finderPrompt2(kind, p, range, full, branch, known)), p)))).flat();
+  const found = capped ? [] : (await Promise.all(passes.map(async (p) => parseFindings2(await run3(finderPrompt2(kind, p, range, full, branch, known)), p)))).flat();
   let next = known.reduce((m, f) => Math.max(m, Number(f.id.slice(1)) || 0), 0);
   const candidates = [];
   for (const f of found) if (![...known, ...candidates].some((k) => sameFinding(k, f))) candidates.push({ ...f, id: `${spec.idPrefix}${++next}` });
@@ -39806,6 +39904,7 @@ Loop
   learn "<rule>" [--change C] [--stage S]   keep a confirmed correction in CLAUDE.md (and AGENTS.md) for next time
   learn list [--json]                the learnings every agent reads
   trace [<change>] [--json]          every requirement of spec.md (R1\u2026) covered by the plan's Verification (exit 1 if not)
+  findings [<change>] [--json]       experimental: review findings of spec.md (S1\u2026) and plan.md (V1\u2026); exit 1 if a Blocking one is open
   approve <change> <intent|spec|plan> [-m comment] [--auto]
                                      --auto: record the approval when the risk tier needs no person (risk.profile graded)
   reject  <change> <intent|spec|plan> [-m comment]
@@ -40153,6 +40252,28 @@ async function main() {
         } else if (n && !change.artifacts.plan) console.log(`${r.change}: ${n} requirement${n === 1 ? "" : "s"}, no plan.md yet`);
       }
       if (r.errors.length) process.exitCode = 1;
+      return;
+    }
+    case "findings": {
+      const loaded = loadConfig(root);
+      const changes = listChanges(root, { locale: localeOf(loaded), defaultBranch: loaded?.config.vcs?.default_branch });
+      const id = pos[0];
+      const change = id ? changes.find((c) => c.dir === id.replace(/^changes\//, "") || c.slug === id) : changes.find((c) => c.active);
+      if (!change) fail5(id ? `change not found: ${id}` : "no active change: pass one (sdlc findings <change>)");
+      const r = changeFindings(change);
+      const { blocking: blocking2 } = openFindings(r);
+      if (flags.json) console.log(JSON.stringify(r, null, 2));
+      else {
+        for (const p of r.problems) console.log(`\u2717 ${p}`);
+        if (!r.findings.length) console.log(`${change.id}: no review findings recorded`);
+        let path = "";
+        for (const f of r.findings) {
+          if (f.path !== path) console.log(path = f.path);
+          console.log(`  ${f.id.padEnd(4)} ${(f.severity ?? "?").padEnd(9)} ${(f.status ?? "?").padEnd(8)} ${f.finding}${f.note ? ` (${f.note})` : ""}`);
+        }
+        if (blocking2.length) console.log(`\u2717 open Blocking: ${blocking2.map((f) => f.id).join(", ")}`);
+      }
+      if (r.problems.length || blocking2.length) process.exitCode = 1;
       return;
     }
     case "risk": {

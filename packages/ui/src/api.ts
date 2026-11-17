@@ -103,6 +103,7 @@ export interface ChangeSummary {
 export interface ChangeDetail extends Omit<ChangeSummary, 'artifacts'> {
   artifacts: Partial<Record<Artifact, { path: string; status?: string; data: Record<string, string>; body: string }>>;
   gates: Partial<Record<Artifact, { ok: boolean; reason?: string }>>;
+  findings?: { id: string; severity?: string; finding: string; status?: string; note: string; path: string }[];
   timeline: { sha: string; author: string; email: string; date: string; subject: string; agent: boolean }[];
 }
 

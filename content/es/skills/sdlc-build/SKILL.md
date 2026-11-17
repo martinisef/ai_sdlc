@@ -25,7 +25,7 @@ Si la implementación se aparta del plan (otro archivo, otro orden, un riesgo nu
 
 ## 3. Verificación final
 1. Corré build, test y lint completos y guardá la salida (va al PR).
-2. Lanzá el subagent `verifier`: ejecuta la app, prueba el comportamiento cambiado y los flujos vecinos, y compara contra `plan.md`. Corre en un contexto limpio, así su veredicto no está sesgado por las suposiciones que produjeron el código.
+2. Lanzá el subagent `verifier`: ejecuta la app, prueba el comportamiento cambiado y los flujos vecinos, y compara contra `plan.md`. Corre en un contexto limpio, así su veredicto no está sesgado por las suposiciones que produjeron el código. Escribí su tabla de hallazgos en la sección **Hallazgos de la verificación** del plan tal como la devolvió, con sus IDs; corregí lo que puedas y corrélo de nuevo, así los marca `resuelto`.
 3. Opcional: subagent `simplifier` sobre el diff si quedó complejidad innecesaria; volvé a correr los tests después.
 4. Si es UI: comparar screenshot contra el mock de la spec (con la herramienta de browser/screenshot disponible), 2-3 rondas.
 

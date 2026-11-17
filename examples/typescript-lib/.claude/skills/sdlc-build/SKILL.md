@@ -25,7 +25,7 @@ If the implementation departs from the plan (another file, another order, a new 
 
 ## 3. Final verification
 1. Run the full build, test and lint and save the output (it goes into the PR).
-2. Launch the `verifier` subagent: it runs the app, tests the changed behavior and the neighboring flows, and compares against `plan.md`. It runs in a clean context, so its verdict is not biased by the assumptions that produced the code.
+2. Launch the `verifier` subagent: it runs the app, tests the changed behavior and the neighboring flows, and compares against `plan.md`. It runs in a clean context, so its verdict is not biased by the assumptions that produced the code. Write its findings table to the plan's **Verification findings** section as returned, keeping the IDs; fix what you can and run it again, so it marks them `resolved`.
 3. Optional: `simplifier` subagent on the diff if unnecessary complexity was left behind; run the tests again afterwards.
 4. If it is UI: compare a screenshot against the spec's mock (with the available browser/screenshot tool), 2-3 rounds.
 

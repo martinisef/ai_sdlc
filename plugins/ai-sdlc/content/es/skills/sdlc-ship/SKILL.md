@@ -14,6 +14,7 @@ CLI del loop: `sdlc` ({{sdlc_hint}}). Proveedor: `sdlc vcs provider`.
 - Build, test y lint de `.sdlc/config.json → commands` en verde. Guardá la salida.
 - `plan.md` existe y está `approved`; si el diff se aparta del plan, los desvíos están registrados.
 - No hay `.sdlc/fix-lock` pendiente.
+- `sdlc findings <slug>` pasa: no hay hallazgos `Bloqueante` abiertos en la spec ni en el plan (los `V<n>` del verifier). Corregilo y corré el verifier de nuevo, o preguntale al engineer si baja la severidad, con el motivo en la Nota.
 - Rama pusheada (`git push -u origin HEAD`).
 Si algo falla, arreglalo o reportalo; no abras un PR rojo.
 
@@ -32,6 +33,7 @@ Si algo falla, arreglalo o reportalo; no abras un PR rojo.
    <qué se corrió y cómo: salida resumida de build/test/lint, veredicto del verifier, pruebas manuales>
    ## Riesgo
    <nivel de `sdlc risk` (low | medium | high) y por qué; high → requiere tech lead>
+   <hallazgos aceptados o todavía abiertos de `sdlc findings`, uno por línea: `S2 (Importante, aceptado por …): …`>
    ## Cómo revertir
    <revertir el PR | apagar el flag `<nombre>` | el paso down de la migración; lo que no se pueda deshacer>
    ```

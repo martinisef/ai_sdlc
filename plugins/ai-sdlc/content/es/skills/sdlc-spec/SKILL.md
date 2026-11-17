@@ -30,7 +30,7 @@ Desde `changes/_templates/spec.md`. Reglas:
 - `risk: high` si el diseño toca rutas de `risk.high_risk_paths` de `.sdlc/config.json` o cambia auth, datos sensibles o contratos públicos.
 
 ## 3. Revisión adversarial
-Antes de mostrarla, corré el subagent `spec-reviewer` sobre intent.md + spec.md. Incorporá lo que encuentre (o agregalo como concern si no se puede resolver).
+Antes de mostrarla, corré el subagent `spec-reviewer` sobre intent.md + spec.md. Incorporá lo que encuentre (o agregalo como concern si no se puede resolver) y escribí su tabla en la sección **Hallazgos de la revisión** de la spec tal como la devolvió, con sus IDs. Si la spec se revisa, corrélo de nuevo sobre la versión nueva: reusa los IDs, así el PO ve qué se resolvió. No se aprueba con un hallazgo `Bloqueante` abierto; `sdlc findings <slug>` los lista.
 
 ## 4. Commit y tracker
 - Commit: `spec(<slug>): <título>` (+ key). `status: draft`.

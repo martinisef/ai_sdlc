@@ -13,6 +13,7 @@ import { doctor, sync } from '@ai-native-sdlc/adapters';
 import {
   ARTIFACTS,
   canApprove,
+  changeFindings,
   columnOf,
   configJsonSchema,
   decideGate,
@@ -178,7 +179,7 @@ export function createApp(opts: { root: string; token: string }) {
     const who = gitUser(root);
     const gates = Object.fromEntries(ARTIFACTS.filter((a) => ch.artifacts[a]).map((a) => [a, canApprove(ch, a, who, loaded)]));
     const pr = ch.branch ? cachedPr(root, ch.branch, loaded) : undefined;
-    return c.json({ ...summary(ch, pr), artifacts: ch.artifacts, gates, timeline: timeline(root, ch) });
+    return c.json({ ...summary(ch, pr), artifacts: ch.artifacts, gates, findings: changeFindings(ch).findings, timeline: timeline(root, ch) });
   });
 
   app.post('/api/changes/:dir/gates/:artifact', async (c) => {

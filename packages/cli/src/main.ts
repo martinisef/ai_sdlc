@@ -9,6 +9,8 @@ import {
   addLearning,
   listLearnings,
   traceChange,
+  changeFindings,
+  openFindings,
   CONFIG_PATH,
   LEGACY_CONFIG_PATH,
   configJsonSchema,
@@ -97,6 +99,7 @@ Loop
   learn "<rule>" [--change C] [--stage S]   keep a confirmed correction in CLAUDE.md (and AGENTS.md) for next time
   learn list [--json]                the learnings every agent reads
   trace [<change>] [--json]          every requirement of spec.md (R1…) covered by the plan's Verification (exit 1 if not)
+  findings [<change>] [--json]       experimental: review findings of spec.md (S1…) and plan.md (V1…); exit 1 if a Blocking one is open
   approve <change> <intent|spec|plan> [-m comment] [--auto]
                                      --auto: record the approval when the risk tier needs no person (risk.profile graded)
   reject  <change> <intent|spec|plan> [-m comment]
@@ -464,6 +467,29 @@ async function main() {
         } else if (n && !change!.artifacts.plan) console.log(`${r.change}: ${n} requirement${n === 1 ? '' : 's'}, no plan.md yet`);
       }
       if (r.errors.length) process.exitCode = 1;
+      return;
+    }
+
+    case 'findings': {
+      const loaded = loadConfig(root);
+      const changes = listChanges(root, { locale: localeOf(loaded), defaultBranch: loaded?.config.vcs?.default_branch });
+      const id = pos[0];
+      const change = id ? changes.find((c) => c.dir === id.replace(/^changes\//, '') || c.slug === id) : changes.find((c) => c.active);
+      if (!change) fail(id ? `change not found: ${id}` : 'no active change: pass one (sdlc findings <change>)');
+      const r = changeFindings(change!);
+      const { blocking } = openFindings(r);
+      if (flags.json) console.log(JSON.stringify(r, null, 2));
+      else {
+        for (const p of r.problems) console.log(`✗ ${p}`);
+        if (!r.findings.length) console.log(`${change!.id}: no review findings recorded`);
+        let path = '';
+        for (const f of r.findings) {
+          if (f.path !== path) console.log((path = f.path));
+          console.log(`  ${f.id.padEnd(4)} ${(f.severity ?? '?').padEnd(9)} ${(f.status ?? '?').padEnd(8)} ${f.finding}${f.note ? ` (${f.note})` : ''}`);
+        }
+        if (blocking.length) console.log(`✗ open Blocking: ${blocking.map((f) => f.id).join(', ')}`);
+      }
+      if (r.problems.length || blocking.length) process.exitCode = 1;
       return;
     }
 

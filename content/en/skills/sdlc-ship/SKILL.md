@@ -14,6 +14,7 @@ Loop CLI: `sdlc` ({{sdlc_hint}}). Provider: `sdlc vcs provider`.
 - Build, test and lint from `.sdlc/config.json → commands` green. Save the output.
 - `plan.md` exists and is `approved`; if the diff departs from the plan, the deviations are recorded.
 - No pending `.sdlc/fix-lock`.
+- `sdlc findings <slug>` passes: no `Blocking` finding open in the spec or the plan (the verifier's `V<n>`). Fix it and run the verifier again, or ask the engineer whether to lower its severity, saying why in its Note.
 - Branch pushed (`git push -u origin HEAD`).
 If something fails, fix it or report it; do not open a red PR.
 
@@ -32,6 +33,7 @@ If something fails, fix it or report it; do not open a red PR.
    <what was run and how: summarized build/test/lint output, verifier verdict, manual checks>
    ## Risk
    <tier from `sdlc risk` (low | medium | high) and why; high → requires tech lead>
+   <accepted and still-open findings from `sdlc findings`, one line each: `S2 (Important, accepted by …): …`>
    ## How to revert
    <revert the PR | turn off the flag `<name>` | the migration's down step; anything that cannot be undone>
    ```
