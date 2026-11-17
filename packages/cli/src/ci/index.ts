@@ -192,10 +192,15 @@ function bootstrap(c: CiEnv): number {
   if (hasTool(bin, c.env)) log(`${bin} already installed`);
   else {
     const [cmd, args] = INSTALL[c.agent];
-    log(`installing ${bin}: ${cmd} ${args.join(' ')}`);
-    const r = spawnSync(cmd, args, { stdio: ['ignore', 'ignore', 'inherit'] });
-    if (r.status !== 0) throw new SdlcError(`could not install ${bin}`);
-    bin = agentBin(c.agent, c.env);
+    // npm skips an optional dependency it fails to download without failing the install (codex ships its
+    // ~400 MB binary that way), so an install only counts once the CLI answers --version.
+    for (let attempt = 1; ; attempt++) {
+      log(`installing ${bin}: ${cmd} ${args.join(' ')}${attempt > 1 ? ` (attempt ${attempt})` : ''}`);
+      const r = spawnSync(cmd, args, { stdio: ['ignore', 'ignore', 'inherit'] });
+      bin = agentBin(c.agent, c.env);
+      if (r.status === 0 && hasTool(bin, c.env)) break;
+      if (attempt === 2) throw new SdlcError(`could not install ${bin}: ${r.status === 0 ? `\`${bin} --version\` fails after installing` : `${cmd} exited ${r.status}`}`);
+    }
     const dir = dirname(bin);
     if (dir !== '.' && c.env.GITHUB_PATH) appendFileSync(c.env.GITHUB_PATH, `${dir}\n`);
   }
