@@ -6,6 +6,8 @@ import { join } from 'node:path';
 import { contentDir, doctor, prePush, preCommit, runHook, sync, type HookAgent, type SyncReport } from '@ai-native-sdlc/adapters';
 import {
   ARTIFACTS,
+  addLearning,
+  listLearnings,
   CONFIG_PATH,
   LEGACY_CONFIG_PATH,
   configJsonSchema,
@@ -91,6 +93,8 @@ Loop
   promote [<change>]                 quick lane → full loop (intent back to draft for the PO)
   risk [<change>] [--base B] [--json]   risk tier set by the change: diff against the base, paths the spec/plan name, declared risk
   explainers [<path>…] [--json]      module explainers (docs/explainers, written by /sdlc-explain); with paths: the ones covering them
+  learn "<rule>" [--change C] [--stage S]   keep a confirmed correction in CLAUDE.md (and AGENTS.md) for next time
+  learn list [--json]                the learnings every agent reads
   approve <change> <intent|spec|plan> [-m comment] [--auto]
                                      --auto: record the approval when the risk tier needs no person (risk.profile graded)
   reject  <change> <intent|spec|plan> [-m comment]
@@ -124,7 +128,7 @@ function parseArgs(argv: string[]) {
     else if (a.startsWith('--')) {
       const [k, v] = a.slice(2).split('=', 2);
       if (v !== undefined) flags[k] = v;
-      else if (['agent', 'port', 'ticket', 'title', 'locale', 'preset', 'first-change', 'change', 'artifact', 'decision', 'by', 'pr-url', 'base', 'value', 'since', 'source', 'name', 'date', 'type', 'limit'].includes(k)) flags[k] = argv[++i] ?? '';
+      else if (['agent', 'port', 'ticket', 'title', 'locale', 'preset', 'first-change', 'change', 'artifact', 'decision', 'by', 'pr-url', 'base', 'value', 'since', 'source', 'name', 'date', 'type', 'limit', 'stage'].includes(k)) flags[k] = argv[++i] ?? '';
       else flags[k] = true;
     } else pos.push(a);
   }
@@ -459,6 +463,26 @@ async function main() {
       if (flags.json) return void console.log(JSON.stringify(list, null, 2));
       if (!list.length) return void console.log(pos.length ? 'No explainer covers these paths (/sdlc-explain <module> writes one).' : 'No explainers yet (/sdlc-explain <module> writes one).');
       for (const e of list) console.log(`${e.path}  ${e.module}${e.stale ? '  (stale: the module changed after it was written; /sdlc-explain to refresh)' : ''}`);
+      return;
+    }
+
+    case 'learn': {
+      const loaded = loadConfig(root);
+      if (pos[0] === 'list' && pos.length === 1) {
+        const list = listLearnings(root, loaded);
+        if (flags.json) return void console.log(JSON.stringify(list, null, 2));
+        if (!list.length) return void console.log('No learnings yet: when you correct the agent, it asks whether to keep the correction (sdlc learn).');
+        for (const l of list) console.log(`${l.file}:${l.line}  ${l.text}${l.date ? `  (${l.date}${l.source ? `, ${l.source}` : ''})` : ''}`);
+        return;
+      }
+      try {
+        const r = addLearning(root, loaded, { text: pos.join(' '), change: typeof flags.change === 'string' ? flags.change : undefined, stage: typeof flags.stage === 'string' ? flags.stage : undefined });
+        if (flags.json) return void console.log(JSON.stringify(r, null, 2));
+        if (r.files.length) console.log(`kept in ${r.files.join(' and ')}: ${r.text}\nCommit it with the change, so the next session reads it.`);
+        else console.log(`already kept in ${r.duplicateIn.join(' and ')}: nothing to do`);
+      } catch (e) {
+        fail((e as Error).message);
+      }
       return;
     }
 

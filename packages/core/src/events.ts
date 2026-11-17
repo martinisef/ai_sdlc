@@ -20,6 +20,7 @@ export interface SdlcEvent {
     | 'change.promote'
     | 'roadmap.new'
     | 'discovery.source'
+    | 'rule.learned'
     | 'roadmap.apply'
     | 'roadmap.delete'
     | 'setup.init'

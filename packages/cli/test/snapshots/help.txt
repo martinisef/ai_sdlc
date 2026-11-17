@@ -21,6 +21,8 @@ Loop
   promote [<change>]                 quick lane → full loop (intent back to draft for the PO)
   risk [<change>] [--base B] [--json]   risk tier set by the change: diff against the base, paths the spec/plan name, declared risk
   explainers [<path>…] [--json]      module explainers (docs/explainers, written by /sdlc-explain); with paths: the ones covering them
+  learn "<rule>" [--change C] [--stage S]   keep a confirmed correction in CLAUDE.md (and AGENTS.md) for next time
+  learn list [--json]                the learnings every agent reads
   approve <change> <intent|spec|plan> [-m comment] [--auto]
                                      --auto: record the approval when the risk tier needs no person (risk.profile graded)
   reject  <change> <intent|spec|plan> [-m comment]

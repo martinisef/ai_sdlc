@@ -56,6 +56,17 @@ A reviewer can only judge a diff if they know what the surrounding code promises
 
 `/sdlc-plan` runs `sdlc explainers <paths that change>`, cites the explainers it finds in the plan's **Explainers** section and checks the plan against their invariants. An explainer is stale once the module gets commits after its `source_sha`; `sdlc explainers` marks it, and `/sdlc-explain <module> --refresh` updates it.
 
+## Learnings
+
+When you correct the agent during a stage in a way that should hold next time (call a stock item a SKU, run the migrations check before the tests), it asks once: "Keep that for next time?". On yes it runs `sdlc learn`, which adds one dated line under **Things Claude gets wrong** in `CLAUDE.md`, and in `AGENTS.md` when that adapter is on (outside the block `sdlc sync` regenerates), so every agent reads it from the next session on:
+
+```markdown
+## Things Claude gets wrong
+- Call a stock item a SKU in every document, never a product (learned 2026-11-16, /sdlc-spec 2026-11-stock)
+```
+
+It does not ask about one-off fixes (a typo, a wrong name) and never asks in headless runs. Say "keep that" and it keeps it without asking. The same rule twice is kept once; a line that looks like a secret is refused. The line is committed with the change, so it goes through review like everything else. `sdlc learn list` shows them, and `sdlc doctor` warns past 30, the point where `CLAUDE.md` stops fitting on one page: merge the ones that say the same thing, or move them to **Conventions**.
+
 ## Closing the loop
 
 An incident produces three things:

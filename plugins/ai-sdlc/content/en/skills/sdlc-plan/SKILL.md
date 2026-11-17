@@ -41,5 +41,8 @@ With `risk.profile: graded`, the tier decides how many people (`sdlc risk <slug>
 Once out of plan mode, write `changes/<slug>/plan.md` from the template with the accepted plan, `status: approved`, `approved_by: <engineer>`, `risk`. Commit: `plan(<slug>): <title>` (+ key).
 Tracker: `plan` transition + comment with path and SHA (`jira-sot`: also a summary). If it fails, say so and continue.
 
+## Keep what you learned
+If the person corrected what you did or assumed in this stage in a way that would hold next time (a term, a convention, a check to run, something to never do), ask once per correction, in their words: "You asked me to <…>. Keep that for next time?". On yes: `sdlc learn "<the rule, one imperative line>" --stage plan --change <slug>`. Do not ask about one-off fixes (a typo, a wrong name, one value), and never in headless runs. If they ask outright to keep something ("next time, use the shared fixtures"), run it without asking and say in one line where it went. Commit `CLAUDE.md` (and `AGENTS.md`) with the change.
+
 ## Wrap-up
 One line with the next step: "`/sdlc-build` to implement against the plan" (or, if there are independent steps, suggest `claude --worktree <name>` per step).

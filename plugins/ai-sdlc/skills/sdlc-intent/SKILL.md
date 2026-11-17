@@ -51,5 +51,8 @@ Depending on `tracker.mode`:
 - The PO accepts by changing to `status: accepted` and filling in `approved_by` (they can ask you to do it in a session; in that case record their name, not yours). That commit is the gate's record.
 - If they reject it: `status: rejected` with the reason as a comment on the PR, and it is closed.
 
+## Keep what you learned
+If the person corrected what you did or assumed in this stage in a way that would hold next time (a term, a convention, a check to run, something to never do), ask once per correction, in their words: "You asked me to <…>. Keep that for next time?". On yes: `sdlc learn "<the rule, one imperative line>" --stage intent --change <slug>`. Do not ask about one-off fixes (a typo, a wrong name, one value), and never in headless runs. If they ask outright to keep something ("next time, use the shared fixtures"), run it without asking and say in one line where it went. Commit `CLAUDE.md` (and `AGENTS.md`) with the change.
+
 ## 6. Wrap-up
 Finish with one line: where the intent is, the link to the PR/ticket if any, and **the next step**: "When the PO accepts it → `/sdlc-spec`".

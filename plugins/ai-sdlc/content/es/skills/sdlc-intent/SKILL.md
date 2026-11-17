@@ -51,5 +51,8 @@ Según `tracker.mode`:
 - El PO acepta cambiando `status: accepted` y completando `approved_by` (puede pedírtelo a vos en una sesión; en ese caso registrá su nombre, no el tuyo). Ese commit es el registro del gate.
 - Si lo rechaza: `status: rejected` con el motivo como comentario en el PR, y se cierra.
 
+## Guardar lo aprendido
+Si la persona corrigió lo que hiciste o supusiste en esta etapa de una forma que valdría la próxima vez (un término, una convención, un chequeo para correr, algo que nunca hay que hacer), preguntá una vez por corrección, con sus palabras: "Me pediste <…>. ¿Lo guardo para la próxima?". Si dice que sí: `sdlc learn "<la regla, una línea en imperativo>" --stage intent --change <slug>`. No preguntes por arreglos puntuales (un typo, un nombre mal puesto, un valor), y nunca en corridas headless. Si te pide directamente que guardes algo ("la próxima usá las fixtures compartidas"), corrélo sin preguntar y decí en una línea dónde quedó. Commiteá `CLAUDE.md` (y `AGENTS.md`) con el cambio.
+
 ## 6. Cierre
 Terminá con una línea: dónde quedó el intent, el link al PR/ticket si hay, y **el siguiente paso**: "Cuando el PO lo acepte → `/sdlc-spec`".

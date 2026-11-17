@@ -45,7 +45,7 @@ Loop until the PR is green and only waiting for human approval (at most ~5 itera
 1. `sdlc vcs pr-checks <n>` → if there are red checks, read the logs, fix, run tests locally, commit + push.
 2. `sdlc vcs pr-comments <n>` → for each unresolved comment: if it is a clear change, apply it; if it is a decision (design, scope), **do not make it yourself**: reply on the PR summarizing the options and leave it to the human.
 3. Reply on the PR with what was addressed (`pr-comment`).
-4. If a review flags the same mistake a second time, add the correction to `CLAUDE.md` → "Things Claude gets wrong" in the same PR.
+4. If a review flags the same mistake a second time, keep the correction: `sdlc learn "<the rule, one imperative line>" --stage ship --change <slug>`, committed in the same PR.
 
 ## Wrap-up
 Link to the PR, check status, comments pending a human decision, and who has to approve (code owner; tech lead if `risk: high`). After the merge, the pipeline transitions the ticket to *Done*.

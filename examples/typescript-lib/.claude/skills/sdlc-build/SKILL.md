@@ -32,5 +32,8 @@ If the implementation departs from the plan (another file, another order, a new 
 ## Parallelism
 If the plan marks independent steps that touch different files, suggest running them in parallel sessions: `claude --worktree <slug>-<step>`. Steps that share files go in a single session, in order.
 
+## Keep what you learned
+If the person corrected what you did or assumed in this stage in a way that would hold next time (a term, a convention, a check to run, something to never do), ask once per correction, in their words: "You asked me to <…>. Keep that for next time?". On yes: `sdlc learn "<the rule, one imperative line>" --stage build --change <slug>`. Do not ask about one-off fixes (a typo, a wrong name, one value), and never in headless runs. If they ask outright to keep something ("next time, use the shared fixtures"), run it without asking and say in one line where it went. Commit `CLAUDE.md` (and `AGENTS.md`) with the change.
+
 ## Wrap-up
 Short summary: steps done, deviations recorded, test output, verifier verdict. **Next step**: "`/sdlc-ship` to open the PR".

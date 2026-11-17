@@ -1,0 +1,35 @@
+{
+  "name": "py-spec-keeps-learning",
+  "cwd": "examples/python-api",
+  "tags": [
+    "loop",
+    "learn"
+  ],
+  "description": "/sdlc-spec when the PO asks outright to keep a correction for next time: it goes to CLAUDE.md through sdlc learn as one dated line, and the one-off typo fix in the same message does not.",
+  "setup": "\"$EVAL_DIR/fixtures/stage.sh\" 2026-10-claim-notes claim-notes intent",
+  "prompt": "/sdlc-spec for changes/2026-10-claim-notes. Headless run: do not ask questions; record anything uncertain as an open question or concern. The Product Owner already reviewed a first draft and said: \"In every document, call the person who files a claim the policyholder, never the customer; keep that for next time. Also, the intent says 'recieve', fix that typo.\"",
+  "allowed_tools": "Read,Write,Edit,Grep,Glob,Task,Bash(git status),Bash(git log:*),Bash(.sdlc/bin/sdlc:*)",
+  "checks": [
+    {
+      "type": "file_matches",
+      "glob": "CLAUDE.md",
+      "pattern": "^- .*policyholder.*\\(learned \\d{4}-\\d{2}-\\d{2}, /sdlc-spec",
+      "ignore_case": true,
+      "why": "the correction the PO asked to keep is one line from sdlc learn, with its stage"
+    },
+    {
+      "type": "command",
+      "run": "! grep -qi 'recieve' CLAUDE.md",
+      "why": "a one-off typo fix is not a learning"
+    },
+    {
+      "type": "command",
+      "run": "test -f changes/2026-10-claim-notes/spec.md && ! grep -qiE '\\bcustomers?\\b' changes/2026-10-claim-notes/spec.md",
+      "why": "the correction applies to this spec too"
+    },
+    {
+      "type": "diff_excludes",
+      "glob": "src/**"
+    }
+  ]
+}
