@@ -1,5 +1,17 @@
 # @morsadev/sdlc
 
+## 1.3.0
+
+### Minor Changes
+
+- f9140b9: Review findings with stable IDs (experimental). `spec-reviewer` writes a **Review findings** table to spec.md (`S1`, `S2`…) and the `verifier` a **Verification findings** table to plan.md (`V1`…). A re-review keeps the IDs and marks what was resolved. Approving a spec with an open Blocking finding is refused; approving with Important or Minor ones open marks them accepted and adds an `Accepted-risk:` trailer to the gate commit. `/sdlc-ship` does not open the PR with an open Blocking finding and lists the accepted ones under Risk. New `sdlc findings <change> [--json]`, and the dashboard shows the open and accepted findings of a change.
+- f2c6212: Learnings: when you correct the agent in a way that should hold next time, the loop skills ask "Keep that for next time?" and run the new `sdlc learn "<rule>" [--change C] [--stage S]`, which adds one dated line under **Things Claude gets wrong** in `CLAUDE.md` (and in `AGENTS.md`, outside the block `sdlc sync` regenerates). Duplicates are kept once, lines that look like secrets are refused, `sdlc learn list` shows them and `sdlc doctor` warns past 30. `/sdlc-ship` uses it for the "same mistake twice" rule. Guide: [Learnings](https://martinisef.github.io/ai_sdlc/guide/concepts#learnings).
+- d09bace: `sdlc trace <change>` checks that every requirement of spec.md (`R1`, `R2`…) has a line in the plan's Verification section, and that the plan names none the spec lacks. Approving a plan is refused while it reports an error. `/sdlc-plan` runs it before recording the plan, the `verifier` reports each requirement by ID, the plan template has one Verification line per requirement, and `sdlc ci gate-status` logs the coverage without blocking.
+
+### Patch Changes
+
+- 0c1cfce: `sdlc ci bootstrap` checks that the agent CLI answers `--version` after installing it, retries the install once, and otherwise fails with a clear error. npm can skip Codex's platform binary (an optional dependency) when its download fails without failing the install, which left every eval failing with "Missing optional dependency @openai/codex-linux-x64".
+
 ## 1.2.0
 
 ### Minor Changes
