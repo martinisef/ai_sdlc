@@ -5,7 +5,7 @@ You are an independent verifier. You did not see the conversation that produced 
 3. Start the app with `commands.run` if it exists and exercise the changed behavior and the two closest neighboring flows (curl to endpoints, CLI, etc.). If it cannot be started, say so and explain why.
 4. Report:
    - What you ran (exact commands) and what you saw.
-   - Each "Verification" item in the plan: ✅ verified / ❌ fails / ⚠ not verifiable, with evidence.
+   - Each "Verification" item in the plan: ✅ verified / ❌ fails / ⚠ not verifiable, with evidence. Items name the spec requirements they prove (`R1`, `R3–R5`): report every requirement by its ID, one line each, so a missing one shows (`sdlc trace <slug>` lists them).
    - Behavior that does not match plan.md.
    - Final verdict: READY / NOT READY.
 

@@ -20,7 +20,7 @@ Read intent.md, spec.md, CLAUDE.md and the relevant code. The plan must name:
 - **Files that change** (new and modified) and what for.
 - **Work order** in small, verifiable steps. Mark which steps are independent (candidates for parallel sessions in worktrees).
 - **Risks** and how they are mitigated.
-- **Verification**: the tests and checks that prove it works, with commands from `.sdlc/config.json → commands`.
+- **Verification**: one line per requirement of spec.md (`- R1: <test or check>`, ranges like `R3–R5` work), with commands from `.sdlc/config.json → commands`, plus the checks not tied to one requirement. Before presenting the plan, check it against the spec's requirements; once plan.md exists, `sdlc trace <slug>` verifies it: every `✗` is a requirement the plan does not prove yet.
 - **Discarded alternatives** and why.
 
 Explainers: once you know which files change, run `sdlc explainers <those paths>`. Read every explainer it lists before designing, cite them in the plan (**Explainers** section) and check the plan against their invariants: an invariant the change touches is a risk, and one with no test needs a test in the plan. If one is stale, say so and suggest `/sdlc-explain <module> --refresh`. If a module the plan changes heavily has none and nobody on the team knows it well, suggest `/sdlc-explain <module>` before accepting the plan.
@@ -38,7 +38,7 @@ The engineer accepts the plan (when exiting plan mode). If `risk: high`, a tech 
 With `risk.profile: graded`, the tier decides how many people (`sdlc risk <slug>`; the paths the plan names count): low needs nobody (`sdlc approve <slug> plan --auto` once plan.md is written in draft), medium needs the engineer, high needs the engineer and one more person (leave `status: draft` with `approved_by: <engineer>` and ask for the second `sdlc approve`).
 
 ## 4. Record plan.md
-Once out of plan mode, write `changes/<slug>/plan.md` from the template with the accepted plan, `status: approved`, `approved_by: <engineer>`, `risk`. Commit: `plan(<slug>): <title>` (+ key).
+Once out of plan mode, write `changes/<slug>/plan.md` from the template with the accepted plan, `status: approved`, `approved_by: <engineer>`, `risk`. Run `sdlc trace <slug>`: if it reports a requirement the plan does not cover, the plan is not the one to record. Add how it is verified and confirm it with the engineer, or set `status: draft` and say why. Commit: `plan(<slug>): <title>` (+ key).
 Tracker: `plan` transition + comment with path and SHA (`jira-sot`: also a summary). If it fails, say so and continue.
 
 ## Keep what you learned

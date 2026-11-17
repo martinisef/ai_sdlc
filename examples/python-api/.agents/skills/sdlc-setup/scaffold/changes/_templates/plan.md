@@ -23,7 +23,9 @@ approved_by:
 - <what can break and how it is mitigated>
 
 ## Verification
-<Tests and checks that prove it works, with the exact command. E.g.: `make test` covers the 4 states; screenshot matches the approved mock.>
+<!-- One line per requirement of spec.md: `sdlc trace` checks that every R is here, and the plan gate refuses a plan that drops one. Ranges work: `R3–R5`. -->
+- R1: <test or check that proves it, with the exact command. E.g.: `tests/test_notes.py` covers the 4 states (`make test`)>
+- Also: <checks not tied to one requirement: lint clean, screenshot matches the approved mock>
 
 ## Discarded alternatives
 - <option> — <why not>

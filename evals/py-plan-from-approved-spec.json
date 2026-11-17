@@ -20,6 +20,11 @@
       "pattern": "store\\.py"
     },
     {
+      "type": "command",
+      "run": ".sdlc/bin/sdlc trace 2026-10-claim-notes",
+      "why": "every requirement of the spec (R1–R5) is in the plan's Verification"
+    },
+    {
       "type": "diff_excludes",
       "glob": "src/**",
       "why": "planning does not implement"

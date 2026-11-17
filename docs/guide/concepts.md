@@ -35,6 +35,10 @@ Who may approve is set by `gates` (role names per artifact) and `roles` (role �
 - **The author of a spec or plan cannot approve it.** Another person must.
 - **A role with no members** lets any person approve, so the team is not locked out while roles are being set up.
 
+### Requirement traceability
+
+The spec numbers its requirements (`- R1: …`) and the plan's **Verification** section says which test or check proves each one (`- R1: tests/test_notes.py`, `- R3–R5: …`). `sdlc trace <change>` checks both directions: every requirement has a line, and the plan names no requirement the spec lacks. Only the Verification section counts, so an `R2` mentioned in the steps does not cover it. Approving the plan (`sdlc approve`, `/approve plan` or the dashboard) is refused while `sdlc trace` reports an error. `/sdlc-plan` runs it before recording the plan, the `verifier` reports each requirement by ID, and `sdlc ci gate-status` logs the coverage without blocking, so plans approved before this check keep passing. A spec that numbers no requirements, or a change without a spec, only gets a warning.
+
 ## Stage by stage
 
 | # | Command | Who | Human gate |

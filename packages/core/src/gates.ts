@@ -8,6 +8,7 @@ import { recordEvent } from './events.ts';
 import { setFrontmatter } from './frontmatter.ts';
 import { commitFiles, git, gitOrThrow, gitUser } from './git.ts';
 import { changeRisk, type RiskTier } from './risk.ts';
+import { traceChange } from './trace.ts';
 
 export interface Approver {
   name?: string;
@@ -195,6 +196,10 @@ export function decideGate(
   const change = getChange(root, changeId, { locale, defaultBranch: loaded?.config.vcs?.default_branch });
   if (!change) throw new Error(`change not found: ${changeId}`);
   const info = change.artifacts[artifact];
+  if (artifact === 'plan' && decision === 'approved' && info) {
+    const trace = traceChange(root, change);
+    if (trace.errors.length) throw new Error(`the plan does not cover the spec; fix it first (sdlc trace ${change.slug}):\n${trace.errors.map((e) => `  - ${e}`).join('\n')}`);
+  }
   const graded = isGraded(loaded);
   const tier = opts.tier ?? (graded ? gateTier(root, loaded, change) : 'low');
   const need = graded ? approvalsFor(loaded, tier, artifact) : 1;
