@@ -24,7 +24,7 @@ These agents have no hook API that `sdlc` can use, so enforcement moves to git a
 | Guardrail | Enforcement |
 |---|---|
 | Protected paths, secrets, test-lock | `pre-commit` refuses the commit |
-| Plan before code | `pre-push` refuses code on a `change/*` branch without an approved `plan.md` |
+| Plan before code | `pre-commit` and `pre-push` refuse code on a `change/*` branch without an approved `plan.md` |
 | Production gate | CI, plus the instructions in `AGENTS.md` |
 | Format on edit, `plan.md` sync | advisory (instructions) |
 

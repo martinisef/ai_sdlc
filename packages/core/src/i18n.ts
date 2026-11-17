@@ -74,6 +74,7 @@ Si sigue exactamente el plan, no hace falta hacer nada: respondé brevemente y t
   'nt.stage': (p) => `Etapa: ${p.stage}`,
   'nt.who': (p) => `Le toca a: ${p.who}`,
   'git.override': (p) => `Si sos una persona y el cambio es intencional: SDLC_OVERRIDE=${p.policy} git commit … (queda registrado en .sdlc/events.jsonl).`,
+  'planfirst.edit': (p) => `Bloqueado por ai-sdlc: ${p.path} es código y ${p.change}/plan.md todavía no está aprobado. Plan antes que código: armá el plan con /sdlc-plan (hasta entonces solo cambian los archivos de ${p.change}/) y que una persona lo apruebe (sdlc approve ${p.change} plan).`,
   'prepush.noplan': (p) => `Bloqueado por ai-sdlc: la rama ${p.branch} tiene cambios de código pero ${p.change}/plan.md no está aprobado (etapa: ${p.stage}). Plan antes que código: aprobá el plan (sdlc approve ${p.change} plan) o mové el trabajo fuera de la rama del cambio.`,
 };
 
@@ -146,6 +147,7 @@ If it follows the plan exactly, nothing to do: answer briefly and finish.`,
   'nt.stage': (p) => `Stage: ${p.stage}`,
   'nt.who': (p) => `Who acts: ${p.who}`,
   'git.override': (p) => `If you are a person and the change is intentional: SDLC_OVERRIDE=${p.policy} git commit … (recorded in .sdlc/events.jsonl).`,
+  'planfirst.edit': (p) => `Blocked by ai-sdlc: ${p.path} is code and ${p.change}/plan.md is not approved yet. Plan before code: write the plan with /sdlc-plan (until then only files under ${p.change}/ change) and have a person approve it (sdlc approve ${p.change} plan).`,
   'prepush.noplan': (p) => `Blocked by ai-sdlc: branch ${p.branch} has code changes but ${p.change}/plan.md is not approved (stage: ${p.stage}). Plan before code: approve the plan (sdlc approve ${p.change} plan) or move the work off the change branch.`,
 };
 

@@ -265,6 +265,14 @@
       },
       "additionalProperties": {}
     },
+    "plan_first": {
+      "type": "string",
+      "enum": [
+        "edit",
+        "commit",
+        "push"
+      ]
+    },
     "gates": {
       "type": "object",
       "propertyNames": {

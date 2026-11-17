@@ -20495,7 +20495,7 @@ function localeOf(loaded) {
 function configJsonSchema() {
   return external_exports.toJSONSchema(ConfigSchema, { io: "input" });
 }
-var AGENTS, ARTIFACTS, CI_AGENTS, NOTIFY_EVENTS, RISK_PROFILES, commandMap, ConfigSchema, CONFIG_PATH, LEGACY_CONFIG_PATH;
+var AGENTS, ARTIFACTS, CI_AGENTS, NOTIFY_EVENTS, RISK_PROFILES, PLAN_FIRST_AT, commandMap, ConfigSchema, CONFIG_PATH, LEGACY_CONFIG_PATH;
 var init_config = __esm({
   "packages/core/src/config.ts"() {
     "use strict";
@@ -20505,6 +20505,7 @@ var init_config = __esm({
     CI_AGENTS = ["claude", "codex", "cursor"];
     NOTIFY_EVENTS = ["gate.pending", "gate.decided", "spec.ready", "review.done", "change.merged", "risk.raised"];
     RISK_PROFILES = ["strict", "graded"];
+    PLAN_FIRST_AT = ["edit", "commit", "push"];
     commandMap = external_exports.record(external_exports.string(), external_exports.string());
     ConfigSchema = external_exports.looseObject({
       version: external_exports.literal(1),
@@ -20563,6 +20564,8 @@ var init_config = __esm({
         agent_escalation: external_exports.boolean().optional()
       }).optional(),
       production_gate: external_exports.looseObject({ patterns: external_exports.array(external_exports.string()).optional(), approval_env: external_exports.string().optional() }).optional(),
+      /** Plan before code, from this point on change/* branches: `edit` (default) blocks the agent's edit, `commit` the git commit, `push` only the push. */
+      plan_first: external_exports.enum(PLAN_FIRST_AT).optional(),
       /** Who may approve each artifact: role names, resolved through `roles`. Empty → anyone but an agent. */
       gates: external_exports.partialRecord(external_exports.enum([...ARTIFACTS, "roadmap"]), external_exports.array(external_exports.string())).optional(),
       /** Solo projects: the author may approve their own spec and plan (agents still cannot). */
@@ -28524,6 +28527,7 @@ Si sigue exactamente el plan, no hace falta hacer nada: respond\xE9 brevemente y
       "nt.stage": (p) => `Etapa: ${p.stage}`,
       "nt.who": (p) => `Le toca a: ${p.who}`,
       "git.override": (p) => `Si sos una persona y el cambio es intencional: SDLC_OVERRIDE=${p.policy} git commit \u2026 (queda registrado en .sdlc/events.jsonl).`,
+      "planfirst.edit": (p) => `Bloqueado por ai-sdlc: ${p.path} es c\xF3digo y ${p.change}/plan.md todav\xEDa no est\xE1 aprobado. Plan antes que c\xF3digo: arm\xE1 el plan con /sdlc-plan (hasta entonces solo cambian los archivos de ${p.change}/) y que una persona lo apruebe (sdlc approve ${p.change} plan).`,
       "prepush.noplan": (p) => `Bloqueado por ai-sdlc: la rama ${p.branch} tiene cambios de c\xF3digo pero ${p.change}/plan.md no est\xE1 aprobado (etapa: ${p.stage}). Plan antes que c\xF3digo: aprob\xE1 el plan (sdlc approve ${p.change} plan) o mov\xE9 el trabajo fuera de la rama del cambio.`
     };
     en = {
@@ -28589,6 +28593,7 @@ If it follows the plan exactly, nothing to do: answer briefly and finish.`,
       "nt.stage": (p) => `Stage: ${p.stage}`,
       "nt.who": (p) => `Who acts: ${p.who}`,
       "git.override": (p) => `If you are a person and the change is intentional: SDLC_OVERRIDE=${p.policy} git commit \u2026 (recorded in .sdlc/events.jsonl).`,
+      "planfirst.edit": (p) => `Blocked by ai-sdlc: ${p.path} is code and ${p.change}/plan.md is not approved yet. Plan before code: write the plan with /sdlc-plan (until then only files under ${p.change}/ change) and have a person approve it (sdlc approve ${p.change} plan).`,
       "prepush.noplan": (p) => `Blocked by ai-sdlc: branch ${p.branch} has code changes but ${p.change}/plan.md is not approved (stage: ${p.stage}). Plan before code: approve the plan (sdlc approve ${p.change} plan) or move the work off the change branch.`
     };
     catalogs = { en, es };
@@ -31204,10 +31209,63 @@ var init_project = __esm({
   }
 });
 
+// packages/core/src/quick.ts
+import { readFileSync as readFileSync12, writeFileSync as writeFileSync8 } from "node:fs";
+import { join as join14 } from "node:path";
+function quickLimits(loaded) {
+  const q = loaded?.config.quick_lane ?? {};
+  return {
+    enabled: q.enabled ?? QUICK_DEFAULTS.enabled,
+    maxFiles: q.max_files ?? QUICK_DEFAULTS.max_files,
+    forbid: [...q.forbid_paths ?? [], ...loaded?.config.risk?.high_risk_paths ?? []]
+  };
+}
+function checkQuick(loaded, files) {
+  const lim = quickLimits(loaded);
+  const code2 = files.filter(isCodePath);
+  if (!lim.enabled) return { ok: false, files: code2, reason: "the quick lane is disabled (quick_lane.enabled: false)" };
+  const risky = code2.find((f) => matchAny(f, lim.forbid));
+  if (risky) return { ok: false, files: code2, reason: `${risky} is a high-risk path (risk.high_risk_paths / quick_lane.forbid_paths)` };
+  if (code2.length > lim.maxFiles) return { ok: false, files: code2, reason: `${code2.length} code files changed, more than quick_lane.max_files (${lim.maxFiles})` };
+  return { ok: true, files: code2 };
+}
+function branchFiles(root, base) {
+  const committed = git(root, ["rev-parse", "--verify", "--quiet", base]) !== void 0 ? lines(git(root, ["diff", "--name-only", `${base}...HEAD`])) : [];
+  const pending = lines(git(root, ["status", "--porcelain", "--untracked-files=all"])).map((l) => l.slice(3).replace(/^.* -> /, ""));
+  return [.../* @__PURE__ */ new Set([...committed, ...pending])];
+}
+function promote(root, loaded, changeId, by) {
+  const change = getChange(root, changeId, { locale: localeOf(loaded), defaultBranch: loaded?.config.vcs?.default_branch });
+  if (!change) throw new SdlcError(`change ${changeId} not found`);
+  const intent = change.artifacts.intent;
+  if (!intent || intent.data.lane !== "quick") throw new SdlcError(`${change.id} is not in the quick lane`);
+  if (change.source !== "worktree") throw new SdlcError(`${change.id} is on ${change.source.branch}; check it out to promote it`);
+  const p = join14(root, intent.path);
+  const text = setFrontmatter(readFileSync12(p, "utf8"), { lane: "full", status: "draft" });
+  writeFileSync8(p, text);
+  recordEvent(root, { type: "change.promote", change: change.slug, by });
+  return change;
+}
+var QUICK_DEFAULTS, isQuick;
+var init_quick = __esm({
+  "packages/core/src/quick.ts"() {
+    "use strict";
+    init_changes();
+    init_config();
+    init_events();
+    init_frontmatter();
+    init_git();
+    init_glob();
+    init_http();
+    QUICK_DEFAULTS = { enabled: true, max_files: 10 };
+    isQuick = (c) => c.artifacts.intent?.data.lane === "quick" && !c.artifacts.spec && !c.artifacts.plan;
+  }
+});
+
 // packages/core/src/policies.ts
 import { execSync } from "node:child_process";
-import { existsSync as existsSync11, readFileSync as readFileSync12 } from "node:fs";
-import { basename as basename3, join as join14 } from "node:path";
+import { existsSync as existsSync11, readFileSync as readFileSync13 } from "node:fs";
+import { basename as basename3, isAbsolute as isAbsolute2, join as join15 } from "node:path";
 function ereToRegExp(ere, flags = "i") {
   const src = ere.replace(/\[:([a-z]+):\]/g, (m, name) => POSIX_CLASSES[name] ?? m);
   try {
@@ -31221,7 +31279,7 @@ function checkProtected(ctx, path, locale, isNew) {
   const glob = matchAny(rel, ctx.loaded?.config.protected_paths);
   if (glob) return { action: "deny", policy: "protected-paths", message: t(locale, "protected.deny", { path: rel, glob, config: ctx.loaded.path }) };
   const append = matchAny(rel, ctx.loaded?.config.append_only_paths);
-  if (!append || (isNew ?? !existsSync11(join14(ctx.root, rel)))) return ALLOW;
+  if (!append || (isNew ?? !existsSync11(join15(ctx.root, rel)))) return ALLOW;
   return { action: "deny", policy: "protected-paths", message: t(locale, "appendonly.deny", { path: rel, glob: append, config: ctx.loaded.path }) };
 }
 function checkSecrets(ctx, content, locale) {
@@ -31257,7 +31315,7 @@ function checkProductionGate(ctx, command, locale) {
   return ALLOW;
 }
 function runFormatOnEdit(ctx, path, locale) {
-  const full = path.startsWith("/") ? path : join14(ctx.root, path);
+  const full = path.startsWith("/") ? path : join15(ctx.root, path);
   if (!existsSync11(full)) return ALLOW;
   const rel = relPath(ctx.root, full);
   const entry = Object.entries(ctx.loaded?.config.format_on_edit ?? {}).find(
@@ -31274,12 +31332,46 @@ function runFormatOnEdit(ctx, path, locale) {
     return { action: "warn", policy: "format-on-edit", message: t(locale, "format.fail", { path: rel, cmd, out }) };
   }
 }
+function checkPlanFirst(ctx, at2, files, locale) {
+  const { root, loaded } = ctx;
+  if (!loaded || PLAN_FIRST_AT.indexOf(at2) < PLAN_FIRST_AT.indexOf(loaded.config.plan_first ?? "edit")) return ALLOW;
+  const branch = currentBranch(root);
+  if (!branch?.startsWith("change/")) return ALLOW;
+  const code2 = files.map((f) => relPath(root, f)).filter((f) => !isAbsolute2(f) && !f.startsWith("../") && isCodePath(f));
+  if (!code2.length) return ALLOW;
+  const base = loaded.config.vcs?.default_branch ?? "main";
+  let id;
+  let state;
+  if (at2 === "push") {
+    const change = listChanges(root, { locale, defaultBranch: base }).find((c) => c.active);
+    if (!change) return ALLOW;
+    id = change.id;
+    state = { intent: change.artifacts.intent?.data, spec: change.artifacts.spec?.data, plan: change.artifacts.plan?.data };
+  } else {
+    id = activeChange(root);
+    const read = (name) => {
+      const p = join15(root, id, `${name}.md`);
+      return existsSync11(p) ? parseFrontmatter(readFileSync13(p, "utf8")).data : void 0;
+    };
+    state = { intent: read("intent"), spec: read("spec"), plan: read("plan") };
+    if (!state.intent && !state.spec && !state.plan) return ALLOW;
+  }
+  if (isApproved(state.plan?.status)) return ALLOW;
+  const slug = branch.slice("change/".length);
+  if (state.intent?.lane === "quick" && !state.spec && !state.plan) {
+    const q = checkQuick(loaded, [.../* @__PURE__ */ new Set([...lines(git(root, ["diff", "--name-only", `${base}...HEAD`])), ...code2])]);
+    return q.ok ? ALLOW : { action: "deny", policy: "plan-first", message: t(locale, "prepush.quick", { change: slug, reason: q.reason ?? "" }) };
+  }
+  if (at2 === "edit") return { action: "deny", policy: "plan-first", message: t(locale, "planfirst.edit", { path: code2[0], change: id }) };
+  const stage = getChange(root, id, { locale, defaultBranch: base })?.stage ?? "plan";
+  return { action: "deny", policy: "plan-first", message: t(locale, "prepush.noplan", { branch, change: id, stage }) };
+}
 function dirtyFiles(root) {
   return lines(git(root, ["status", "--porcelain"])).map((l) => l.slice(3).split(" -> ").pop().replace(/^"|"$/g, ""));
 }
 function checkPlanSync(ctx, locale) {
   const change = activeChange(ctx.root);
-  if (!change || !existsSync11(join14(ctx.root, change, "plan.md"))) return ALLOW;
+  if (!change || !existsSync11(join15(ctx.root, change, "plan.md"))) return ALLOW;
   let code2 = false;
   let plan = false;
   for (const f of dirtyFiles(ctx.root)) {
@@ -31291,7 +31383,7 @@ function checkPlanSync(ctx, locale) {
 function sessionContext(ctx, locale) {
   const { root, loaded } = ctx;
   if (!loaded) {
-    return existsSync11(join14(root, ".git")) ? { action: "context", message: t(locale, "session.noconfig") } : ALLOW;
+    return existsSync11(join15(root, ".git")) ? { action: "context", message: t(locale, "session.noconfig") } : ALLOW;
   }
   const out = [t(locale, "session.config", { config: loaded.path })];
   const change = activeChange(root);
@@ -31307,9 +31399,9 @@ function sessionContext(ctx, locale) {
     if (n.kind !== "new") out.push(t(locale, "session.next", { next: formatNext(n) }));
   }
   if (fixLockActive(root)) out.push(t(locale, "session.lock"));
-  const setup = join14(root, "SETUP.md");
+  const setup = join15(root, "SETUP.md");
   if (existsSync11(setup)) {
-    const n = (readFileSync12(setup, "utf8").match(/⬜/g) ?? []).length;
+    const n = (readFileSync13(setup, "utf8").match(/⬜/g) ?? []).length;
     if (n > 0) out.push(t(locale, "session.setup", { n }));
   }
   return { action: "context", message: out.join("\n") };
@@ -31332,7 +31424,8 @@ function evaluate(event, ctx) {
       return run3(
         () => checkProtected(ctx, event.path, locale),
         () => checkSecrets(ctx, event.content, locale),
-        () => checkTestLock(ctx, event.path, locale)
+        () => checkTestLock(ctx, event.path, locale),
+        () => checkPlanFirst(ctx, "edit", [event.path], locale)
       );
     case "file.read":
       return run3(() => checkSecrets(ctx, event.content, locale));
@@ -31352,11 +31445,13 @@ var init_policies = __esm({
     "use strict";
     init_changes();
     init_config();
+    init_frontmatter();
     init_git();
     init_glob();
     init_i18n();
     init_next();
     init_project();
+    init_quick();
     ALLOW = { action: "allow" };
     BUILTIN_SECRET_PATTERNS = [
       "AKIA[0-9A-Z]{16}",
@@ -31382,7 +31477,7 @@ var init_policies = __esm({
       punct: "!-\\/:-@\\[-`{-~"
     };
     FIX_LOCKS = [".sdlc/fix-lock", ".claude/.sdlc-fix-lock"];
-    fixLockActive = (root) => FIX_LOCKS.some((p) => existsSync11(join14(root, p)));
+    fixLockActive = (root) => FIX_LOCKS.some((p) => existsSync11(join15(root, p)));
     envVarName = (match2) => /^[A-Z][A-Z0-9]*(_[A-Z0-9]+)+$/.test(/["']([^"']+)["']$/.exec(match2)?.[1] ?? "");
     MENTION_ONLY = /* @__PURE__ */ new Set(["git", "gh", "glab", "echo", "printf", "cat", "grep", "rg", "jq"]);
     shellQuote = (s) => `'${s.replace(/'/g, `'\\''`)}'`;
@@ -31390,12 +31485,12 @@ var init_policies = __esm({
 });
 
 // packages/core/src/learn.ts
-import { existsSync as existsSync12, readFileSync as readFileSync13, writeFileSync as writeFileSync8 } from "node:fs";
-import { join as join15 } from "node:path";
+import { existsSync as existsSync12, readFileSync as readFileSync14, writeFileSync as writeFileSync9 } from "node:fs";
+import { join as join16 } from "node:path";
 function learnFiles(root, loaded) {
   const agents = loaded?.config.agents ?? ["claude"];
   const out = [];
-  if (existsSync12(join15(root, "CLAUDE.md")) || agents.includes("claude") || agents.includes("cursor") || !agents.includes("agents-md")) out.push("CLAUDE.md");
+  if (existsSync12(join16(root, "CLAUDE.md")) || agents.includes("claude") || agents.includes("cursor") || !agents.includes("agents-md")) out.push("CLAUDE.md");
   if (agents.includes("agents-md")) out.push("AGENTS.md");
   return out;
 }
@@ -31416,9 +31511,9 @@ function findSection(lines2) {
   return void 0;
 }
 function parseFile(root, file2) {
-  const p = join15(root, file2);
+  const p = join16(root, file2);
   if (!existsSync12(p)) return [];
-  const lines2 = readFileSync13(p, "utf8").split("\n");
+  const lines2 = readFileSync14(p, "utf8").split("\n");
   const s = findSection(lines2);
   if (!s) return [];
   const out = [];
@@ -31455,8 +31550,8 @@ function addLearning(root, loaded, o) {
       duplicateIn.push(file2);
       continue;
     }
-    const p = join15(root, file2);
-    const current = existsSync12(p) ? readFileSync13(p, "utf8") : "";
+    const p = join16(root, file2);
+    const current = existsSync12(p) ? readFileSync14(p, "utf8") : "";
     const lines2 = current ? current.replace(/\n+$/, "").split("\n") : [];
     const s = findSection(lines2);
     if (s) {
@@ -31467,7 +31562,7 @@ function addLearning(root, loaded, o) {
       if (!lines2.length) lines2.push(file2 === "AGENTS.md" ? "# AGENTS.md" : "# CLAUDE.md");
       lines2.push("", `## ${LEARN_HEADINGS[locale][0]}`, entry);
     }
-    writeFileSync8(p, lines2.join("\n") + "\n");
+    writeFileSync9(p, lines2.join("\n") + "\n");
     files.push(file2);
   }
   if (files.length) recordEvent(root, { type: "rule.learned", change: o.change, artifact: o.stage, by: gitUser(root)?.name, detail: text });
@@ -31497,25 +31592,25 @@ var init_learn = __esm({
 });
 
 // packages/core/src/metrics.ts
-import { existsSync as existsSync13, readFileSync as readFileSync14, writeFileSync as writeFileSync9 } from "node:fs";
-import { join as join16 } from "node:path";
+import { existsSync as existsSync13, readFileSync as readFileSync15, writeFileSync as writeFileSync10 } from "node:fs";
+import { join as join17 } from "node:path";
 function sumOutcomes(xs) {
   const t2 = { fixed: 0, wrong: 0, intentional: 0, ignored: 0, open: 0 };
   for (const x of xs) if (x) for (const k of OUTCOMES) t2[k] += x[k] ?? 0;
   return t2;
 }
 function readPrStats(root) {
-  const p = join16(root, PR_STATS_PATH);
+  const p = join17(root, PR_STATS_PATH);
   if (!existsSync13(p)) return {};
   try {
-    return JSON.parse(readFileSync14(p, "utf8")).changes ?? {};
+    return JSON.parse(readFileSync15(p, "utf8")).changes ?? {};
   } catch {
     return {};
   }
 }
 function writePrStats(root, changes) {
   ensureSdlcDir(root);
-  writeFileSync9(join16(root, PR_STATS_PATH), JSON.stringify({ updatedAt: (/* @__PURE__ */ new Date()).toISOString(), changes }, null, 2) + "\n");
+  writeFileSync10(join17(root, PR_STATS_PATH), JSON.stringify({ updatedAt: (/* @__PURE__ */ new Date()).toISOString(), changes }, null, 2) + "\n");
 }
 function firstAdd(root, path) {
   const ts = lines(git(root, ["log", "--all", "--diff-filter=A", "--format=%ct", "--", path])).pop();
@@ -31826,59 +31921,6 @@ var init_pr_sections = __esm({
       risk: ["risk", "riesgo"],
       "how to revert": ["how to revert", "revert", "rollback", "c\xF3mo revertir", "como revertir"]
     };
-  }
-});
-
-// packages/core/src/quick.ts
-import { readFileSync as readFileSync15, writeFileSync as writeFileSync10 } from "node:fs";
-import { join as join17 } from "node:path";
-function quickLimits(loaded) {
-  const q = loaded?.config.quick_lane ?? {};
-  return {
-    enabled: q.enabled ?? QUICK_DEFAULTS.enabled,
-    maxFiles: q.max_files ?? QUICK_DEFAULTS.max_files,
-    forbid: [...q.forbid_paths ?? [], ...loaded?.config.risk?.high_risk_paths ?? []]
-  };
-}
-function checkQuick(loaded, files) {
-  const lim = quickLimits(loaded);
-  const code2 = files.filter(isCodePath);
-  if (!lim.enabled) return { ok: false, files: code2, reason: "the quick lane is disabled (quick_lane.enabled: false)" };
-  const risky = code2.find((f) => matchAny(f, lim.forbid));
-  if (risky) return { ok: false, files: code2, reason: `${risky} is a high-risk path (risk.high_risk_paths / quick_lane.forbid_paths)` };
-  if (code2.length > lim.maxFiles) return { ok: false, files: code2, reason: `${code2.length} code files changed, more than quick_lane.max_files (${lim.maxFiles})` };
-  return { ok: true, files: code2 };
-}
-function branchFiles(root, base) {
-  const committed = git(root, ["rev-parse", "--verify", "--quiet", base]) !== void 0 ? lines(git(root, ["diff", "--name-only", `${base}...HEAD`])) : [];
-  const pending = lines(git(root, ["status", "--porcelain", "--untracked-files=all"])).map((l) => l.slice(3).replace(/^.* -> /, ""));
-  return [.../* @__PURE__ */ new Set([...committed, ...pending])];
-}
-function promote(root, loaded, changeId, by) {
-  const change = getChange(root, changeId, { locale: localeOf(loaded), defaultBranch: loaded?.config.vcs?.default_branch });
-  if (!change) throw new SdlcError(`change ${changeId} not found`);
-  const intent = change.artifacts.intent;
-  if (!intent || intent.data.lane !== "quick") throw new SdlcError(`${change.id} is not in the quick lane`);
-  if (change.source !== "worktree") throw new SdlcError(`${change.id} is on ${change.source.branch}; check it out to promote it`);
-  const p = join17(root, intent.path);
-  const text = setFrontmatter(readFileSync15(p, "utf8"), { lane: "full", status: "draft" });
-  writeFileSync10(p, text);
-  recordEvent(root, { type: "change.promote", change: change.slug, by });
-  return change;
-}
-var QUICK_DEFAULTS, isQuick;
-var init_quick = __esm({
-  "packages/core/src/quick.ts"() {
-    "use strict";
-    init_changes();
-    init_config();
-    init_events();
-    init_frontmatter();
-    init_git();
-    init_glob();
-    init_http();
-    QUICK_DEFAULTS = { enabled: true, max_files: 10 };
-    isQuick = (c) => c.artifacts.intent?.data.lane === "quick" && !c.artifacts.spec && !c.artifacts.plan;
   }
 });
 
@@ -32743,7 +32785,7 @@ var init_doctor = __esm({
       { guardrail: "production-gate", claude: ["blocks"], cursor: ["blocks"], "agents-md": ["ci", "advisory"] },
       { guardrail: "format-on-edit", claude: ["post-hoc"], cursor: ["post-hoc"], "agents-md": ["advisory"] },
       { guardrail: "plan-sync", claude: ["blocks"], cursor: ["blocks"], "agents-md": ["advisory"] },
-      { guardrail: "plan-first", claude: ["advisory", "push"], cursor: ["advisory", "push"], "agents-md": ["advisory", "push"] }
+      { guardrail: "plan-first", claude: ["blocks", "commit", "push"], cursor: ["blocks", "commit", "push"], "agents-md": ["commit", "push"] }
     ];
     CI_FILES = {
       github: [],
@@ -32775,18 +32817,19 @@ function preCommit(root, env = process.env) {
   const staged = lines(git(root, ["diff", "--cached", "--name-only", "--diff-filter=ACMR"]));
   const created = new Set(lines(git(root, ["diff", "--cached", "--name-only", "--diff-filter=A"])));
   for (const file2 of staged) {
-    for (const d2 of [checkProtected(ctx, file2, locale, created.has(file2)), checkTestLock(ctx, file2, locale)]) {
-      if (d2.action === "deny") {
-        const out = block(root, d2, env, locale);
+    for (const d of [checkProtected(ctx, file2, locale, created.has(file2)), checkTestLock(ctx, file2, locale)]) {
+      if (d.action === "deny") {
+        const out = block(root, d, env, locale);
         if (out) return out;
       }
     }
   }
   const added = lines(git(root, ["diff", "--cached", "-U0", "--diff-filter=ACMR"])).filter((l) => l.startsWith("+") && !l.startsWith("+++")).map((l) => l.slice(1)).join("\n");
-  const d = checkSecrets(ctx, added, locale);
-  if (d.action === "deny") {
-    const out = block(root, d, env, locale);
-    if (out) return out;
+  for (const d of [checkSecrets(ctx, added, locale), checkPlanFirst(ctx, "commit", staged, locale)]) {
+    if (d.action === "deny") {
+      const out = block(root, d, env, locale);
+      if (out) return out;
+    }
   }
   return { exitCode: 0 };
 }
@@ -32794,22 +32837,9 @@ function prePush(root, env = process.env) {
   const loaded = loadConfig(root);
   if (!loaded) return { exitCode: 0 };
   const locale = localeOf(loaded);
-  const branch = currentBranch(root);
-  if (!branch?.startsWith("change/")) return { exitCode: 0 };
   const base = loaded.config.vcs?.default_branch ?? "main";
-  const code2 = lines(git(root, ["diff", "--name-only", `${base}...HEAD`])).filter(isCodePath);
-  if (code2.length === 0) return { exitCode: 0 };
-  const change = listChanges(root, { locale, defaultBranch: base }).find((c) => c.active);
-  if (!change || isApproved(change.artifacts.plan?.status)) return { exitCode: 0 };
-  const policy = "plan-first";
-  if (isQuick(change)) {
-    const q = checkQuick(loaded, code2);
-    if (q.ok) return { exitCode: 0 };
-    const d2 = { action: "deny", policy, message: t(locale, "prepush.quick", { change: change.slug, reason: q.reason ?? "" }) };
-    return block(root, d2, env, locale) ?? { exitCode: 0 };
-  }
-  const d = { action: "deny", policy, message: t(locale, "prepush.noplan", { branch, change: change.id, stage: change.stage }) };
-  return block(root, d, env, locale) ?? { exitCode: 0 };
+  const d = checkPlanFirst({ root, loaded, env }, "push", lines(git(root, ["diff", "--name-only", `${base}...HEAD`])), locale);
+  return d.action === "deny" && block(root, d, env, locale) || { exitCode: 0 };
 }
 var init_git_hooks = __esm({
   "packages/adapters/src/git-hooks.ts"() {

@@ -12,6 +12,8 @@ export const NOTIFY_EVENTS = ['gate.pending', 'gate.decided', 'spec.ready', 'rev
 export type NotifyEvent = (typeof NOTIFY_EVENTS)[number];
 export type CiAgent = (typeof CI_AGENTS)[number];
 export const RISK_PROFILES = ['strict', 'graded'] as const;
+export const PLAN_FIRST_AT = ['edit', 'commit', 'push'] as const;
+export type PlanFirstAt = (typeof PLAN_FIRST_AT)[number];
 export type RiskProfile = (typeof RISK_PROFILES)[number];
 
 const commandMap = z.record(z.string(), z.string());
@@ -85,6 +87,8 @@ export const ConfigSchema = z.looseObject({
   production_gate: z
     .looseObject({ patterns: z.array(z.string()).optional(), approval_env: z.string().optional() })
     .optional(),
+  /** Plan before code, from this point on change/* branches: `edit` (default) blocks the agent's edit, `commit` the git commit, `push` only the push. */
+  plan_first: z.enum(PLAN_FIRST_AT).optional(),
   /** Who may approve each artifact: role names, resolved through `roles`. Empty → anyone but an agent. */
   gates: z.partialRecord(z.enum([...ARTIFACTS, 'roadmap']), z.array(z.string())).optional(),
   /** Solo projects: the author may approve their own spec and plan (agents still cannot). */

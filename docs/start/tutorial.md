@@ -125,14 +125,14 @@ npx sdlc approve mark-done spec
 /sdlc-plan
 ```
 
-In Claude Code, switch to plan mode first (Shift+Tab until it says "plan mode"): the agent can read but not change anything. The plan lists the files that change, the order of the work and the tests. Ask questions in the chat until it is clear, then:
+Switch the agent to its planning mode first, so it can read but not change anything: in Claude Code, Shift+Tab until it says "plan mode" (or start it with `claude --permission-mode plan`); in Cursor, Plan mode. If you forget, `/sdlc-plan` asks for it, and the agent cannot edit code on the change branch until the plan is approved anyway. The plan lists the files that change, the order of the work and the tests. Ask questions in the chat until it is clear, then:
 
 ```bash
 npx sdlc approve mark-done plan
 ```
 
 ::: warning Code before the plan is blocked
-If someone (agent or person) tries to push code on `change/mark-done` before the plan is approved, git stops it:
+The agent's edits to code on `change/mark-done` are refused until the plan is approved. If code gets there another way (a person, a shell command), git stops the commit, and the push after it:
 
 ```text
 Blocked by ai-sdlc: branch change/mark-done has code changes but changes/2026-11-mark-done/plan.md is not approved (stage: spec-approved). Plan before code: …
@@ -140,7 +140,7 @@ Blocked by ai-sdlc: branch change/mark-done has code changes but changes/2026-11
 
 That is the guardrail doing its job. Approve the plan first.
 
-![A push before the plan is approved, blocked](../media/guardrail-en.gif)
+![A commit before the plan is approved, blocked](../media/guardrail-en.gif)
 :::
 
 ### Step 8. Build it

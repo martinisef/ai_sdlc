@@ -120,11 +120,55 @@ test('git pre-push: code on a change branch needs an approved plan', () => {
   assert.equal(prePush(root, {}).exitCode, 0);
 });
 
+test('plan-first: the agent edit (Claude, Cursor) and the commit wait for an approved plan; plan_first moves the start', () => {
+  const setup = (config: object) => {
+    const root = repo(config);
+    gitIn(root, 'checkout', '-qb', 'change/x');
+    mkdirSync(join(root, 'changes/x'), { recursive: true });
+    writeFileSync(join(root, 'changes/x/intent.md'), '---\nstatus: accepted\n---\n');
+    writeFileSync(join(root, 'changes/x/plan.md'), '---\nstatus: draft\n---\n');
+    return root;
+  };
+  const root = setup(CONFIG);
+  const claude = (file: string) => runHook('claude', 'pre-tool', JSON.stringify({ tool_name: 'Write', tool_input: { file_path: join(root, file), content: 'x' }, cwd: root }), {});
+  const cursor = (file: string) =>
+    JSON.parse(runHook('cursor', 'preToolUse', JSON.stringify({ hook_event_name: 'preToolUse', tool_name: 'Write', tool_input: { file_path: join(root, file), content: 'x' }, workspace_roots: [root] }), {}).stdout!);
+  const blocked = claude('app.py');
+  assert.equal(blocked.exitCode, 2);
+  assert.match(blocked.stderr!, /app\.py is code and changes\/x\/plan\.md is not approved yet[\s\S]*\/sdlc-plan/);
+  assert.equal(claude('changes/x/plan.md').exitCode, 0);
+  assert.equal(cursor('app.py').permission, 'deny');
+  assert.equal(cursor('docs/notes.md').permission, 'allow');
+
+  writeFileSync(join(root, 'app.py'), 'x');
+  gitIn(root, 'add', '-A');
+  const commit = preCommit(root, {});
+  assert.equal(commit.exitCode, 1);
+  assert.match(commit.stderr!, /branch change\/x has code changes but changes\/x\/plan\.md is not approved[\s\S]*SDLC_OVERRIDE=plan-first/);
+  assert.equal(preCommit(root, { SDLC_OVERRIDE: 'plan-first' }).exitCode, 0);
+
+  writeFileSync(join(root, 'changes/x/plan.md'), '---\nstatus: approved\n---\n');
+  assert.equal(claude('app.py').exitCode, 0);
+  assert.equal(preCommit(root, {}).exitCode, 0);
+
+  const late = setup({ ...CONFIG, plan_first: 'push' });
+  const edit = runHook('claude', 'pre-tool', JSON.stringify({ tool_name: 'Write', tool_input: { file_path: join(late, 'app.py'), content: 'x' }, cwd: late }), {});
+  assert.equal(edit.exitCode, 0);
+  writeFileSync(join(late, 'app.py'), 'x');
+  gitIn(late, 'add', '-A');
+  assert.equal(preCommit(late, {}).exitCode, 0);
+  gitIn(late, 'commit', '-qm', 'wip');
+  assert.match(prePush(late, {}).stderr!, /plan\.md is not approved/);
+});
+
 test('git pre-push: a quick change passes within quick_lane limits and is stopped beyond them', () => {
   const root = repo({ ...CONFIG, quick_lane: { max_files: 2 }, risk: { high_risk_paths: ['src/auth/**'] } });
   gitIn(root, 'checkout', '-qb', 'change/q');
   mkdirSync(join(root, 'changes/q'), { recursive: true });
   writeFileSync(join(root, 'changes/q/intent.md'), '---\nstatus: accepted\nlane: quick\n---\n# Quick: q\n');
+  const edit = (file: string) => runHook('claude', 'pre-tool', JSON.stringify({ tool_name: 'Write', tool_input: { file_path: join(root, file), content: 'x' }, cwd: root }), {});
+  assert.equal(edit('app.py').exitCode, 0, 'a quick change edits code without a plan');
+  assert.match(edit('src/auth/login.py').stderr!, /quick lane but src\/auth\/login\.py is a high-risk path/);
   writeFileSync(join(root, 'app.py'), 'x');
   gitIn(root, 'add', '-A');
   gitIn(root, 'commit', '-qm', 'quick');
